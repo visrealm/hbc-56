@@ -1,5 +1,6 @@
 !cpu 65c02
 !initmem $EF
+!to "lcd.o", plain
 
 *=$8000
 

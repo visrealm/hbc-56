@@ -1,11 +1,12 @@
 !cpu 65c02
-!initmem $EF
+!initmem $FF
+!to "lcd3.o", plain
 
 *=$8000
 
 
-LCD_CMD  = $7f00
-LCD_DATA = $7f01
+LCD_CMD       = $7f00
+LCD_DATA      = $7f01
 
 LCD_CMD_CLEAR                = %00000001
 LCD_CMD_HOME                 = %00000010
@@ -49,6 +50,7 @@ sta STR_ADDR_H
 jsr lcdWait
 lda #LCD_INITIALIZE
 sta LCD_CMD
+
 jsr lcdWait
 lda #DISPLAY_MODE
 sta LCD_CMD
@@ -78,8 +80,7 @@ outString:
 
 lcdWait:
 	lda LCD_CMD
-	bit #$80
-	bne lcdWait
+	bmi lcdWait  ; branch if bit 7 is set
 	rts
 	
 

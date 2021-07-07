@@ -1,4 +1,5 @@
 *=$8000
+!to "knightrider.o", plain
 
 !initmem $EF
 
