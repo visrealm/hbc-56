@@ -35,16 +35,17 @@ LCD_CMD_8BITMODE    = $10
 LCD_CMD_2LINE       = $08
 
 LCD_INITIALIZE      = <(LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE)
-DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
+DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
 
 STR_ADDR = $10
 STR_ADDR_L = STR_ADDR
 STR_ADDR_H = STR_ADDR + 1
 
+CHARS_WIDTH = 16
 
-lda #<(helloWorld)
+lda #<(hbcText)
 sta STR_ADDR_L
-lda #>(helloWorld)
+lda #>(hbcText)
 sta STR_ADDR_H
 
 jsr lcdWait
@@ -59,20 +60,55 @@ start:
 
 jsr outString
 
+lda #<(helloWorld)
+sta STR_ADDR_L
+lda #>(helloWorld)
+sta STR_ADDR_H
+
+jsr outString
+
+lda #<(anotherText)
+sta STR_ADDR_L
+lda #>(anotherText)
+sta STR_ADDR_H
+
+jsr outString
+
+lda #<(hbcText)
+sta STR_ADDR_L
+lda #>(hbcText)
+sta STR_ADDR_H
+
+
 jmp start
 
 
+printLine:
+	jsr outString
+	cpy #CHARS_WIDTH
+	beq +
+-
+	jsr lcdWait
+	lda #' '
+	sta LCD_DATA
+	
+	iny
+	cpy #CHARS_WIDTH
+	bne -
++
+	rts	
+	
 
 outString:
 	ldy #0
 
-.loop:
+-
 	jsr lcdWait
 	lda (STR_ADDR), y
 	beq .end
 	sta LCD_DATA
 	iny
-	jmp .loop
+	jmp -
 	
 .end:
 	rts
@@ -84,7 +120,9 @@ lcdWait:
 	rts
 	
 
-helloWorld: !text "Hello, World!", 0
+helloWorld: !text     "Hello, World!       ", 0
+hbcText: !text        "Troy's HBC-56       ", 0
+anotherText: !text    "Another thing...    ", 0
 	
 
 *=$FFFC
