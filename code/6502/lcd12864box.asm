@@ -1,6 +1,6 @@
 !cpu 6502
 !initmem $FF
-!to "lcd12864.o", plain
+!to "lcd12864box.o", plain
 
 *=$8000
 
@@ -33,7 +33,11 @@ LCD_CMD_SET_DRAM_ADDR        = $80
 LCD_CMD_FUNCTIONSET     = $20
 LCD_CMD_8BITMODE        = $10
 LCD_CMD_2LINE           = $08
-LCD_CMD_12864B_EXTENDED = $02
+LCD_CMD_12864B_EXTENDED = $04
+
+LCD_CMD_EXT_GRAPHICS_ENABLE  = $02
+
+LCD_CMD_EXT_GRAPHICS_ADDR    = $80
 
 LCD_INITIALIZE      = LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
 LCD_BASIC           = LCD_INITIALIZE
@@ -64,49 +68,101 @@ jsr lcdWait
 lda #LCD_CMD_HOME
 sta LCD_CMD
 
+
 jsr lcdWait
-lda #DISPLAY_MODE
+lda #LCD_EXTENDED
+sta LCD_CMD
+
+jsr lcdWait
+lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
 sta LCD_CMD
 
 start:
 
+ldy #0
+ldx #0
+
+loop:
+
+; set y address
+jsr lcdWait
+tya
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
+
+; set x address
+jsr lcdWait
+txa
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
+
+; first byte
+jsr lcdWait
+lda #0
+cpx #8
+bcs +
+; upper half
+cpy #0
+bne ++
+lda #$ff
++
+; lower half
+cpy #31
+bne ++
+lda #$ff
+
+++
+
+; first column
+cpx #0
+bne +
+ora #$80
++
+cpx #8
+bne +
+ora #$80
++
+
+sta LCD_DATA
+
+; second byte
 jsr lcdWait
 
-lda #<hbcText
-sta STR_ADDR_L
-lda #>hbcText
-sta STR_ADDR_H
+lda #0
+cpx #8
+bcs +
+; upper half
+cpy #0
+bne ++
+lda #$ff
++
+; lower half
+cpy #31
+bne ++
+lda #$ff
 
-;jsr lcdLineTwo
-jsr nextLine4
+++
 
-jsr outString
+; first column
+cpx #7
+bne +
+ora #$01
++
+cpx #15
+bne +
+ora #$01
++
 
+sta LCD_DATA
 
-jsr lcdWait
+inx
+cpx #16
+bne loop
+ldx #0
+iny
+cpy #32
+bne loop
 
-lda #<helloWorld
-sta STR_ADDR_L
-lda #>helloWorld
-sta STR_ADDR_H
-
-;jsr lcdLineOne
-jsr nextLine4
-
-jsr outString
-
-
-jsr lcdWait
-
-lda #<anotherText
-sta STR_ADDR_L
-lda #>anotherText
-sta STR_ADDR_H
-
-jsr nextLine4
-;jsr lcdLineOne
-
-jsr outString
 
 jmp start
 

@@ -1,6 +1,6 @@
 !cpu 6502
 !initmem $FF
-!to "lcd12864.o", plain
+!to "lcd12864img.o", plain
 
 *=$8000
 
@@ -33,7 +33,11 @@ LCD_CMD_SET_DRAM_ADDR        = $80
 LCD_CMD_FUNCTIONSET     = $20
 LCD_CMD_8BITMODE        = $10
 LCD_CMD_2LINE           = $08
-LCD_CMD_12864B_EXTENDED = $02
+LCD_CMD_12864B_EXTENDED = $04
+
+LCD_CMD_EXT_GRAPHICS_ENABLE  = $02
+
+LCD_CMD_EXT_GRAPHICS_ADDR    = $80
 
 LCD_INITIALIZE      = LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
 LCD_BASIC           = LCD_INITIALIZE
@@ -64,49 +68,119 @@ jsr lcdWait
 lda #LCD_CMD_HOME
 sta LCD_CMD
 
+
 jsr lcdWait
-lda #DISPLAY_MODE
+lda #LCD_EXTENDED
+sta LCD_CMD
+
+jsr lcdWait
+lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
 sta LCD_CMD
 
 start:
 
+
+
+ldy #0
+ldx #0
+
+PIX_ADDR   = $20
+PIX_ADDR_L = PIX_ADDR
+PIX_ADDR_H = PIX_ADDR + 1
+
+lda #0;#<RAW_IMAGE_DATA
+sta PIX_ADDR_L
+lda #>RAW_IMAGE_DATA
+sta PIX_ADDR_H
+
+loop:
+
+; set y address
+jsr lcdWait
+tya
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
+
+; set x address
+jsr lcdWait
+txa
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
+
+; first byte
 jsr lcdWait
 
-lda #<hbcText
-sta STR_ADDR_L
-lda #>hbcText
-sta STR_ADDR_H
+txa
+pha
+tya
+pha
 
-;jsr lcdLineTwo
-jsr nextLine4
+cpx #8
+bcs +
+; upper half
+lda #>RAW_IMAGE_DATA_Q2
+sta PIX_ADDR_H
 
-jsr outString
+cpy #16
+bcs ++
+lda #>RAW_IMAGE_DATA_Q1
+sta PIX_ADDR_H
+jmp ++
+
++
+
+; lower half
+lda #>RAW_IMAGE_DATA_Q4
+sta PIX_ADDR_H
+
+cpy #16
+bcs ++
+lda #>RAW_IMAGE_DATA_Q3
+sta PIX_ADDR_H
+
+++
+
+tya
+and #$0f
+asl
+asl
+asl
+asl
+pha
+txa
+and #$07
+asl
+sta $02
+pla
+ora $02
+tay
 
 
+lda (PIX_ADDR), y
+;lda #0
+sta LCD_DATA
+
+; second byte
 jsr lcdWait
 
-lda #<helloWorld
-sta STR_ADDR_L
-lda #>helloWorld
-sta STR_ADDR_H
+iny
+lda (PIX_ADDR), y
+;lda #0
+sta LCD_DATA
 
-;jsr lcdLineOne
-jsr nextLine4
+pla
+tay
+pla
+tax
 
-jsr outString
 
-
-jsr lcdWait
-
-lda #<anotherText
-sta STR_ADDR_L
-lda #>anotherText
-sta STR_ADDR_H
-
-jsr nextLine4
-;jsr lcdLineOne
-
-jsr outString
+inx
+cpx #16
+bne loop
+ldx #0
+iny
+cpy #32
+bne loop
 
 jmp start
 
@@ -193,13 +267,21 @@ lcdWait:
 	lda LCD_CMD
 	bmi lcdWait  ; branch if bit 7 is set
 	rts
-	
 
-helloWorld: !text     "Hello, World!", 0,0
-hbcText: !text        "Troy's HBC-56", 0,0
-anotherText: !text    "Another thing..", 0,0
+;IMG_DATA_OFFSET = 62  ; Paint
+IMG_DATA_OFFSET = 130  ; GIMP
 
-!text    "Huh?", 0
+!align 255, 0
+!fill 256 - IMG_DATA_OFFSET
+
+imageData:
+	!bin "img.bmp"
+
+RAW_IMAGE_DATA = imageData + IMG_DATA_OFFSET
+RAW_IMAGE_DATA_Q1 = RAW_IMAGE_DATA
+RAW_IMAGE_DATA_Q2 = RAW_IMAGE_DATA + $100
+RAW_IMAGE_DATA_Q3 = RAW_IMAGE_DATA + $200
+RAW_IMAGE_DATA_Q4 = RAW_IMAGE_DATA + $300
 
 
 *=$FFFC
