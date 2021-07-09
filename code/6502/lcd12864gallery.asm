@@ -1,6 +1,6 @@
 !cpu 6502
 !initmem $FF
-!to "lcd12864img.o", plain
+!to "lcd12864gallery.o", plain
 
 *=$8000
 

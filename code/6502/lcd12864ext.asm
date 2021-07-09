@@ -1,8 +1,9 @@
 !cpu 6502
 !initmem $FF
-!to "lcd12864img.o", plain
+!to "lcd12864ext.o", plain
 
 *=$8000
+
 
 LCD_CMD       = $7f00
 LCD_DATA      = $7f01
@@ -55,163 +56,133 @@ LCD_ADDR_LINE4 = 0x18
 
 CHARS_WIDTH = 16
 
-	jsr lcdWait
-	lda #LCD_INITIALIZE
-	sta LCD_CMD
+jsr lcdWait
+lda #LCD_INITIALIZE
+sta LCD_CMD
 
-	jsr lcdWait
-	lda #LCD_CMD_CLEAR
-	sta LCD_CMD
+jsr lcdWait
+lda #LCD_CMD_CLEAR
+sta LCD_CMD
 
-	jsr lcdWait
-	lda #LCD_CMD_HOME
-	sta LCD_CMD
+jsr lcdWait
+lda #LCD_CMD_HOME
+sta LCD_CMD
 
-	jsr lcdWait
-	lda #LCD_EXTENDED
-	sta LCD_CMD
 
-	jsr lcdWait
-	lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
-	sta LCD_CMD
+jsr lcdWait
+lda #LCD_EXTENDED
+sta LCD_CMD
+
+jsr lcdWait
+lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
+sta LCD_CMD
 
 start:
 
-	PIX_ADDR   = $20
-	PIX_ADDR_L = PIX_ADDR
-	PIX_ADDR_H = PIX_ADDR + 1
-	
-	IMG_ADDR_H   = $30
-	
-
-	lda #0
-	sta PIX_ADDR_L
-	
 
 
-mainLoop:
-	lda #>LOGO_IMG
-	sta IMG_ADDR_H
-	jsr outputImage
-	
-	jsr longDelay
+ldy #0
+ldx #0
 
-	lda #>ROX_IMG
-	sta IMG_ADDR_H
-	jsr outputImage
-	
-	jsr longDelay
-	
-	lda #>LIV_IMG
-	sta IMG_ADDR_H
-	jsr outputImage
-	
-	jsr longDelay
+PIX_ADDR   = $20
+PIX_ADDR_L = PIX_ADDR
+PIX_ADDR_H = PIX_ADDR + 1
 
-	lda #>SELFIE_IMG
-	sta IMG_ADDR_H
-	jsr outputImage
-	
-	jsr longDelay
-	
-	jmp mainLoop
+lda #0;#<RAW_IMAGE_DATA
+sta PIX_ADDR_L
+lda #>RAW_IMAGE_DATA
+sta PIX_ADDR_H
 
+loop:
 
-	
-	
-; Image. IMG_ADDR_H contains high byte of image data address
-outputImage:
-	ldy #0
-	ldx #0
+; set y address
+jsr lcdWait
+tya
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
 
-.imageLoop:
-	lda IMG_ADDR_H
-	sta PIX_ADDR_H
+; set x address
+jsr lcdWait
+txa
+ora #LCD_CMD_EXT_GRAPHICS_ADDR
+sta LCD_CMD
 
-	; set y address
-	jsr lcdWait
-	tya
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
+; first byte
+jsr lcdWait
 
-	; set x address
-	jsr lcdWait
-	txa
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
+txa
+pha
+tya
+pha
 
-	; first byte
-	jsr lcdWait
+cpx #8
+bcs +
+; upper half
+lda #>RAW_IMAGE_DATA_Q2
+sta PIX_ADDR_H
 
-	txa
-	pha
-	tya
-	pha
-
-	cpx #8
-	bcs +
-	; upper half
-
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
-	jmp ++
+cpy #16
+bcs ++
+lda #>RAW_IMAGE_DATA_Q1
+sta PIX_ADDR_H
+jmp ++
 
 +
 
-	; lower half
-	inc PIX_ADDR_H
-	inc PIX_ADDR_H
+; lower half
+lda #>RAW_IMAGE_DATA_Q4
+sta PIX_ADDR_H
 
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
+cpy #16
+bcs ++
+lda #>RAW_IMAGE_DATA_Q3
+sta PIX_ADDR_H
 
 ++
 
-	tya
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	pha
-	txa
-	and #$07
-	asl
-	sta $02
-	pla
-	ora $02
-	tay
+tya
+and #$0f
+asl
+asl
+asl
+asl
+pha
+txa
+and #$07
+asl
+sta $02
+pla
+ora $02
+tay
 
 
-	lda (PIX_ADDR), y
-	;lda #0
-	sta LCD_DATA
+lda (PIX_ADDR), y
+;lda #0
+sta LCD_DATA
 
-	; second byte
-	jsr lcdWait
+; second byte
+jsr lcdWait
 
-	iny
-	lda (PIX_ADDR), y
-	;lda #0
-	sta LCD_DATA
+iny
+lda (PIX_ADDR), y
+;lda #0
+sta LCD_DATA
 
-	pla
-	tay
-	pla
-	tax
+pla
+tay
+pla
+tax
 
 
-	inx
-	cpx #16
-	bne .imageLoop
-	ldx #0
-	iny
-	cpy #32
-	bne .imageLoop
+inx
+cpx #16
+bne loop
+ldx #0
+iny
+cpy #32
+bne loop
 
-	rts
+jmp start
 
 
 lcdLineOne:
@@ -297,69 +268,18 @@ lcdWait:
 	bmi lcdWait  ; branch if bit 7 is set
 	rts
 
-longDelay:
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	; flow through
-
-
-delay:
-	ldx #255
-	ldy #255
-.loop:
-	dex
-	bne .loop 
-	ldx #255
-	dey
-	bne .loop
-	rts
-	
-
-
-;IMG_DATA_OFFSET = 62  ; Paint
-IMG_DATA_OFFSET = 130  ; GIMP
-
 !align 255, 0
-!fill 256 - IMG_DATA_OFFSET
+!fill 256-62
 
-livData:
-	!bin "liv.bmp"
+imageData:
+	!bin "img.bmp"
 
-LIV_IMG = livData + IMG_DATA_OFFSET
+RAW_IMAGE_DATA = imageData + 62
+RAW_IMAGE_DATA_Q1 = RAW_IMAGE_DATA
+RAW_IMAGE_DATA_Q2 = RAW_IMAGE_DATA + $100
+RAW_IMAGE_DATA_Q3 = RAW_IMAGE_DATA + $200
+RAW_IMAGE_DATA_Q4 = RAW_IMAGE_DATA + $300
 
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-logoData:
-	!bin "logo.bmp"
-
-LOGO_IMG = logoData + IMG_DATA_OFFSET
-
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-roxData:
-	!bin "rox.bmp"
-
-ROX_IMG = roxData + IMG_DATA_OFFSET
-
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-selfieData:
-	!bin "selfie.bmp"
-
-SELFIE_IMG = selfieData + IMG_DATA_OFFSET
 
 *=$FFFC
 !word $8000
