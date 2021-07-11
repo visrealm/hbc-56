@@ -1,4 +1,4 @@
-!to "lcd12864gallery.o", plain
+!to "lcd12864gfx.o", plain
 
 !source "hbc56.asm"
 !source "gfx/bitmap.asm"
@@ -10,6 +10,8 @@ LCD_BASIC           = LCD_INITIALIZE
 LCD_EXTENDED        = LCD_INITIALIZE | LCD_CMD_12864B_EXTENDED
 
 DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
+
+BUFFER_ADDR = $1000
 
 main:
 
@@ -38,32 +40,61 @@ start:
 	lda #0
 	sta PIX_ADDR_L
 	
-
-
+	lda #>BUFFER_ADDR
+	sta BITMAP_ADDR_H
+	
 mainLoop:
-	lda #>LOGO_IMG
-	sta BITMAP_ADDR_H
+	jsr bitmapClear
 	jsr lcdImage
 	
-	jsr longDelay
+	lda #1
+	sta BITMAP_X1
+	lda #6
+	sta BITMAP_X2
+	lda #1
+	sta BITMAP_Y
+	jsr bitmapHline
+	jsr lcdImage
+	
 
-	lda #>ROX_IMG
-	sta BITMAP_ADDR_H
+	lda #3
+	sta BITMAP_X1
+	lda #12
+	sta BITMAP_X2
+	lda #3
+	sta BITMAP_Y
+	jsr bitmapHline
 	jsr lcdImage
-	
-	jsr longDelay
-	
-	lda #>LIV_IMG
-	sta BITMAP_ADDR_H
-	jsr lcdImage
-	
-	jsr longDelay
 
-	lda #>SELFIE_IMG
-	sta BITMAP_ADDR_H
+
+	lda #8
+	sta BITMAP_X1
+	lda #12
+	sta BITMAP_X2
+	lda #5
+	sta BITMAP_Y
+	jsr bitmapHline
 	jsr lcdImage
-	
-	jsr longDelay
+
+
+	lda #12
+	sta BITMAP_X1
+	lda #92
+	sta BITMAP_X2
+	lda #7
+	sta BITMAP_Y
+	jsr bitmapHline
+	jsr lcdImage
+
+	lda #1
+	sta BITMAP_X1
+	lda #126
+	sta BITMAP_X2
+	lda #7
+	sta BITMAP_Y
+	jsr bitmapHline
+	jsr lcdImage
+
 	
 	jmp mainLoop
 
@@ -91,41 +122,4 @@ delay:
 	dey
 	bne .loop
 	rts
-	
-;IMG_DATA_OFFSET = 62  ; Paint
-IMG_DATA_OFFSET = 130  ; GIMP
 
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-livData:
-	!bin "liv.bmp"
-
-LIV_IMG = livData + IMG_DATA_OFFSET
-
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-logoData:
-	!bin "logo.bmp"
-
-LOGO_IMG = logoData + IMG_DATA_OFFSET
-
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-roxData:
-	!bin "rox.bmp"
-
-ROX_IMG = roxData + IMG_DATA_OFFSET
-
-
-!align 255, 0
-!fill 256 - IMG_DATA_OFFSET
-
-selfieData:
-	!bin "selfie.bmp"
-
-SELFIE_IMG = selfieData + IMG_DATA_OFFSET
