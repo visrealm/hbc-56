@@ -72,108 +72,57 @@ lcdHline:
 ; lcdImage: Output a full-screen image from memory
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;  IMG_ADDR_H: Contains page-aligned address of 1-bit 128x64 image data
+;  IMG_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
 ; -----------------------------------------------------------------------------
 lcdImage:
-	ldy #0
-	ldx #0
 
-.imageLoop:
 	lda IMG_ADDR_H
 	sta PIX_ADDR_H
+	ldx #0
+	stx PIX_ADDR_L
+
+.imageLoop:
+
+	; x in the range 0-63
 
 	; set y address
 	jsr lcdWait
-	tya
+	txa
+	and #$1f  ; only want 0-31
 	ora #LCD_CMD_EXT_GRAPHICS_ADDR
 	sta LCD_CMD
 
-	; set x address
+	; set x address - either 0 or 8
 	jsr lcdWait
 	txa
+	and #$20
+	lsr
+	lsr
 	ora #LCD_CMD_EXT_GRAPHICS_ADDR
 	sta LCD_CMD
 
-	; first byte
+
+	ldy #0
+.imgRowLoop
 	jsr lcdWait
-
-!if cputype = $65c02 {
-	phx
-	phy
-} else {
-	txa
-	pha
-	tya
-	pha
-}
-	cpx #8
-	bcs +
-	; upper half
-
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
-	jmp ++
-
-+
-
-	; lower half
-	inc PIX_ADDR_H
-	inc PIX_ADDR_H
-
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
-
-++
-
-	; generate offset into image data based on lcd X/Y address
-	tya
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	pha
-	txa
-	and #$07
-	asl
-	sta $02
-	pla
-	ora $02
-	tay
-
-	ldx #16
--
+	
 	lda (PIX_ADDR), y
 	sta LCD_DATA
-
-	jsr lcdWait
-
-	iny
-	dex
-	bne -
-
-!if cputype = $65c02 {
-	plx
-	ply
-} else {
-	pla
-	tay
-	pla
-	tax
-}
-
-	txa
-	clc
-	adc #8
-	tax
 	
-	cpx #16
-	bne .imageLoop
-	ldx #0
 	iny
-	cpy #32
+	cpy #16
+	bne .imgRowLoop
+	
+	lda PIX_ADDR_L
+	clc
+	adc #16
+	bcc +
+	inc PIX_ADDR_H
++
+	sta PIX_ADDR_L
+
+	inx
+	cpx #64
 	bne .imageLoop
 
 	rts
