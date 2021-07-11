@@ -6,7 +6,13 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-;
+; Prerequisites:
+;  - hbc56.asm
+
+
+; -------------------------
+; Constants
+; -------------------------
 
 ; IO Ports
 LCD_CMD      				 = IO_PORT_BASE_ADDRESS | $00
@@ -39,11 +45,6 @@ LCD_CMD_FUNCTIONSET     	 = $20
 LCD_CMD_8BITMODE        	 = $10
 LCD_CMD_2LINE           	 = $08
 
-STR_ADDR = $10
-STR_ADDR_L = STR_ADDR
-STR_ADDR_H = STR_ADDR + 1
-
-
 LCD_ADDR_LINE1 = 0x00
 LCD_ADDR_LINE2 = 0x10
 LCD_ADDR_LINE3 = 0x08
@@ -51,6 +52,13 @@ LCD_ADDR_LINE4 = 0x18
 
 CHARS_WIDTH = 16
 
+
+; -------------------------
+; Zero page
+; -------------------------
+STR_ADDR = $10
+STR_ADDR_L = STR_ADDR
+STR_ADDR_H = STR_ADDR + 1
 
 
 ; -----------------------------------------------------------------------------
@@ -67,7 +75,7 @@ lcdWait:
 ; -----------------------------------------------------------------------------
 ; lcdPrint: Print a null-terminated string
 ; -----------------------------------------------------------------------------
-; Outputs:
+; Inputs:
 ;  STR_ADDR: Contains address of string
 ; -----------------------------------------------------------------------------
 lcdPrint:

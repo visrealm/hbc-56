@@ -1,5 +1,3 @@
-!cpu 6502
-!initmem $FF
 !to "lcd12864gallery.o", plain
 
 !source "hbc56.asm"
@@ -36,13 +34,6 @@ main:
 
 start:
 
-	PIX_ADDR   = $20
-	PIX_ADDR_L = PIX_ADDR
-	PIX_ADDR_H = PIX_ADDR + 1
-	
-	IMG_ADDR_H   = $30
-	
-
 	lda #0
 	sta PIX_ADDR_L
 	
@@ -51,126 +42,30 @@ start:
 mainLoop:
 	lda #>LOGO_IMG
 	sta IMG_ADDR_H
-	jsr outputImage
+	jsr lcdImage
 	
 	jsr longDelay
 
 	lda #>ROX_IMG
 	sta IMG_ADDR_H
-	jsr outputImage
+	jsr lcdImage
 	
 	jsr longDelay
 	
 	lda #>LIV_IMG
 	sta IMG_ADDR_H
-	jsr outputImage
+	jsr lcdImage
 	
 	jsr longDelay
 
 	lda #>SELFIE_IMG
 	sta IMG_ADDR_H
-	jsr outputImage
+	jsr lcdImage
 	
 	jsr longDelay
 	
 	jmp mainLoop
 
-
-	
-	
-; Image. IMG_ADDR_H contains high byte of image data address
-outputImage:
-	ldy #0
-	ldx #0
-
-.imageLoop:
-	lda IMG_ADDR_H
-	sta PIX_ADDR_H
-
-	; set y address
-	jsr lcdWait
-	tya
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
-	; set x address
-	jsr lcdWait
-	txa
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
-	; first byte
-	jsr lcdWait
-
-	txa
-	pha
-	tya
-	pha
-
-	cpx #8
-	bcs +
-	; upper half
-
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
-	jmp ++
-
-+
-
-	; lower half
-	inc PIX_ADDR_H
-	inc PIX_ADDR_H
-
-	cpy #16
-	bcc ++
-	inc PIX_ADDR_H
-
-++
-
-	tya
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	pha
-	txa
-	and #$07
-	asl
-	sta $02
-	pla
-	ora $02
-	tay
-
-
-	lda (PIX_ADDR), y
-	;lda #0
-	sta LCD_DATA
-
-	; second byte
-	jsr lcdWait
-
-	iny
-	lda (PIX_ADDR), y
-	;lda #0
-	sta LCD_DATA
-
-	pla
-	tay
-	pla
-	tax
-
-
-	inx
-	cpx #16
-	bne .imageLoop
-	ldx #0
-	iny
-	cpy #32
-	bne .imageLoop
-
-	rts
 
 longDelay:
 	jsr delay

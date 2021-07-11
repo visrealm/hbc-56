@@ -8,6 +8,9 @@
 ;
 ;
 
+!cpu 6502
+!initmem $FF
+cputype = $6502
 
 *=$FFFC
 !word $8000
