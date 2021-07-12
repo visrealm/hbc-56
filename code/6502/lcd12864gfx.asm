@@ -13,6 +13,8 @@ DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURS
 
 BUFFER_ADDR = $1000
 
+TMP1 = $44
+
 main:
 
 	jsr lcdWait
@@ -45,58 +47,115 @@ start:
 	
 mainLoop:
 	jsr bitmapClear
+
+	jsr rectDemo
+	
+	jmp mainLoop
+
+rectDemo:
+	lda #30
+	sta TMP1
+
+-	
+	lda #31
+	sec
+	sbc TMP1
+	sta BITMAP_X1
+	sta BITMAP_Y1
+	lda TMP1
+	clc
+	adc #96	
+	sta BITMAP_X2
+	lda TMP1
+	clc
+	adc #32	
+	sta BITMAP_Y2
+	
+	jsr bitmapRect
+	
 	jsr lcdImage
 	
-	lda #1
+	jsr medDelay
+	
+	dec TMP1
+	dec TMP1
+	bne -
+
+	lda #0
+	sta TMP1
+
+-	
+	lda #31
+	sec
+	sbc TMP1
 	sta BITMAP_X1
-	lda #6
+	sta BITMAP_Y1
+	lda TMP1
+	clc
+	adc #96	
 	sta BITMAP_X2
-	lda #1
-	sta BITMAP_Y
-	jsr bitmapHline
+	lda TMP1
+	clc
+	adc #32
+	sta BITMAP_Y2
+	
+	jsr bitmapFilledRect
+	
 	jsr lcdImage
 	
+	jsr medDelay
+	
+	inc TMP1
+	inc TMP1
+	lda TMP1
+	cmp #30
+	bne -
 
-	lda #3
-	sta BITMAP_X1
-	lda #12
-	sta BITMAP_X2
-	lda #3
-	sta BITMAP_Y
-	jsr bitmapHline
-	jsr lcdImage
+	rts
 
+lineDemo:
+	lda #62
+	sta TMP1
 
-	lda #8
-	sta BITMAP_X1
-	lda #12
-	sta BITMAP_X2
-	lda #5
-	sta BITMAP_Y
-	jsr bitmapHline
-	jsr lcdImage
-
-
-	lda #12
-	sta BITMAP_X1
-	lda #92
-	sta BITMAP_X2
-	lda #7
-	sta BITMAP_Y
-	jsr bitmapHline
-	jsr lcdImage
-
+-	
 	lda #1
 	sta BITMAP_X1
 	lda #126
 	sta BITMAP_X2
-	lda #7
+	lda TMP1
 	sta BITMAP_Y
-	jsr bitmapHline
-	jsr lcdImage
-
 	
-	jmp mainLoop
+	jsr bitmapLineH
+	
+	jsr lcdImage
+	
+	jsr longDelay
+	
+	dec TMP1
+	dec TMP1
+	bne -
+
+	lda #126
+	sta TMP1
+
+-	
+	lda #1
+	sta BITMAP_Y1
+	lda #62
+	sta BITMAP_Y2
+	lda TMP1
+	sta BITMAP_X
+	
+	jsr bitmapLineV
+	
+	jsr lcdImage
+	
+	jsr longDelay
+	
+	dec TMP1
+	dec TMP1
+	bne -
+	rts
 
 
 longDelay:
@@ -107,9 +166,11 @@ longDelay:
 	jsr delay
 	jsr delay
 	jsr delay
-	jsr delay
-	jsr delay
 	; flow through
+
+medDelay:
+	jsr delay
+	jsr delay
 
 
 delay:
