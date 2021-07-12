@@ -87,7 +87,7 @@ pixelDemo:
 
 rectDemo:
 	lda #$cc
-	;sta BITMAP_LINE_STYLE
+	sta BITMAP_LINE_STYLE
 
 	lda #30
 	sta TMP1

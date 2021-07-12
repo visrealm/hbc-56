@@ -31,6 +31,9 @@ BITMAP_Y2      = $27
 BITMAP_TMP1    = $28
 BITMAP_TMP2    = $29
 BITMAP_TMP3    = $30
+BITMAP_TMP4    = $31
+
+BITMAP_LINE_STYLE = $32
 
 
 
@@ -41,6 +44,8 @@ BITMAP_TMP3    = $30
 ;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
 ; -----------------------------------------------------------------------------
 bitmapClear:
+    lda #$ff
+	sta BITMAP_LINE_STYLE
 	lda #0
 	
 	; flow through.... danger?
@@ -61,13 +66,13 @@ bitmapFill:
 
 	lda BITMAP_TMP1	
 	ldy #0
+	ldx #4
 -
 	sta (PIX_ADDR), y
 	iny
 	bne -
 	inc PIX_ADDR_H
-	inx
-	cpx #8
+	dex
 	bne -
 	
 	rts
@@ -229,15 +234,28 @@ bitmapLineH:
 	
 	lda START_BYTE
 	cpy END_OFFSET
-	bne +
+	bne ++
 	and END_BYTE  ; combine if within the same byte
-	ora (PIX_ADDR), y
+	
+	pha
+	eor #$ff
+	and (PIX_ADDR), y
+	sta BITMAP_TMP4
+	pla
+	and BITMAP_LINE_STYLE
+	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
+	
 	rts
-+
-	ora (PIX_ADDR), y
+++
+	pha
+	eor #$ff
+	and (PIX_ADDR), y
+	sta BITMAP_TMP4
+	pla
+	and BITMAP_LINE_STYLE
+	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
-
 -
 	lda #$ff
 	iny
@@ -245,8 +263,15 @@ bitmapLineH:
 	bne +
 	and END_BYTE  ; combine if within the same byte
 +
-	ora (PIX_ADDR), y
+	pha
+	eor #$ff
+	and (PIX_ADDR), y
+	sta BITMAP_TMP4
+	pla
+	and BITMAP_LINE_STYLE
+	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
+
 	cpy END_OFFSET
 	bne -	
 	
@@ -282,8 +307,8 @@ bitmapLineV:
 	
 	ldx BITMAP_Y1
 -
-	lda (PIX_ADDR), y
-	ora COL_BYTE
+	lda COL_BYTE
+	ora (PIX_ADDR), y	
 	sta (PIX_ADDR), y
 		
 	cpx BITMAP_Y2
