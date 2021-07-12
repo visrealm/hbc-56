@@ -28,13 +28,16 @@ BITMAP_X1      = BITMAP_X
 BITMAP_Y1      = BITMAP_Y
 BITMAP_X2      = $26
 BITMAP_Y2      = $27
-BITMAP_TMP1    = $28
-BITMAP_TMP2    = $29
-BITMAP_TMP3    = $30
-BITMAP_TMP4    = $31
-BITMAP_TMP5    = $32
 
-BITMAP_LINE_STYLE = $33
+BITMAP_LINE_STYLE     = $28
+BITMAP_LINE_STYLE_ODD = $29
+
+BITMAP_TMP1    = $30
+BITMAP_TMP2    = $31
+BITMAP_TMP3    = $32
+BITMAP_TMP4    = $33
+BITMAP_TMP5    = $34
+
 
 
 
@@ -408,14 +411,34 @@ bitmapRect:
 bitmapFilledRect:
 	lda BITMAP_Y1
 	pha
+	lda BITMAP_LINE_STYLE
+	pha
 	
 -
 	jsr bitmapLineH
 	inc BITMAP_Y1
+
+	pla
+	sta BITMAP_LINE_STYLE
+	pha
+	
+	lda BITMAP_Y2
+	cmp BITMAP_Y1
+	beq +
+
+	jsr bitmapLineH
+	inc BITMAP_Y1
+	
+	lda BITMAP_LINE_STYLE_ODD
+	sta BITMAP_LINE_STYLE
+	
 	lda BITMAP_Y2
 	cmp BITMAP_Y1
 	bne -
-	
++	
+
+	pla
+	sta BITMAP_LINE_STYLE
 	pla
 	sta BITMAP_Y1
 	

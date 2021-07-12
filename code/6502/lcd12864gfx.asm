@@ -88,6 +88,8 @@ pixelDemo:
 rectDemo:
 	lda #$cc
 	sta BITMAP_LINE_STYLE
+	lda #$33
+	sta BITMAP_LINE_STYLE_ODD
 
 	lda #30
 	sta TMP1
@@ -111,7 +113,7 @@ rectDemo:
 	
 	jsr lcdImage
 	
-	jsr medDelay
+	;jsr medDelay
 	
 	dec TMP1
 	dec TMP1
@@ -139,7 +141,7 @@ rectDemo:
 	
 	jsr lcdImage
 	
-	jsr medDelay
+	;jsr medDelay
 	
 	inc TMP1
 	inc TMP1
