@@ -48,11 +48,47 @@ start:
 mainLoop:
 	jsr bitmapClear
 
-	jsr rectDemo
+	jsr pixelDemo
 	
 	jmp mainLoop
 
+
+pixelDemo:
+	lda #63
+	sta TMP1
+-	
+	lda TMP1
+	sta BITMAP_X
+	sta BITMAP_Y
+	jsr bitmapSetPixel
+	
+	jsr lcdImage
+	jsr delay
+	
+	dec TMP1
+	bne -
+
+	lda #63
+	sta TMP1
+-	
+	lda TMP1
+	sta BITMAP_X
+	sta BITMAP_Y
+	jsr bitmapClearPixel
+
+	jsr lcdImage
+	jsr delay
+	
+	dec TMP1
+	bne -
+
+	rts
+
+
 rectDemo:
+	lda #$cc
+	;sta BITMAP_LINE_STYLE
+
 	lda #30
 	sta TMP1
 
@@ -114,6 +150,7 @@ rectDemo:
 	rts
 
 lineDemo:
+
 	lda #62
 	sta TMP1
 
