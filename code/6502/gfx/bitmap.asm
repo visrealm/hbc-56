@@ -32,8 +32,9 @@ BITMAP_TMP1    = $28
 BITMAP_TMP2    = $29
 BITMAP_TMP3    = $30
 BITMAP_TMP4    = $31
+BITMAP_TMP5    = $32
 
-BITMAP_LINE_STYLE = $32
+BITMAP_LINE_STYLE = $33
 
 
 
@@ -194,6 +195,7 @@ bitmapLineH:
 	END_OFFSET   = BITMAP_TMP3
 	START_BYTE   = BITMAP_TMP1
 	END_BYTE     = BITMAP_TMP2
+	TMP_STYLE    = BITMAP_TMP5
 
 	lda BITMAP_X2
 	lsr
@@ -202,17 +204,28 @@ bitmapLineH:
 	sta END_OFFSET  ; END_OFFSET contains end byte offset within the row
 
 	jsr _bitmapOffset
+
+	lda BITMAP_LINE_STYLE
+	sta TMP_STYLE
 	
 	lda #$ff
 	
 ; shift the bits to the right for the pixel offset
 -
 	cpx #0
-	beq +
-	dex
-	lsr    
-	bcs -  ; carry is always set
+	beq ++
+	lsr TMP_STYLE
+	bcc +
+	pha
+	lda #$80
+	ora TMP_STYLE
+	sta TMP_STYLE
+	pla	
 +
+	dex
+	lsr
+	bcs -  ; carry is always set
+++
 	sta START_BYTE
 
 	lda BITMAP_X2
@@ -242,7 +255,7 @@ bitmapLineH:
 	and (PIX_ADDR), y
 	sta BITMAP_TMP4
 	pla
-	and BITMAP_LINE_STYLE
+	and TMP_STYLE
 	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
 	
@@ -253,7 +266,7 @@ bitmapLineH:
 	and (PIX_ADDR), y
 	sta BITMAP_TMP4
 	pla
-	and BITMAP_LINE_STYLE
+	and TMP_STYLE
 	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
 -
@@ -268,7 +281,7 @@ bitmapLineH:
 	and (PIX_ADDR), y
 	sta BITMAP_TMP4
 	pla
-	and BITMAP_LINE_STYLE
+	and TMP_STYLE
 	ora BITMAP_TMP4
 	sta (PIX_ADDR), y
 
@@ -290,8 +303,12 @@ bitmapLineH:
 bitmapLineV:
 
 	COL_BYTE     = BITMAP_TMP1
+	STYLE_BYTE   = BITMAP_TMP2
 
 	jsr _bitmapOffset
+	
+	lda BITMAP_LINE_STYLE
+	sta STYLE_BYTE
 	
 	lda #$80
 	
@@ -307,12 +324,27 @@ bitmapLineV:
 	
 	ldx BITMAP_Y1
 -
+	lda #$80
+	bit STYLE_BYTE
+	bne +
+	; draw a 0
 	lda COL_BYTE
+	eor #$ff
+	and (PIX_ADDR), y	
+	sta (PIX_ADDR), y
+	jmp ++
++	; draw a 1
+	lda COL_BYTE	
 	ora (PIX_ADDR), y	
 	sta (PIX_ADDR), y
+++
 		
 	cpx BITMAP_Y2
 	beq ++
+	asl STYLE_BYTE
+	bcc +
+	inc STYLE_BYTE
++
 	inx
 	lda #16
 	clc
