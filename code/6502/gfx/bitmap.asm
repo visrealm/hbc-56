@@ -73,14 +73,18 @@ bitmapFill:
 	rts
 	
 ; -----------------------------------------------------------------------------
-; bitmapSetPixel: Set a pixel
+; _bitmapOffset: Set up the offset to the buffer based on X/Y (Internal use)
 ; -----------------------------------------------------------------------------
 ; Inputs:
 ;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
 ;  BITMAP_X: X position (0 to 127)
 ;  BITMAP_Y: Y position (0 to 63)
+; Outputs:
+;  PIX_ADDR: Set to byte at column 0 of row BITMAP_Y
+;  Y: 		 Y offset of byte within row (0 to 63)
+;  X: 		 Bit offset within the byte
 ; -----------------------------------------------------------------------------
-bitmapSetPixel:
+_bitmapOffset:
 
 	lda BITMAP_ADDR_H
 	sta PIX_ADDR_H
@@ -113,6 +117,19 @@ bitmapSetPixel:
 	lda BITMAP_X
 	and #$07
 	tax   ; X contains bit offset within byte (0 - 7)	
+	rts
+	
+; -----------------------------------------------------------------------------
+; bitmapSetPixel: Set a pixel
+; -----------------------------------------------------------------------------
+; Inputs:
+;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
+;  BITMAP_X: X position (0 to 127)
+;  BITMAP_Y: Y position (0 to 63)
+; -----------------------------------------------------------------------------
+bitmapSetPixel:
+
+	jsr _bitmapOffset
 	
 	lda #$80
 	
@@ -122,7 +139,7 @@ bitmapSetPixel:
 	beq +
 	dex
 	lsr    
-	bcc -  ; carry is always set
+	bcc -  ; carry is always clear
 +
 	
 	ora (PIX_ADDR), y
@@ -140,37 +157,7 @@ bitmapSetPixel:
 ; -----------------------------------------------------------------------------
 bitmapClearPixel:
 
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
-	
-	lda BITMAP_Y
-	lsr
-	lsr
-	lsr
-	lsr
-	clc
-	adc PIX_ADDR_H
-	sta PIX_ADDR_H
-	
-	lda BITMAP_Y
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	sta PIX_ADDR_L
-	
-	lda BITMAP_X
-	lsr
-	lsr
-	lsr
-	tay	  ; Y contains start byte offset in row
-	
-	lda BITMAP_X
-	and #$07
-	tax   ; X contains bit offset within byte (0 - 7)	
+	jsr _bitmapOffset
 	
 	lda #$80
 	
@@ -180,7 +167,7 @@ bitmapClearPixel:
 	beq +
 	dex
 	lsr    
-	bcc -  ; carry is always set
+	bcc -  ; carry is always clear
 +
 	eor #$ff
 	and (PIX_ADDR), y
@@ -349,7 +336,7 @@ bitmapLineV:
 	beq +
 	dex
 	lsr    
-	bcc -  ; carry is always set
+	bcc -  ; carry is always clear
 +
 	sta COL_BYTE
 	

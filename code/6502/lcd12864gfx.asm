@@ -63,7 +63,7 @@ pixelDemo:
 	jsr bitmapSetPixel
 	
 	jsr lcdImage
-	jsr delay
+	;jsr delay
 	
 	dec TMP1
 	bne -
@@ -77,7 +77,7 @@ pixelDemo:
 	jsr bitmapClearPixel
 
 	jsr lcdImage
-	jsr delay
+	;jsr delay
 	
 	dec TMP1
 	bne -
