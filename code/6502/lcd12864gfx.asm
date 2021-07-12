@@ -48,7 +48,7 @@ start:
 mainLoop:
 	jsr bitmapClear
 
-	jsr pixelDemo
+	jsr rectDemo
 	
 	jmp mainLoop
 
@@ -166,7 +166,7 @@ lineDemo:
 	
 	jsr lcdImage
 	
-	jsr longDelay
+	jsr medDelay
 	
 	dec TMP1
 	dec TMP1
@@ -187,7 +187,7 @@ lineDemo:
 	
 	jsr lcdImage
 	
-	jsr longDelay
+	jsr medDelay
 	
 	dec TMP1
 	dec TMP1

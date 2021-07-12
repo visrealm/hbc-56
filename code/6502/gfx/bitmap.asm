@@ -190,43 +190,13 @@ bitmapLineH:
 	START_BYTE   = BITMAP_TMP1
 	END_BYTE     = BITMAP_TMP2
 
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
-	
-	lda BITMAP_Y
-	lsr
-	lsr
-	lsr
-	lsr
-	clc
-	adc PIX_ADDR_H
-	sta PIX_ADDR_H
-	
-	lda BITMAP_Y
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	sta PIX_ADDR_L
-	
-	lda BITMAP_X1
-	lsr
-	lsr
-	lsr
-	tay	  ; Y contains start byte offset in row
-	
 	lda BITMAP_X2
 	lsr
 	lsr
 	lsr
 	sta END_OFFSET  ; END_OFFSET contains end byte offset within the row
-	
-	lda BITMAP_X1
-	and #$07
-	tax   ; X contains bit offset within byte (0 - 7)	
+
+	jsr _bitmapOffset
 	
 	lda #$ff
 	
@@ -296,37 +266,7 @@ bitmapLineV:
 
 	COL_BYTE     = BITMAP_TMP1
 
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
-	
-	lda BITMAP_Y1
-	lsr
-	lsr
-	lsr
-	lsr
-	clc
-	adc PIX_ADDR_H
-	sta PIX_ADDR_H
-	
-	lda BITMAP_Y1
-	and #$0f
-	asl
-	asl
-	asl
-	asl
-	sta PIX_ADDR_L
-	
-	lda BITMAP_X
-	lsr
-	lsr
-	lsr
-	tay	  ; Y contains start byte offset in row
-	
-	lda BITMAP_X
-	and #$07
-	tax   ; X contains bit offset within byte (0 - 7)	
+	jsr _bitmapOffset
 	
 	lda #$80
 	
