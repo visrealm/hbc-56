@@ -32,11 +32,11 @@ BITMAP_Y2      = $27
 BITMAP_LINE_STYLE     = $28
 BITMAP_LINE_STYLE_ODD = $29
 
-BITMAP_TMP1    = $30
-BITMAP_TMP2    = $31
-BITMAP_TMP3    = $32
-BITMAP_TMP4    = $33
-BITMAP_TMP5    = $34
+BITMAP_TMP1    = $2a
+BITMAP_TMP2    = $2b
+BITMAP_TMP3    = $2c
+BITMAP_TMP4    = $2d
+BITMAP_TMP5    = $2e
 
 
 
@@ -359,6 +359,145 @@ bitmapLineV:
     clc
 	bcc -
 ++
+	
+	rts
+
+; -----------------------------------------------------------------------------
+; bitmapLine: Output an arbitrary line
+; -----------------------------------------------------------------------------
+; Inputs:
+;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
+;  BITMAP_X1: 
+;  BITMAP_Y1: 
+;  BITMAP_X2: 
+;  BITMAP_Y2: 
+; -----------------------------------------------------------------------------
+bitmapLine:
+
+	LINE_WIDTH = BITMAP_TMP1
+	LINE_HEIGHT = BITMAP_TMP2
+	
+	; get width
+	lda BITMAP_X2
+	sec
+	sbc BITMAP_X1
+	sta LINE_WIDTH
+
+	; get height
+	lda BITMAP_Y2
+	sec
+	sbc BITMAP_Y1
+	sta LINE_HEIGHT
+	
+	cmp LINE_WIDTH
+	bcs .goTall
+	jmp _bitmapLineWide
+.goTall
+	jmp _bitmapLineTall
+	
+	; rts in above subroutines
+	
+; ----------------------------------------------------------------------------
+
+_bitmapLineWide:  ; a line that is wider than it is tall
+	
+	D = R0
+	
+	Y = BITMAP_TMP3
+	
+	lda LINE_HEIGHT
+	asl
+	sec
+	sbc LINE_WIDTH
+	sta D
+	
+	lda BITMAP_X
+	pha
+	
+	lda BITMAP_Y1
+	sta Y
+	
+-
+	jsr bitmapSetPixel
+	lda D
+	bpl +
+	lda LINE_HEIGHT
+	asl
+	jmp ++
++
+    inc BITMAP_Y1
+	lda LINE_WIDTH
+	sec
+	sbc LINE_HEIGHT
+	asl
+	eor #$ff
+	clc
+	adc #1
+++
+	clc
+	adc D
+	sta D
+	inc BITMAP_X
+	lda BITMAP_X2
+	cmp BITMAP_X
+	bcs -
+	
+	lda Y
+	sta BITMAP_Y1
+	
+	pla
+	sta BITMAP_X
+	
+	rts
+	
+_bitmapLineTall:  ; a line that is taller than it is wide
+	
+	D = R0
+	
+	X = BITMAP_TMP3
+	
+	lda LINE_WIDTH
+	asl
+	sec
+	sbc LINE_HEIGHT
+	sta D
+	
+	lda BITMAP_Y
+	pha
+	
+	lda BITMAP_X1
+	sta X
+	
+-
+	jsr bitmapSetPixel
+	lda D
+	bpl +
+	lda LINE_WIDTH
+	asl
+	jmp ++
++
+    inc BITMAP_X1
+	lda LINE_HEIGHT
+	sec
+	sbc LINE_WIDTH
+	asl
+	eor #$ff
+	clc
+	adc #1
+++
+	clc
+	adc D
+	sta D
+	inc BITMAP_Y
+	lda BITMAP_Y2
+	cmp BITMAP_Y
+	bcs -
+
+	lda X
+	sta BITMAP_X1
+	
+	pla
+	sta BITMAP_Y
 	
 	rts
 	

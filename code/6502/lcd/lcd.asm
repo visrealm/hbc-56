@@ -56,7 +56,7 @@ CHARS_WIDTH = 16
 ; -------------------------
 ; Zero page
 ; -------------------------
-STR_ADDR = $10
+STR_ADDR = $20
 STR_ADDR_L = STR_ADDR
 STR_ADDR_H = STR_ADDR + 1
 

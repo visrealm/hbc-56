@@ -48,7 +48,30 @@ start:
 mainLoop:
 	jsr bitmapClear
 
-	jsr rectDemo
+	lda #14
+	sta BITMAP_X1
+	lda #34
+	sta BITMAP_X2
+	lda #12
+	sta BITMAP_Y1
+	lda #22
+	sta BITMAP_Y2
+	jsr bitmapLine
+
+
+	lda #14
+	sta BITMAP_X1
+	lda #34
+	sta BITMAP_X2
+	lda #12
+	sta BITMAP_Y1
+	lda #52
+	sta BITMAP_Y2
+	
+	jsr bitmapLine
+	
+	jsr lcdImage
+
 	
 	jmp mainLoop
 
