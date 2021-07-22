@@ -2,36 +2,17 @@
 
 !source "hbc56.asm"
 !source "gfx/bitmap.asm"
+
+LCD_MODEL = 12864
 !source "lcd/lcd.asm"
-!source "lcd/lcd12864b.asm"
 
-LCD_INITIALIZE      = LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
-LCD_BASIC           = LCD_INITIALIZE
-LCD_EXTENDED        = LCD_INITIALIZE | LCD_CMD_12864B_EXTENDED
-
-DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
+BUFFER_ADDR = $1000
 
 main:
 
-	jsr lcdWait
-	lda #LCD_INITIALIZE
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_CMD_CLEAR
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_CMD_HOME
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_EXTENDED
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
-	sta LCD_CMD
+	jsr lcdInit
+	jsr lcdClear
+	jsr lcdGraphicsMode
 
 start:
 
@@ -43,29 +24,99 @@ start:
 mainLoop:
 	lda #>LOGO_IMG
 	sta BITMAP_ADDR_H
-	jsr lcdImage
+	jsr lcdImageVflip
 	
 	jsr longDelay
 
 	lda #>ROX_IMG
 	sta BITMAP_ADDR_H
-	jsr lcdImage
+	jsr lcdImageVflip
 	
 	jsr longDelay
 	
 	lda #>LIV_IMG
 	sta BITMAP_ADDR_H
-	jsr lcdImage
+	jsr lcdImageVflip
 	
 	jsr longDelay
 
 	lda #>SELFIE_IMG
 	sta BITMAP_ADDR_H
-	jsr lcdImage
+	jsr lcdImageVflip
 	
 	jsr longDelay
 	
+	jsr rectDemo
+	
 	jmp mainLoop
+
+rectDemo:
+
+	lda #>BUFFER_ADDR
+	sta BITMAP_ADDR_H
+
+	jsr bitmapClear
+
+	lda #30
+	sta R2
+
+-	
+	lda #31
+	sec
+	sbc R2
+	sta BITMAP_X1
+	sta BITMAP_Y1
+	lda R2
+	clc
+	adc #96	
+	sta BITMAP_X2
+	lda R2
+	clc
+	adc #32	
+	sta BITMAP_Y2
+	
+	jsr bitmapRect
+	
+	jsr lcdImage
+	
+	;jsr medDelay
+	
+	dec R2
+	dec R2
+	bne -
+
+	lda #0
+	sta R2
+
+-	
+	lda #31
+	sec
+	sbc R2
+	sta BITMAP_X1
+	sta BITMAP_Y1
+	lda R2
+	clc
+	adc #96	
+	sta BITMAP_X2
+	lda R2
+	clc
+	adc #32
+	sta BITMAP_Y2
+	
+	jsr bitmapFilledRect
+	
+	jsr lcdImage
+	
+	;jsr medDelay
+	
+	inc R2
+	inc R2
+	lda R2
+	cmp #30
+	bne -
+
+	rts
+
 
 
 longDelay:

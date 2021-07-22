@@ -1,9 +1,6 @@
 !cpu 65c02
-!initmem $EF
-!to "lcd2.o", plain
-
-
-*=$8000
+!initmem $ea
+!to "lcd2high.o", plain
 
 LCD_CMD  = $7f00
 LCD_DATA = $7f01
@@ -38,6 +35,9 @@ LCD_INITIALIZE      = <(LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE)
 DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
 
 
+*=$8000
+
+
 lda #LCD_INITIALIZE
 sta LCD_CMD
 lda #DISPLAY_MODE
@@ -45,14 +45,7 @@ sta LCD_CMD
 lda #LCD_CMD_CLEAR
 sta LCD_CMD
 
-outText:
-
-lda #'Y'
-sta $1000
-lda #'N'
-lda $1000
-sta LCD_DATA 
-
+main:
 lda #'H'
 sta LCD_DATA
 lda #'e'
@@ -79,8 +72,135 @@ lda #'d'
 sta LCD_DATA
 lda #'!'
 sta LCD_DATA
-jmp outText
+jmp main
+
+
+*=$eaea
+
+
+lda #LCD_INITIALIZE
+sta LCD_CMD
+lda #DISPLAY_MODE
+sta LCD_CMD
+lda #LCD_CMD_CLEAR
+sta LCD_CMD
+
+-
+lda #'H'
+sta LCD_DATA
+lda #'e'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #','
+sta LCD_DATA
+lda #' '
+sta LCD_DATA
+lda #'W'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #'r'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'d'
+sta LCD_DATA
+lda #'!'
+sta LCD_DATA
+jmp main
 
 
 *=$FFFC
 !word $8000
+!word $eaea
+
+
+*=$10000
+
+
+lda #LCD_INITIALIZE
+sta LCD_CMD
+lda #DISPLAY_MODE
+sta LCD_CMD
+lda #LCD_CMD_CLEAR
+sta LCD_CMD
+
+-
+lda #'H'
+sta LCD_DATA
+lda #'e'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #','
+sta LCD_DATA
+lda #' '
+sta LCD_DATA
+lda #'W'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #'r'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'d'
+sta LCD_DATA
+lda #'!'
+sta LCD_DATA
+jmp main
+
+
+*=$16aea
+
+
+lda #LCD_INITIALIZE
+sta LCD_CMD
+lda #DISPLAY_MODE
+sta LCD_CMD
+lda #LCD_CMD_CLEAR
+sta LCD_CMD
+
+-
+lda #'H'
+sta LCD_DATA
+lda #'e'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #','
+sta LCD_DATA
+lda #' '
+sta LCD_DATA
+lda #'W'
+sta LCD_DATA
+lda #'o'
+sta LCD_DATA
+lda #'r'
+sta LCD_DATA
+lda #'l'
+sta LCD_DATA
+lda #'d'
+sta LCD_DATA
+lda #'!'
+sta LCD_DATA
+jmp main
+
+
+
+*=$17FFC
+!word $8000
+!word $eaea

@@ -1,33 +1,27 @@
 !to "lcd12864gfx.o", plain
 
+LCD_MODEL = 12864
+
 !source "hbc56.asm"
 !source "gfx/bitmap.asm"
 !source "lcd/lcd.asm"
 !source "lcd/lcd12864b.asm"
 
-LCD_INITIALIZE      = LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
 LCD_BASIC           = LCD_INITIALIZE
 LCD_EXTENDED        = LCD_INITIALIZE | LCD_CMD_12864B_EXTENDED
 
 DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
 
-BUFFER_ADDR = $1000
+BUFFER_ADDR = $0200
+SEED        = $0f
 
 TMP1 = $44
 
 main:
 
-	jsr lcdWait
-	lda #LCD_INITIALIZE
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_CMD_CLEAR
-	sta LCD_CMD
-
-	jsr lcdWait
-	lda #LCD_CMD_HOME
-	sta LCD_CMD
+	jsr lcdInit
+	jsr lcdClear
+	jsr lcdHome
 
 	jsr lcdWait
 	lda #LCD_EXTENDED
@@ -46,35 +40,69 @@ start:
 	sta BITMAP_ADDR_H
 	
 mainLoop:
-	jsr bitmapClear
 
-	lda #14
+	jsr rectDemo
+
+	jmp mainLoop
+
+
+ramTest:
+	lda #0
+	jsr bitmapFill
+
+	jsr lcdImage
+
+	jsr longDelay
+
+	lda #$ff
+	jsr bitmapFill
+
+	jsr lcdImage
+
+	jsr longDelay
+	
+	lda #$aa
+	jsr bitmapFill
+
+	jsr lcdImage
+
+	jsr longDelay
+
+	lda #$55
+	jsr bitmapFill
+
+	jsr lcdImage
+
+	jsr longDelay
+	
+	inc BITMAP_ADDR_H	
+	
+
+
+randomLineDemo:
+	jsr rand
+	lsr
 	sta BITMAP_X1
-	lda #34
+	
+	jsr rand
+	lsr
 	sta BITMAP_X2
-	lda #12
+	
+	jsr rand
+	lsr
+	lsr
 	sta BITMAP_Y1
-	lda #22
-	sta BITMAP_Y2
-	jsr bitmapLine
-
-
-	lda #14
-	sta BITMAP_X1
-	lda #34
-	sta BITMAP_X2
-	lda #12
-	sta BITMAP_Y1
-	lda #52
+	
+	jsr rand
+	lsr
+	lsr
 	sta BITMAP_Y2
 	
 	jsr bitmapLine
 	
 	jsr lcdImage
-
+	rts
 	
-	jmp mainLoop
-
 
 pixelDemo:
 	lda #63
@@ -246,3 +274,15 @@ delay:
 	bne .loop
 	rts
 
+rand:
+    lda SEED
+    beq doEor
+    clc
+    asl
+    beq noEor    ;if the input was $80, skip the EOR
+    bcc noEor
+doEor
+	eor #$1d
+noEor
+	sta SEED
+	rts

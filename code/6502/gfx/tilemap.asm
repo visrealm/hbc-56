@@ -1,4 +1,4 @@
-; 6502 - Bitmap
+; 6502 - Tilemap
 ;
 ; Copyright (c) 2021 Troy Schrapel
 ;
@@ -7,54 +7,70 @@
 ; https://github.com/visrealm/hbc-56
 ;
 ;
+; Tilemap structure
+; ---------------------
+; BufferAddressH
+; Size
+; InvertAddressH
+; DirtyAddressH
 
-; Bitmap object has the following structure
-;
-; Width
-; Height
 
-_GFX_BITMAP_A = 1
+; -------------------------
+; Contants
+; -------------------------
+TILEMAP_SIZE_X_16   = b00000000
+TILEMAP_SIZE_X_32   = b00000001
+TILEMAP_SIZE_X_64   = b00000010
+TILEMAP_SIZE_Y_8    = b00000000
+TILEMAP_SIZE_Y_16   = b00000100
+TILEMAP_SIZE_Y_32   = b00001000
+
+
+; Tilemapview structure
+; ---------------------
+; TilemapAddressH
+; ScrollX
+; ScrollY
+; TileScrollXY
+
+
+
 
 ; -------------------------
 ; Zero page
 ; -------------------------
-PIX_ADDR   = $20
-PIX_ADDR_L = PIX_ADDR
-PIX_ADDR_H = PIX_ADDR + 1
-
-BITMAP_ADDR_H   = $22
-
-BITMAP_X       = $24
-BITMAP_Y       = $25
-BITMAP_X1      = BITMAP_X
-BITMAP_Y1      = BITMAP_Y
-BITMAP_X2      = $26
-BITMAP_Y2      = $27
-
-BITMAP_LINE_STYLE     = $28
-BITMAP_LINE_STYLE_ODD = $29
-
-BITMAP_TMP1    = $2a
-BITMAP_TMP2    = $2b
-BITMAP_TMP3    = $2c
-BITMAP_TMP4    = $2d
-BITMAP_TMP5    = $2e
-
-
-
+TILEMAP_ADDR = R5
 
 ; -----------------------------------------------------------------------------
-; bitmapClear: Clear the bitmap
+; tilemapInit: Initialise a tilemap
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
+;  TILEMAP_ADDR: Address of tilemap structure
 ; -----------------------------------------------------------------------------
-bitmapClear:
-    lda #$ff
-	sta BITMAP_LINE_STYLE
-	lda #0
+tilemapInit:
+	ldy #0
+	sty R4L
+	sty R4H
+	lda (TILEMAP_ADDR), y  ; buffer address L
+	sta R0L
+	iny
+	lda (TILEMAP_ADDR), y  ; buffer address H
+	sta R0H
+	iny
+	lda #128
+	sta R4L                ; size in bytes
+	lda (TILEMAP_ADDR), y  ; size flags
+	beq +
+	asl R4L
+	inc R4H
+	bit TILEMAP_SIZE_X_64
+
+
++
+
+
+
 	
-	; flow through.... danger?
 	
 	
 ; -----------------------------------------------------------------------------
