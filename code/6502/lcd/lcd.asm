@@ -13,40 +13,42 @@
 ; -------------------------
 ; Constants
 ; -------------------------
+LCD_IO_ADDR	= $02
+
 
 ; IO Ports
-LCD_CMD      				 = IO_PORT_BASE_ADDRESS | $00
-LCD_DATA      				 = IO_PORT_BASE_ADDRESS | $01
+LCD_CMD		= IO_PORT_BASE_ADDRESS | LCD_IO_ADDR
+LCD_DATA	= IO_PORT_BASE_ADDRESS | LCD_IO_ADDR | $01
 
 ; Commands
-LCD_CMD_CLEAR                = %00000001
-LCD_CMD_HOME                 = %00000010
+LCD_CMD_CLEAR			= %00000001
+LCD_CMD_HOME			= %00000010
 
-LCD_CMD_ENTRY_MODE           = %00000100
-LCD_CMD_ENTRY_MODE_INCREMENT = %00000010
-LCD_CMD_ENTRY_MODE_DECREMENT = %00000000
-LCD_CMD_ENTRY_MODE_SHIFT     = %00000001
+LCD_CMD_ENTRY_MODE		= %00000100
+LCD_CMD_ENTRY_MODE_INCREMENT	= %00000010
+LCD_CMD_ENTRY_MODE_DECREMENT	= %00000000
+LCD_CMD_ENTRY_MODE_SHIFT	= %00000001
 
-LCD_CMD_DISPLAY              = %00001000
-LCD_CMD_DISPLAY_ON           = %00000100
-LCD_CMD_DISPLAY_CURSOR       = %00000010
-LCD_CMD_DISPLAY_CURSOR_BLINK = %00000001
+LCD_CMD_DISPLAY			= %00001000
+LCD_CMD_DISPLAY_ON		= %00000100
+LCD_CMD_DISPLAY_CURSOR		= %00000010
+LCD_CMD_DISPLAY_CURSOR_BLINK	= %00000001
 
-LCD_CMD_SHIFT                = %00010000
-LCD_CMD_SHIFT_CURSOR         = %00000000
-LCD_CMD_SHIFT_DISPLAY        = %00001000
-LCD_CMD_SHIFT_LEFT           = %00000000
-LCD_CMD_SHIFT_RIGHT          = %00000100
+LCD_CMD_SHIFT			= %00010000
+LCD_CMD_SHIFT_CURSOR		= %00000000
+LCD_CMD_SHIFT_DISPLAY		= %00001000
+LCD_CMD_SHIFT_LEFT		= %00000000
+LCD_CMD_SHIFT_RIGHT		= %00000100
 
-LCD_CMD_SET_CGRAM_ADDR       = $40
-LCD_CMD_SET_DRAM_ADDR        = $80
+LCD_CMD_SET_CGRAM_ADDR		= $40
+LCD_CMD_SET_DRAM_ADDR		= $80
 
-LCD_CMD_FUNCTIONSET     	 = $20
-LCD_CMD_8BITMODE        	 = $10
-LCD_CMD_2LINE           	 = $08
+LCD_CMD_FUNCTIONSET		= $20
+LCD_CMD_8BITMODE		= $10
+LCD_CMD_2LINE			= $08
 
 !ifndef LCD_MODEL {
-	!warn "Must set LCD_MODEL to one of: 1602, 2004 or 12864. Defaulting to 1602"
+	!warn "Set LCD_MODEL to one of: 1602, 2004 or 12864. Defaulting to 1602"
 	LCD_MODEL = 1602
 } 
 
@@ -82,8 +84,8 @@ LCD_CMD_2LINE           	 = $08
 }}}
 
 
-LCD_INITIALIZE      = LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
-DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
+LCD_INITIALIZE	= LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
+DISPLAY_MODE	= LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON
 
 
 ; -------------------------
@@ -218,16 +220,14 @@ lcdRead:
 ; -----------------------------------------------------------------------------
 lcdPrint:
 	ldy #0
-
 -
 	jsr lcdWait
 	lda (STR_ADDR), y
-	beq .end
+	beq +
 	sta LCD_DATA
 	iny
 	jmp -
-	
-.end:
++
 	rts
 
 ; -----------------------------------------------------------------------------
@@ -250,9 +250,7 @@ lcdPrint:
 ;  A: The character to output
 ; -----------------------------------------------------------------------------
 lcdChar:
-	pha
-	jsr lcdWait
-	pla
+	jsr lcdWaitPreserve
 	sta LCD_DATA
 	rts
 
@@ -314,7 +312,6 @@ lcdInt8:
 ; -----------------------------------------------------------------------------
 lcdHex8:
 	pha
-	tay
 	lsr
 	lsr
 	lsr
@@ -322,12 +319,12 @@ lcdHex8:
 	tax
 	lda .H, x
 	jsr lcdChar
-	tya
+	pla
+	pha
 	and #$0f
 	tax
 	lda .H, x
 	jsr lcdChar
-	tya
 	pla
 	rts
 
@@ -383,7 +380,7 @@ lcdNextLine4:
 	jsr lcdWait
 	; A now contains address
 	cmp #LCD_ADDR_LINE4
-	bcs lcdLineOne
+	bcs lcdScrollUp
 	cmp #LCD_ADDR_LINE2
 	bcs lcdLineThree
 	cmp #LCD_ADDR_LINE3
@@ -421,6 +418,7 @@ lcdNextLine:
 ; -----------------------------------------------------------------------------
 lcdReadLine:
 	ldy #0
+	jsr lcdRead
 -
 	jsr lcdRead
 	sta (STR_ADDR), y

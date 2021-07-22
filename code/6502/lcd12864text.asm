@@ -20,7 +20,9 @@ start:
         
         lda #0
 -
-	jsr lcdScrollUp
+        pha
+	jsr lcdNextLine4
+        pla
         +lcdChar '0'
         +lcdChar 'x'
         jsr lcdHex8
@@ -31,8 +33,26 @@ start:
 
         clc
         adc #1
+
+        jsr delay
+
         jmp -
 
 jmp start
 
         
+medDelay:
+	jsr delay
+	jsr delay
+
+
+delay:
+	ldx #255
+	ldy #255
+.loop:
+	dex
+	bne .loop 
+	ldx #255
+	dey
+	bne .loop
+	rts
