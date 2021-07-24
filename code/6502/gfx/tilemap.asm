@@ -195,6 +195,7 @@ tilemapRender:
 	asl
 	asl
 	asl
+	asl
 	clc
 	adc TILEMAP_TMP_BUF_COL
 	tay

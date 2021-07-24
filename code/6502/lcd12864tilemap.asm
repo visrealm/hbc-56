@@ -26,16 +26,20 @@ main:
 
 	+tilemapCreateDefault (TILEMAP_SIZE_X_16 | TILEMAP_SIZE_Y_8), c64FontData
 
+TILE_OFFSET = $c0
+
+        lda #32
+        sta TILE_OFFSET
+
 start:
 
         ldy #0
-        lda #32
         clc
 
 -
         tya
         clc
-        adc #32
+        adc TILE_OFFSET
         sta (TILEMAP_TMP_BUFFER_ADDR), y
         iny
         cpy #128
@@ -43,8 +47,9 @@ start:
 
         jsr tilemapRender
 
-
-jmp start
+        inc TILE_OFFSET
+        
+        jmp start
 
 medDelay:
 	jsr delay
