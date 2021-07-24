@@ -9,22 +9,29 @@
 ;
 ; Tilemap structure
 ; ---------------------
-; BufferAddressH
+; BufferAddressH   (Page-aligned buffer - MSB)
 ; Size
-; InvertAddressH
-; DirtyAddressH
+; TilesetAddressH  (Page-aligned tilset - MSB)
+; InvertAddressH   (Page-aligned invert flags - MSB) (optional)
+; DirtyAddressH    (Page-aligned dirty flags - MSB)  (optional)
 
+TILEMAP_BUFFER_ADDR	= 0
+TILEMAP_SIZE		= TILEMAP_BUFFER_ADDR + 1
+TILEMAP_TILES_ADDR	= TILEMAP_SIZE + 1
+TILEMAP_INVERT_ADDR	= TILEMAP_TILES_ADDR + 1
+TILEMAP_DIRTY_ADDR	= TILEMAP_INVERT_ADDR + 1
 
 ; -------------------------
 ; Contants
 ; -------------------------
-TILEMAP_SIZE_X_16   = b00000000
-TILEMAP_SIZE_X_32   = b00000001
-TILEMAP_SIZE_X_64   = b00000010
-TILEMAP_SIZE_Y_8    = b00000000
-TILEMAP_SIZE_Y_16   = b00000100
-TILEMAP_SIZE_Y_32   = b00001000
+TILEMAP_SIZE_X_16	= %00000000
+TILEMAP_SIZE_X_32	= %00000001
+TILEMAP_SIZE_X_64	= %00000010
+TILEMAP_SIZE_Y_8	= %00000000
+TILEMAP_SIZE_Y_16	= %00000100
+TILEMAP_SIZE_Y_32	= %00001000
 
+TILE_SIZE		= 8	; size of each tile (in px)
 
 ; Tilemapview structure
 ; ---------------------
@@ -39,7 +46,52 @@ TILEMAP_SIZE_Y_32   = b00001000
 ; -------------------------
 ; Zero page
 ; -------------------------
-TILEMAP_ADDR = R5
+TILEMAP_ADDR		= R5
+TILEMAP_TMP_BUFFER_ADDR	= R6
+TILEMAP_TMP_TILES_ADDR	= R7
+TILEMAP_TMP_BUF_ROW	= R8L
+TILEMAP_TMP_BUF_COL	= R8H
+TILEMAP_TMP_TILE_ROW	= R9L
+TILEMAP_TMP_OUTPUT_ROW	= R9H
+TILEMAP_TMP_1		= R10L
+TILEMAP_TMP_2		= R10H
+
+; Temporary - a single instance
+TILEMAP_FIXED_ADDRESS = $2f0
+TILEMAP_DEFAULT_BUFFER_ADDRESS = $1000
+
+!macro tilemapCreate .bufferAddr, .tilesetAddr, .sizeFlags, .invertAddr, .dirtyAddr {
+	!if <.tilesetAddr != 0 { !error "tilemapCreate: Tileset address must be page-aligned" }
+	!if >.tilesetAddr < 3 { !error "tilemapCreate: Tileset address must be greater than $300" }
+	!if <.bufferAddr != 0 { !error "tilemapCreate: Buffer address must be page-aligned" }
+	!if >.bufferAddr < 3 { !error "tilemapCreate: Buffer address must be greater than $300" }
+	!if .invertAddr != 0 and <.invertAddr != 0  {!error "tilemapCreate: Invert address must be page-aligned"}
+	!if .invertAddr != 0 and >.invertAddr < 3  {!error "tilemapCreate: Invert address must be greater than $300"}
+	!if .dirtyAddr != 0 and <.dirtyAddr != 0  {!error "tilemapCreate: Dirty address must be page-aligned"}
+	!if .dirtyAddr != 0 and >.dirtyAddr < 3  {!error "tilemapCreate: Dirty address must be greater than $300"}
+
+	lda #<TILEMAP_FIXED_ADDRESS
+	sta TILEMAP_ADDR
+	lda #>TILEMAP_FIXED_ADDRESS
+	sta TILEMAP_ADDR + 1
+
+	lda #>.bufferAddr
+	sta TILEMAP_FIXED_ADDRESS + TILEMAP_BUFFER_ADDR
+	lda #.sizeFlags
+	sta TILEMAP_FIXED_ADDRESS + TILEMAP_SIZE
+	lda #>.tilesetAddr
+	sta TILEMAP_FIXED_ADDRESS + TILEMAP_TILES_ADDR
+	lda #>.invertAddr
+	sta TILEMAP_FIXED_ADDRESS + TILEMAP_INVERT_ADDR
+	lda #>.dirtyAddr
+	sta TILEMAP_FIXED_ADDRESS + TILEMAP_DIRTY_ADDR
+
+	jsr tilemapInit
+}
+
+!macro tilemapCreateDefault .size, .tileset {
+	+tilemapCreate TILEMAP_DEFAULT_BUFFER_ADDRESS, .tileset, .size, $0, $0
+}
 
 ; -----------------------------------------------------------------------------
 ; tilemapInit: Initialise a tilemap
@@ -49,633 +101,162 @@ TILEMAP_ADDR = R5
 ; -----------------------------------------------------------------------------
 tilemapInit:
 	ldy #0
-	sty R4L
-	sty R4H
-	lda (TILEMAP_ADDR), y  ; buffer address L
-	sta R0L
-	iny
+	sty MEMSET_LEN
+	sty MEMSET_LEN + 1
+	sty MEMSET_DST
+	sty TILEMAP_TMP_BUFFER_ADDR
 	lda (TILEMAP_ADDR), y  ; buffer address H
-	sta R0H
-	iny
+	sta MEMSET_DST + 1
+	sta TILEMAP_TMP_BUFFER_ADDR
+
+	ldy #TILEMAP_SIZE
+
+	lda #0
+	sta MEMSET_LEN + 1
 	lda #128
-	sta R4L                ; size in bytes
+	sta MEMSET_LEN         ; size in bytes
 	lda (TILEMAP_ADDR), y  ; size flags
+	sta TILEMAP_TMP_1
+	beq ++
+
+	lda #0
+	sta MEMSET_LEN
+	lda #1
+	sta MEMSET_LEN + 1
+
+	; check size flags, multiple size
+	lda #TILEMAP_SIZE_X_32 | TILEMAP_SIZE_X_64
+	bit TILEMAP_TMP_1
 	beq +
-	asl R4L
-	inc R4H
-	bit TILEMAP_SIZE_X_64
-
-
+	asl MEMSET_LEN + 1
+	lda #TILEMAP_SIZE_X_64
+	bit TILEMAP_TMP_1
+	beq +
+	asl MEMSET_LEN + 1
 +
+	lda #TILEMAP_SIZE_Y_16 | TILEMAP_SIZE_Y_32
+	bit TILEMAP_TMP_1
+	beq ++
+	asl MEMSET_LEN + 1
+	lda #TILEMAP_SIZE_Y_32
+	bit TILEMAP_TMP_1
+	beq ++
+	asl MEMSET_LEN + 1
+++
+	lsr MEMSET_LEN + 1
 
+	; here, MEMSET_DST and MEMSET_LEN are set. clear the buffer.
+	lda #$cc
+	jsr memsetMultiPage
 
+	; todo: invert & dirty
 
-	
-	
-	
-; -----------------------------------------------------------------------------
-; bitmapFill: Fill the bitmap with value in A
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  A: The value to fill
-; -----------------------------------------------------------------------------
-bitmapFill:
-	sta BITMAP_TMP1
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
-
-	lda BITMAP_TMP1	
-	ldy #0
-	ldx #4
--
-	sta (PIX_ADDR), y
-	iny
-	bne -
-	inc PIX_ADDR_H
-	dex
-	bne -
-	
 	rts
-	
-	
+
+
 ; -----------------------------------------------------------------------------
-; bitmapXor: XOR (invert) the entire bitmap
+; tilemapRender: Render the tilemap
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
+;  TILEMAP_ADDR: Address of tilemap structure
 ; -----------------------------------------------------------------------------
-bitmapXor:
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
+tilemapRender:
+
+
+	; set the working tilemap buffer address
+	ldy #TILEMAP_BUFFER_ADDR
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_BUFFER_ADDR + 1
+	
+	; reset temp variables to zero
+	lda #0
+	sta TILEMAP_TMP_BUFFER_ADDR ; LSB
+	sta TILEMAP_TMP_TILES_ADDR  ; LSB
+	sta TILEMAP_TMP_BUF_ROW
+	sta TILEMAP_TMP_BUF_COL
+	sta TILEMAP_TMP_TILE_ROW
+	sta TILEMAP_TMP_OUTPUT_ROW
 
 	ldy #0
-	ldx #4
--
-	lda #$ff
-	eor (PIX_ADDR), y
-	sta (PIX_ADDR), y
-	
-	iny
-	bne -
-	inc PIX_ADDR_H
-	dex
-	bne -
-	
-	rts
-	
-; -----------------------------------------------------------------------------
-; _bitmapOffset: Set up the offset to the buffer based on X/Y (Internal use)
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X: X position (0 to 127)
-;  BITMAP_Y: Y position (0 to 63)
-; Outputs:
-;  PIX_ADDR: Set to byte at column 0 of row BITMAP_Y
-;  Y: 		 Y offset of byte within row (0 to 63)
-;  X: 		 Bit offset within the byte
-; -----------------------------------------------------------------------------
-_bitmapOffset:
+	jsr lcdGraphicsSetRow
 
-	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
-	ldx #0
-	stx PIX_ADDR_L
-	
-	lda BITMAP_Y
-	lsr
-	lsr
-	lsr
-	lsr
+	; iterate over the buffer rows and columns
+-
+	lda #0
+	sta TILEMAP_TMP_1
+
+	; set the working tileset address
+	ldy #TILEMAP_TILES_ADDR
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_TILES_ADDR + 1
+
+	; get tile offset
+	lda TILEMAP_TMP_BUF_ROW
+	asl
+	asl
+	asl
 	clc
-	adc PIX_ADDR_H
-	sta PIX_ADDR_H
-	
-	lda BITMAP_Y
-	and #$0f
+	adc TILEMAP_TMP_BUF_COL
+	tay
+
+
+	; load the tile index
+	lda (TILEMAP_TMP_BUFFER_ADDR), y
+
+	; multiply by 8 to get an offset into the tileset buffer
+	; storing overflow in TILEMAP_TMP_1
 	asl
+	rol TILEMAP_TMP_1
+	asl 
+	rol TILEMAP_TMP_1
 	asl
-	asl
-	asl
-	sta PIX_ADDR_L
-	
-	lda BITMAP_X
-	lsr
-	lsr
-	lsr
-	tay	  ; Y contains start byte offset in row
-	
-	lda BITMAP_X
-	and #$07
-	tax   ; X contains bit offset within byte (0 - 7)	
-	rts
-	
-; -----------------------------------------------------------------------------
-; bitmapSetPixel: Set a pixel
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X: X position (0 to 127)
-;  BITMAP_Y: Y position (0 to 63)
-; -----------------------------------------------------------------------------
-bitmapSetPixel:
+	rol TILEMAP_TMP_1
 
-	jsr _bitmapOffset
-	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	
-	ora (PIX_ADDR), y
-	sta (PIX_ADDR), y
-	
-	rts	
-	
-; -----------------------------------------------------------------------------
-; bitmapClearPixel: Clear a pixel
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X: X position (0 to 127)
-;  BITMAP_Y: Y position (0 to 63)
-; -----------------------------------------------------------------------------
-bitmapClearPixel:
+	; add the tile row offset (the row of the current tile)
+	; and set as y index
+	ora TILEMAP_TMP_TILE_ROW
+	tay
 
-	jsr _bitmapOffset
-	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	eor #$ff
-	and (PIX_ADDR), y
-	sta (PIX_ADDR), y
-	
-	rts
-	
-	
-; -----------------------------------------------------------------------------
-; bitmapXorPixel: XOR a pixel
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X: X position (0 to 127)
-;  BITMAP_Y: Y position (0 to 63)
-; -----------------------------------------------------------------------------
-bitmapXorPixel:
+	; load the overflow and add to the MSB of the tileset address
+	lda TILEMAP_TMP_1
+	clc
+	adc TILEMAP_TMP_TILES_ADDR + 1
+	sta TILEMAP_TMP_TILES_ADDR + 1
 
-	jsr _bitmapOffset
-	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	eor (PIX_ADDR), y
-	sta (PIX_ADDR), y
-	
-	rts
-	
-; -----------------------------------------------------------------------------
-; bitmapLineH: Output a horizontal line
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X1: Start X position (0 to 127)
-;  BITMAP_X2: End X position (0 to 127)
-;  BITMAP_Y:  Y position (0 to 63)
-; -----------------------------------------------------------------------------
-bitmapLineH:
+	jsr lcdWait
 
-	END_OFFSET   = BITMAP_TMP3
-	START_BYTE   = BITMAP_TMP1
-	END_BYTE     = BITMAP_TMP2
-	TMP_STYLE    = BITMAP_TMP5
+	; load the byte from the tile
+	lda (TILEMAP_TMP_TILES_ADDR), y
 
-	lda BITMAP_X2
-	lsr
-	lsr
-	lsr
-	sta END_OFFSET  ; END_OFFSET contains end byte offset within the row
+	; output the byte
+	sta LCD_DATA
 
-	jsr _bitmapOffset
-
-	lda BITMAP_LINE_STYLE
-	sta TMP_STYLE
-	
-	lda #$ff
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq ++
-	lsr TMP_STYLE
-	bcc +
-	pha
-	lda #$80
-	ora TMP_STYLE
-	sta TMP_STYLE
-	pla	
-+
-	dex
-	lsr
-	bcs -  ; carry is always set
-++
-	sta START_BYTE
-
-	lda BITMAP_X2
-	and #$07
-	
-	tax   ; X contains bit offset within byte (0 - 7)	
-	
-	lda #$ff
-	
-; shift the bits to the left for the pixel offset
--
-	cpx #7
-	beq +
-	inx
-	asl    
-	bcs -  ; carry is always set
-+
-	sta END_BYTE
-	
-	lda START_BYTE
-	cpy END_OFFSET
-	bne ++
-	and END_BYTE  ; combine if within the same byte
-	
-	pha
-	eor #$ff
-	and (PIX_ADDR), y
-	sta BITMAP_TMP4
-	pla
-	and TMP_STYLE
-	ora BITMAP_TMP4
-	sta (PIX_ADDR), y
-	
-	rts
-++
-	pha
-	eor #$ff
-	and (PIX_ADDR), y
-	sta BITMAP_TMP4
-	pla
-	and TMP_STYLE
-	ora BITMAP_TMP4
-	sta (PIX_ADDR), y
--
-	lda #$ff
-	iny
-	cpy END_OFFSET
-	bne +
-	and END_BYTE  ; combine if within the same byte
-+
-	pha
-	eor #$ff
-	and (PIX_ADDR), y
-	sta BITMAP_TMP4
-	pla
-	and TMP_STYLE
-	ora BITMAP_TMP4
-	sta (PIX_ADDR), y
-
-	cpy END_OFFSET
-	bne -	
-	
-	rts
-	
-	
-; -----------------------------------------------------------------------------
-; bitmapLineV: Output a horizontal line
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_Y1: Start Y position (0 to 63)
-;  BITMAP_Y2: End Y position (0 to 63)
-;  BITMAP_X:  Y position (0 to 127)
-; -----------------------------------------------------------------------------
-bitmapLineV:
-
-	COL_BYTE     = BITMAP_TMP1
-	STYLE_BYTE   = BITMAP_TMP2
-
-	jsr _bitmapOffset
-	
-	lda BITMAP_LINE_STYLE
-	sta STYLE_BYTE
-	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	sta COL_BYTE
-	
-	ldx BITMAP_Y1
--
-	lda #$80
-	bit STYLE_BYTE
-	bne +
-	; draw a 0
-	lda COL_BYTE
-	eor #$ff
-	and (PIX_ADDR), y	
-	sta (PIX_ADDR), y
-	jmp ++
-+	; draw a 1
-	lda COL_BYTE	
-	ora (PIX_ADDR), y	
-	sta (PIX_ADDR), y
-++
-		
-	cpx BITMAP_Y2
-	beq ++
-	asl STYLE_BYTE
-	bcc +
-	inc STYLE_BYTE
-+
-	inx
+	; increment column and check against # columns
+	inc TILEMAP_TMP_BUF_COL
 	lda #16
-	clc
-	adc	PIX_ADDR_L
-	bcc +
-	inc PIX_ADDR_H
-+
-	sta PIX_ADDR_L
-    clc
-	bcc -
-++
-	
-	rts
-
-; -----------------------------------------------------------------------------
-; bitmapLine: Output an arbitrary line
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X1: 
-;  BITMAP_Y1: 
-;  BITMAP_X2: 
-;  BITMAP_Y2: 
-; -----------------------------------------------------------------------------
-bitmapLine:
-
-	LINE_WIDTH = BITMAP_TMP1
-	LINE_HEIGHT = BITMAP_TMP2
-	
-	; get width
-	lda BITMAP_X2
-	sec
-	sbc BITMAP_X1
-	
-	bpl +
-	lda BITMAP_X1
-	pha
-	lda BITMAP_X2
-	sta BITMAP_X1
-	pla
-	sta BITMAP_X2
-	sec
-	sbc BITMAP_X1	
-+	
-	sta LINE_WIDTH
-
-	; get height
-	lda BITMAP_Y2
-	sec
-	sbc BITMAP_Y1
-
-	bpl +
-	lda BITMAP_Y1
-	pha
-	lda BITMAP_Y2
-	sta BITMAP_Y1
-	pla
-	sta BITMAP_Y2
-	sec
-	sbc BITMAP_Y1	
-+	
-	sta LINE_HEIGHT
-	
-	cmp LINE_WIDTH
-	bcs .goTall
-	jmp _bitmapLineWide
-.goTall
-	jmp _bitmapLineTall
-	
-	; rts in above subroutines
-	
-; ----------------------------------------------------------------------------
-
-_bitmapLineWide:  ; a line that is wider than it is tall
-	
-	D = R0
-	
-	Y = BITMAP_TMP3
-	
-	lda LINE_HEIGHT
-	asl
-	sec
-	sbc LINE_WIDTH
-	sta D
-	
-	lda BITMAP_X
-	pha
-	
-	lda BITMAP_Y1
-	sta Y
-	
--
-	jsr bitmapSetPixel
-	lda D
-	bpl +
-	lda LINE_HEIGHT
-	asl
-	jmp ++
-+
-    inc BITMAP_Y1
-	lda LINE_WIDTH
-	sec
-	sbc LINE_HEIGHT
-	asl
-	eor #$ff
-	clc
-	adc #1
-++
-	clc
-	adc D
-	sta D
-	inc BITMAP_X
-	lda BITMAP_X2
-	cmp BITMAP_X
-	bcs -
-	
-	lda Y
-	sta BITMAP_Y1
-	
-	pla
-	sta BITMAP_X
-	
-	rts
-	
-_bitmapLineTall:  ; a line that is taller than it is wide
-	
-	D = R0
-	
-	X = BITMAP_TMP3
-	
-	lda LINE_WIDTH
-	asl
-	sec
-	sbc LINE_HEIGHT
-	sta D
-	
-	lda BITMAP_Y
-	pha
-	
-	lda BITMAP_X1
-	sta X
-	
--
-	jsr bitmapSetPixel
-	lda D
-	bpl +
-	lda LINE_WIDTH
-	asl
-	jmp ++
-+
-    inc BITMAP_X1
-	lda LINE_HEIGHT
-	sec
-	sbc LINE_WIDTH
-	asl
-	eor #$ff
-	clc
-	adc #1
-++
-	clc
-	adc D
-	sta D
-	inc BITMAP_Y
-	lda BITMAP_Y2
-	cmp BITMAP_Y
-	bcs -
-
-	lda X
-	sta BITMAP_X1
-	
-	pla
-	sta BITMAP_Y
-	
-	rts
-	
-; -----------------------------------------------------------------------------
-; bitmapRect: Output a rectangle outline
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X1: 
-;  BITMAP_Y1: 
-;  BITMAP_X2: 
-;  BITMAP_Y2: 
-; -----------------------------------------------------------------------------
-bitmapRect:
-	jsr bitmapLineH
-	jsr bitmapLineV
-	
-	lda BITMAP_X1
-	pha
-	lda BITMAP_X2
-	sta BITMAP_X1
-
-	jsr bitmapLineV
-	
-	pla
-	sta BITMAP_X1
-
-	lda BITMAP_Y1
-	pha
-	lda BITMAP_Y2
-	sta BITMAP_Y1
-	
-	jsr bitmapLineH
-
-	pla
-	sta BITMAP_Y1
-	
-	rts
-	
-; -----------------------------------------------------------------------------
-; bitmapFilledRect: Output a filled rectangle
-; -----------------------------------------------------------------------------
-; Inputs:
-;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
-;  BITMAP_X1: 
-;  BITMAP_Y1: 
-;  BITMAP_X2: 
-;  BITMAP_Y2: 
-; -----------------------------------------------------------------------------
-bitmapFilledRect:
-	lda BITMAP_Y1
-	pha
-	lda BITMAP_LINE_STYLE
-	pha
-	
--
-	jsr bitmapLineH
-	inc BITMAP_Y1
-
-	pla
-	sta BITMAP_LINE_STYLE
-	pha
-	
-	lda BITMAP_Y2
-	cmp BITMAP_Y1
-	beq +
-
-	jsr bitmapLineH
-	inc BITMAP_Y1
-	
-	lda BITMAP_LINE_STYLE_ODD
-	sta BITMAP_LINE_STYLE
-	
-	lda BITMAP_Y2
-	cmp BITMAP_Y1
+	cmp TILEMAP_TMP_BUF_COL
 	bne -
-+	
 
-	pla
-	sta BITMAP_LINE_STYLE
-	pla
-	sta BITMAP_Y1
-	
+	; increment tile row (row within tile) and check against tile size
+	lda #0
+	sta TILEMAP_TMP_BUF_COL
+	inc TILEMAP_TMP_TILE_ROW
+	inc TILEMAP_TMP_OUTPUT_ROW
+	ldy TILEMAP_TMP_OUTPUT_ROW
+
+	jsr lcdGraphicsSetRow
+
+	lda #TILE_SIZE
+	cmp TILEMAP_TMP_TILE_ROW
+	bne -
+
+	; increment row and check against # rows
+	lda #0
+	sta TILEMAP_TMP_TILE_ROW
+	inc TILEMAP_TMP_BUF_ROW
+	lda #8
+	cmp TILEMAP_TMP_BUF_ROW
+	bne -
+
 	rts
+

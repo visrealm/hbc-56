@@ -19,6 +19,8 @@ cputype = $6502
 ; Base address of the 256 IO port memory range
 IO_PORT_BASE_ADDRESS	= $7f00
 
+; Virtual registers
+; ----------------------------------------------------------------------------
 R0  = $02
 R0L = R0
 R0H = R0 + 1
@@ -43,6 +45,22 @@ R6H = R6 + 1
 R7  = $10
 R7L = R7
 R7H = R7 + 1
+R8  = $12
+R8L = R8
+R8H = R8 + 1
+R9  = $14
+R9L = R9
+R9H = R9 + 1
+R10  = $16
+R10L = R10
+R10H = R10 + 1
 
+; Initial state
+; ----------------------------------------------------------------------------
+cld     ; make sure we're not in decimal mode
+
+
+; Program entry point
+; ----------------------------------------------------------------------------
 
 jmp main

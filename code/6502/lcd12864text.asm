@@ -16,7 +16,7 @@ main:
 start:
 
 	jsr lcdClear
-        +lcdPrint "LCD Text Test"
+        +lcdPrint "LCD Text Test\n2nd line too?"
         
         lda #0
 -

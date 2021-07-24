@@ -39,9 +39,40 @@ lcdGraphicsMode:
 	lda #LCD_EXTENDED | LCD_CMD_EXT_GRAPHICS_ENABLE
 	sta LCD_CMD
 	rts
-	
+
+
+
+; -----------------------------------------------------------------------------
+; lcdSetRow: Set LCD address to graphics row
+; -----------------------------------------------------------------------------
+; Inputs:
+;  Y: Row of the LCD (0 - 63)
+; -----------------------------------------------------------------------------
+lcdGraphicsSetRow:
+	pha
+
+	; set y address (0 - 31)
+	jsr lcdWait
+	tya
+	and #$1f  ; only want 0-31
+	ora #LCD_CMD_EXT_GRAPHICS_ADDR
+	sta LCD_CMD
+
+	; set x address - either 0 or 8
+	jsr lcdWait
+	tya
+	and #$20
+	lsr
+	lsr
+	ora #LCD_CMD_EXT_GRAPHICS_ADDR
+	sta LCD_CMD
+
+	pla
+	rts
+
 
 !ifdef _GFX_BITMAP_A {
+
 
 ; -----------------------------------------------------------------------------
 ; lcdImage: Output a full-screen image from memory (XY upper-left)

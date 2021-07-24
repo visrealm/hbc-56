@@ -87,6 +87,7 @@ LCD_CMD_2LINE			= $08
 LCD_INITIALIZE	= LCD_CMD_FUNCTIONSET | LCD_CMD_8BITMODE | LCD_CMD_2LINE
 DISPLAY_MODE	= LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON
 
+ASCII_NEWLINE = 10
 
 ; -------------------------
 ; Zero page
@@ -223,11 +224,17 @@ lcdPrint:
 -
 	jsr lcdWait
 	lda (STR_ADDR), y
-	beq +
+	beq ++
+	cmp #ASCII_NEWLINE ; check for newline
+	bne +
+	jsr lcdNextLine
+	iny
+	jmp -
++ 
 	sta LCD_DATA
 	iny
 	jmp -
-+
+++
 	rts
 
 ; -----------------------------------------------------------------------------

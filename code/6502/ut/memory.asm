@@ -172,7 +172,7 @@ MEMSET_LEN = R1
 ;	 Y:	bytes
 ; -----------------------------------------------------------------------------
 memsetSinglePage:
-	cpy
+	cpy #0
 	beq +
 -
 	sta (MEMSET_DST), y
@@ -191,8 +191,12 @@ memsetSinglePage:
 ;	 MEMSET_LEN: length
 ; -----------------------------------------------------------------------------
 memsetMultiPage:
-	ldy #0
 	ldx MEMSET_LEN + 1
+	bne +
+	ldy MEMSET_LEN
+	jmp memsetSinglePage
++ 
+	ldy #0
 - 
 	sta (MEMSET_DST),y ; could unroll to any power of 2
 	iny
