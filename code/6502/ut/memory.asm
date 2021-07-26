@@ -58,10 +58,15 @@ MEMCPY_LEN = R2
 ;	Y:	bytes
 ; -----------------------------------------------------------------------------
 memcpySinglePage:
-	lda (R0), Y
-	sta (R1), Y
+	cpy #0
+	beq +
+-
 	dey
-	bne memcpySinglePage
+	lda (MEMCPY_SRC), Y
+	sta (MEMCPY_DST), Y
+	cpy #0
+	bne -
++
 	rts
 ; -----------------------------------------------------------------------------
 

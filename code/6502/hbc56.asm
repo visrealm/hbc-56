@@ -55,6 +55,15 @@ R10  = $16
 R10L = R10
 R10H = R10 + 1
 
+
+; -------------------------
+; Zero page
+; -------------------------
+STR_ADDR = $20
+STR_ADDR_L = STR_ADDR
+STR_ADDR_H = STR_ADDR + 1
+
+
 ; Initial state
 ; ----------------------------------------------------------------------------
 cld     ; make sure we're not in decimal mode

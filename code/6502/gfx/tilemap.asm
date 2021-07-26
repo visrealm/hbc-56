@@ -62,13 +62,13 @@ TILEMAP_DEFAULT_BUFFER_ADDRESS = $1000
 
 !macro tilemapCreate .bufferAddr, .tilesetAddr, .sizeFlags, .invertAddr, .dirtyAddr {
 	!if <.tilesetAddr != 0 { !error "tilemapCreate: Tileset address must be page-aligned" }
-	!if >.tilesetAddr < 3 { !error "tilemapCreate: Tileset address must be greater than $300" }
+	!if >.tilesetAddr < 3 { !error "tilemapCreate: Tileset address must be greater than $2ff" }
 	!if <.bufferAddr != 0 { !error "tilemapCreate: Buffer address must be page-aligned" }
-	!if >.bufferAddr < 3 { !error "tilemapCreate: Buffer address must be greater than $300" }
+	!if >.bufferAddr < 3 { !error "tilemapCreate: Buffer address must be greater than $2ff" }
 	!if .invertAddr != 0 and <.invertAddr != 0  {!error "tilemapCreate: Invert address must be page-aligned"}
-	!if .invertAddr != 0 and >.invertAddr < 3  {!error "tilemapCreate: Invert address must be greater than $300"}
+	!if .invertAddr != 0 and >.invertAddr < 3  {!error "tilemapCreate: Invert address must be greater than $2ff"}
 	!if .dirtyAddr != 0 and <.dirtyAddr != 0  {!error "tilemapCreate: Dirty address must be page-aligned"}
-	!if .dirtyAddr != 0 and >.dirtyAddr < 3  {!error "tilemapCreate: Dirty address must be greater than $300"}
+	!if .dirtyAddr != 0 and >.dirtyAddr < 3  {!error "tilemapCreate: Dirty address must be greater than $2ff"}
 
 	lda #<TILEMAP_FIXED_ADDRESS
 	sta TILEMAP_ADDR

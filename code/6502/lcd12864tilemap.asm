@@ -45,9 +45,13 @@ start:
         cpy #128
         bne -
 
+        ;+memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS, screenBuffer, 128
+
         jsr tilemapRender
 
         inc TILE_OFFSET
+
+        jsr delay
         
         jmp start
 
@@ -66,4 +70,14 @@ delay:
 	dey
 	bne .loop
 	rts
+
+
+screenBuffer:
+!text "* HBC-56 BASIC *"
+!text " 64K RAM SYSTEM "
+!text "                "
+!text "READY.          "
+!text "LOAD *,8,1      "
+!text "LOADING...      "
+!text "RUN             "
 
