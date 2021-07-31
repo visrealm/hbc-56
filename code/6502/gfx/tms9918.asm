@@ -80,7 +80,7 @@ TMS_WHITE               = $0f
 ; -----------------------------------------------------------------------------
 TMS_REGISTER_DATA:
 !byte TMS_R0_EXT_VDP_DISABLE | TMS_R0_MODE_GRAPHICS_I
-!byte TMS_R1_RAM_16K | TMS_R1_DISP_ACTIVE | TMS_R1_MODE_GRAPHICS_I | TMS_R1_SPRITE_MAG2
+!byte TMS_R1_RAM_16K | TMS_R1_DISP_ACTIVE | TMS_R1_INT_ENABLE | TMS_R1_MODE_GRAPHICS_I | TMS_R1_SPRITE_MAG2
 !byte TMS_VRAM_BASE_ADDRESS >> 10
 !byte TMS_VRAM_COLOR_ADDRESS >> 6
 !byte TMS_VRAM_FONT_ADDRESS >> 11
@@ -123,10 +123,19 @@ _tmsWait:
         +tmsWait
 }
 
+!macro tmsPut .byte {
+        pha
+        lda #.byte
+        sta TMS9918_RAM
+        +tmsWait
+        pla
+}
+
 ; -----------------------------------------------------------------------------
 ; tmsInit: Initialise the registers
 ; -----------------------------------------------------------------------------
 tmsInit:
+        sei
         ; set up the registers
         ldx #0
 -
@@ -140,6 +149,7 @@ tmsInit:
         inx
         cpx #8
         bne -
+        cli
 
         ; load all data into VRAM
         jsr tmsInitFontTable
@@ -151,6 +161,14 @@ tmsInit:
         jsr tmsInitSpriteTable
 
         rts
+
+
+; -----------------------------------------------------------------------------
+; tmsSetAddress: Set an address in the TMS9918
+; -----------------------------------------------------------------------------
+!macro tmsReadStatus  {
+        lda TMS9918_REG
+}
 
 ; -----------------------------------------------------------------------------
 ; _tmsSendPage: Send A for a whole page
@@ -175,6 +193,7 @@ _tmsSendEmptyPage:
 ; tmsInitFontTable: Initialise the font table
 ; -----------------------------------------------------------------------------
 tmsInitFontTable:
+        sei
 
         ; font table
         +tmsSetAddress TMS_VRAM_FONT_ADDRESS
@@ -219,6 +238,8 @@ tmsInitFontTable:
         ; (224 - 255) all empty
         jsr _tmsSendEmptyPage
 
+        cli
+
         rts
 
 
@@ -229,6 +250,7 @@ tmsInitFontTable:
 ;  A: Color. High nibble = FG. Low nibble = BG
 ; -----------------------------------------------------------------------------
 tmsSetBackground:
+        sei
         pha
         sta TMS9918_REG
         +tmsWait
@@ -236,12 +258,14 @@ tmsSetBackground:
         sta TMS9918_REG
         +tmsWait
         pla
+        cli
         rts
 
 ; -----------------------------------------------------------------------------
 ; tmsInitTextTable: Initialise the color table
 ; -----------------------------------------------------------------------------
 tmsInitTextTable:
+        sei
 
         ; text table table
         +tmsSetAddress TMS_VRAM_BASE_ADDRESS
@@ -252,6 +276,8 @@ tmsInitTextTable:
         jsr _tmsSendPage
 
         jsr _tmsSendPage
+
+        cli
 
         rts
 
@@ -269,6 +295,7 @@ tmsInitTextTable:
 ; tmsInitColorTable: Initialise the color table
 ; -----------------------------------------------------------------------------
 tmsInitColorTable:
+        sei
 
         ; color table
         +tmsSetAddress TMS_VRAM_COLOR_ADDRESS
@@ -281,13 +308,15 @@ tmsInitColorTable:
         dex
         bne -
 
+        cli
+
         rts
 
 ; -----------------------------------------------------------------------------
 ; tmsInitSpriteTable: Initialise the sprite table
 ; -----------------------------------------------------------------------------
 tmsInitSpriteTable:
-
+        sei
 
         ; sprites table
         +tmsSetAddress TMS_VRAM_SPRITE_ATTR_ADDRESS
@@ -311,12 +340,16 @@ tmsInitSpriteTable:
         dex
         bne -
 
+        cli
+
         rts
 
 ; -----------------------------------------------------------------------------
 ; tmsCreateSpritePattern: Create a sprite pattern (.spriteDataAddr is 8 bytes)
 ; -----------------------------------------------------------------------------
 !macro tmsCreateSpritePattern .pattInd, .spriteDataAddr {
+
+        sei
 
         ; sprite pattern table
         +tmsSetAddress TMS_VRAM_SPRITE_PATT_ADDRESS + .pattInd * 8
@@ -328,6 +361,9 @@ tmsInitSpriteTable:
         +tmsWait
         inx
         cpx #8
+
+        cli
+
         bne -
 }
 
@@ -335,6 +371,8 @@ tmsInitSpriteTable:
 ; tmsCreateSprite: Create a sprite
 ; -----------------------------------------------------------------------------
 !macro tmsCreateSprite .ind, .pattInd, .xPos, .yPos, .color {
+
+        sei
 
         ; sprite attr table
         +tmsSetAddress TMS_VRAM_SPRITE_ATTR_ADDRESS + .ind * 4
@@ -351,12 +389,15 @@ tmsInitSpriteTable:
         lda #.color
         sta TMS9918_RAM
         +tmsWait
+
+        cli
 }
 
 ; -----------------------------------------------------------------------------
 ; tmsSpritePos: Set a sprite position
 ; -----------------------------------------------------------------------------
 !macro tmsSpritePos .ind, .xPos, .yPos {
+        sei
 
         ; sprite attr table
         +tmsSetAddress TMS_VRAM_SPRITE_ATTR_ADDRESS + .ind * 4
@@ -367,6 +408,8 @@ tmsInitSpriteTable:
         lda #.xPos
         sta TMS9918_RAM
         +tmsWait
+
+        cli
 }
 
 
@@ -375,14 +418,56 @@ tmsInitSpriteTable:
 ; -----------------------------------------------------------------------------
 !macro tmsSpriteColor .ind, .color {
 
+        sei
+
         ; sprite attr table
         +tmsSetAddress TMS_VRAM_SPRITE_ATTR_ADDRESS + (.ind * 4) + 3
 
         lda #.color
         sta TMS9918_RAM
         +tmsWait
+
+        cli
 }
 
+
+; -----------------------------------------------------------------------------
+; tmsHex8: Output an 8-bit byte as hexadecimal
+; -----------------------------------------------------------------------------
+; Inputs:
+;  A: The value to output
+; -----------------------------------------------------------------------------
+tmsHex8:
+        sei
+	pha
+	lsr
+	lsr
+	lsr
+	lsr
+	tax
+	lda .H2, x
+        sta TMS9918_RAM
+        +tmsWait
+	pla
+	pha
+	and #$0f
+	tax
+	lda .H2, x
+        sta TMS9918_RAM
+        +tmsWait
+	pla
+        cli
+	rts
+
+.H2 !text "0123456789abcdef"
+
+
+; -----------------------------------------------------------------------------
+; tmsSetPos: Set cursor position
+; -----------------------------------------------------------------------------
+!macro tmsSetPos .x, .y {
+        +tmsSetAddress (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
+}
 
 ; -----------------------------------------------------------------------------
 ; tmsPrint: Print immediate text
@@ -397,13 +482,16 @@ tmsInitSpriteTable:
 .textAddr
 	!text .str,0
 +
-        +tmsSetAddress (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
+        sei
+
+        +tmsSetPos .x, .y
 
         lda #<.textAddr
         sta STR_ADDR_L
         lda #>.textAddr
         sta STR_ADDR_H
         jsr tmsPrint
+        cli
 }
 
 ; -----------------------------------------------------------------------------

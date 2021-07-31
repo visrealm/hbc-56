@@ -1,4 +1,4 @@
-!to "tms9918test.o", plain
+!to "tms9918lcd.o", plain
 
 HBC56_INT_VECTOR = onVSync
 
@@ -6,6 +6,15 @@ HBC56_INT_VECTOR = onVSync
 
 !source "gfx/tms9918.asm"
 !source "gfx/fonts/tms9918font1.asm"
+
+!source "gfx/bitmap.asm"
+
+LCD_MODEL = 12864
+!source "lcd/lcd.asm"
+
+!source "inp/nes.asm"
+
+BUFFER_ADDR = $1000
 
 sprite1:
 !byte %00001000
@@ -51,6 +60,16 @@ onVSync:
 
 
 main:
+        jsr lcdDetect
+        beq +
+	jsr lcdInit
+	jsr lcdClear
+	jsr lcdGraphicsMode
++
+
+	lda #0
+	sta PIX_ADDR_L
+
         sei
         lda #0
         sta TICKS_L
@@ -152,17 +171,90 @@ loop:
         jmp loop
 
 COLOR = $89
+IMG = $8a
+LAST_TICKS_H = $8b
 
 outputSeconds:
         sei
+
+        +tmsSetPos 8, 1
+        +nesBranchIfNotPressed NES_LEFT, +
+        +tmsPut 'L'
++
+        +nesBranchIfNotPressed NES_RIGHT, +
+        +tmsPut 'R'
++
+        +nesBranchIfNotPressed NES_UP, +
+        +tmsPut 'U'
++
+        +nesBranchIfNotPressed NES_DOWN, +
+        +tmsPut 'D'
++
+        +nesBranchIfNotPressed NES_SELECT, +
+        +tmsPut 'S'
+        +tmsPut 'e'
++
+        +nesBranchIfNotPressed NES_START, +
+        +tmsPut 'S'
+        +tmsPut 't'
++
+        +nesBranchIfNotPressed NES_B, +
+        +tmsPut 'B'
++
+        +nesBranchIfNotPressed NES_A, +
+        +tmsPut 'A'
++
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+        +tmsPut ' '
+
         +tmsSetPos 1, 1
         lda TICKS_H
-        jsr tmsHex8
+        jsr tmsHex8  ; calls cli
+        sei
 
-        inc COLOR
-        lda COLOR
-        jsr tmsSetBackground
+        cmp LAST_TICKS_H
+        beq .endSec
+        sta LAST_TICKS_H
 
+        jsr lcdDetect
+        beq .endSec
+
+        inc IMG
+        lda IMG
+        and #$03
+        cmp #3
+        bne +        
+	lda #>LOGO_IMG
+	sta BITMAP_ADDR_H
+	jsr lcdImageVflip
+        jmp .endSec
++	
+        cmp #2
+        bne +        
+	lda #>ROX_IMG
+	sta BITMAP_ADDR_H
+	jsr lcdImageVflip
+        jmp .endSec
++	
+        cmp #1
+        bne +        
+	lda #>LIV_IMG
+	sta BITMAP_ADDR_H
+	jsr lcdImageVflip
+        jmp .endSec
++	
+	lda #>SELFIE_IMG
+	sta BITMAP_ADDR_H
+	jsr lcdImageVflip
+.endSec
         cli
         rts
 
@@ -206,3 +298,41 @@ delay:
 	dey
 	bne -
 	rts
+	
+;IMG_DATA_OFFSET = 62  ; Paint
+IMG_DATA_OFFSET = 130  ; GIMP
+
+!align 255, 0
+!fill 256 - IMG_DATA_OFFSET
+
+livData:
+	!bin "liv.bmp"
+
+LIV_IMG = livData + IMG_DATA_OFFSET
+
+
+!align 255, 0
+!fill 256 - IMG_DATA_OFFSET
+
+logoData:
+	!bin "logo.bmp"
+
+LOGO_IMG = logoData + IMG_DATA_OFFSET
+
+
+!align 255, 0
+!fill 256 - IMG_DATA_OFFSET
+
+roxData:
+	!bin "rox.bmp"
+
+ROX_IMG = roxData + IMG_DATA_OFFSET
+
+
+!align 255, 0
+!fill 256 - IMG_DATA_OFFSET
+
+selfieData:
+	!bin "selfie.bmp"
+
+SELFIE_IMG = selfieData + IMG_DATA_OFFSET

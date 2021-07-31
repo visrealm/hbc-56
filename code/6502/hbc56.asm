@@ -12,8 +12,17 @@
 !initmem $FF
 cputype = $6502
 
-*=$FFFC
-!word $8000
+!ifndef HBC56_RESET_VECTOR { HBC56_RESET_VECTOR = $8000 }
+;!ifndef HBC56_INT_VECTOR { HBC56_INT_VECTOR = $FFF0 }
+!ifndef HBC56_NMI_VECTOR { HBC56_NMI_VECTOR = $FFF0 }
+
+*=$FFF0
+rti
+
+*=$FFFA
+!word HBC56_NMI_VECTOR
+!word HBC56_RESET_VECTOR
+!word HBC56_INT_VECTOR
 *=$8000
 
 ; Base address of the 256 IO port memory range
