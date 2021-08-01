@@ -75,6 +75,23 @@ TMS_GREY                = $0e
 TMS_WHITE               = $0f
 
 
+!ifndef TMS_MODEL {
+	!warn "Set TMS_MODEL to one of: 9918, 9929. Defaulting to 9918"
+	TMS_MODEL = 9918
+} 
+
+; -------------------------
+; Constants
+; -------------------------
+
+!if TMS_MODEL = 9918 {
+	TMS_FPS = 60
+} else { !if TMS_MODEL = 9929 {
+	TMS_FPS = 50
+} else {
+	!error "Unknown TMS_MODEL. Must be one of: 9918 or 9929"
+}}
+
 ; -----------------------------------------------------------------------------
 ; Default register values
 ; -----------------------------------------------------------------------------
@@ -412,6 +429,24 @@ tmsInitSpriteTable:
         cli
 }
 
+; -----------------------------------------------------------------------------
+; tmsSpritePosXYReg: Set a sprite position from x/y registers
+; -----------------------------------------------------------------------------
+!macro tmsSpritePosXYReg .ind {
+        sei
+
+        ; sprite attr table
+        +tmsSetAddress TMS_VRAM_SPRITE_ATTR_ADDRESS + .ind * 4
+
+        tya
+        sta TMS9918_RAM
+        +tmsWait
+        txa
+        sta TMS9918_RAM
+        +tmsWait
+
+        cli
+}
 
 ; -----------------------------------------------------------------------------
 ; tmsSpriteColor: Change a sprite color
