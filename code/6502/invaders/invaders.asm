@@ -10,9 +10,36 @@ TMS_MODEL = 9929
 
 !source "../lib/gfx/bitmap.asm"
 !source "../lib/inp/nes.asm"
+!source "../lib/ut/memory.asm"
 
 TICKS_L = $48
 TICKS_H = $49
+V_SYNC  = $4a
+
+FRAMES_PER_ANIM = 10
+MAX_X           = 6
+
+FRAMES_COUNTER = $4f
+ANIM_FRAME     = $50 ; 0, 1, 2, 3, 0, 1, 2, 3
+MOVE_FRAME     = $51 ; 0, 0, 0, 0, 1, 1, 1, 1, 
+X_POSITION     = $52
+Y_POSITION     = $53
+TMP_X_POSITION = $54
+TMP_Y_POSITION = $55
+TMP_GAMEFIELD_OFFSET = $56
+X_DIR = $57
+
+GAMEFIELD = $1000
+
+GAME_COLS = 11
+GAME_ROWS  = 5
+
+initialGameField:
+!byte 160,160,160,160,144,160,160,160,160,160,160
+!byte 144,144,144,144,144,144,144,144,144,144,144
+!byte 144,144,144,144,144,160,144,144,144,144,144
+!byte 128,128,128,128,128,128,128,128,128,128,128
+!byte 128,128,128,128,128,128,128,128,128,128,128
 
 
 onVSync:
@@ -26,12 +53,29 @@ onVSync:
         inc TICKS_H
 +  
         sta TICKS_L
+        lda #1
+        sta V_SYNC
         +tmsReadStatus
         pla      
         rti
 
 
 main:
+
+        sei
+        +memcpy GAMEFIELD, initialGameField, 11 * 5
+
+        lda #0
+        sta ANIM_FRAME
+        sta MOVE_FRAME
+        sta FRAMES_COUNTER
+
+        lda #1
+        sta X_POSITION
+        sta X_DIR
+        lda #4
+        sta Y_POSITION
+
         jsr tmsInit
 
         +tmsSetAddrColorTable
@@ -45,117 +89,121 @@ main:
 
 
         +tmsPrint "SCORE 00000   HI SCORE 00000", 2, 0
+
+        lda #0
+        sta V_SYNC
+        cli
+
+        +tmsEnableInterrupts
+
 .loop:
-       
+        lda V_SYNC
+        beq .loop
+        jsr nextFrame
 
-!for i, 6 {       
-        +tmsSetPos i, 4
-        +tmsSendData SETUP31, 24
-        +tmsSetPos i, 6
-        +tmsSendData SETUP21, 24
-        +tmsSetPos i, 8
-        +tmsSendData SETUP21, 24
-        +tmsSetPos i, 10
-        +tmsSendData SETUP11, 24
-        +tmsSetPos i, 12
-        +tmsSendData SETUP11, 24
+        lda #0
+        sta V_SYNC
 
-        jsr medDelay
+        inc FRAMES_COUNTER
+        lda FRAMES_COUNTER
+        cmp #FRAMES_PER_ANIM
+        bne .loop
 
-        +tmsSetPos i, 4
-        +tmsSendData SETUP32, 24
-        +tmsSetPos i, 6
-        +tmsSendData SETUP22, 24
-        +tmsSetPos i, 8
-        +tmsSendData SETUP22, 24
-        +tmsSetPos i, 10
-        +tmsSendData SETUP12, 24
-        +tmsSetPos i, 12
-        +tmsSendData SETUP12, 24
+        lda #0
+        sta FRAMES_COUNTER
 
-        jsr medDelay
+        lda ANIM_FRAME
+        clc
+        adc X_DIR
+        sta ANIM_FRAME
+        cmp #255
+        beq +
+        cmp #4
+        beq +
+        jmp .loop        
++
+        lda ANIM_FRAME
+        and #$03
+        sta ANIM_FRAME
 
-        +tmsSetPos i, 4
-        +tmsSendData SETUP33, 24
-        +tmsSetPos i, 6
-        +tmsSendData SETUP23, 24
-        +tmsSetPos i, 8
-        +tmsSendData SETUP23, 24
-        +tmsSetPos i, 10
-        +tmsSendData SETUP13, 24
-        +tmsSetPos i, 12
-        +tmsSendData SETUP13, 24
-        jsr medDelay
-
-        +tmsSetPos i, 4
-        +tmsSendData SETUP34, 24
-        +tmsSetPos i, 6
-        +tmsSendData SETUP24, 24
-        +tmsSetPos i, 8
-        +tmsSendData SETUP24, 24
-        +tmsSetPos i, 10
-        +tmsSendData SETUP14, 24
-        +tmsSetPos i, 12
-        +tmsSendData SETUP14, 24
-
-        jsr medDelay
-}
-
-
-!for i, 6 {       
-        +tmsSetPos 7 - i, 4
-        +tmsSendData SETUP34, 24
-        +tmsSetPos 7 - i, 6
-        +tmsSendData SETUP24, 24
-        +tmsSetPos 7 - i, 8
-        +tmsSendData SETUP24, 24
-        +tmsSetPos 7 - i, 10
-        +tmsSendData SETUP14, 24
-        +tmsSetPos 7 - i, 12
-        +tmsSendData SETUP14, 24
-
-        jsr medDelay
-
-        +tmsSetPos 7 - i, 4
-        +tmsSendData SETUP33, 24
-        +tmsSetPos 7 - i, 6
-        +tmsSendData SETUP23, 24
-        +tmsSetPos 7 - i, 8
-        +tmsSendData SETUP23, 24
-        +tmsSetPos 7 - i, 10
-        +tmsSendData SETUP13, 24
-        +tmsSetPos 7 - i, 12
-        +tmsSendData SETUP13, 24
-
-        jsr medDelay
-
-        +tmsSetPos 7 - i, 4
-        +tmsSendData SETUP32, 24
-        +tmsSetPos 7 - i, 6
-        +tmsSendData SETUP22, 24
-        +tmsSetPos 7 - i, 8
-        +tmsSendData SETUP22, 24
-        +tmsSetPos 7 - i, 10
-        +tmsSendData SETUP12, 24
-        +tmsSetPos 7 - i, 12
-        +tmsSendData SETUP12, 24
-        jsr medDelay
-
-        +tmsSetPos 7 - i, 4
-        +tmsSendData SETUP31, 24
-        +tmsSetPos 7 - i, 6
-        +tmsSendData SETUP21, 24
-        +tmsSetPos 7 - i, 8
-        +tmsSendData SETUP21, 24
-        +tmsSetPos 7 - i, 10
-        +tmsSendData SETUP11, 24
-        +tmsSetPos 7 - i, 12
-        +tmsSendData SETUP11, 24
-
-        jsr medDelay
-}
-
+        lda X_POSITION
+        clc
+        adc X_DIR
+        sta X_POSITION
+        cmp #6
+        bne +
+        lda #5
+        sta X_POSITION
+        lda #-1
+        sta X_DIR
+        lda #3
+        sta ANIM_FRAME
         jmp .loop
++ 
+        cmp #0
+        bne +
+        lda #1
+        sta X_POSITION
+        lda #1
+        sta X_DIR
+        lda #0
+        sta ANIM_FRAME
++ 
+        jmp .loop
+
+; Called each frame (on VSYNC)
+nextFrame:
+
+        lda #0
+        sta TMP_X_POSITION
+        sta TMP_Y_POSITION
+        sta TMP_GAMEFIELD_OFFSET
+
+.startRow
+        lda TMP_X_POSITION
+        clc
+        adc X_POSITION
+        tax
+
+        lda TMP_Y_POSITION
+        asl
+        clc
+        adc Y_POSITION
+        tay
+        jsr tmsSetPos
+        lda #32
+        sta TMS9918_RAM
+        +tmsWait
+-
+        ldx TMP_GAMEFIELD_OFFSET
+        lda initialGameField, x
+        clc
+        adc ANIM_FRAME
+        adc ANIM_FRAME
+
+        sta TMS9918_RAM
+        +tmsWait
+        clc
+        adc #1
+        sta TMS9918_RAM
+        +tmsWait
++
+
+        inc TMP_GAMEFIELD_OFFSET
+        inc TMP_X_POSITION
+        lda TMP_X_POSITION
+        cmp #GAME_COLS
+        bne -
+        lda #32
+        sta TMS9918_RAM
+        +tmsWait
+        lda #0
+        sta TMP_X_POSITION
+        inc TMP_Y_POSITION
+        lda TMP_Y_POSITION
+        cmp #GAME_ROWS
+        bne .startRow
+        rts
 
 
 medDelay:
@@ -187,45 +235,6 @@ COLORTAB:
        !byte $00,$00,$00,$00      ; TOP SCREEN
        !byte $00,$00            ; TOP SCREEN
 
-SETUP11: !byte 32
- 
-!for i, 11 { !byte 128, 129 } 
- !byte 32
-SETUP21: !byte 32
- 
-!for i, 11 { !byte 144, 145 } 
- !byte 32
-SETUP31: !byte 32
- 
-!for i, 11 { !byte 160, 161 } 
- !byte 32
-SETUP12: !byte 32 
-!for i, 11 { !byte 130, 131 }
-!byte 32
-SETUP22: !byte 32 
-!for i, 11 { !byte 146, 147 }
-!byte 32
-SETUP32: !byte 32 
-!for i, 11 { !byte 162, 163 }
-!byte 32
-SETUP13: !byte 32 
-!for i, 11 { !byte 132, 133 }
-!byte 32
-SETUP23: !byte 32 
-!for i, 11 { !byte 148, 149 }
-!byte 32
-SETUP33: !byte 32 
-!for i, 11 { !byte 164, 165 }
-!byte 32
-SETUP14: !byte 32 
-!for i, 11 { !byte 134, 135 }
-!byte 32
-SETUP24: !byte 32 
-!for i, 11 { !byte 150, 151 }
-!byte 32
-SETUP34: !byte 32 
-!for i, 11 { !byte 166, 167 }
-!byte 32
 
 INVADER1:
 IP10L  !byte $1E,$FF,$CC,$FF,$FF,$12,$21,$C0

@@ -240,7 +240,7 @@ tmsReg0ClearFields:
 ; Outputs:
 ;  A: Field values to set (will be OR'd with existing Reg1)
 ; -----------------------------------------------------------------------------
-tmsReg1ClearFields:
+tmsReg1SetFields:
         ora TMS9918_REG1_SHADOW_ADDR
         sta TMS9918_REG1_SHADOW_ADDR
         ldx #1
