@@ -2,14 +2,14 @@
 
 HBC56_INT_VECTOR = onVSync
 
-!source "hbc56.asm"
+!source "../../lib/hbc56.asm"
 
 TMS_MODEL = 9929
-!source "gfx/tms9918.asm"
-!source "gfx/fonts/tms9918font1.asm"
+!source "../../lib/gfx/tms9918.asm"
+!source "../../lib/gfx/fonts/tms9918font1.asm"
 
-!source "gfx/bitmap.asm"
-!source "inp/nes.asm"
+!source "../../lib/gfx/bitmap.asm"
+!source "../../lib/inp/nes.asm"
 
 BUFFER_ADDR = $1000
 

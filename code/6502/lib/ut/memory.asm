@@ -71,6 +71,30 @@ memcpySinglePage:
 ; -----------------------------------------------------------------------------
 
 
+
+; -----------------------------------------------------------------------------
+; memcpySinglePagePort: Copy up to 255 bytes 
+; -----------------------------------------------------------------------------
+; Inputs:
+;	MEMCPY_SRC: src address
+;	MEMCPY_DST: dst address (port)
+;	Y:	bytes
+; -----------------------------------------------------------------------------
+memcpySinglePagePort:
+	cpy #0
+	beq +
+-
+	dey
+	lda (MEMCPY_SRC), Y
+	sta MEMCPY_DST
+	cpy #0
+	bne -
++
+	rts
+; -----------------------------------------------------------------------------
+
+
+
 ; -----------------------------------------------------------------------------
 ; memcpyMultiPage: Copy an up to 2^15 bytes 
 ; -----------------------------------------------------------------------------
@@ -130,6 +154,74 @@ memcpyMultiPage:
 
 	rts
 ; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; memcpyMultiPagePort: Copy an up to 2^15 bytes 
+; -----------------------------------------------------------------------------
+; Inputs:
+;	MEMCPY_SRC: src address
+;	MEMCPY_DST: dst address (port)
+;	MEMCPY_LEN: length
+; -----------------------------------------------------------------------------
+memcpyMultiPagePort:
+
+	ldy #0
+	ldx MEMCPY_LEN + 1
+- 
+	lda (MEMCPY_SRC),y ; could unroll to any power of 2
+	sta MEMCPY_DST
+	iny
+	bne -
+	dex
+	beq +
+	inc MEMCPY_SRC + 1
+	jmp -
++ ; remaining bytes
+	ldx MEMCPY_LEN
+	beq +
+- ; X bytes
+	lda (MEMCPY_SRC),y
+	sta MEMCPY_DST
+	iny
+	dex
+	bne -
++
+	rts
+; -----------------------------------------------------------------------------
+
+
+
+; -----------------------------------------------------------------------------
+; memcpy: Copy a fixed number of bytes from src ram to dest port
+; -----------------------------------------------------------------------------
+; Inputs:
+;	src: source address
+;	dst: destination address
+;	cnt: number of bytes
+; -----------------------------------------------------------------------------
+!macro memcpyPort dst, src, cnt {
+	lda #<src
+	sta MEMCPY_SRC
+	lda #>src
+	sta MEMCPY_SRC + 1
+
+	lda #<dst
+	sta MEMCPY_DST
+	lda #>dst
+	sta MEMCPY_DST + 1
+
+	!if cnt <= 255 {
+		ldy #<cnt					
+		jsr memcpySinglePagePort
+	} else {
+		lda #<cnt
+		sta MEMCPY_LEN
+		lda #>cnt
+		sta MEMCPY_LEN + 1
+		jsr memcpyMultiPagePort
+	}
+}
 
 } ; memcpy
 
