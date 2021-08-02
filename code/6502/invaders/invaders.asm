@@ -28,6 +28,21 @@ TMP_X_POSITION = $54
 TMP_Y_POSITION = $55
 TMP_GAMEFIELD_OFFSET = $56
 X_DIR = $57
+Y_DIR = $58
+PLAYER_X = $59
+
+BULLET_X = $5a
+BULLET_Y = $5b
+
+HIT_TILE_X = $5c
+HIT_TILE_Y = $5d
+HIT_TILE_PIX_X = $5e
+HIT_TILE_PIX_Y = $5f
+
+
+; contants
+BULLET_Y_LOADED = $D0
+BULLET_SPEED = 4
 
 GAMEFIELD = $1000
 
@@ -40,6 +55,31 @@ initialGameField:
 !byte 144,144,144,144,144,160,144,144,144,144,144
 !byte 128,128,128,128,128,128,128,128,128,128,128
 !byte 128,128,128,128,128,128,128,128,128,128,128
+
+; X/Y indexes as pixel location
+; returns:
+;  TILE in HIT_TILE_X/HIT_TILE_Y
+;  TILE OFFSET in HIT_TILE_PIX_X/HIT_TILE_PIX_Y
+pixelToTileXy
+        txa
+        asr
+        asr
+        asr
+        sta HIT_TILE_X
+        txa
+        and #$03
+        sta HIT_TILE_PIX_X
+        tya
+        asr
+        asr
+        asr
+        sta HIT_TILE_Y
+        tya
+        and #$03
+        sta HIT_TILE_PIX_Y
+        rts
+
+
 
 
 onVSync:
@@ -65,10 +105,14 @@ main:
         sei
         +memcpy GAMEFIELD, initialGameField, 11 * 5
 
+        lda BULLET_Y_LOADED
+        sta BULLET_Y
+
         lda #0
         sta ANIM_FRAME
         sta MOVE_FRAME
         sta FRAMES_COUNTER
+        sta Y_DIR
 
         lda #1
         sta X_POSITION
@@ -77,6 +121,19 @@ main:
         sta Y_POSITION
 
         jsr tmsInit
+
+        lda #TMS_R1_SPRITE_MAG2
+        jsr tmsReg1ClearFields
+        lda #TMS_R1_SPRITE_16
+        jsr tmsReg1SetFields
+
+        +tmsCreateSpritePatternQuad 0, playerSprite
+        +tmsCreateSprite 0, 0, 100, 160, TMS_LT_BLUE
+        +tmsCreateSpritePatternQuad 1, bulletSprite
+        +tmsCreateSprite 1, 4, 100, BULLET_Y_LOADED, TMS_WHITE
+
+        lda #100
+        sta PLAYER_X
 
         +tmsSetAddrColorTable
         +tmsSendData COLORTAB, 32
@@ -101,13 +158,63 @@ main:
         beq .loop
         jsr nextFrame
 
+
+        +nesBranchIfNotPressed NES_B, +
+        lda BULLET_Y
+        cmp #BULLET_Y_LOADED
+        bne +
+        lda PLAYER_X
+        clc
+        adc #4
+        tax
+        stx BULLET_X
+        ldy #164
+        sty BULLET_Y
+        +tmsSpritePosXYReg 1
++
+
+        +nesBranchIfNotPressed NES_LEFT, +
+        dec PLAYER_X
+        dec PLAYER_X
++
+        +nesBranchIfNotPressed NES_RIGHT, +
+        inc PLAYER_X
+        inc PLAYER_X
++
+
+        lda BULLET_Y
+        cmp #BULLET_Y_LOADED
+        beq +
+        sec
+        sbc #BULLET_SPEED
+        tay
+        sty BULLET_Y
+        ldx BULLET_X
+        +tmsSpritePosXYReg 1
+        jsr pixelToTileXy
+
+
+        cpy #16
+        bcs +
+        ldy #BULLET_Y_LOADED
+        sty BULLET_Y
+        +tmsSpritePosXYReg 1
++
+
+        ldx PLAYER_X
+        ldy #160
+        +tmsSpritePosXYReg 0
+
+        lda #0
+        sta Y_DIR
+
         lda #0
         sta V_SYNC
 
         inc FRAMES_COUNTER
         lda FRAMES_COUNTER
         cmp #FRAMES_PER_ANIM
-        bne .loop
+        bne .goLoop
 
         lda #0
         sta FRAMES_COUNTER
@@ -120,6 +227,7 @@ main:
         beq +
         cmp #4
         beq +
+.goLoop
         jmp .loop        
 +
         lda ANIM_FRAME
@@ -138,6 +246,8 @@ main:
         sta X_DIR
         lda #3
         sta ANIM_FRAME
+        lda #1
+        sta Y_DIR
         jmp .loop
 + 
         cmp #0
@@ -148,6 +258,8 @@ main:
         sta X_DIR
         lda #0
         sta ANIM_FRAME
+        lda #1
+        sta Y_DIR
 + 
         jmp .loop
 
@@ -175,12 +287,20 @@ nextFrame:
         sta TMS9918_RAM
         +tmsWait
 -
+        lda Y_DIR
+        beq +
+        ldx TMP_GAMEFIELD_OFFSET
+        lda initialGameField, x
+        clc
+        adc #10
+        jmp ++
++
         ldx TMP_GAMEFIELD_OFFSET
         lda initialGameField, x
         clc
         adc ANIM_FRAME
         adc ANIM_FRAME
-
+++
         sta TMS9918_RAM
         +tmsWait
         clc
@@ -228,12 +348,27 @@ COLORTAB:
        !byte $F0,$F0            ; NUMBERS
        !byte $F0,$F0,$F0,$F0      ; LETTERS
        !byte $00,$00
-       !byte $30,$30            ; INVADER 3
+;       !byte $30,$30            ; INVADER 3
+;       !byte $50,$50            ; INVADER 2
+;       !byte $60,$60            ; INVADER 1
+       !byte $40,$40            ; INVADER 3
        !byte $50,$50            ; INVADER 2
-       !byte $60,$60            ; INVADER 1
+       !byte $70,$70            ; INVADER 1
        !byte $40,$00            ; BOTTOM SCREEN
        !byte $00,$00,$00,$00      ; TOP SCREEN
        !byte $00,$00            ; TOP SCREEN
+
+playerSprite:
+       !byte $00,$00,$00,$00,$00,$00,$08,$08
+       !byte $08,$08,$1C,$7F,$FF,$FF,$FF,$63
+       !byte $00,$00,$00,$00,$00,$00,$00,$00
+       !byte $00,$00,$00,$00,$80,$80,$80,$00
+
+bulletSprite:
+       !byte $80,$80,$80,$80,$80,$00,$00,$00
+       !byte $00,$00,$00,$00,$00,$00,$00,$00
+       !byte $00,$00,$00,$00,$00,$00,$00,$00
+       !byte $00,$00,$00,$00,$00,$00,$00,$00
 
 
 INVADER1:

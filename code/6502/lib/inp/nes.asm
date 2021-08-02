@@ -53,8 +53,8 @@ nesPressed:
         sta NES_TMP
         lda NES_IO_ADDR
         eor #$ff
+        and NES_TMP
         clc
-        bit NES_TMP
         beq +
         sec
 +

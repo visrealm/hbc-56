@@ -572,6 +572,31 @@ tmsInitSpriteTable:
 }
 
 ; -----------------------------------------------------------------------------
+; tmsCreateSpritePatternQuad: Create a (size 1) sprite pattern 
+;   (.spriteDataAddr is 32 bytes)
+; -----------------------------------------------------------------------------
+!macro tmsCreateSpritePatternQuad .pattInd, .spriteDataAddr {
+
+        sei
+
+        ; sprite pattern table
+        +tmsSetAddrSpritePattTableInd .pattInd * 4
+
+        ldx #0
+-
+        lda .spriteDataAddr,x
+        sta TMS9918_RAM
+        +tmsWait
+        inx
+        cpx #32
+
+        cli
+
+        bne -
+}
+
+
+; -----------------------------------------------------------------------------
 ; tmsCreateSprite: Create a sprite
 ; -----------------------------------------------------------------------------
 !macro tmsCreateSprite .ind, .pattInd, .xPos, .yPos, .color {
