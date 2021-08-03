@@ -148,6 +148,19 @@ _tmsWait:
 }
 
 ; -----------------------------------------------------------------------------
+; tmsSetAddressRead: Set an address to read from the TMS9918
+; -----------------------------------------------------------------------------
+!macro tmsSetAddressRead .addr {
+        lda #<(.addr)
+        sta TMS9918_REG
+        +tmsWait
+        lda #>(.addr)
+        sta TMS9918_REG
+        +tmsWait
+}
+
+
+; -----------------------------------------------------------------------------
 ; tmsSetAddress: Set an address in the TMS9918 
 ; -----------------------------------------------------------------------------
 ; TMS_TMP_ADDRESS: Address to set
@@ -160,6 +173,14 @@ tmsSetAddress:
         sta TMS9918_REG
         +tmsWait
         rts
+
+; -----------------------------------------------------------------------------
+; tmsGet: Get a byte of data from the TMS9918
+; -----------------------------------------------------------------------------
+!macro tmsGet {
+        +tmsWait
+        lda TMS9918_RAM
+}
 
 ; -----------------------------------------------------------------------------
 ; tmsPut: Send a byte of data to the TMS9918
@@ -714,6 +735,13 @@ tmsHex8:
 ; -----------------------------------------------------------------------------
 !macro tmsSetPos .x, .y {
         +tmsSetAddress (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetPosRead: Set read cursor position
+; -----------------------------------------------------------------------------
+!macro tmsSetPosRead .x, .y {
+        +tmsSetAddressRead (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
 }
 
 

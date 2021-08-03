@@ -62,17 +62,17 @@ initialGameField:
 ;  TILE OFFSET in HIT_TILE_PIX_X/HIT_TILE_PIX_Y
 pixelToTileXy
         txa
-        asr
-        asr
-        asr
+        lsr
+        lsr
+        lsr
         sta HIT_TILE_X
         txa
         and #$03
         sta HIT_TILE_PIX_X
         tya
-        asr
-        asr
-        asr
+        lsr
+        lsr
+        lsr
         sta HIT_TILE_Y
         tya
         and #$03
