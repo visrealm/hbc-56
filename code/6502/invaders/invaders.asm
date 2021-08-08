@@ -11,6 +11,7 @@ TMS_MODEL = 9929
 !source "../lib/gfx/bitmap.asm"
 !source "../lib/inp/nes.asm"
 !source "../lib/ut/memory.asm"
+!source "../lib/sfx/ay3891x.asm"
 
 TICKS_L = $48
 TICKS_H = $49
@@ -39,22 +40,52 @@ HIT_TILE_Y = $5d
 HIT_TILE_PIX_X = $5e
 HIT_TILE_PIX_Y = $5f
 
+TONE0 = $60
+TONE1 = $61
+TONE0_ = $62
+TONE1_ = $63
+
 
 ; contants
 BULLET_Y_LOADED = $D0
 BULLET_SPEED = 4
 
 GAMEFIELD = $1000
+ALIEN1    = $1200
+ALIEN2    = $1300
+ALIEN3    = $1400
 
-GAME_COLS = 11
-GAME_ROWS  = 5
+GAME_COLS  = 24
+GAME_ROWS  = 11
 
 initialGameField:
-!byte 160,160,160,160,144,160,160,160,160,160,160
-!byte 144,144,144,144,144,144,144,144,144,144,144
-!byte 144,144,144,144,144,160,144,144,144,144,144
-!byte 128,128,128,128,128,128,128,128,128,128,128
-!byte 128,128,128,128,128,128,128,128,128,128,128
+!byte 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+!byte 0,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,  0
+!byte 0,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,  0
+!byte 0,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,  0
+!byte 0,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,  0
+!byte 0,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,  0
+!byte 0,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,  0
+!byte 0,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,  0
+!byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
+!byte 0,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,  0
+!byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
+
+ROTATE_ADDR = R8
+
+rotate1:
+        ldx #8
+-
+        dex
+        lda ALIEN1 + 8, X
+        ror     ; Get carry
+        ror ALIEN1, X
+        ror ALIEN1 + 8, X
+        cpx #0
+        bne -
+        rts
+
+
 
 ; X/Y indexes as pixel location
 ; returns:
@@ -101,9 +132,15 @@ onVSync:
 
 
 main:
-
+       
         sei
-        +memcpy GAMEFIELD, initialGameField, 11 * 5
+        +memcpy GAMEFIELD, initialGameField, 24 * 11
+        +memcpy ALIEN1, INVADER1, 8 * 2
+        +memset ALIEN1 + 16, 0, 8 * 2
+        +memcpy ALIEN2, INVADER2, 8 * 2
+        +memset ALIEN2 + 16, 0, 8 * 2
+        +memcpy ALIEN3, INVADER3, 8 * 2
+        +memset ALIEN3 + 16, 0, 8 * 2
 
         lda BULLET_Y_LOADED
         sta BULLET_Y
@@ -113,6 +150,7 @@ main:
         sta MOVE_FRAME
         sta FRAMES_COUNTER
         sta Y_DIR
+        sta TONE0
 
         lda #1
         sta X_POSITION
@@ -139,7 +177,9 @@ main:
         +tmsSendData COLORTAB, 32
 
         +tmsSetAddrFontTableInd 128
-        +tmsSendData INVADER1, 16 * 8 * 3  ; first 3 invaders
+        +tmsSendData ALIEN1, 8 * 4
+        +tmsSendData ALIEN2, 8 * 4
+        +tmsSendData ALIEN3, 8 * 4
 
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
@@ -153,16 +193,27 @@ main:
 
         +tmsEnableInterrupts
 
+        jsr ay3891Init
+
 .loop:
         lda V_SYNC
         beq .loop
         jsr nextFrame
 
-
         +nesBranchIfNotPressed NES_B, +
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
         bne +
+
+        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
+        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
+        lda #$08
+        sta TONE1
+        +ay3891WriteA AY3891X_PSG0, AY3891X_CHC_TONE_L
+
         lda PLAYER_X
         clc
         adc #4
@@ -199,6 +250,8 @@ main:
         ldy #BULLET_Y_LOADED
         sty BULLET_Y
         +tmsSpritePosXYReg 1
+
+        jsr stopBulletSound
 +
 
         ldx PLAYER_X
@@ -211,10 +264,42 @@ main:
         lda #0
         sta V_SYNC
 
+        lda TONE1
+        clc
+        adc #8
+        sta TONE1
+        +ay3891WriteA AY3891X_PSG0, AY3891X_CHC_TONE_L
+
         inc FRAMES_COUNTER
         lda FRAMES_COUNTER
         cmp #FRAMES_PER_ANIM
-        bne .goLoop
+        beq +
+        jmp .goLoop
++
+
+
+        inc TONE0
+        lda TONE0
+        and #$03
+
+        cmp #0
+        bne +
+        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 8
+        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 0
+        jmp ++
++
+        cmp #2
+        bne +
+        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 0
+        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 10
+        jmp ++
++
+        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 0
+        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 0
+        bne ++
+
+++
+
 
         lda #0
         sta FRAMES_COUNTER
@@ -223,6 +308,27 @@ main:
         clc
         adc X_DIR
         sta ANIM_FRAME
+
+        and #1
+        beq +
+        jsr rotate1
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData ALIEN1, 16
+        +tmsSetAddrFontTableInd 132
+        +tmsSendData INVADER2, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData INVADER3, 16
+        jmp .loop  
++      
+        jsr rotate1
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData ALIEN1, 16
+        +tmsSetAddrFontTableInd 132
+        +tmsSendData IP22L, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData IP32L, 16
+        jmp .loop        
+
         cmp #255
         beq +
         cmp #4
@@ -230,6 +336,7 @@ main:
 .goLoop
         jmp .loop        
 +
+
         lda ANIM_FRAME
         and #$03
         sta ANIM_FRAME
@@ -263,6 +370,16 @@ main:
 + 
         jmp .loop
 
+
+stopBulletSound:
+        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $00
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $00
+        +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_L, 0
+        +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_H, 0
+        rts
+
+
 ; Called each frame (on VSYNC)
 nextFrame:
 
@@ -278,45 +395,21 @@ nextFrame:
         tax
 
         lda TMP_Y_POSITION
-        asl
         clc
         adc Y_POSITION
         tay
         jsr tmsSetPos
-        lda #32
-        sta TMS9918_RAM
-        +tmsWait
 -
-        lda Y_DIR
-        beq +
         ldx TMP_GAMEFIELD_OFFSET
         lda initialGameField, x
-        clc
-        adc #10
-        jmp ++
-+
-        ldx TMP_GAMEFIELD_OFFSET
-        lda initialGameField, x
-        clc
-        adc ANIM_FRAME
-        adc ANIM_FRAME
-++
         sta TMS9918_RAM
         +tmsWait
-        clc
-        adc #1
-        sta TMS9918_RAM
-        +tmsWait
-+
 
         inc TMP_GAMEFIELD_OFFSET
         inc TMP_X_POSITION
         lda TMP_X_POSITION
         cmp #GAME_COLS
         bne -
-        lda #32
-        sta TMS9918_RAM
-        +tmsWait
         lda #0
         sta TMP_X_POSITION
         inc TMP_Y_POSITION
@@ -370,60 +463,26 @@ bulletSprite:
        !byte $00,$00,$00,$00,$00,$00,$00,$00
        !byte $00,$00,$00,$00,$00,$00,$00,$00
 
+EMPTY:
+       !byte $00,$00,$00,$00,$00,$00,$00,$00
 
 INVADER1:
 IP10L  !byte $1E,$FF,$CC,$FF,$FF,$12,$21,$C0
 IP10R  !byte $00,$C0,$C0,$C0,$C0,$00,$00,$C0
-IP12L  !byte $07,$3F,$33,$3F,$3F,$04,$08,$0C
-IP12R  !byte $80,$F0,$30,$F0,$F0,$80,$40,$C0
-IP14L  !byte $01,$0F,$0C,$0F,$0F,$01,$02,$0C
-IP14R  !byte $E0,$FC,$CC,$FC,$FC,$20,$10,$0C
-IP16L  !byte $00,$03,$03,$03,$03,$00,$00,$00
-IP16R  !byte $78,$FF,$33,$FF,$FF,$48,$84,$CC
-IP18LT !byte $00,$00,$00,$00,$1E,$FF,$CC,$FF
-IP18RT !byte $00,$00,$00,$00,$00,$C0,$C0,$C0
-IP18LB !byte $FF,$12,$21,$33,$00,$00,$00,$00
-IP18RB !byte $C0,$00,$00,$00,$00,$00,$00,$00
-       !byte $00,$00,$33,$00,$00,$21,$1E,$00
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
-       !byte $00,$00,$33,$00,$00,$00,$1E,$21
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
+IP12L  !byte $1E,$FF,$CC,$FF,$FF,$12,$21,$33
+IP12R  !byte $00,$C0,$C0,$C0,$C0,$00,$00,$00
 
 INVADER2:
 IP20L  !byte $63,$22,$3E,$6B,$FF,$BE,$A2,$36
 IP20R  !byte $00,$00,$00,$00,$80,$80,$80,$00
-IP22L  !byte $18,$08,$2F,$2A,$3F,$0F,$08,$30
-IP22R  !byte $C0,$80,$A0,$A0,$E0,$80,$80,$60
-IP24L  !byte $06,$02,$03,$06,$0F,$0B,$0A,$03
-IP24R  !byte $30,$20,$E0,$B0,$F8,$E8,$28,$60
-IP26L  !byte $01,$00,$02,$02,$03,$00,$00,$03
-IP26R  !byte $8C,$88,$FA,$AA,$FE,$F8,$88,$06
-IP28LT !byte $00,$00,$00,$00,$63,$22,$BE,$AA
-IP28RT !byte $00,$00,$00,$00,$00,$00,$80,$80
-IP28LB !byte $FF,$3E,$22,$C1,$00,$00,$00,$00
-IP28RB !byte $80,$00,$00,$80,$00,$00,$00,$00
-       !byte $00,$00,$00,$14,$00,$22,$1C,$00
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
-       !byte $00,$00,$00,$14,$00,$00,$1C,$22
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
+IP22L  !byte $63,$22,$BE,$AB,$FF,$3E,$22,$C1
+IP22R  !byte $00,$00,$80,$80,$80,$00,$00,$80
 
 INVADER3:
 IP30L  !byte $08,$1C,$3E,$6B,$7F,$14,$22,$41
 IP30R  !byte $00,$00,$00,$00,$00,$00,$00,$00
-IP32L  !byte $02,$07,$0F,$1A,$1F,$05,$08,$05
-IP32R  !byte $00,$00,$80,$C0,$C0,$00,$80,$00
-IP34L  !byte $00,$01,$03,$06,$07,$01,$02,$04
-IP34R  !byte $80,$C0,$E0,$B0,$F0,$40,$20,$10
-IP36L  !byte $00,$00,$00,$01,$01,$00,$00,$00
-IP36R  !byte $20,$70,$F8,$AC,$FC,$50,$88,$50
-IP38LT !byte $00,$00,$00,$00,$08,$1C,$3E,$6B
-IP38RT !byte $00,$00,$00,$00,$00,$00,$00,$00
-IP38LB !byte $7F,$14,$22,$14,$00,$00,$00,$00
-IP38RB !byte $00,$00,$00,$00,$00,$00,$00,$00
-       !byte $00,$00,$00,$14,$00,$22,$1C,$00
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
-       !byte $00,$00,$00,$14,$00,$00,$1C,$22
-       !byte $00,$00,$00,$00,$00,$00,$00,$00
+IP32L  !byte $08,$1C,$3E,$6B,$7F,$14,$22,$14
+IP32R  !byte $00,$00,$00,$00,$00,$00,$00,$00
 
 SHIELD !byte $30,$31,$32,$FE,$FF,3
        !byte $36,$37,$38,$FE,$FF,4

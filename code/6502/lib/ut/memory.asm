@@ -27,6 +27,20 @@ MEMCPY_LEN = R2
 ;	cnt: number of bytes
 ; -----------------------------------------------------------------------------
 !macro memcpy dst, src, cnt {
+!if cnt <= 8 {
+	!for i, 0, cnt - 1 {
+		lda src + i
+		sta dst + i
+	}
+} else { !if cnt <= 255 {
+	ldx #cnt
+-
+	dex
+	lda src, x
+	sta dst, x
+	cpx #0
+	bne -
+} else {
 	lda #<src
 	sta MEMCPY_SRC
 	lda #>src
@@ -37,16 +51,14 @@ MEMCPY_LEN = R2
 	lda #>dst
 	sta MEMCPY_DST + 1
 
-	!if cnt <= 255 {
-		ldy #<cnt					
-		jsr memcpySinglePage 
-	} else {
+
 		lda #<cnt
 		sta MEMCPY_LEN
 		lda #>cnt
 		sta MEMCPY_LEN + 1
 		jsr memcpyMultiPage
 	}
+}
 }
 
 ; -----------------------------------------------------------------------------
@@ -239,24 +251,32 @@ MEMSET_LEN = R1
 ;	cnt: number of bytes
 ; -----------------------------------------------------------------------------
 !macro memset dst, val, cnt {
-
+!if cnt <= 8 {
+	lda #val
+	!for i, 0, cnt - 1 {
+	sta dst + i
+	}
+} else if cnt <= 255 {
+	ldx #cnt
+	lda #val
+-
+	dex
+	sta dst, x
+	cpx #0
+	bne -
+} else {
 	lda #<dst
 	sta MEMSET_DST
 	lda #>dst
 	sta MEMSET_DST + 1
+	lda #<cnt
+	sta MEMSET_LEN
+	lda #>cnt
+	sta MEMSET_LEN + 1
+	lda #val
+	jsr memsetMultiPage
+}
 
-	!if cnt <= 255 {
-		ldy #<cnt					
-		lda #val
-		jsr memsetSinglePage 
-	} else {
-		lda #<cnt
-		sta MEMSET_LEN
-		lda #>cnt
-		sta MEMSET_LEN + 1
-		lda #val
-		jsr memsetMultiPage
-	}
 }
 
 
@@ -272,8 +292,9 @@ memsetSinglePage:
 	cpy #0
 	beq +
 -
-	sta (MEMSET_DST), y
 	dey
+	sta (MEMSET_DST), y
+	cpy #0
 	bne -
 +
 	rts
