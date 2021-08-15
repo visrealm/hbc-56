@@ -13,7 +13,7 @@
 ; -------------------------
 ; Constants
 ; -------------------------
-NES_IO_PORT	= $80
+NES_IO_PORT	= $81
 
 ; IO Ports
 NES_IO_ADDR     = IO_PORT_BASE_ADDRESS | NES_IO_PORT

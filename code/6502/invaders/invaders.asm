@@ -45,6 +45,10 @@ TONE1 = $61
 TONE0_ = $62
 TONE1_ = $63
 
+SPRITE_PLAYER    = 0
+SPRITE_BULLET    = 3
+SPRITE_LAST_LIFE = 1
+
 
 ; contants
 BULLET_Y_LOADED = $D0
@@ -54,6 +58,11 @@ GAMEFIELD = $1000
 ALIEN1    = $1200
 ALIEN2    = $1300
 ALIEN3    = $1400
+
+SHIELD1   = $1500
+SHIELD2   = $1540
+SHIELD3   = $1580
+SHIELD4   = $15C0
 
 GAME_COLS  = 24
 GAME_ROWS  = 11
@@ -70,6 +79,26 @@ initialGameField:
 !byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
 !byte 0,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,  0
 !byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
+
+shieldLayout:
+!byte 8,9,10,0,0,0,14,15,16,0,0,0,0,20,21,22,0,0,0,26,27,28
+!fill 10, 0
+!byte 11,12,13,0,0,0,17,18,19,0,0,0,0,23,24,25,0,0,0,29,30,31
+SHIELD_BYTES = * - shieldLayout
+
+bunkerLayout:
+!byte 176
+!fill 22, 177
+!byte 178
+!fill 8, 0
+!byte 179
+!fill 22, 0
+!byte 180
+!fill 8, 0
+!byte 181
+!fill 22, 182
+!byte 183
+BUNKER_BYTES = * - bunkerLayout
 
 ROTATE_ADDR = R8
 
@@ -141,6 +170,10 @@ main:
         +memset ALIEN2 + 16, 0, 8 * 2
         +memcpy ALIEN3, INVADER3, 8 * 2
         +memset ALIEN3 + 16, 0, 8 * 2
+        +memcpy SHIELD1, SHIELD, 8 * 6
+        +memcpy SHIELD2, SHIELD, 8 * 6
+        +memcpy SHIELD3, SHIELD, 8 * 6
+        +memcpy SHIELD4, SHIELD, 8 * 6
 
         lda BULLET_Y_LOADED
         sta BULLET_Y
@@ -155,7 +188,7 @@ main:
         lda #1
         sta X_POSITION
         sta X_DIR
-        lda #4
+        lda #3
         sta Y_POSITION
 
         jsr tmsInit
@@ -166,9 +199,12 @@ main:
         jsr tmsReg1SetFields
 
         +tmsCreateSpritePatternQuad 0, playerSprite
-        +tmsCreateSprite 0, 0, 100, 160, TMS_LT_BLUE
+        +tmsCreateSprite SPRITE_PLAYER, 0, 100, 151, TMS_LT_BLUE
         +tmsCreateSpritePatternQuad 1, bulletSprite
-        +tmsCreateSprite 1, 4, 100, BULLET_Y_LOADED, TMS_WHITE
+        +tmsCreateSprite SPRITE_BULLET, 4, 100, BULLET_Y_LOADED, TMS_WHITE
+
+        +tmsCreateSprite SPRITE_LAST_LIFE, 0, 50, 169, TMS_DK_BLUE
+        +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 70, 169, TMS_DK_BLUE
 
         lda #100
         sta PLAYER_X
@@ -176,16 +212,29 @@ main:
         +tmsSetAddrColorTable
         +tmsSendData COLORTAB, 32
 
+        +tmsSetAddrFontTableInd 8
+        +tmsSendData SHIELD1, 8 * 6  ; Shield1 8 - 13
+        +tmsSendData SHIELD2, 8 * 6  ; Shield2 14 - 18
+        +tmsSendData SHIELD3, 8 * 6  ; Shield3 20 - 25
+        +tmsSendData SHIELD4, 8 * 6  ; Shield4 26 - 31
+
         +tmsSetAddrFontTableInd 128
         +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN2, 8 * 4
         +tmsSendData ALIEN3, 8 * 4
 
+        +tmsSetAddrFontTableInd 176
+        +tmsSendData BBORDR, 8 * 8
+
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
-
         +tmsPrint "SCORE 00000   HI SCORE 00000", 2, 0
+        +tmsSetPos 5, 17
+        +tmsSendData shieldLayout, SHIELD_BYTES
+        +tmsSetPos 4, 21
+        +tmsSendData bunkerLayout, BUNKER_BYTES
+
 
         lda #0
         sta V_SYNC
@@ -194,6 +243,16 @@ main:
         +tmsEnableInterrupts
 
         jsr ay3891Init
+
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3e
+        +ay3891Write AY3891X_PSG1, AY3891X_CHA_AMPL, $14
+        +ay3891Write AY3891X_PSG1, AY3891X_CHB_AMPL, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
+        ;+ay3891PlayNote AY3891X_PSG1, AY3891X_CHA, NOTE_Gs
+
 
 .loop:
         lda V_SYNC
@@ -219,11 +278,18 @@ main:
         adc #4
         tax
         stx BULLET_X
-        ldy #164
+        ldy #157
         sty BULLET_Y
-        +tmsSpritePosXYReg 1
+        +tmsSpritePosXYReg SPRITE_BULLET
 +
 
+
+        +nesBranchIfPressed NES_A, +
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
+        +ay3891PlayNote AY3891X_PSG1, AY3891X_CHA, NOTE_Gs
++
         +nesBranchIfNotPressed NES_LEFT, +
         dec PLAYER_X
         dec PLAYER_X
@@ -241,22 +307,40 @@ main:
         tay
         sty BULLET_Y
         ldx BULLET_X
-        +tmsSpritePosXYReg 1
+        +tmsSpritePosXYReg SPRITE_BULLET
+        
         jsr pixelToTileXy
+        
+        ldx HIT_TILE_X
+        ldy HIT_TILE_Y
+        jsr tmsSetPosRead
+        lda TMS9918_RAM
+        +tmsWait
 
+        cmp #0
+        beq +
+        cmp #32
+        bcs +
+        ; tile hit
+        jsr tmsSetPos
+        +tmsPut 0
+        ldy 0
+        sty BULLET_Y
 
++
+        ldy BULLET_Y
         cpy #16
         bcs +
         ldy #BULLET_Y_LOADED
         sty BULLET_Y
-        +tmsSpritePosXYReg 1
+        +tmsSpritePosXYReg SPRITE_BULLET
 
         jsr stopBulletSound
 +
 
         ldx PLAYER_X
-        ldy #160
-        +tmsSpritePosXYReg 0
+        ldy #151
+        +tmsSpritePosXYReg SPRITE_PLAYER
 
         lda #0
         sta Y_DIR
@@ -380,6 +464,9 @@ stopBulletSound:
         rts
 
 
+
+
+
 ; Called each frame (on VSYNC)
 nextFrame:
 
@@ -436,11 +523,11 @@ delay:
 	rts
 
 COLORTAB:
-       !byte $00,$00,$00,$00
+       !byte $00
        !byte $F0,$F0,$F0,$00      ; SHIELDS
        !byte $F0,$F0            ; NUMBERS
        !byte $F0,$F0,$F0,$F0      ; LETTERS
-       !byte $00,$00
+       !byte $00,$00,$00,$00,$00
 ;       !byte $30,$30            ; INVADER 3
 ;       !byte $50,$50            ; INVADER 2
 ;       !byte $60,$60            ; INVADER 1
@@ -484,14 +571,21 @@ IP30R  !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP32L  !byte $08,$1C,$3E,$6B,$7F,$14,$22,$14
 IP32R  !byte $00,$00,$00,$00,$00,$00,$00,$00
 
-SHIELD !byte $30,$31,$32,$FE,$FF,3
-       !byte $36,$37,$38,$FE,$FF,4
-       !byte $3C,$3D,$3E,$FE,$FF,3
-       !byte $42,$43,$44,$FE,$FF,10
-       !byte $33,$34,$35,$FE,$FF,3
-       !byte $39,$3A,$3B,$FE,$FF,4
-       !byte $3F,$40,$41,$FE,$FF,3
-       !byte $45,$46,$47,$FD
+BBORDR !byte $00,$00,$1F,$3F,$7F,$78,$70,$70
+       !byte $00,$00,$FF,$FF,$FF,$00,$00,$00
+       !byte $00,$00,$FC,$FE,$FF,$0F,$07,$07
+       !byte $70,$70,$70,$70,$70,$70,$70,$70
+       !byte $07,$07,$07,$07,$07,$07,$07,$07
+       !byte $70,$70,$70,$70,$78,$7F,$3F,$1F
+       !byte $00,$00,$00,$00,$00,$FF,$FF,$FF
+       !byte $07,$07,$07,$07,$0F,$FF,$FE,$FC
+
+SHIELD !byte $00,$03,$07,$0F,$1F,$3F,$3F,$3F
+       !byte $00,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+       !byte $00,$C0,$E0,$F0,$F8,$FC,$FC,$FC
+       !byte $3F,$3F,$3F,$3F,$3F,$3F,$3F,$3F
+       !byte $FF,$FF,$FF,$FF,$C3,$81,$81,$81
+       !byte $FC,$FC,$FC,$FC,$FC,$FC,$FC,$FC
 TITLES !byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$E4,$D9,$B0,$D9,$DE
        !byte $E6,$D1,$D4,$D5,$E2,$E3,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
        !byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF

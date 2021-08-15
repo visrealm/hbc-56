@@ -139,12 +139,7 @@ _tmsWait:
 ; tmsSetAddress: Set an address in the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsSetAddress .addr {
-        lda #<($4000 | .addr)
-        sta TMS9918_REG
-        +tmsWait
-        lda #>($4000 | .addr)
-        sta TMS9918_REG
-        +tmsWait
+        +tmsSetAddressRead ($4000 | .addr)
 }
 
 ; -----------------------------------------------------------------------------
@@ -166,6 +161,21 @@ _tmsWait:
 ; TMS_TMP_ADDRESS: Address to set
 ; -----------------------------------------------------------------------------
 tmsSetAddress:
+        lda TMS_TMP_ADDRESS
+        sta TMS9918_REG
+        +tmsWait
+        lda TMS_TMP_ADDRESS + 1
+        ora #$40
+        sta TMS9918_REG
+        +tmsWait
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsSetAddressRead: Set an address to read from the TMS9918 
+; -----------------------------------------------------------------------------
+; TMS_TMP_ADDRESS: Address to read
+; -----------------------------------------------------------------------------
+tmsSetAddressRead:
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
         +tmsWait
@@ -555,6 +565,31 @@ tmsInitSpriteTable:
         rts
 
 ; -----------------------------------------------------------------------------
+; tmsTileXyAtPixelXy: Return tile position at pixel position
+; -----------------------------------------------------------------------------
+; Inputs:
+;  X: Pixel position X
+;  Y: Pixel position Y
+; Outputs:
+;  X: Tile position X
+;  Y: Tile position Y
+; -----------------------------------------------------------------------------
+tmsTileXyAtPixelXy:
+        pha
+        txa
+        lsr
+        lsr
+        lsr
+        tax
+        tya
+        lsr
+        lsr
+        lsr
+        tay
+        pla
+        rts
+
+; -----------------------------------------------------------------------------
 ; tmsSetAddrSpritePattTable: Initialise address for sprite pattern table
 ; -----------------------------------------------------------------------------
 !macro tmsSetAddrSpritePattTable {
@@ -778,6 +813,39 @@ tmsSetPos:
         sta TMS_TMP_ADDRESS
         jmp tmsSetAddress
 
+
+; -----------------------------------------------------------------------------
+; tmsSetPosRead: Set cursor position to read from
+; -----------------------------------------------------------------------------
+; Inputs:
+;   X: X position (0 - 31)
+;   Y: Y position (0 - 23)
+; -----------------------------------------------------------------------------
+tmsSetPosRead:
+        lda #>TMS_VRAM_BASE_ADDRESS
+        sta TMS_TMP_ADDRESS + 1
+        
+        ; this can be better. rotate and save, perhaps
+
+        tya
+        lsr
+        lsr
+        lsr
+        clc
+        adc TMS_TMP_ADDRESS + 1
+        sta TMS_TMP_ADDRESS + 1
+        tya
+        and #$07
+        asl
+        asl
+        asl
+        asl
+        asl
+        sta TMS_TMP_ADDRESS
+        txa
+        ora TMS_TMP_ADDRESS
+        sta TMS_TMP_ADDRESS
+        jmp tmsSetAddressRead
 
 
 ; -----------------------------------------------------------------------------
