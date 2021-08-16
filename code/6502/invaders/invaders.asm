@@ -14,7 +14,7 @@ HBC56_INT_VECTOR = onVSync
 
 !source "../lib/hbc56.asm"
 
-TMS_MODEL = 9929
+TMS_MODEL = 9918
 !source "../lib/gfx/tms9918.asm"
 !source "../lib/gfx/fonts/tms9918font1.asm"
 
@@ -30,7 +30,8 @@ TMS_MODEL = 9929
 ;
 
 SPRITE_PLAYER    = 0
-SPRITE_BULLET    = 3
+SPRITE_BULLET    = 4
+SPRITE_SPLAT     = 3
 SPRITE_LAST_LIFE = 1
 
 BULLET_Y_LOADED = $D0
@@ -39,7 +40,7 @@ BULLET_SPEED = 4
 PLAYER_POS_Y = 153
 LIVES_POS_Y = 170
 
-FRAMES_PER_ANIM = 10
+FRAMES_PER_ANIM = 12
 MAX_X           = 6
 
 
@@ -159,6 +160,8 @@ main:
         +tmsCreateSprite SPRITE_PLAYER, 0, 124, PLAYER_POS_Y, TMS_CYAN
         +tmsCreateSpritePatternQuad 1, bulletSprite
         +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, TMS_WHITE
+        +tmsCreateSpritePatternQuad 2, explodeSprite
+        +tmsCreateSprite SPRITE_SPLAT, 8, 124, BULLET_Y_LOADED - 1, TMS_TRANSPARENT
 
         +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
         +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
@@ -301,8 +304,24 @@ main:
 
         jsr killObjectAt
 
+        +tmsSpriteColor SPRITE_SPLAT, TMS_MED_RED
+        ldx BULLET_X
+        lda BULLET_Y
+        sec
+        sbc #12
+        tay
+
+        +tmsSpritePosXYReg SPRITE_SPLAT
+
+        ; make sure he disappears.. now
+        sei
+        jsr nextFrame
+        cli
+
+
         ldy #0
         sty BULLET_Y
+        
 
 .testBulletPos
         ldy BULLET_Y
@@ -339,6 +358,8 @@ main:
         beq +
         jmp .loop
 +
+
+        +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
 
         inc TONE0
         lda TONE0

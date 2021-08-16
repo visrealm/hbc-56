@@ -21,6 +21,8 @@ tileXyToGameFieldXy:
         txa
         sec
         sbc GAMEFIELD_OFFSET_X
+        sec
+        sbc #1
         lsr
         tax
 
