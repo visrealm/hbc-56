@@ -11,8 +11,8 @@
 
 GAMEFIELD = $1000
 
-GAME_COLS  = 24
-GAME_ROWS  = 11
+GAME_COLS  = 11
+GAME_ROWS  = 10
 
 ; X/Y indexes as tile location in screeen tiles
 ; returns:
@@ -65,19 +65,38 @@ gameFieldObjectAt:
         lda GAMEFIELD, x
         rts
 
+; -----------------------------------------------------------------------------
+; killObjectAt: Kill gamefield object at given location
+; -----------------------------------------------------------------------------
+; TMP_X_POSITION: X Offset into gamefield
+; TMP_Y_POSITION: Y Offset into gamefield
+; -----------------------------------------------------------------------------
+killObjectAt:
+        lda TMP_Y_POSITION
+        asl
+        asl
+        asl
+        asl
+        clc
+        adc TMP_X_POSITION
+        tax
+        lda #0
+        sta GAMEFIELD, x
+        rts
 
 
 renderGameField:
 
         lda #0
         sta TMP_X_POSITION
-        sta TMP_Y_POSITION
         sta TMP_GAMEFIELD_OFFSET
+        lda #255
+        sta TMP_Y_POSITION
 
         jsr gameFieldRowSetTmsPos
 
         ; send a blank row
-        ldx #GAME_COLS
+        ldx #GAME_COLS * 2 + 2
         lda #0
 -
         sta TMS9918_RAM
@@ -85,9 +104,13 @@ renderGameField:
         dex
         bne -
 
-        inc TMP_Y_POSITION
+        lda #0
+        sta TMP_Y_POSITION
 
 .startRow
+        lda #0
+        sta TMP_X_POSITION
+
         jsr gameFieldRowSetTmsPos
         +tmsPut 0 ; first col - 0
 
@@ -96,8 +119,10 @@ renderGameField:
         jsr gameFieldObjectAt
         sta TMS9918_RAM
         +tmsWait
+        beq +
         clc
         adc #1
++
         sta TMS9918_RAM
         +tmsWait
 
@@ -108,6 +133,8 @@ renderGameField:
 
         +tmsPut 0 ; last col - 0
         
+        lda #0
+        sta TMP_X_POSITION
         inc TMP_Y_POSITION
         jsr gameFieldRowSetTmsPos
         +tmsPut 0 ; first col - 0
@@ -115,19 +142,23 @@ renderGameField:
 .renderGameObjRow1
         ; get the game object at TMP_X_POSITION, TMP_Y_POSITION
         jsr gameFieldObjectAt
+        beq +
         clc
         adc #2
++
         sta TMS9918_RAM
         +tmsWait
+        beq +
         clc
         adc #1
++
         sta TMS9918_RAM
         +tmsWait
 
         inc TMP_X_POSITION
         lda TMP_X_POSITION
         cmp #GAME_COLS
-        bne .renderGameObjRow0
+        bne .renderGameObjRow1
 
         +tmsPut 0 ; last col - 0
 
@@ -153,16 +184,17 @@ renderGameField:
 ;!byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
 
 initialGameField:
+!fill 11, 144
+!fill 5, 0
 !fill 11, 136
 !fill 5, 0
-!fill 11, 132
-!fill 5, 0
-!fill 11, 132
+!fill 11, 136
 !fill 5, 0
 !fill 11, 128
 !fill 5, 0
 !fill 11, 128
 !fill 5, 0
+!fill 11, 0
 
 
 shieldLayout:

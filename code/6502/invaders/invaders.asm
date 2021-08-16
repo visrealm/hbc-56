@@ -36,8 +36,8 @@ SPRITE_LAST_LIFE = 1
 BULLET_Y_LOADED = $D0
 BULLET_SPEED = 4
 
-PLAYER_POS_Y = 152
-LIVES_POS_Y = 169
+PLAYER_POS_Y = 153
+LIVES_POS_Y = 170
 
 FRAMES_PER_ANIM = 10
 MAX_X           = 6
@@ -156,12 +156,12 @@ main:
         jsr tmsReg1SetFields
 
         +tmsCreateSpritePatternQuad 0, playerSprite
-        +tmsCreateSprite SPRITE_PLAYER, 0, 100, PLAYER_POS_Y, TMS_LT_BLUE
+        +tmsCreateSprite SPRITE_PLAYER, 0, 124, PLAYER_POS_Y, TMS_CYAN
         +tmsCreateSpritePatternQuad 1, bulletSprite
-        +tmsCreateSprite SPRITE_BULLET, 4, 100, BULLET_Y_LOADED, TMS_WHITE
+        +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, TMS_WHITE
 
-        +tmsCreateSprite SPRITE_LAST_LIFE, 0, 50, LIVES_POS_Y, TMS_DK_BLUE
-        +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 70, LIVES_POS_Y, TMS_DK_BLUE
+        +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
+        +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
 
         lda #100
         sta PLAYER_X
@@ -177,7 +177,10 @@ main:
 
         +tmsSetAddrFontTableInd 128
         +tmsSendData ALIEN1, 8 * 4
+        +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN2, 8 * 4
+        +tmsSendData ALIEN2, 8 * 4
+        +tmsSendData ALIEN3, 8 * 4
         +tmsSendData ALIEN3, 8 * 4
 
         +tmsSetAddrFontTableInd 176
@@ -214,7 +217,6 @@ main:
 .loop:
         lda V_SYNC
         beq .loop
-        jsr nextFrame
 
         +nesBranchIfNotPressed NES_B, +
         lda BULLET_Y
@@ -275,21 +277,30 @@ main:
         +tmsWait
 
         cmp #0
-        beq +
+        beq ++
         cmp #32
-        bcs +
+        bcs ++
         ; shield tile hit
         jsr tmsSetPos
         +tmsPut 0
         ldy #0
         sty BULLET_Y
-        jmp .testBulletPos
 +
+        jmp .testBulletPos
+++
         cmp #128
         bcc .testBulletPos
+
         ; hit an invader tile
-        jsr tmsSetPos
-        +tmsPut 0
+        ldx HIT_TILE_X
+        ldy HIT_TILE_Y
+        jsr tileXyToGameFieldXy
+        
+        stx TMP_X_POSITION
+        sty TMP_Y_POSITION
+
+        jsr killObjectAt
+
         ldy #0
         sty BULLET_Y
 
@@ -304,8 +315,10 @@ main:
         jsr stopBulletSound
 +
 
+.afterBulletCheck:
+
         ldx PLAYER_X
-        ldy #151
+        ldy #PLAYER_POS_Y
         +tmsSpritePosXYReg SPRITE_PLAYER
 
         lda #0
@@ -324,9 +337,8 @@ main:
         lda FRAMES_COUNTER
         cmp #FRAMES_PER_ANIM
         beq +
-        jmp .goLoop
+        jmp .loop
 +
-
 
         inc TONE0
         lda TONE0
@@ -359,66 +371,77 @@ main:
         adc X_DIR
         sta ANIM_FRAME
 
-        and #1
-        beq +
-        jsr rotate1
-        +tmsSetAddrFontTableInd 128
-        +tmsSendData ALIEN1, 16
-        +tmsSetAddrFontTableInd 132
-        +tmsSendData INVADER2, 16
-        +tmsSetAddrFontTableInd 136
-        +tmsSendData INVADER3, 16
-        jmp .loop  
-+      
-        jsr rotate1
-        +tmsSetAddrFontTableInd 128
-        +tmsSendData ALIEN1, 16
-        +tmsSetAddrFontTableInd 132
-        +tmsSendData IP22L, 16
-        +tmsSetAddrFontTableInd 136
-        +tmsSendData IP32L, 16
-        jmp .loop        
-
-        cmp #255
-        beq +
-        cmp #4
-        beq +
-.goLoop
-        jmp .loop        
-+
-
-        lda ANIM_FRAME
         and #$03
-        sta ANIM_FRAME
-
-        lda GAMEFIELD_OFFSET_X
-        clc
-        adc X_DIR
-        sta GAMEFIELD_OFFSET_X
-        cmp #6
         bne +
-        lda #5
-        sta GAMEFIELD_OFFSET_X
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData INVADER1, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData INVADER2, 16
+        +tmsSetAddrFontTableInd 144
+        +tmsSendData INVADER3, 16
+
+        lda X_DIR
+        bpl .moveRight
+-
+        jmp .endLoop
+
+
+.moveRight
+        inc GAMEFIELD_OFFSET_X
+        lda GAMEFIELD_OFFSET_X
+        cmp #8
+        bne -
         lda #-1
         sta X_DIR
-        lda #3
-        sta ANIM_FRAME
-        lda #1
-        sta Y_DIR
-        jmp .loop
-+ 
-        cmp #0
+        jmp .endLoop
+
++      
+        cmp #1
         bne +
-        lda #1
-        sta GAMEFIELD_OFFSET_X
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData IP12L, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData IP22L, 16
+        +tmsSetAddrFontTableInd 144
+        +tmsSendData IP32L, 16
+        jmp .endLoop        
++
+        cmp #2
+        bne +
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData IP14L, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData IP24L, 16
+        +tmsSetAddrFontTableInd 144
+        +tmsSendData IP34L, 16
+        jmp .endLoop        
++
+        +tmsSetAddrFontTableInd 128
+        +tmsSendData IP16L, 16
+        +tmsSetAddrFontTableInd 136
+        +tmsSendData IP26L, 16
+        +tmsSetAddrFontTableInd 144
+        +tmsSendData IP36L, 16
+
+        lda X_DIR
+        bmi .moveLeft
+
+.endLoop:
+        sei
+        jsr nextFrame
+        cli
+
+jmp .loop
+
+.moveLeft
+        dec GAMEFIELD_OFFSET_X
+        lda GAMEFIELD_OFFSET_X
+        cmp #1
+        bne .endLoop
         lda #1
         sta X_DIR
-        lda #0
-        sta ANIM_FRAME
-        lda #1
-        sta Y_DIR
-+ 
-        jmp .loop
+        jmp .endLoop
+
 
 
 stopBulletSound:
@@ -435,7 +458,7 @@ stopBulletSound:
 
 ; Called each frame (on VSYNC)
 nextFrame:
-        jsr renderGameField
+        jmp renderGameField
 
 
 medDelay:
@@ -463,8 +486,8 @@ COLORTAB:
 ;       !byte $30,$30            ; INVADER 3
 ;       !byte $50,$50            ; INVADER 2
 ;       !byte $60,$60            ; INVADER 1
-       !byte $40,$40            ; INVADER 3
-       !byte $50,$50            ; INVADER 2
+       !byte $60,$50            ; INVADER 3
+       !byte $30,$50            ; INVADER 2
        !byte $70,$70            ; INVADER 1
        !byte $40,$00            ; BOTTOM SCREEN
        !byte $00,$00,$00,$00      ; TOP SCREEN
