@@ -47,7 +47,34 @@ gameFieldRowSetTmsPos:
         tay
         jmp tmsSetPos
 
+; X/Y gamefield index
+; returns:
+;  screen pixel location of centre of the game object
+gameFieldXyToPixelXy:
+        txa 
+        asl
+        clc
+        adc GAMEFIELD_OFFSET_X
+        asl
+        asl
+        asl
+        clc
+        adc INVADER_PIXEL_OFFSET
+        adc #6
+        tax
 
+        tya 
+        asl
+        clc
+        adc GAMEFIELD_OFFSET_Y
+        asl
+        asl
+        asl
+        sec
+        sbc #6
+        tay
+        rts
+        
 
 ; -----------------------------------------------------------------------------
 ; gameFieldObjectAt: Return gamefield object at given location
@@ -85,6 +112,10 @@ killObjectAt:
         lda #0
         sta GAMEFIELD, x
         rts
+
+; Returns:
+;  X/Y - pixel location of object that was killed
+
 
 
 renderGameField:

@@ -34,6 +34,9 @@ SPRITE_BULLET    = 4
 SPRITE_SPLAT     = 3
 SPRITE_LAST_LIFE = 1
 
+SPRITE_HIDDEN_X  = $C0
+SPRITE_HIDDEN_Y  = $00
+
 BULLET_Y_LOADED = $D0
 BULLET_SPEED = 4
 
@@ -42,6 +45,8 @@ LIVES_POS_Y = 170
 
 FRAMES_PER_ANIM = 12
 MAX_X           = 6
+
+!src "gamefield.asm"
 
 
 ;
@@ -56,9 +61,6 @@ SHIELD1   = $1500
 SHIELD2   = $1540
 SHIELD3   = $1580
 SHIELD4   = $15C0
-
-!src "gamefield.asm"
-
 
 ROTATE_ADDR = R8
 
@@ -117,6 +119,51 @@ onVSync:
         pla      
         rti
 
+; Add A to the score
+!macro addScore score {
+        sed
+        lda SCORE_BCD_L
+        clc
+        adc #score
+        bcc +
+        inc SCORE_BCD_H
++
+        sta SCORE_BCD_L
+        cld
+}
+
+
+tmsOutputBcd:
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        ora #$30
+        sta TMS9918_RAM
+        +tmsWait
+        pla
+        and #$0f
+        ora #$30
+        sta TMS9918_RAM
+        +tmsWait
+        rts
+
+
+updateScore:
+        +tmsSetPos 9, 0
+        lda SCORE_BCD_H
+        jsr tmsOutputBcd
+        lda SCORE_BCD_L
+        jsr tmsOutputBcd
+
+        +tmsSetPos 26, 0
+        lda HI_SCORE_BCD_H
+        jsr tmsOutputBcd
+        lda HI_SCORE_BCD_L
+        jsr tmsOutputBcd
+
+        rts
 
 main:
        
@@ -142,12 +189,20 @@ main:
         sta FRAMES_COUNTER
         sta Y_DIR
         sta TONE0
+        sta INVADER_PIXEL_OFFSET
+        sta SCORE_BCD_H
+        sta SCORE_BCD_L
 
         lda #1
         sta GAMEFIELD_OFFSET_X
         sta X_DIR
         lda #3
         sta GAMEFIELD_OFFSET_Y
+
+        lda #$03
+        sta HI_SCORE_BCD_H
+        lda #$45
+        sta HI_SCORE_BCD_L
 
         jsr tmsInit
 
@@ -161,7 +216,7 @@ main:
         +tmsCreateSpritePatternQuad 1, bulletSprite
         +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, TMS_WHITE
         +tmsCreateSpritePatternQuad 2, explodeSprite
-        +tmsCreateSprite SPRITE_SPLAT, 8, 124, BULLET_Y_LOADED - 1, TMS_TRANSPARENT
+        +tmsCreateSprite SPRITE_SPLAT, 8, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y, TMS_TRANSPARENT
 
         +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
         +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
@@ -193,6 +248,7 @@ main:
         jsr tmsSetBackground
 
         +tmsPrint "SCORE 00000   HI SCORE 00000", 2, 0
+        jsr updateScore
         +tmsSetPos 5, 17
         +tmsSendData shieldLayout, SHIELD_BYTES
         +tmsSetPos 4, 21
@@ -210,7 +266,7 @@ main:
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3e
         +ay3891Write AY3891X_PSG1, AY3891X_CHA_AMPL, $14
         +ay3891Write AY3891X_PSG1, AY3891X_CHB_AMPL, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
@@ -228,6 +284,7 @@ main:
 
         +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG0, AY3891X_NOISE_GEN, $06
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
@@ -245,13 +302,6 @@ main:
         +tmsSpritePosXYReg SPRITE_BULLET
 +
 
-
-        +nesBranchIfPressed NES_A, +
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
-        +ay3891PlayNote AY3891X_PSG1, AY3891X_CHA, NOTE_Gs
-+
         +nesBranchIfNotPressed NES_LEFT, +
         dec PLAYER_X
         dec PLAYER_X
@@ -289,10 +339,11 @@ main:
         ldy #0
         sty BULLET_Y
 +
+-
         jmp .testBulletPos
 ++
         cmp #128
-        bcc .testBulletPos
+        bcc -
 
         ; hit an invader tile
         ldx HIT_TILE_X
@@ -302,16 +353,22 @@ main:
         stx TMP_X_POSITION
         sty TMP_Y_POSITION
 
-        jsr killObjectAt
+        jsr gameFieldXyToPixelXy
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_MED_RED
-        ldx BULLET_X
-        lda BULLET_Y
-        sec
-        sbc #12
-        tay
-
         +tmsSpritePosXYReg SPRITE_SPLAT
+
+        jsr killObjectAt
+
+        +addScore 5
+        jsr updateScore
+
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $18
+        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
 
         ; make sure he disappears.. now
         sei
@@ -360,6 +417,8 @@ main:
 +
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
+        +tmsSpritePos SPRITE_SPLAT, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $18
 
         inc TONE0
         lda TONE0
@@ -401,6 +460,9 @@ main:
         +tmsSetAddrFontTableInd 144
         +tmsSendData INVADER3, 16
 
+        lda #0
+        sta INVADER_PIXEL_OFFSET
+
         lda X_DIR
         bpl .moveRight
 -
@@ -425,6 +487,8 @@ main:
         +tmsSendData IP22L, 16
         +tmsSetAddrFontTableInd 144
         +tmsSendData IP32L, 16
+        lda #2
+        sta INVADER_PIXEL_OFFSET
         jmp .endLoop        
 +
         cmp #2
@@ -435,6 +499,8 @@ main:
         +tmsSendData IP24L, 16
         +tmsSetAddrFontTableInd 144
         +tmsSendData IP34L, 16
+        lda #4
+        sta INVADER_PIXEL_OFFSET
         jmp .endLoop        
 +
         +tmsSetAddrFontTableInd 128
@@ -443,7 +509,8 @@ main:
         +tmsSendData IP26L, 16
         +tmsSetAddrFontTableInd 144
         +tmsSendData IP36L, 16
-
+        lda #6
+        sta INVADER_PIXEL_OFFSET
         lda X_DIR
         bmi .moveLeft
 
@@ -466,9 +533,6 @@ jmp .loop
 
 
 stopBulletSound:
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $00
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_L, 0
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_H, 0
         rts
