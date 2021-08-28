@@ -1,0 +1,46 @@
+Name hbc56ay38910;
+Partno hbc5601;
+Revision 01;
+Date 8/8/2021;
+Designer Troy Schrapel;
+Company Troy Schrapel;
+Location Australia;
+Assembly None;
+Device g16v8a;
+
+/*
+ * Input pins
+ */
+Pin 1 = _ce;
+Pin 2 = _w;
+Pin 3 = a0;
+Pin 4 = a1;
+Pin 5 = a2;
+
+/*
+ * Output pins
+ */
+Pin 16 = bc1;
+Pin 17 = dir1;
+
+Pin 18 = bc2;
+Pin 19 = dir2;
+
+/*
+ * Common logic
+ */
+cardsel = !_ce;
+chip1sel = cardsel & !a2;
+chip2sel = cardsel & a2;
+
+dir = !_w & !a1;
+bc = ((_w & a1) # (!a0 & !a1 & !_w));
+
+/*
+ * Output logic
+ */
+bc1 = chip1sel & bc;
+dir1 = chip1sel & dir;
+
+bc2 = chip2sel & bc;
+dir2 = chip2sel & dir;
