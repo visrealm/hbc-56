@@ -189,6 +189,12 @@ renderGameField:
         jsr gameFieldRowSetTmsPos
         +tmsPut 0 ; first col - 0
 
+        lda TMP_Y_POSITION
+        cmp #GAME_ROWS - 1
+        bne +
+        rts
++
+
 .renderGameObjRow1
         ; get the game object at TMP_X_POSITION, TMP_Y_POSITION
         jsr gameFieldObjectAt

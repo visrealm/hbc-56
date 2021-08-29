@@ -398,6 +398,19 @@ restartGame:
         cmp #128
         bcc -
 
+        ; pixel-level collision with invader?
+        ldy HIT_TILE_PIX_Y
+        jsr tmsSetPatternRead
+
+        ; load the pattern row to test
+        lda TMS9918_RAM
+        +tmsWait
+        sta TMP_PATTERN
+
+        ; was an invader pixel hit?
+        jsr patternHitTest
+        beq -
+
         ; hit an invader tile
         ldx HIT_TILE_X
         ldy HIT_TILE_Y
