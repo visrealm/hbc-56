@@ -101,6 +101,51 @@ pixelToTileXy
         sta HIT_TILE_PIX_Y
         rts
 
+decTileHitX:
+        lda HIT_TILE_PIX_X
+        beq +
+        dec HIT_TILE_PIX_X
+        rts
++
+        dec HIT_TILE_X
+        lda #7
+        sta HIT_TILE_PIX_X
+        rts
+
+incTileHitX:
+        lda HIT_TILE_PIX_X
+        cmp #7
+        beq +
+        inc HIT_TILE_PIX_X
+        rts
++
+        inc HIT_TILE_X
+        lda #0
+        sta HIT_TILE_PIX_X
+        rts
+
+decTileHitY:
+        lda HIT_TILE_PIX_Y
+        beq +
+        dec HIT_TILE_PIX_Y
+        rts
++
+        dec HIT_TILE_Y
+        lda #7
+        sta HIT_TILE_PIX_Y
+        rts
+
+incTileHitY:
+        lda HIT_TILE_PIX_Y
+        cmp #7
+        beq +
+        inc HIT_TILE_PIX_Y
+        rts
++
+        inc HIT_TILE_Y
+        lda #0
+        sta HIT_TILE_PIX_Y
+        rts
 
 onVSync:
         pha
@@ -538,8 +583,10 @@ jmp .loop
         jmp .endLoop
 
 
-bitMasks:
+hitTestMasks:
 !byte $80, $40, $20, $10, $08, $04, $02, $01
+killBitMasks:
+!byte $7f, $bf, $df, $ef, $f7, $fb, $fd, $fe
 
 ; Test a pattern row for a pixel hit
 ; Inputs:
@@ -550,8 +597,38 @@ bitMasks:
 ;  Zero flag clear id pixel hit
 patternHitTest:
         ldx HIT_TILE_PIX_X
-        and bitMasks, x
+        and hitTestMasks, x
         rts
+
+patternHit:
+        ldx HIT_TILE_PIX_X
+        and killBitMasks, x
+        rts
+
+; Clear a pixel at
+; HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y
+clearPixel:
+        ldx HIT_TILE_X
+        ldy HIT_TILE_Y
+        jsr tmsSetPosRead
+        lda TMS9918_RAM
+        +tmsWait
+        ldy HIT_TILE_PIX_Y
+        jsr tmsSetPatternRead
+        lda TMS9918_RAM
+        +tmsWait
+        sta TMP_PATTERN
+
+        jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
+
+        lda TMP_PATTERN
+        jsr patternHit
+        sta TMS9918_RAM
+        +tmsWait
+        rts
+
+
+
 
 ; Shield hit by player bullet
 ; Here, HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y are already set
@@ -564,18 +641,22 @@ shieldHit:
         ; load the pattern row that was hit
         lda TMS9918_RAM
         +tmsWait
+        sta TMP_PATTERN
 
         jsr patternHitTest
         beq .noHit
 
-        jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
-        lda #0
-        sta TMS9918_RAM
-        +tmsWait
-
-        ; clear the tile
-;        jsr tmsSetPosWrite
- ;       +tmsPut 0
+        jsr clearPixel
+        jsr decTileHitX
+        jsr clearPixel
+        jsr decTileHitY
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+        jsr decTileHitY
+        jsr decTileHitX
+        jsr clearPixel
 
         ; kill the bullet
         ldy #0
