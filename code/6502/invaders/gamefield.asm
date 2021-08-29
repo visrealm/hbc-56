@@ -33,6 +33,37 @@ tileXyToGameFieldXy:
         tay
         rts
 
+randomBottomRowInvader:
+        lda GAMEFIELD_LAST_ROW
+        lsr
+        sta TMP_Y_POSITION
+        inc TMP_Y_POSITION
+
+        lda TICKS_H
+        eor TICKS_L
+        eor PLAYER_X
+        eor SCORE_BCD_L
+        and #$0f
+        tay
+
+        cmp #11
+        bcc .inRange
+        sec
+        sbc #10
+.inRange
+        sta TMP_X_POSITION
+-        
+        dec TMP_Y_POSITION
+        jsr gameFieldObjectAt
+
+        cmp #128
+        bcc -
+        ldx TMP_X_POSITION
+        ldy TMP_Y_POSITION
+        rts
+
+
+
 ; Sets the TMS location for the given gamefield offset
 gameFieldRowSetTmsPos:
         lda TMP_X_POSITION
@@ -133,6 +164,28 @@ killObjectAt:
 ; Returns:
 ;  X/Y - pixel location of object that was killed
 
+; Is the row at TMP_Y_POSITION clear?
+gameFieldRowClear:
+        lda #0
+        sta TMP_X_POSITION
+        jsr gameFieldObjectAt
+
+        ldy #12
+-
+        inx
+        lda GAMEFIELD, x
+        bne .notClear
+        dey
+        bne -
+
+        clc
+        rts
+
+.notClear
+        sec
+        rts
+
+
 
 
 renderGameField:
@@ -163,7 +216,7 @@ renderGameField:
 
         jsr gameFieldRowSetTmsPos
         +tmsPut 0 ; first col - 0
-
+        
 .renderGameObjRow0
         ; get the game object at TMP_X_POSITION, TMP_Y_POSITION
         jsr gameFieldObjectAt
@@ -190,7 +243,7 @@ renderGameField:
         +tmsPut 0 ; first col - 0
 
         lda TMP_Y_POSITION
-        cmp #GAME_ROWS - 1
+        cmp GAMEFIELD_LAST_ROW
         bne +
         rts
 +
@@ -218,11 +271,20 @@ renderGameField:
 
         +tmsPut 0 ; last col - 0
 
+        jsr gameFieldRowClear
+        bcs +
+        lda TMP_Y_POSITION        
+        sta GAMEFIELD_LAST_ROW
+        dec GAMEFIELD_LAST_ROW
+        rts
++
         inc TMP_Y_POSITION
         lda TMP_Y_POSITION
-        cmp #GAME_ROWS
-        bne .startRow
+        cmp GAMEFIELD_LAST_ROW
 
+        beq +
+        jmp .startRow
++
         rts
 
 

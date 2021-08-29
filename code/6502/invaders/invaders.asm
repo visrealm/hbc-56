@@ -31,17 +31,19 @@ TMS_MODEL = 9918
 
 SPRITE_PLAYER    = 0
 SPRITE_BULLET    = 4
+SPRITE_BOMB1     = 5
 SPRITE_SPLAT     = 3
 SPRITE_LAST_LIFE = 1
 
 SPRITE_HIDDEN_X  = $C0
 SPRITE_HIDDEN_Y  = $00
 
-BULLET_Y_LOADED = $D0
-BULLET_SPEED = 1
+BULLET_Y_LOADED = $D1
+BULLET_SPEED = 2
 
 PLAYER_POS_Y = 153
 LIVES_POS_Y = 170
+BOMB_END_POS_Y = 152
 
 FRAMES_PER_ANIM = 12
 MAX_X           = 6
@@ -247,8 +249,17 @@ restartGame:
         +memcpy SHIELD3, SHIELD, 8 * 6
         +memcpy SHIELD4, SHIELD, 8 * 6
 
-        lda BULLET_Y_LOADED
+        lda #9
+        sta GAMEFIELD_LAST_ROW
+        lda #10
+        sta GAMEFIELD_LAST_COL
+        lda #0
+        sta GAMEFIELD_FIRST_COL
+
+
+        lda #BULLET_Y_LOADED
         sta BULLET_Y
+        sta INVADER_BOMB1_Y
 
         lda #0
         sta ANIM_FRAME
@@ -284,6 +295,8 @@ restartGame:
         +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, TMS_WHITE
         +tmsCreateSpritePatternQuad 2, explodeSprite
         +tmsCreateSprite SPRITE_SPLAT, 8, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y, TMS_TRANSPARENT
+        +tmsCreateSpritePatternQuad 3, invaderBomb
+        +tmsCreateSprite SPRITE_BOMB1, 12, 124, BULLET_Y_LOADED, TMS_MAGENTA
 
         +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
         +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
@@ -352,7 +365,7 @@ restartGame:
         adc #4
         tax
         stx BULLET_X
-        ldy #157
+        ldy #PLAYER_POS_Y
         sty BULLET_Y
         +tmsSpritePosXYReg SPRITE_BULLET
 +
@@ -365,6 +378,45 @@ restartGame:
         inc PLAYER_X
         inc PLAYER_X
 +
+
+        ldx INVADER_BOMB1_X
+        inc INVADER_BOMB1_Y
+        inc INVADER_BOMB1_Y
+        ldy INVADER_BOMB1_Y
+
+        cpy #BOMB_END_POS_Y
+        bcc +
+        ldy #BULLET_Y_LOADED
+        sty INVADER_BOMB1_Y
++
+        +tmsSpritePosXYReg SPRITE_BOMB1
+
+        jsr pixelToTileXy
+        inc HIT_TILE_Y ; we're interested in the bottom
+
+        ldx HIT_TILE_X
+        ldy HIT_TILE_Y
+        jsr tmsSetPosRead
+        lda TMS9918_RAM
+        +tmsWait
+
+        cmp #0
+        beq ++
+        cmp #32
+        bcs ++
+
+        ; shield tile hit
+        jsr shieldBombed
+        bcc ++
+
+        ; bomb sound
+        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $10
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
+++        
 
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
@@ -574,8 +626,16 @@ restartGame:
         sta INVADER_PIXEL_OFFSET
         lda X_DIR
         bmi .moveLeft
-
+        
 .endLoop:
+        lda INVADER_BOMB1_Y
+        cmp #BULLET_Y_LOADED
+        bne +
+        jsr randomBottomRowInvader
+        jsr gameFieldXyToPixelXy
+        stx INVADER_BOMB1_X
+        sty INVADER_BOMB1_Y
++
         jsr nextFrame
 
 jmp .loop
@@ -588,8 +648,8 @@ jmp .loop
         lda #1
         sta X_DIR
         inc GAMEFIELD_OFFSET_Y
-        lda #10
-        cmp GAMEFIELD_OFFSET_Y
+
+
         bne +
         jmp restartGame
 +
@@ -641,8 +701,61 @@ clearPixel:
         rts
 
 
+shieldBombed:
+        ldy HIT_TILE_PIX_Y
+        jsr tmsSetPatternRead
 
+        ; load the pattern row that was hit
+        lda TMS9918_RAM
+        +tmsWait
+        sta TMP_PATTERN
 
+        jsr patternHitTest
+        beq .noBomb
+
+        jsr decTileHitY
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitY
+        jsr decTileHitX
+        jsr clearPixel
+        jsr decTileHitX
+        jsr clearPixel
+        jsr decTileHitX
+        jsr clearPixel
+        jsr incTileHitY
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitY
+        jsr decTileHitX
+        jsr clearPixel
+        jsr decTileHitX
+        jsr clearPixel
+        jsr decTileHitX
+        jsr clearPixel
+        jsr incTileHitY
+        jsr incTileHitX
+        jsr clearPixel
+        jsr incTileHitX
+        jsr clearPixel
+
+        ; kill the bullet
+        ldy #BULLET_Y_LOADED
+        sty INVADER_BOMB1_Y
+        sec
+        rts
+.noBomb
+        clc
+        rts
+
+        
 ; Shield hit by player bullet
 ; Here, HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y are already set
 ; A is the pattern number at that location
@@ -660,7 +773,10 @@ shieldHit:
         beq .noHit
 
         jsr clearPixel
+        jsr incTileHitY
+        jsr clearPixel
         jsr decTileHitX
+        jsr decTileHitY
         jsr clearPixel
         jsr decTileHitY
         jsr incTileHitX
