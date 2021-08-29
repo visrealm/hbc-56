@@ -38,7 +38,7 @@ SPRITE_HIDDEN_X  = $C0
 SPRITE_HIDDEN_Y  = $00
 
 BULLET_Y_LOADED = $D0
-BULLET_SPEED = 4
+BULLET_SPEED = 1
 
 PLAYER_POS_Y = 153
 LIVES_POS_Y = 170
@@ -89,7 +89,7 @@ pixelToTileXy
         lsr
         sta HIT_TILE_X
         txa
-        and #$03
+        and #$07
         sta HIT_TILE_PIX_X
         tya
         lsr
@@ -97,7 +97,7 @@ pixelToTileXy
         lsr
         sta HIT_TILE_Y
         tya
-        and #$03
+        and #$07
         sta HIT_TILE_PIX_Y
         rts
 
@@ -120,18 +120,16 @@ onVSync:
         rti
 
 ; Add A to the score
-!macro addScore score {
-        sed
-        lda SCORE_BCD_L
+addScore:
         clc
-        adc #score
+        sed
+        adc SCORE_BCD_L
+        cld
+        sta SCORE_BCD_L
         bcc +
         inc SCORE_BCD_H
 +
-        sta SCORE_BCD_L
-        cld
-}
-
+        rts
 
 tmsOutputBcd:
         pha
@@ -151,13 +149,13 @@ tmsOutputBcd:
 
 
 updateScore:
-        +tmsSetPos 9, 0
+        +tmsSetPosWrite 9, 0
         lda SCORE_BCD_H
         jsr tmsOutputBcd
         lda SCORE_BCD_L
         jsr tmsOutputBcd
 
-        +tmsSetPos 26, 0
+        +tmsSetPosWrite 26, 0
         lda HI_SCORE_BCD_H
         jsr tmsOutputBcd
         lda HI_SCORE_BCD_L
@@ -167,7 +165,31 @@ updateScore:
 
 main:
        
+
+        jsr tmsInit
+
+restartGame:
         sei
+
+        +tmsDisableInterrupts
+
+        jsr ay3891Init
+
+        +ay3891Write AY3891X_PSG0, AY3891X_CHA_AMPL, $0a
+        +ay3891Write AY3891X_PSG0, AY3891X_CHB_AMPL, $0a
+        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
+        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
+
+        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
+
+        jsr tmsInitTextTable
+
         +memcpy GAMEFIELD, initialGameField, 5 * 16
         +memcpy ALIEN1, INVADER1, 8 * 2
         +memset ALIEN1 + 16, 0, 8 * 2
@@ -189,22 +211,22 @@ main:
         sta FRAMES_COUNTER
         sta Y_DIR
         sta TONE0
+        lda #0
         sta INVADER_PIXEL_OFFSET
-        sta SCORE_BCD_H
+        lda #0
         sta SCORE_BCD_L
+        sta SCORE_BCD_H
 
         lda #1
         sta GAMEFIELD_OFFSET_X
         sta X_DIR
-        lda #3
+        lda #4
         sta GAMEFIELD_OFFSET_Y
 
         lda #$03
         sta HI_SCORE_BCD_H
         lda #$45
         sta HI_SCORE_BCD_L
-
-        jsr tmsInit
 
         lda #TMS_R1_SPRITE_MAG2
         jsr tmsReg1ClearFields
@@ -248,30 +270,19 @@ main:
         jsr tmsSetBackground
 
         +tmsPrint "SCORE 00000   HI SCORE 00000", 2, 0
-        jsr updateScore
-        +tmsSetPos 5, 17
+        +tmsSetPosWrite 5, 17
         +tmsSendData shieldLayout, SHIELD_BYTES
-        +tmsSetPos 4, 21
+        +tmsSetPosWrite 4, 21
         +tmsSendData bunkerLayout, BUNKER_BYTES
 
-
         lda #0
+        sta SCORE_BCD_L
+        sta SCORE_BCD_H
         sta V_SYNC
-        cli
 
         +tmsEnableInterrupts
 
-        jsr ay3891Init
-
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3e
-        +ay3891Write AY3891X_PSG1, AY3891X_CHA_AMPL, $14
-        +ay3891Write AY3891X_PSG1, AY3891X_CHB_AMPL, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
-        ;+ay3891PlayNote AY3891X_PSG1, AY3891X_CHA, NOTE_Gs
-
+        cli
 
 .loop:
         lda V_SYNC
@@ -282,12 +293,11 @@ main:
         cmp #BULLET_Y_LOADED
         bne +
 
-        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG0, AY3891X_NOISE_GEN, $06
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
+        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
         lda #$08
         sta TONE1
         +ay3891WriteA AY3891X_PSG0, AY3891X_CHC_TONE_L
@@ -333,11 +343,9 @@ main:
         beq ++
         cmp #32
         bcs ++
+
         ; shield tile hit
-        jsr tmsSetPos
-        +tmsPut 0
-        ldy #0
-        sty BULLET_Y
+        jsr shieldHit
 +
 -
         jmp .testBulletPos
@@ -358,23 +366,20 @@ main:
         +tmsSpriteColor SPRITE_SPLAT, TMS_MED_RED
         +tmsSpritePosXYReg SPRITE_SPLAT
 
-        jsr killObjectAt
+        jsr killObjectAt ; returns score for hit object
 
-        +addScore 5
+        jsr addScore
         jsr updateScore
 
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $18
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $10
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
 
         ; make sure he disappears.. now
-        sei
         jsr nextFrame
-        cli
-
 
         ldy #0
         sty BULLET_Y
@@ -398,9 +403,6 @@ main:
         +tmsSpritePosXYReg SPRITE_PLAYER
 
         lda #0
-        sta Y_DIR
-
-        lda #0
         sta V_SYNC
 
         lda TONE1
@@ -418,7 +420,7 @@ main:
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
         +tmsSpritePos SPRITE_SPLAT, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $18
+        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3f
 
         inc TONE0
         lda TONE0
@@ -476,6 +478,7 @@ main:
         bne -
         lda #-1
         sta X_DIR
+        inc GAMEFIELD_OFFSET_Y
         jmp .endLoop
 
 +      
@@ -515,9 +518,7 @@ main:
         bmi .moveLeft
 
 .endLoop:
-        sei
         jsr nextFrame
-        cli
 
 jmp .loop
 
@@ -528,7 +529,59 @@ jmp .loop
         bne .endLoop
         lda #1
         sta X_DIR
+        inc GAMEFIELD_OFFSET_Y
+        lda #10
+        cmp GAMEFIELD_OFFSET_Y
+        bne +
+        jmp restartGame
++
         jmp .endLoop
+
+
+bitMasks:
+!byte $80, $40, $20, $10, $08, $04, $02, $01
+
+; Test a pattern row for a pixel hit
+; Inputs:
+;  A = The row pattern. Pixel bits.
+;  HIT_TILE_PIX_X = The offset to check (0 - 7)
+; Returns
+;  Zero flag set if pixel not hit.
+;  Zero flag clear id pixel hit
+patternHitTest:
+        ldx HIT_TILE_PIX_X
+        and bitMasks, x
+        rts
+
+; Shield hit by player bullet
+; Here, HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y are already set
+; A is the pattern number at that location
+; And X/Y are set to equal HIT_TILE_X and HIT_TILE_Y
+shieldHit:
+        ldy HIT_TILE_PIX_Y
+        jsr tmsSetPatternRead
+
+        ; load the pattern row that was hit
+        lda TMS9918_RAM
+        +tmsWait
+
+        jsr patternHitTest
+        beq .noHit
+
+        jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
+        lda #0
+        sta TMS9918_RAM
+        +tmsWait
+
+        ; clear the tile
+;        jsr tmsSetPosWrite
+ ;       +tmsPut 0
+
+        ; kill the bullet
+        ldy #0
+        sty BULLET_Y
+.noHit
+        rts
 
 
 
@@ -538,29 +591,13 @@ stopBulletSound:
         rts
 
 
-
-
-
 ; Called each frame (on VSYNC)
 nextFrame:
-        jmp renderGameField
+        sei
+        jsr renderGameField
+        cli
+        rts
 
-
-medDelay:
-	jsr delay
-	jsr delay
-
-
-delay:
-	ldx #255
-	ldy #255
--
-	dex
-	bne -
-	ldx #255
-	dey
-	bne -
-	rts
 
 COLORTAB:
        !byte $00

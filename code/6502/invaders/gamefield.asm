@@ -45,7 +45,7 @@ gameFieldRowSetTmsPos:
         clc
         adc GAMEFIELD_OFFSET_Y
         tay
-        jmp tmsSetPos
+        jmp tmsSetPosWrite
 
 ; X/Y gamefield index
 ; returns:
@@ -109,8 +109,25 @@ killObjectAt:
         clc
         adc TMP_X_POSITION
         tax
+        lda GAMEFIELD, x
+        pha
         lda #0
         sta GAMEFIELD, x
+        ; return score in A
+        pla
+        lsr
+        lsr
+        lsr
+        sec
+        sbc #15
+        sta R10
+        sed
+        clc
+        adc R10
+        adc R10
+        adc R10
+        adc R10
+        cld
         rts
 
 ; Returns:
