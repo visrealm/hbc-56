@@ -177,7 +177,7 @@ LAST_TICKS_H = $8b
 outputSeconds:
         sei
 
-        +tmsSetPos 8, 1
+        +tmsSetPosWrite 8, 1
         +nesBranchIfNotPressed NES_LEFT, +
         +tmsPut 'L'
 +
@@ -215,7 +215,7 @@ outputSeconds:
         +tmsPut ' '
         +tmsPut ' '
 
-        +tmsSetPos 1, 1
+        +tmsSetPosWrite 1, 1
         lda TICKS_H
         jsr tmsHex8  ; calls cli
         sei

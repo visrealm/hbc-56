@@ -155,7 +155,7 @@ COLOR = $89
 
 outputSeconds:
         sei
-        +tmsSetPos 1, 1
+        +tmsSetPosWrite 1, 1
         lda TICKS_H
         jsr tmsHex8
 
