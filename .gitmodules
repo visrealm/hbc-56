@@ -1,3 +1,9 @@
 [submodule "emulator/modules/tms9918"]
 	path = emulator/modules/tms9918
 	url = https://github.com/visrealm/vrEmuTms9918
+[submodule "emulator/thirdparty/sdl"]
+	path = emulator/thirdparty/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "emulator/modules/cpu6502"]
+	path = emulator/modules/cpu6502
+	url = https://github.com/jamestn/cpu6502.git
