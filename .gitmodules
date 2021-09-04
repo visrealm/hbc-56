@@ -1,0 +1,3 @@
+[submodule "emulator/modules/tms9918"]
+	path = emulator/modules/tms9918
+	url = https://github.com/visrealm/vrEmuTms9918
