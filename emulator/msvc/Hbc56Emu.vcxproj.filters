@@ -33,6 +33,9 @@
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\modules\ay38910\emu2149.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Hbc56Emu.rc">
@@ -58,6 +61,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\modules\tms9918\src\tms9918_core.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\ay38910\emu2149.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

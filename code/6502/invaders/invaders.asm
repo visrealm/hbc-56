@@ -171,11 +171,13 @@ addScore:
         clc
         sed
         adc SCORE_BCD_L
-        cld
         sta SCORE_BCD_L
         bcc +
-        inc SCORE_BCD_H
+        lda SCORE_BCD_H
+        adc #1
+        sta SCORE_BCD_H
 +
+        cld
         rts
 
 tmsOutputBcd:
@@ -391,8 +393,13 @@ restartGame:
 +
         +tmsSpritePosXYReg SPRITE_BOMB1
 
+        ; set position to the bottom of the bomb
+        tya
+        clc
+        adc #14
+        tay
+
         jsr pixelToTileXy
-        inc HIT_TILE_Y ; we're interested in the bottom
 
         ldx HIT_TILE_X
         ldy HIT_TILE_Y
