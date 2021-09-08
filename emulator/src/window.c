@@ -28,6 +28,8 @@ extern int debugStep;
 extern int debugStepOver;
 extern int debugPaused;
 extern SDL_mutex* debugMutex;
+extern uint16_t debugMemoryAddr;
+extern uint16_t debugTmsMemoryAddr;
 
 
 static void SDL_snprintfcat(SDL_OUT_Z_CAP(maxlen) char* text, size_t maxlen, SDL_PRINTF_FORMAT_STRING const char* fmt, ...)
@@ -1901,6 +1903,29 @@ break;
       debugPaused = 0;
       debugStep = 0;
       break;
+    case SDLK_PAGEUP:
+    case SDLK_KP_9:
+      if (withControl)
+      {
+        debugTmsMemoryAddr -= 64;
+      }
+      else
+      {
+        debugMemoryAddr -= 64;
+      }
+      break;
+    case SDLK_PAGEDOWN:
+    case SDLK_KP_3:
+      if (withControl)
+      {
+        debugTmsMemoryAddr += 64;
+      }
+      else
+      {
+        debugMemoryAddr += 64;
+      }
+      break;
+
     case SDLK_F11:
       if (SDL_LockMutex(debugMutex) == 0)
       {

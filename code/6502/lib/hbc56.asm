@@ -76,7 +76,8 @@ STR_ADDR_H = STR_ADDR + 1
 ; Initial state
 ; ----------------------------------------------------------------------------
 cld     ; make sure we're not in decimal mode
-
+ldx #$ff
+txs
 
 ; Program entry point
 ; ----------------------------------------------------------------------------

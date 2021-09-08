@@ -10,7 +10,6 @@
  */
 
 #include "debugger.h"
-#include "cpu6502.h"
 
 #include <stdlib.h>
 
@@ -19,20 +18,27 @@
 static char debuggerFrameBuffer[DEBUGGER_STRIDE * DEBUGGER_HEIGHT_PX];
 
 static int green = 0x80ff8000;
+static int dkgreen = 0x807f8000;
 static int blue =  0x8080ff00;
-static int red =   0xff808000;
+static int red = 0xff808000;
+static int white = 0xffffff00;
+static int yellow = 0xffff0000;
 
 static int fgColor = 0;
 static int bgColor = 0;
 
 extern char console_font_6x8[];
+uint16_t debugMemoryAddr = 0;
+uint16_t debugTmsMemoryAddr = 0;
 
 CPU6502Regs *cpuStatus = NULL;
 
 static const char *labelMap[0xffff] = {0};
+static VrEmuTms9918a* tms9918 = NULL;
 
-void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename)
+void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a* tms)
 {
+  tms9918 = tms;
   cpuStatus = regs;
   fgColor = green;
   bgColor = 0x00000000;
@@ -121,6 +127,9 @@ char hexDigit(char val)
 
 void debuggerOutputChar(char c,int x,int y)
 {
+  if (x >= DEBUGGER_CHARS_X || y >= DEBUGGER_CHARS_Y || x < 0 || y < 0)
+    return;
+
   x *= 6;
   y *= 8;
   char *rp = debuggerFrameBuffer + y * DEBUGGER_STRIDE + x * DEBUGGER_BPP;
@@ -256,15 +265,31 @@ void debuggerUpdate(SDL_Texture* tex)
   debuggerOutputHex(cpuStatus->y,5,3);
   debuggerOutput(_itoa(cpuStatus->y,buffer,10),10,3);
 
-  debuggerOutput("PC: $", 0, 5);
-  debuggerOutputHex16(cpuStatus->pc, 5, 5);
-  debuggerOutput(_itoa(cpuStatus->pc, buffer, 10), 10, 5);
+  debuggerOutput("PC: $", 20, 1);
+  debuggerOutputHex16(cpuStatus->pc, 25, 1);
+  debuggerOutput(_itoa(cpuStatus->pc, buffer, 10), 30, 1);
 
   fgColor = green;
   if (sChanged) fgColor = red;
-  debuggerOutput("SP: $", 0, 6);
-  debuggerOutputHex16(cpuStatus->s, 5, 6);
-  debuggerOutput(_itoa(cpuStatus->s, buffer, 10), 10, 6);
+  debuggerOutput("SP: $1", 20, 2);
+  debuggerOutputHex(cpuStatus->s, 26, 2);
+  debuggerOutput(_itoa(cpuStatus->s, buffer, 10), 30, 2);
+
+  debuggerOutput("F:", 20, 3);
+
+  fgColor = cpuStatus->p.n ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.n ? 'N' : 'n', 24, 3);
+  fgColor = cpuStatus->p.v ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.v ? 'V' : 'v', 25, 3);
+  fgColor = cpuStatus->p.d ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.d ? 'D' : 'd', 26, 3);
+  fgColor = cpuStatus->p.i ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.i ? 'I' : 'i', 27, 3);
+  fgColor = cpuStatus->p.z ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.z ? 'Z' : 'z', 28, 3);
+  fgColor = cpuStatus->p.c ? green : dkgreen;
+  debuggerOutputChar(cpuStatus->p.c ? 'C' : 'c', 29, 3);
+
 
   fgColor = green;
 
@@ -283,6 +308,7 @@ void debuggerUpdate(SDL_Texture* tex)
     lastF = cpuStatus->p_;
     lastPC = cpuStatus->pc;
   }
+
   /*
   regs.p.n ? 'N' : 'N',
     regs.p.v ? 'V' : 'v',
@@ -292,12 +318,15 @@ void debuggerUpdate(SDL_Texture* tex)
     regs.p.c ? 'C' : 'c');*/
 
 
-  int offset = 8;
+  int offset = 6;
   uint16_t pc = cpuStatus->pc;
+  fgColor = white;
+
+  debuggerOutput("Disassembly", 0, offset - 1);
 
   fgColor = red;
 
-  for (int i = 0; i < 60; ++i)
+  for (int i = 0; i < 30; ++i)
   {
     if (labelMap[pc])
     {
@@ -357,18 +386,19 @@ void debuggerUpdate(SDL_Texture* tex)
         break;
       case rel:
         {
-          uint16_t rel = pc + (int8_t)mem_read(pc++) + 1;
-          if (labelMap[rel])
+          int8_t rel = (int8_t)mem_read(pc++);
+          uint16_t addr = pc + rel;
+          if (labelMap[addr])
           {
             int oldFgColor = fgColor;
             if (i != 0) fgColor = blue;
-            debuggerOutput(labelMap[rel], 12, i + offset);
+            debuggerOutput(labelMap[addr], 12, i + offset);
             fgColor = oldFgColor;
           }
           else
           {
             debuggerOutput("$", 12, i + offset);
-            debuggerOutputHex16(rel, 13, i + offset);
+            debuggerOutputHex16(addr, 13, i + offset);
           }
         }
         break;
@@ -409,5 +439,73 @@ void debuggerUpdate(SDL_Texture* tex)
 
   }
 
+  /* stack */
+  fgColor = white;
+  debuggerOutput("Stack", 40, offset - 1);
+  fgColor = green;
+  uint8_t sp = cpuStatus->s + 1;
+  int y = 0;
+  while (sp != 0)
+  {
+    uint8_t d = mem_read(0x100 + sp);
+    debuggerOutput("$1   $", 40, y + offset);
+    debuggerOutputHex(sp, 42, y + offset);
+    debuggerOutputHex(d, 46, y + offset);
+    debuggerOutput(_itoa(d, buffer, 10), 49, y + offset);
+    ++sp;
+    ++y;
+  }
+
+  offset += 33;
+  fgColor = white;
+  debuggerOutput("Memory", 0, offset - 1);
+  fgColor = green;
+
+  uint16_t addr = debugMemoryAddr;
+  for (uint8_t y = 0; y < 32; ++y)
+  {
+    debuggerOutput("$", 0, y + offset);
+    debuggerOutputHex16(addr, 1, y + offset);
+
+    for (uint8_t x = 0; x< 8; ++x)
+    {
+      uint8_t d = mem_read(addr);
+      debuggerOutputHex(d, 7 + x * 3, y + offset);
+      debuggerOutputChar(d, 32 + x, y + offset);
+      ++addr;
+    } 
+  }
+
+  if (tms9918)
+  {
+    offset += 34;
+    fgColor = white;
+    debuggerOutput("TMS9918 VRAM", 0, offset - 1);
+    debuggerOutput("Reg", 42, offset - 1);
+    fgColor = green;
+    addr = debugTmsMemoryAddr & 0x3fff;
+    for (uint8_t y = 0; y < 16; ++y)
+    {
+      debuggerOutput("$", 0, y + offset);
+      debuggerOutputHex16(addr, 1, y + offset);
+
+      for (uint8_t x = 0; x < 8; ++x)
+      {
+        uint8_t d = vrEmuTms9918aVramValue(tms9918, addr);
+        debuggerOutputHex(d, 7 + x * 3, y + offset);
+        debuggerOutputChar(d, 32 + x, y + offset);
+        ++addr;
+      }
+    }
+
+    for (uint8_t y = 0; y < 8; ++y)
+    {
+      debuggerOutput("R  $", 42, y + offset);
+      debuggerOutput(_itoa(y, buffer, 10), 43, y + offset);
+      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 45, y + offset);
+      debuggerOutput(_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 48, y + offset);
+    }
+
+  }
   SDL_UpdateTexture(tex,NULL,debuggerFrameBuffer,DEBUGGER_STRIDE);
 }

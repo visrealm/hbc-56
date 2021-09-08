@@ -156,10 +156,10 @@ onVSync:
         clc
         adc #1
         cmp #TMS_FPS
-        bne .writeTicksL
+        bne writeTicksL
         inc TICKS_H
         lda #0
-.writeTicksL  
+writeTicksL
         sta TICKS_L
         lda #1
         sta V_SYNC
@@ -173,11 +173,11 @@ addScore:
         sed
         adc SCORE_BCD_L
         sta SCORE_BCD_L
-        bcc .skipUpdateScoreH
+        bcc skipUpdateScoreH
         lda SCORE_BCD_H
         adc #1
         sta SCORE_BCD_H
-.skipUpdateScoreH
+skipUpdateScoreH
         cld
         rts
 
@@ -343,20 +343,20 @@ restartGame:
 
         cli
 
-.nextFrame:
+nextFrame:
         cli
         +tmsEnableInterrupts
 
-.loop:
+gameLoop:
         lda V_SYNC
-        beq .loop
+        beq gameLoop
         sei
         +tmsDisableInterrupts
 
-        +nesBranchIfNotPressed NES_B, .skipFire
+        +nesBranchIfNotPressed NES_B, skipFire
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
-        bne .skipFire
+        bne skipFire
 
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
@@ -375,16 +375,16 @@ restartGame:
         ldy #PLAYER_POS_Y
         sty BULLET_Y
         +tmsSpritePosXYReg SPRITE_BULLET
-.skipFire
+skipFire
 
-        +nesBranchIfNotPressed NES_LEFT, .skipMoveLeft
+        +nesBranchIfNotPressed NES_LEFT, skipMoveLeft
         dec PLAYER_X
         dec PLAYER_X
-.skipMoveLeft
-        +nesBranchIfNotPressed NES_RIGHT, .skipMoveRight
+skipMoveLeft
+        +nesBranchIfNotPressed NES_RIGHT, skipMoveRight
         inc PLAYER_X
         inc PLAYER_X
-.skipMoveRight
+skipMoveRight
 
         ldx INVADER_BOMB1_X
         inc INVADER_BOMB1_Y
@@ -392,10 +392,10 @@ restartGame:
         ldy INVADER_BOMB1_Y
 
         cpy #BOMB_END_POS_Y
-        bcc .afterBombEnded
+        bcc afterBombEnded
         ldy #BULLET_Y_LOADED
         sty INVADER_BOMB1_Y
-.afterBombEnded
+afterBombEnded
         +tmsSpritePosXYReg SPRITE_BOMB1
 
         ; set position to the bottom of the bomb
@@ -413,13 +413,13 @@ restartGame:
         +tmsWait
 
         cmp #0
-        beq .shieldNotBombed
+        beq shieldNotBombed
         cmp #32
-        bcs .shieldNotBombed
+        bcs shieldNotBombed
 
         ; shield tile hit
         jsr shieldBombed
-        bcc .shieldNotBombed
+        bcc shieldNotBombed
 
         ; bomb sound
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
@@ -428,7 +428,7 @@ restartGame:
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
-.shieldNotBombed
+shieldNotBombed
 
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
@@ -501,7 +501,7 @@ restartGame:
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
 
         ; make sure he disappears.. now
-        jsr nextFrame
+        jsr renderGameField
 
         ldy #0
         sty BULLET_Y
@@ -537,7 +537,7 @@ restartGame:
         lda FRAMES_COUNTER
         cmp #FRAMES_PER_ANIM
         beq +
-        jmp .nextFrame
+        jmp nextFrame
 +
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
@@ -648,9 +648,9 @@ restartGame:
         stx INVADER_BOMB1_X
         sty INVADER_BOMB1_Y
 +
-        jsr nextFrame
+        jsr renderGameField
 
-jmp .nextFrame
+jmp nextFrame
 
 .moveLeft
         dec GAMEFIELD_OFFSET_X
@@ -810,12 +810,6 @@ shieldHit:
 stopBulletSound:
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_L, 0
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_H, 0
-        rts
-
-
-; Called each frame (on VSYNC)
-nextFrame:
-        jsr renderGameField
         rts
 
 

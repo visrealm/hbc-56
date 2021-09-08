@@ -557,7 +557,7 @@ main(int argc, char* argv[])
   cpu6502_rst();
   PSG_reset(psg0);
   PSG_reset(psg1);
-  debuggerInit(cpu6502_get_regs(), labelMapFile);
+  debuggerInit(cpu6502_get_regs(), labelMapFile, tms9918);
 
   SDL_PauseAudioDevice(audioDevice, 0);
 
