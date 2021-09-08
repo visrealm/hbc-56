@@ -151,14 +151,15 @@ incTileHitY:
 
 onVSync:
         pha
+        +tmsDisableInterrupts
         lda TICKS_L
         clc
         adc #1
         cmp #TMS_FPS
-        bne +
-        lda #0
+        bne .writeTicksL
         inc TICKS_H
-+  
+        lda #0
+.writeTicksL  
         sta TICKS_L
         lda #1
         sta V_SYNC
@@ -172,11 +173,11 @@ addScore:
         sed
         adc SCORE_BCD_L
         sta SCORE_BCD_L
-        bcc +
+        bcc .skipUpdateScoreH
         lda SCORE_BCD_H
         adc #1
         sta SCORE_BCD_H
-+
+.skipUpdateScoreH
         cld
         rts
 
@@ -228,7 +229,7 @@ restartGame:
         +ay3891Write AY3891X_PSG0, AY3891X_CHB_AMPL, $0a
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
 
@@ -303,7 +304,7 @@ restartGame:
         +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
         +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
 
-        lda #100
+        lda #123
         sta PLAYER_X
 
         +tmsSetAddrColorTable
@@ -340,22 +341,26 @@ restartGame:
         sta SCORE_BCD_H
         sta V_SYNC
 
-        +tmsEnableInterrupts
-
         cli
+
+.nextFrame:
+        cli
+        +tmsEnableInterrupts
 
 .loop:
         lda V_SYNC
         beq .loop
+        sei
+        +tmsDisableInterrupts
 
-        +nesBranchIfNotPressed NES_B, +
+        +nesBranchIfNotPressed NES_B, .skipFire
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
-        bne +
+        bne .skipFire
 
         +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
         lda #$08
@@ -370,16 +375,16 @@ restartGame:
         ldy #PLAYER_POS_Y
         sty BULLET_Y
         +tmsSpritePosXYReg SPRITE_BULLET
-+
+.skipFire
 
-        +nesBranchIfNotPressed NES_LEFT, +
+        +nesBranchIfNotPressed NES_LEFT, .skipMoveLeft
         dec PLAYER_X
         dec PLAYER_X
-+
-        +nesBranchIfNotPressed NES_RIGHT, +
+.skipMoveLeft
+        +nesBranchIfNotPressed NES_RIGHT, .skipMoveRight
         inc PLAYER_X
         inc PLAYER_X
-+
+.skipMoveRight
 
         ldx INVADER_BOMB1_X
         inc INVADER_BOMB1_Y
@@ -387,10 +392,10 @@ restartGame:
         ldy INVADER_BOMB1_Y
 
         cpy #BOMB_END_POS_Y
-        bcc +
+        bcc .afterBombEnded
         ldy #BULLET_Y_LOADED
         sty INVADER_BOMB1_Y
-+
+.afterBombEnded
         +tmsSpritePosXYReg SPRITE_BOMB1
 
         ; set position to the bottom of the bomb
@@ -408,22 +413,22 @@ restartGame:
         +tmsWait
 
         cmp #0
-        beq ++
+        beq .shieldNotBombed
         cmp #32
-        bcs ++
+        bcs .shieldNotBombed
 
         ; shield tile hit
         jsr shieldBombed
-        bcc ++
+        bcc .shieldNotBombed
 
         ; bomb sound
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $10
+        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $1f
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
-++        
+.shieldNotBombed
 
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
@@ -444,7 +449,7 @@ restartGame:
         +tmsWait
 
         cmp #0
-        beq ++
+        beq +
         cmp #32
         bcs ++
 
@@ -491,7 +496,7 @@ restartGame:
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
         +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $10
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
 
@@ -532,7 +537,7 @@ restartGame:
         lda FRAMES_COUNTER
         cmp #FRAMES_PER_ANIM
         beq +
-        jmp .loop
+        jmp .nextFrame
 +
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
@@ -645,7 +650,7 @@ restartGame:
 +
         jsr nextFrame
 
-jmp .loop
+jmp .nextFrame
 
 .moveLeft
         dec GAMEFIELD_OFFSET_X
@@ -810,9 +815,7 @@ stopBulletSound:
 
 ; Called each frame (on VSYNC)
 nextFrame:
-        sei
         jsr renderGameField
-        cli
         rts
 
 

@@ -1,40 +1,53 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ui">
+      <UniqueIdentifier>{a4433d7c-2038-4f73-853c-2f1d43e05b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules">
+      <UniqueIdentifier>{698b00d0-dd8b-483f-b162-2e2aba5ffd80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\6502">
+      <UniqueIdentifier>{d2cb503d-5fdb-4bf8-9bbe-831449f65d4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\TMS9918">
+      <UniqueIdentifier>{5dbdaa72-4ed9-4bb6-a88d-462c68d79f1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\AY-3-8910">
+      <UniqueIdentifier>{0e1e8bdd-d8a5-4817-acbe-d54e258af34e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{3ddcc3a9-0113-414a-8f65-b694c083196b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\hbc56emu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\cpu6502\cpu6502.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\window.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h">
-      <Filter>Header Files</Filter>
+      <Filter>modules\TMS9918</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\ay38910\emu2149.h">
-      <Filter>Header Files</Filter>
+      <Filter>modules\AY-3-8910</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\cpu6502\cpu6502.h">
+      <Filter>modules\6502</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\window.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\clock.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\hbc56emu.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\debugger.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -51,20 +64,29 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\hbc56emu.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\modules\cpu6502\cpu6502.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\window.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\tms9918\src\tms9918_core.c">
-      <Filter>Source Files</Filter>
+      <Filter>modules\TMS9918</Filter>
     </ClCompile>
     <ClCompile Include="..\modules\ay38910\emu2149.c">
-      <Filter>Source Files</Filter>
+      <Filter>modules\AY-3-8910</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\cpu6502\cpu6502.c">
+      <Filter>modules\6502</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\window.c">
+      <Filter>ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\clock.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\hbc56emu.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\font.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\debugger.c">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

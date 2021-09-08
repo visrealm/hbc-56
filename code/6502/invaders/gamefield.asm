@@ -54,10 +54,13 @@ randomBottomRowInvader:
         sta TMP_X_POSITION
 -        
         dec TMP_Y_POSITION
+        bmi +        
+
         jsr gameFieldObjectAt
 
         cmp #128
         bcc -
++
         ldx TMP_X_POSITION
         ldy TMP_Y_POSITION
         rts
@@ -244,7 +247,8 @@ renderGameField:
 
         lda TMP_Y_POSITION
         cmp GAMEFIELD_LAST_ROW
-        bne +
+        beq +
+        bcc +
         rts
 +
 
@@ -283,6 +287,7 @@ renderGameField:
         cmp GAMEFIELD_LAST_ROW
 
         beq +
+        bcs +
         jmp .startRow
 +
         rts
