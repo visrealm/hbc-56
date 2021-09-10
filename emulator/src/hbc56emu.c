@@ -500,6 +500,13 @@ main(int argc, char* argv[])
           ++i;
         }
       }
+      /* start paused? */
+      else if (SDL_strcasecmp(argv[i], "--brk") == 0)
+      {
+        consumed = 1;
+        debugPaused = 1;
+      }
+
     }
     if (consumed < 0) {
       static const char* options[] = { "[--blend none|blend|add|mod]", "[--cyclecolor]", "[--cyclealpha]", NULL };

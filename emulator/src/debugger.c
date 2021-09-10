@@ -251,29 +251,29 @@ void debuggerUpdate(SDL_Texture* tex)
   if (aChanged) fgColor = red;
   debuggerOutput("A:  $", 0, 1);
   debuggerOutputHex(cpuStatus->a,5,1);
-  debuggerOutput(_itoa(cpuStatus->a,buffer,10),10,1);
+  debuggerOutput(SDL_itoa(cpuStatus->a,buffer,10),10,1);
 
   fgColor = green;
   if (xChanged) fgColor = red;
   debuggerOutput("X:  $", 0, 2);
   debuggerOutputHex(cpuStatus->x,5,2);
-  debuggerOutput(_itoa(cpuStatus->x,buffer,10),10,2);
+  debuggerOutput(SDL_itoa(cpuStatus->x,buffer,10),10,2);
 
   fgColor = green;
   if (yChanged) fgColor = red;
   debuggerOutput("Y:  $", 0, 3);
   debuggerOutputHex(cpuStatus->y,5,3);
-  debuggerOutput(_itoa(cpuStatus->y,buffer,10),10,3);
+  debuggerOutput(SDL_itoa(cpuStatus->y,buffer,10),10,3);
 
   debuggerOutput("PC: $", 20, 1);
   debuggerOutputHex16(cpuStatus->pc, 25, 1);
-  debuggerOutput(_itoa(cpuStatus->pc, buffer, 10), 30, 1);
+  debuggerOutput(SDL_itoa(cpuStatus->pc, buffer, 10), 30, 1);
 
   fgColor = green;
   if (sChanged) fgColor = red;
   debuggerOutput("SP: $1", 20, 2);
   debuggerOutputHex(cpuStatus->s, 26, 2);
-  debuggerOutput(_itoa(cpuStatus->s, buffer, 10), 30, 2);
+  debuggerOutput(SDL_itoa(cpuStatus->s, buffer, 10), 30, 2);
 
   debuggerOutput("F:", 20, 3);
 
@@ -308,15 +308,6 @@ void debuggerUpdate(SDL_Texture* tex)
     lastF = cpuStatus->p_;
     lastPC = cpuStatus->pc;
   }
-
-  /*
-  regs.p.n ? 'N' : 'N',
-    regs.p.v ? 'V' : 'v',
-    regs.p.d ? 'D' : 'd',
-    regs.p.i ? 'I' : 'i',
-    regs.p.z ? 'Z' : 'z',
-    regs.p.c ? 'C' : 'c');*/
-
 
   int offset = 6;
   uint16_t pc = cpuStatus->pc;
@@ -451,7 +442,7 @@ void debuggerUpdate(SDL_Texture* tex)
     debuggerOutput("$1   $", 40, y + offset);
     debuggerOutputHex(sp, 42, y + offset);
     debuggerOutputHex(d, 46, y + offset);
-    debuggerOutput(_itoa(d, buffer, 10), 49, y + offset);
+    debuggerOutput(SDL_itoa(d, buffer, 10), 49, y + offset);
     ++sp;
     ++y;
   }
@@ -501,9 +492,9 @@ void debuggerUpdate(SDL_Texture* tex)
     for (uint8_t y = 0; y < 8; ++y)
     {
       debuggerOutput("R  $", 42, y + offset);
-      debuggerOutput(_itoa(y, buffer, 10), 43, y + offset);
-      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 45, y + offset);
-      debuggerOutput(_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 48, y + offset);
+      debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + offset);
+      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 46, y + offset);
+      debuggerOutput(SDL_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 49, y + offset);
     }
 
   }

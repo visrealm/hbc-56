@@ -30,11 +30,11 @@ TMS_TMP_ADDRESS = R10
 ; -----------------------------------------------------------------------------
 ; VRAM addresses
 ; -----------------------------------------------------------------------------
-TMS_VRAM_BASE_ADDRESS           = $0400
-TMS_VRAM_COLOR_ADDRESS          = $0200
-TMS_VRAM_FONT_ADDRESS           = $0800
-TMS_VRAM_SPRITE_ATTR_ADDRESS    = $0300
-TMS_VRAM_SPRITE_PATT_ADDRESS    = $0000
+TMS_VRAM_NAME_ADDRESS           = $3800
+TMS_VRAM_COLOR_ADDRESS          = $2000
+TMS_VRAM_PATT_ADDRESS           = $0000
+TMS_VRAM_SPRITE_ATTR_ADDRESS    = $3B00
+TMS_VRAM_SPRITE_PATT_ADDRESS    = $1800
 
 ; -----------------------------------------------------------------------------
 ; Register values
@@ -53,9 +53,9 @@ TMS_R1_DISP_ACTIVE              = $40
 TMS_R1_INT_ENABLE               = $20
 TMS_R1_INT_DISABLE              = $00
 TMS_R1_MODE_GRAPHICS_I          = $00
-TMS_R1_MODE_GRAPHICS_II         = $02
-TMS_R1_MODE_MULTICOLOR          = $00
-TMS_R1_MODE_TEXT                = $00
+TMS_R1_MODE_GRAPHICS_II         = $00
+TMS_R1_MODE_MULTICOLOR          = $08
+TMS_R1_MODE_TEXT                = $10
 TMS_R1_SPRITE_8                 = $00
 TMS_R1_SPRITE_16                = $02
 TMS_R1_SPRITE_MAG1              = $00
@@ -105,9 +105,9 @@ TMS_WHITE               = $0f
 TMS_REGISTER_DATA:
 !byte TMS_R0_EXT_VDP_DISABLE | TMS_R0_MODE_GRAPHICS_I
 !byte TMS_R1_RAM_16K | TMS_R1_DISP_ACTIVE | TMS_R1_MODE_GRAPHICS_I | TMS_R1_SPRITE_MAG2
-!byte TMS_VRAM_BASE_ADDRESS >> 10
+!byte TMS_VRAM_NAME_ADDRESS >> 10
 !byte TMS_VRAM_COLOR_ADDRESS >> 6
-!byte TMS_VRAM_FONT_ADDRESS >> 11
+!byte TMS_VRAM_PATT_ADDRESS >> 11
 !byte TMS_VRAM_SPRITE_ATTR_ADDRESS >> 7
 !byte TMS_VRAM_SPRITE_PATT_ADDRESS >> 11
 !byte TMS_BLACK << 4 | TMS_CYAN
@@ -121,6 +121,16 @@ TMS_REGISTER_DATA:
 }
 
 _tmsWait:
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
         nop
         nop
         nop
@@ -201,6 +211,45 @@ tmsSetAddressRead:
 !macro tmsSetColor .color {
         lda #.color
         jsr tmsSetBackground
+}
+
+; -----------------------------------------------------------------------------
+; tmSetGraphicsMode2: Put the TMS9918 in Graphics II mode
+; -----------------------------------------------------------------------------
+!macro tmSetGraphicsMode2 {
+
+        ; Set up R0/R1 for mode 2
+        lda #TMS_R0_MODE_GRAPHICS_II
+        jsr tmsReg0SetFields
+
+        lda #TMS_R1_MODE_GRAPHICS_II
+        jsr tmsReg1SetFields
+
+        ; Update color table to upper 8KB
+        lda #$ff
+        ldx #3
+        jsr tmsSetRegister
+
+        ; Update pattern table to lower 8KB
+        lda #$03
+        ldx #4
+        jsr tmsSetRegister        
+}
+
+; -----------------------------------------------------------------------------
+; tmsDisableOutput: Disable the TMS9918 output
+; -----------------------------------------------------------------------------
+!macro tmsDisableOutput {
+        lda #TMS_R1_DISP_ACTIVE
+        jsr tmsReg1ClearFields
+}
+
+; -----------------------------------------------------------------------------
+; tmsEnableOutput: Enable the TMS9918 output
+; -----------------------------------------------------------------------------
+!macro tmsEnableOutput {
+        lda #TMS_R1_DISP_ACTIVE
+        jsr tmsReg1SetFields
 }
 
 ; -----------------------------------------------------------------------------
@@ -318,7 +367,7 @@ tmsInit:
         
 
         ; load all data into VRAM
-        jsr tmsInitFontTable
+        jsr tmsInitPattTable
 
         jsr tmsInitTextTable
         
@@ -399,42 +448,42 @@ tmsSendBytes:
         rts
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrFontTable: Initialise address for font table
+; tmsSetAddrPattTable: Initialise address for font table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrFontTable {
-        +tmsSetAddrFontTableInd 0
+!macro tmsSetAddrPattTable {
+        +tmsSetAddrPattTableInd 0
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrFontTableInd: Initialise address for font table
+; tmsSetAddrPattTableInd: Initialise address for pattern table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrFontTableInd .ind {
-        +tmsSetAddressWrite TMS_VRAM_FONT_ADDRESS + 8 * .ind
+!macro tmsSetAddrPattTableInd .ind {
+        +tmsSetAddressWrite TMS_VRAM_PATT_ADDRESS + 8 * .ind
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrFontTableIndRead: Initialise address for font table to read
+; tmsSetAddrPattTableIndRead: Initialise address for pattern table to read
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrFontTableIndRead .ind {
-        +tmsSetAddressRead TMS_VRAM_FONT_ADDRESS + 8 * .ind
+!macro tmsSetAddrPattTableIndRead .ind {
+        +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + 8 * .ind
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrFontTableIndRowRead: Initialise address for font table to read
+; tmsSetAddrPattTableIndRowRead: Initialise address for pattern table to read
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrFontTableIndRead .ind, .row {
-        +tmsSetAddressRead TMS_VRAM_FONT_ADDRESS + (8 * .ind) + .row
+!macro tmsSetAddrPattTableIndRead .ind, .row {
+        +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind) + .row
 }
 
 
 ; -----------------------------------------------------------------------------
-; tmsInitFontTable: Initialise the font table
+; tmsInitPattTable: Initialise the pattern table
 ; -----------------------------------------------------------------------------
-tmsInitFontTable:
+tmsInitPattTable:
         
 
-        ; font table
-        +tmsSetAddrFontTable
+        ; pattern table
+        +tmsSetAddrPattTable
 
         ; (0 - 31) all empty
         jsr _tmsSendEmptyPage
@@ -459,10 +508,10 @@ tmsInitFontTable:
 
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrBase: Initialise address for base (text) table
+; tmsSetAddrNameTable: Initialise address for base (text) table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrBase {
-        +tmsSetAddressWrite TMS_VRAM_BASE_ADDRESS
+!macro tmsSetAddrNameTable {
+        +tmsSetAddressWrite TMS_VRAM_NAME_ADDRESS
 }
 
 ; -----------------------------------------------------------------------------
@@ -472,7 +521,7 @@ tmsInitTextTable:
         
 
         ; text table table
-        +tmsSetAddrBase
+        +tmsSetAddrNameTable
 
 
         lda #0
@@ -773,14 +822,14 @@ tmsHex8:
 ; tmsSetPosWrite: Set cursor position
 ; -----------------------------------------------------------------------------
 !macro tmsSetPosWrite .x, .y {
-        +tmsSetAddressWrite (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
+        +tmsSetAddressWrite (TMS_VRAM_NAME_ADDRESS + .y * 32 + .x)
 }
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPosRead: Set read cursor position
 ; -----------------------------------------------------------------------------
 !macro tmsSetPosRead .x, .y {
-        +tmsSetAddressRead (TMS_VRAM_BASE_ADDRESS + .y * 32 + .x)
+        +tmsSetAddressRead (TMS_VRAM_NAME_ADDRESS + .y * 32 + .x)
 }
 
 ; -----------------------------------------------------------------------------
@@ -791,7 +840,7 @@ tmsHex8:
 ;   Y: Y position (0 - 23)
 ; -----------------------------------------------------------------------------
 tmsSetPosTmpAddress:
-        lda #>TMS_VRAM_BASE_ADDRESS
+        lda #>TMS_VRAM_NAME_ADDRESS
         sta TMS_TMP_ADDRESS + 1
         
         ; this can be better. rotate and save, perhaps
@@ -849,7 +898,7 @@ tmsSetPosRead:
 ; -----------------------------------------------------------------------------
 tmsSetPatternTmpAddress:
         pha
-        lda #>TMS_VRAM_FONT_ADDRESS
+        lda #>TMS_VRAM_PATT_ADDRESS
         sta TMS_TMP_ADDRESS + 1
         
         pla

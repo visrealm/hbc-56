@@ -9,11 +9,11 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>--resizable  --renderer software --rom "C:\Users\troy\Documents\hbc-56\code\6502\invaders\invaders.o"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>--resizable --rom "C:\Users\troy\Documents\hbc-56\code\6502\invaders\invaders.o"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>--resizable --rom "C:\Users\troy\Documents\hbc-56\code\6502\invaders\invaders.o"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>--resizable --rom "C:\Users\troy\Documents\hbc-56\code\6502\tests\tms\tms9918gfx2test.o"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

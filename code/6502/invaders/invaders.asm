@@ -310,13 +310,13 @@ restartGame:
         +tmsSetAddrColorTable
         +tmsSendData COLORTAB, 32
 
-        +tmsSetAddrFontTableInd 8
+        +tmsSetAddrPattTableInd 8
         +tmsSendData SHIELD1, 8 * 6  ; Shield1 8 - 13
         +tmsSendData SHIELD2, 8 * 6  ; Shield2 14 - 18
         +tmsSendData SHIELD3, 8 * 6  ; Shield3 20 - 25
         +tmsSendData SHIELD4, 8 * 6  ; Shield4 26 - 31
 
-        +tmsSetAddrFontTableInd 128
+        +tmsSetAddrPattTableInd 128
         +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN2, 8 * 4
@@ -324,7 +324,7 @@ restartGame:
         +tmsSendData ALIEN3, 8 * 4
         +tmsSendData ALIEN3, 8 * 4
 
-        +tmsSetAddrFontTableInd 176
+        +tmsSetAddrPattTableInd 176
         +tmsSendData BBORDR, 8 * 8
 
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
@@ -577,11 +577,11 @@ shieldNotBombed
 
         and #$03
         bne +
-        +tmsSetAddrFontTableInd 128
+        +tmsSetAddrPattTableInd 128
         +tmsSendData INVADER1, 16
-        +tmsSetAddrFontTableInd 136
+        +tmsSetAddrPattTableInd 136
         +tmsSendData INVADER2, 16
-        +tmsSetAddrFontTableInd 144
+        +tmsSetAddrPattTableInd 144
         +tmsSendData INVADER3, 16
 
         lda #0
@@ -606,11 +606,11 @@ shieldNotBombed
 +      
         cmp #1
         bne +
-        +tmsSetAddrFontTableInd 128
+        +tmsSetAddrPattTableInd 128
         +tmsSendData IP12L, 16
-        +tmsSetAddrFontTableInd 136
+        +tmsSetAddrPattTableInd 136
         +tmsSendData IP22L, 16
-        +tmsSetAddrFontTableInd 144
+        +tmsSetAddrPattTableInd 144
         +tmsSendData IP32L, 16
         lda #2
         sta INVADER_PIXEL_OFFSET
@@ -618,21 +618,21 @@ shieldNotBombed
 +
         cmp #2
         bne +
-        +tmsSetAddrFontTableInd 128
+        +tmsSetAddrPattTableInd 128
         +tmsSendData IP14L, 16
-        +tmsSetAddrFontTableInd 136
+        +tmsSetAddrPattTableInd 136
         +tmsSendData IP24L, 16
-        +tmsSetAddrFontTableInd 144
+        +tmsSetAddrPattTableInd 144
         +tmsSendData IP34L, 16
         lda #4
         sta INVADER_PIXEL_OFFSET
         jmp .endLoop        
 +
-        +tmsSetAddrFontTableInd 128
+        +tmsSetAddrPattTableInd 128
         +tmsSendData IP16L, 16
-        +tmsSetAddrFontTableInd 136
+        +tmsSetAddrPattTableInd 136
         +tmsSendData IP26L, 16
-        +tmsSetAddrFontTableInd 144
+        +tmsSetAddrPattTableInd 144
         +tmsSendData IP36L, 16
         lda #6
         sta INVADER_PIXEL_OFFSET
