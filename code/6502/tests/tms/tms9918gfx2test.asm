@@ -13,21 +13,53 @@ YPOS = $45
 TICKS_L = $46
 TICKS_H = $47
 
+CONFIG_STEP = $48
+
+setupNameTable:
+        +tmsSetAddrNameTable
+        +tmsSendData TMS_NAME_DATA, $300
+        rts
+
+setupColorTable:
+        +tmsSetAddrColorTable
+        +tmsSendData TMS_COLOR_DATA, $1800
+        rts
+
+setupPatternTable:
+        +tmsSetAddrPattTable
+        +tmsSendData testImg, $1800
+        rts
 
 onVSync:
         pha
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #60
-        bne +
-        lda #0
-        inc TICKS_H
-+  
-        sta TICKS_L
+        lda CONFIG_STEP
+        beq doneConfig
+        cmp #3
+        bne doneNameTable
+        jsr setupNameTable
+        dec CONFIG_STEP
+        jmp endInt
+
+doneNameTable:
+        cmp #2
+        bne doneColorTable
+        jsr setupColorTable
+        dec CONFIG_STEP
+        jmp endInt
+
+doneColorTable:
+        jsr setupPatternTable
+        dec CONFIG_STEP
+        +tmsEnableOutput
+
+doneConfig
+        jsr doFrame
+
+endInt
         +tmsReadStatus
         pla      
         rti
+
 
 
 main:
@@ -36,9 +68,13 @@ main:
         sta TICKS_L
         sta TICKS_H
         sta YPOS
+        
+        lda #3
+        sta CONFIG_STEP
 
         jsr tmsInit
 
+        +tmsDisableInterrupts
         +tmsDisableOutput
 
         +tmSetGraphicsMode2
@@ -46,20 +82,14 @@ main:
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
-        +tmsSetAddrNameTable
-        +tmsSendData TMS_NAME_DATA, $300
-
-        +tmsSetAddrColorTable
-        +tmsSendData TMS_COLOR_DATA, $1800
-
-        +tmsSetAddrPattTable
-        +tmsSendData testImg, $1800
-
-        +tmsEnableOutput
+        +tmsEnableInterrupts
 
         cli
 
 loop:
+        jmp loop
+
+doFrame:
         +tmsSetAddrColorTable
 
         lda YPOS
@@ -81,17 +111,15 @@ nextRow
 
 nextCol
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         dex
         bne nextCol
         dey
         bne nextRow
 
         pla
+	rts
 
-        jsr delay
-
-        jmp loop
 
 medDelay:
 	jsr delay
@@ -101,22 +129,22 @@ medDelay:
 
 
 delay:
-	ldx #255
-	ldy #255
+	ldx #0
+	ldy #0
 -
 	dex
 	bne -
-	ldx #255
+	ldx #0
 	dey
 	bne -
 	rts
 
 customDelay:
-	ldx #255
+	ldx #0
 -
 	dex
 	bne -
-	ldx #255
+	ldx #0
 	dey
 	bne -
 	rts
@@ -143,4 +171,4 @@ TMS_COLOR_DATA:
 
 
 testImg:
-!bin "mode2test.bin"
+!bin "metallica.bin"

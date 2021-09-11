@@ -206,7 +206,7 @@ renderGameField:
         lda #0
 -
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         dex
         bne -
 
@@ -224,13 +224,13 @@ renderGameField:
         ; get the game object at TMP_X_POSITION, TMP_Y_POSITION
         jsr gameFieldObjectAt
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         beq +
         clc
         adc #1
 +
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         inc TMP_X_POSITION
         lda TMP_X_POSITION
@@ -260,13 +260,13 @@ renderGameField:
         adc #2
 +
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         beq +
         clc
         adc #1
 +
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         inc TMP_X_POSITION
         lda TMP_X_POSITION

@@ -31,8 +31,8 @@ TMS_TMP_ADDRESS = R10
 ; VRAM addresses
 ; -----------------------------------------------------------------------------
 TMS_VRAM_NAME_ADDRESS           = $3800
-TMS_VRAM_COLOR_ADDRESS          = $2000
-TMS_VRAM_PATT_ADDRESS           = $0000
+TMS_VRAM_COLOR_ADDRESS          = $0000
+TMS_VRAM_PATT_ADDRESS           = $2000
 TMS_VRAM_SPRITE_ATTR_ADDRESS    = $3B00
 TMS_VRAM_SPRITE_PATT_ADDRESS    = $1800
 
@@ -114,27 +114,26 @@ TMS_REGISTER_DATA:
 
 
 ; -----------------------------------------------------------------------------
-; tmsWait: Not sure how much delay we need (if any) so make a macro for now
+; tmsWaitReg: Not sure how much delay we need so make a macro for now
 ; -----------------------------------------------------------------------------
-!macro tmsWait {
-        jsr _tmsWait
+!macro tmsWaitReg {
+        jsr _tmsWaitReg
 }
 
-_tmsWait:
+; -----------------------------------------------------------------------------
+; tmsWaitData: Not sure how much delay we need so make a macro for now
+; -----------------------------------------------------------------------------
+!macro tmsWaitData {
+        jsr _tmsWaitData
+}
+
+_tmsWaitData:
         nop
         nop
         nop
         nop
         nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
+_tmsWaitReg:
         nop
         nop
         rts
@@ -152,10 +151,10 @@ _tmsWait:
 !macro tmsSetAddressRead .addr {
         lda #<(.addr)
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         lda #>(.addr)
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
 }
 
 
@@ -167,11 +166,11 @@ _tmsWait:
 tmsSetAddressWrite:
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         lda TMS_TMP_ADDRESS + 1
         ora #$40
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         rts
 
 ; -----------------------------------------------------------------------------
@@ -182,17 +181,17 @@ tmsSetAddressWrite:
 tmsSetAddressRead:
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         lda TMS_TMP_ADDRESS + 1
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         rts
 
 ; -----------------------------------------------------------------------------
 ; tmsGet: Get a byte of data from the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsGet {
-        +tmsWait
+        +tmsWaitData
         lda TMS9918_RAM
 }
 
@@ -202,7 +201,7 @@ tmsSetAddressRead:
 !macro tmsPut .byte {
         lda #.byte
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 }
 
 ; -----------------------------------------------------------------------------
@@ -226,12 +225,12 @@ tmsSetAddressRead:
         jsr tmsReg1SetFields
 
         ; Update color table to upper 8KB
-        lda #$ff
+        lda #$7f
         ldx #3
         jsr tmsSetRegister
 
         ; Update pattern table to lower 8KB
-        lda #$03
+        lda #$07
         ldx #4
         jsr tmsSetRegister        
 }
@@ -262,11 +261,11 @@ tmsSetAddressRead:
 tmsSetRegister:
         pha
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         txa
         ora #$80
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         pla
         rts
 
@@ -356,11 +355,11 @@ tmsInit:
 -
         lda TMS_REGISTER_DATA, x
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         txa
         ora #$80
         sta TMS9918_REG
-        +tmsWait
+        +tmsWaitReg
         inx
         cpx #8
         bne -
@@ -392,7 +391,7 @@ _tmsSendPage:
         ldx #0
 -
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         inx
         bne -
         rts
@@ -441,7 +440,7 @@ tmsSendBytes:
 -
         lda (TMS_TMP_ADDRESS), Y
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         iny
         dex
         bne -
@@ -563,7 +562,7 @@ tmsInitColorTable:
         +tmsColorFgBg TMS_BLACK, TMS_CYAN
 -
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         dex
         bne -
 
@@ -599,17 +598,17 @@ tmsInitSpriteTable:
         ; Vertical position
         lda #$D0        ; 208 ($D0) stops processing of sprites
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         ; Horizontal position
         lda #$00
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         ; Index
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         ; Early Clock / Color
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         dex
         bne -
 
@@ -671,7 +670,7 @@ tmsTileXyAtPixelXy:
 -
         lda .spriteDataAddr,x
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         inx
         cpx #8
 
@@ -695,7 +694,7 @@ tmsTileXyAtPixelXy:
 -
         lda .spriteDataAddr,x
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         inx
         cpx #32
 
@@ -717,16 +716,16 @@ tmsTileXyAtPixelXy:
 
         lda #.yPos
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         lda #.xPos
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         lda #.pattInd
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         lda #.color
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         
 }
@@ -742,10 +741,10 @@ tmsTileXyAtPixelXy:
 
         lda #.yPos
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         lda #.xPos
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         
 }
@@ -761,10 +760,10 @@ tmsTileXyAtPixelXy:
 
         tya
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         txa
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         
 }
@@ -781,7 +780,7 @@ tmsTileXyAtPixelXy:
 
         lda #.color
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         
 }
@@ -803,14 +802,14 @@ tmsHex8:
 	tax
 	lda .H2, x
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 	pla
 	pha
 	and #$0f
 	tax
 	lda .H2, x
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 	pla
         
 	rts
@@ -981,11 +980,11 @@ tmsSetPatternRead:
 tmsPrint:
 	ldy #0
 -
-	+tmsWait
+	+tmsWaitData
 	lda (STR_ADDR), y
 	beq +
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 	iny
 	jmp -
 +

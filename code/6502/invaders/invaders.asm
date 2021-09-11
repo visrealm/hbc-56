@@ -189,12 +189,12 @@ tmsOutputBcd:
         lsr
         ora #$30
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         pla
         and #$0f
         ora #$30
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         rts
 
 
@@ -410,7 +410,7 @@ afterBombEnded
         ldy HIT_TILE_Y
         jsr tmsSetPosRead
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         cmp #0
         beq shieldNotBombed
@@ -446,7 +446,7 @@ shieldNotBombed
         ldy HIT_TILE_Y
         jsr tmsSetPosRead
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
 
         cmp #0
         beq +
@@ -468,7 +468,7 @@ shieldNotBombed
 
         ; load the pattern row to test
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         sta TMP_PATTERN
 
         ; was an invader pixel hit?
@@ -697,11 +697,11 @@ clearPixel:
         ldy HIT_TILE_Y
         jsr tmsSetPosRead
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         ldy HIT_TILE_PIX_Y
         jsr tmsSetPatternRead
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         sta TMP_PATTERN
 
         jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
@@ -709,7 +709,7 @@ clearPixel:
         lda TMP_PATTERN
         jsr patternHit
         sta TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         rts
 
 
@@ -719,7 +719,7 @@ shieldBombed:
 
         ; load the pattern row that was hit
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         sta TMP_PATTERN
 
         jsr patternHitTest
@@ -778,7 +778,7 @@ shieldHit:
 
         ; load the pattern row that was hit
         lda TMS9918_RAM
-        +tmsWait
+        +tmsWaitData
         sta TMP_PATTERN
 
         jsr patternHitTest
