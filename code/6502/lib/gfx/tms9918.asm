@@ -136,6 +136,7 @@ _tmsWaitData:
 _tmsWaitReg:
         nop
         nop
+        nop
         rts
 
 ; -----------------------------------------------------------------------------
@@ -191,8 +192,8 @@ tmsSetAddressRead:
 ; tmsGet: Get a byte of data from the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsGet {
-        +tmsWaitData
         lda TMS9918_RAM
+        +tmsWaitData
 }
 
 ; -----------------------------------------------------------------------------
@@ -342,6 +343,14 @@ tmsReg1ClearFields:
 
 
 ; -----------------------------------------------------------------------------
+; +tmsColorFgBg: Set A to the given FG / BG color
+; -----------------------------------------------------------------------------
+!macro tmsColorFgBg .fg, .bg {
+        lda #(.fg << 4 | .bg)
+}
+
+
+; -----------------------------------------------------------------------------
 ; tmsInit: Initialise the registers
 ; -----------------------------------------------------------------------------
 tmsInit:
@@ -370,6 +379,8 @@ tmsInit:
 
         jsr tmsInitTextTable
         
+        +tmsColorFgBg TMS_BLACK, TMS_CYAN
+        ldx #32
         jsr tmsInitColorTable
 
         jsr tmsInitSpriteTable
@@ -535,14 +546,6 @@ tmsInitTextTable:
         rts
 
 
-
-; -----------------------------------------------------------------------------
-; +tmsColorFgBg: Set A to the given FG / BG color
-; -----------------------------------------------------------------------------
-!macro tmsColorFgBg .fg, .bg {
-        lda #(.fg << 4 | .bg)
-}
-
 ; -----------------------------------------------------------------------------
 ; tmsSetAddrColorTable: Initialise address for color table
 ; -----------------------------------------------------------------------------
@@ -554,19 +557,21 @@ tmsInitTextTable:
 ; -----------------------------------------------------------------------------
 tmsInitColorTable:
         
+        pha
 
         ; color table
         +tmsSetAddrColorTable
 
-        ldx #32
-        +tmsColorFgBg TMS_BLACK, TMS_CYAN
+;        ldx #32
+        pla
+        pha
 -
         sta TMS9918_RAM
         +tmsWaitData
         dex
         bne -
 
-        
+        pla
 
         rts
 
@@ -953,11 +958,10 @@ tmsSetPatternRead:
 ;  y: y position
 ; -----------------------------------------------------------------------------
 !macro tmsPrint .str, .x, .y {
-	jmp +
+	jmp .afterText
 .textAddr
 	!text .str,0
-+
-        
+.afterText        
 
         +tmsSetPosWrite .x, .y
 
@@ -965,8 +969,25 @@ tmsSetPatternRead:
         sta STR_ADDR_L
         lda #>.textAddr
         sta STR_ADDR_H
-        jsr tmsPrint
-        
+        jsr tmsPrint        
+}
+
+; -----------------------------------------------------------------------------
+; tmsPrintZ: Print text
+; -----------------------------------------------------------------------------
+; Inputs:
+;  str: Address of zero-terminated string to print
+;  x: x position
+;  y: y position
+; -----------------------------------------------------------------------------
+!macro tmsPrintZ .textAddr, .x, .y {
+        +tmsSetPosWrite .x, .y
+
+        lda #<.textAddr
+        sta STR_ADDR_L
+        lda #>.textAddr
+        sta STR_ADDR_H
+        jsr tmsPrint        
 }
 
 ; -----------------------------------------------------------------------------

@@ -47,13 +47,16 @@ CMN_UTIL_ASM_ = 1
 ; Inputs:
 ;  left:  address containing LSB of left value to comapre
 ;  right: address containing LSB of right value to comapre
+; Outputs:
+;  C set if right < left
+;  Z set if right == left
 ; -----------------------------------------------------------------------------
-!macro cmp16 left, right {
-  lda left + 1
-  cmp right + 1
+!macro cmp16 .left, .right {
+  lda .left + 1
+  cmp .right + 1
 	bne +
-	lda left
-	cmp right
+	lda .left
+	cmp .right
 +
 }
 
@@ -65,11 +68,11 @@ CMN_UTIL_ASM_ = 1
 ;  x:     msb
 ;  a:     lsb
 ; -----------------------------------------------------------------------------
-!macro cmp16xa value {
-  cpx #>value
-	bne +
-	cmp #<value
-+
+!macro cmp16xa .value {
+  cpx #>.value
+	bne .doneCmpXa
+	cmp #<.value
+.doneCmpXa
 }
 
 ; -----------------------------------------------------------------------------
@@ -108,6 +111,46 @@ CMN_UTIL_ASM_ = 1
   tax
   lda left + 1
   sbc right + 1
+}
+
+
+; -----------------------------------------------------------------------------
+; +add16: add 16 bit numbers - result in ax registers
+; -----------------------------------------------------------------------------
+; Inputs:
+;  left:  address containing LSB of left value
+;  right: address containing LSB of right value
+; Outputs:
+;  a:     result msb
+;  x:     result lsb
+; -----------------------------------------------------------------------------
+!macro add16 left, right {
+  clc
+  lda left
+  adc right
+  tax
+  lda left + 1
+  adc right + 1
+}
+
+
+; -----------------------------------------------------------------------------
+; +add16Imm: add 16 bit numbers - result stored to res
+; -----------------------------------------------------------------------------
+; Inputs:
+;  left:  address containing LSB of left value
+;  imm:   immediate value to add
+; Outputs:
+;  res: address to store result
+; -----------------------------------------------------------------------------
+!macro add16Imm left, imm, res {
+  clc
+  lda left
+  adc #<imm
+  sta res
+  lda left + 1
+  adc #>imm
+  sta res + 1
 }
 
 
@@ -170,8 +213,9 @@ CMN_UTIL_ASM_ = 1
 ; -----------------------------------------------------------------------------
 bin2bcd8:
   sta R7L
-  stz R8L
-  stz R8H
+  lda #0
+  sta R8L
+  sta R8H
   ldx #8 
   sed    
 .loop:

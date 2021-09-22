@@ -12,17 +12,211 @@
 !initmem $FF
 cputype = $6502
 
-!ifndef HBC56_RESET_VECTOR { HBC56_RESET_VECTOR = $8000 }
-;!ifndef HBC56_INT_VECTOR { HBC56_INT_VECTOR = $FFF0 }
-!ifndef HBC56_NMI_VECTOR { HBC56_NMI_VECTOR = $FFF0 }
+DEFAULT_HBC56_NMI_VECTOR = $FFF0
+DEFAULT_HBC56_INT_VECTOR = $FFF0
+
+HBC56_BORDER     = TMS_LT_BLUE 
+HBC56_BACKGROUND = TMS_BLACK
+HBC56_LOGO       = TMS_LT_BLUE 
+HBC56_TEXT       = TMS_GREY
+
+*=$F800
+!ifdef tmsInit {
+hbc56BootScreen:
+        +tmsColorFgBg TMS_GREY, HBC56_BORDER
+        jsr tmsSetBackground
+        +tmsColorFgBg HBC56_LOGO, HBC56_BACKGROUND
+        ldx #32
+        jsr tmsInitColorTable
+        +tmsColorFgBg HBC56_TEXT, HBC56_BACKGROUND
+        ldx #16
+        jsr tmsInitColorTable
+
+        +tmsSetPosWrite 5,5
+        +tmsSendData hbc56LogoInd, 22
+        +tmsSetPosWrite 5,6
+        +tmsSendData hbc56LogoInd + 22, 22
+        +tmsSetPosWrite 5,7
+        +tmsSendData hbc56LogoInd + 44, 22
+
+        +tmsSetAddrPattTableInd 200
+        +tmsSendData hbc56LogoPatt, $178
+
+!ifdef HBC56_TITLE {
+        +tmsPrintZ HBC56_TITLE, (32 - HBC56_TITLE_LEN) / 2, 15
+}
+
+!ifndef HBC56_SKIP_POST {
+        jsr checkRAM
+}
+        lda #10
+        sta $00
+-
+        jsr hbc56Delay
+        dec $00
+        bne -
+
+!ifndef HBC56_SKIP_POST {
+        jsr checkVRAM
+}
+
+        lda #10
+        sta $00
+-
+        jsr hbc56Delay
+        dec $00
+        bne -
+
+        jsr tmsInit
+        
+        jmp main
+
+checkRAM:
+        +tmsPrint "Checking RAM...", 6, 11
+
+        lda #2
+        sta $00
+        lda #2
+        sta $01
+        ldy #0
+.nextByte
+        +tmsSetPosWrite 24, 11
+.nextByte2
+        lda $00
+        jsr tmsHex8
+
+        lda #$55
+        sta ($00), y
+        lda #00
+        lda ($00), y
+        cmp #$55
+        bne .error
+        lda #$aa
+        sta ($00), y
+        lda #00
+        lda ($00), y
+        cmp #$aa
+        lda #00
+        sta ($00), y
+        +inc16 $00
+        lda $00
+        cmp #<IO_PORT_BASE_ADDRESS
+        bne .nextByte
+        +tmsSetPosWrite 22, 11
+        lda $01
+        jsr tmsHex8
+        lda $01
+        cmp #>IO_PORT_BASE_ADDRESS
+        bne .nextByte2
+
+        +tmsPrint "PASS", 22, 11
+        rts
+
+
+.error:
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jmp .nextByte
+
+checkVRAM:
+        +tmsPrint "Checking VRAM...", 6, 12
+
+        lda #$00
+        sta TMS_TMP_ADDRESS
+        sta TMS_TMP_ADDRESS + 1
+
+.nextVByte
+        +tmsSetPosWrite 24, 12
+        lda TMS_TMP_ADDRESS
+        jsr tmsHex8
+
+        jsr tmsSetAddressRead
+        +tmsGet
+        ;!byte $DB
+        pha
+        jsr tmsSetAddressWrite
+        +tmsPut $aa
+        jsr tmsSetAddressRead
+        +tmsGet
+        cmp #$aa
+        bne .errorV
+.backFromErrorV        
+        jsr tmsSetAddressWrite
+        pla
+        sta TMS9918_RAM
+        +tmsWaitData
+
+        +inc16 TMS_TMP_ADDRESS
+        lda TMS_TMP_ADDRESS
+        cmp #$00
+        bne .nextVByte
+        +tmsSetPosWrite 22, 12
+        lda TMS_TMP_ADDRESS + 1
+        jsr tmsHex8
+        lda TMS_TMP_ADDRESS + 1
+        cmp #$40
+        bne .nextVByte
+
+        +tmsPrint "PASS", 22, 12
+        rts
+
+
+.errorV:
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jsr hbc56Delay
+        jmp .backFromErrorV
+
+hbc56Delay:
+	ldy #0
+hbc56DCustomDelay:
+	ldx #0
+-
+	dex
+	bne -
+	ldx #0
+	dey
+	bne -
+	rts
+
+hbc56LogoInd:
+!bin "../lib/hbc56.ind"
+hbc56LogoPatt:
+!bin "../lib/hbc56.patt"
+hbc56LogoPattEnd:
+}
+
+*=$FF00
+hbc56Init:
+        cld     ; make sure we're not in decimal mode
+        ldx #$ff
+        txs
+
+        sei
+        !ifdef tmsInit { jsr tmsInit }
+        !ifdef lcdInit { jsr lcdInit }
+
+        !ifdef tmsInit {
+        +tmsDisableInterrupts
+
+                jmp hbc56BootScreen
+        }
+
+        cli
+        jmp main
+
+
 
 *=$FFF0
-rti
+        rti
 
 *=$FFFA
-!word HBC56_NMI_VECTOR
-!word HBC56_RESET_VECTOR
-!word HBC56_INT_VECTOR
+!ifdef HBC56_NMI_VECTOR { !word HBC56_NMI_VECTOR } else { !word DEFAULT_HBC56_NMI_VECTOR }
+!word hbc56Init
+!ifdef HBC56_INT_VECTOR { !word HBC56_INT_VECTOR } else { !word DEFAULT_HBC56_INT_VECTOR }
 *=$8000
 
 ; Base address of the 256 IO port memory range
@@ -72,14 +266,3 @@ STR_ADDR = $20
 STR_ADDR_L = STR_ADDR
 STR_ADDR_H = STR_ADDR + 1
 
-
-; Initial state
-; ----------------------------------------------------------------------------
-cld     ; make sure we're not in decimal mode
-ldx #$ff
-txs
-
-; Program entry point
-; ----------------------------------------------------------------------------
-
-jmp main

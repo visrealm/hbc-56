@@ -1,4 +1,4 @@
-# img2strip.py
+# img2mode2.py
 #
 # Convert an image into a graphics mode 2 binary stream
 #

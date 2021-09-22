@@ -185,7 +185,7 @@ void io_write(uint8_t addr, uint8_t val)
 
 uint8_t mem_read(uint16_t addr)
 {
-  if (addr >= ioPage && addr <= ioPage + 255)
+  if ((addr & 0xff00) == ioPage)
   {
     return io_read(addr & 0xff);
   }
@@ -204,7 +204,7 @@ uint8_t mem_read(uint16_t addr)
 
 void mem_write(uint16_t addr, uint8_t val)
 {
-  if (addr >= ioPage && addr <= ioPage + 255)
+  if ((addr & 0xff00) == ioPage)
   {
     io_write(addr & 0xff, val);
   }
@@ -321,6 +321,10 @@ int SDLCALL cpuThread(void* unused)
           if (cpu6502_get_regs()->pc == breakPc)
           {
             breakPc = 0;
+          }
+          else if (cpu6502_get_regs()->lastOpcode == 0xDB)
+          {
+            debugPaused = debugWindowShown = 1;
           }
         }
         SDL_UnlockMutex(debugMutex);

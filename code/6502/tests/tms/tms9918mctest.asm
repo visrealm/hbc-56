@@ -80,22 +80,13 @@ medDelay:
 
 
 delay:
-	ldx #255
-	ldy #255
--
-	dex
-	bne -
-	ldx #255
-	dey
-	bne -
-	rts
-
+	ldy #0
 customDelay:
-	ldx #255
+	ldx #0
 -
 	dex
 	bne -
-	ldx #255
+	ldx #0
 	dey
 	bne -
 	rts

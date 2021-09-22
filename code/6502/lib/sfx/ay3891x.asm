@@ -59,6 +59,7 @@ AY3891X_R17 = 17
 AY3891X_CHA = 0
 AY3891X_CHB = 1
 AY3891X_CHC = 2
+AY3891X_CHN = 3
 
 AY3891X_CHA_TONE_L   = AY3891X_R0
 AY3891X_CHA_TONE_H   = AY3891X_R1
@@ -80,6 +81,15 @@ AY3891X_PORTB        = AY3891X_R15
 AY3891X_CLOCK_FREQ   = 2000000
 
 !macro ay3891Write .dev, .reg, .val {
+
+        lda #.reg
+        sta IO_PORT_BASE_ADDRESS | AY3891X_IO_ADDR | AY3891X_ADDR | .dev
+        lda #.val
+        sta IO_PORT_BASE_ADDRESS | AY3891X_IO_ADDR | AY3891X_WRITE | .dev
+}        
+
+
+!macro ay3891WriteX .dev, .reg, .val {
 
         lda #.reg
         sta IO_PORT_BASE_ADDRESS | AY3891X_IO_ADDR | AY3891X_ADDR | .dev

@@ -71,14 +71,14 @@ MEMCPY_LEN = R2
 ; -----------------------------------------------------------------------------
 memcpySinglePage:
 	cpy #0
-	beq +
+	beq .endMemcpySinglePage
 -
 	dey
 	lda (MEMCPY_SRC), Y
 	sta (MEMCPY_DST), Y
 	cpy #0
 	bne -
-+
+.endMemcpySinglePage:
 	rts
 ; -----------------------------------------------------------------------------
 
@@ -94,14 +94,14 @@ memcpySinglePage:
 ; -----------------------------------------------------------------------------
 memcpySinglePagePort:
 	cpy #0
-	beq +
+	beq .endMemcpySinglePagePort
 -
 	dey
 	lda (MEMCPY_SRC), Y
 	sta MEMCPY_DST
 	cpy #0
 	bne -
-+
+.endMemcpySinglePagePort
 	rts
 ; -----------------------------------------------------------------------------
 
@@ -148,20 +148,20 @@ memcpyMultiPage:
 	iny
 	bne -
 	dex
-	beq +
+	beq .memcpyMultiPageRemaining
 	inc MEMCPY_SRC + 1
 	inc MEMCPY_DST + 1
 	jmp -
-+ ; remaining bytes
+.memcpyMultiPageRemaining ; remaining bytes
 	ldx MEMCPY_LEN
-	beq +
+	beq .memcpyMultiPageEnd
 - ; X bytes
 	lda (MEMCPY_SRC),y
 	sta (MEMCPY_DST),y
 	iny
 	dex
 	bne -
-+
+.memcpyMultiPageEnd
 }
 
 	rts
@@ -186,19 +186,19 @@ memcpyMultiPagePort:
 	iny
 	bne -
 	dex
-	beq +
+	beq .memcpyMultiPagePortRemaining
 	inc MEMCPY_SRC + 1
 	jmp -
-+ ; remaining bytes
+.memcpyMultiPagePortRemaining ; remaining bytes
 	ldx MEMCPY_LEN
-	beq +
+	beq .memcpyMultiPagePortEnd
 - ; X bytes
 	lda (MEMCPY_SRC),y
 	sta MEMCPY_DST
 	iny
 	dex
 	bne -
-+
+.memcpyMultiPagePortEnd
 	rts
 ; -----------------------------------------------------------------------------
 
@@ -290,13 +290,13 @@ MEMSET_LEN = R1
 ; -----------------------------------------------------------------------------
 memsetSinglePage:
 	cpy #0
-	beq +
+	beq .doneCpy
 -
 	dey
 	sta (MEMSET_DST), y
 	cpy #0
 	bne -
-+
+.doneCpy
 	rts
 
 
@@ -310,28 +310,28 @@ memsetSinglePage:
 ; -----------------------------------------------------------------------------
 memsetMultiPage:
 	ldx MEMSET_LEN + 1
-	bne +
+	bne .doneSet
 	ldy MEMSET_LEN
 	jmp memsetSinglePage
-+ 
+.doneSet
 	ldy #0
 - 
 	sta (MEMSET_DST),y ; could unroll to any power of 2
 	iny
 	bne -
 	dex
-	beq +
+	beq .doneSet2
 	inc MEMSET_DST + 1
 	jmp -
-+ ; remaining bytes
+.doneSet2 ; remaining bytes
 	ldx MEMSET_LEN
-	beq +
+	beq .doneSet3
 - ; X bytes
 	sta (MEMSET_DST),y
 	iny
 	dex
 	bne -
-+
+.doneSet3
 	rts
 
 } ; memset
