@@ -9,21 +9,34 @@
 ;
 
 !to "invaders.o", plain
+!sl "invaders.lmap"
+
+HBC56_SKIP_POST = 1
+HBC56_TITLE     = gameName
+HBC56_TITLE_LEN = (gameNameEnd - HBC56_TITLE) - 1
 
 HBC56_INT_VECTOR = onVSync
-
-!source "../lib/hbc56.asm"
-
-TMS_MODEL = 9918
-!source "../lib/gfx/tms9918.asm"
-!source "../lib/gfx/fonts/tms9918font1.asm"
-
-!source "../lib/gfx/bitmap.asm"
-!source "../lib/inp/nes.asm"
-!source "../lib/ut/memory.asm"
-!source "../lib/sfx/ay3891x.asm"
+!src "../lib/hbc56.asm"
 
 !src "zeropage.asm"
+!src "../lib/ut/memory.asm"
+!src "../lib/ut/util.asm"
+
+TMS_MODEL = 9918
+!src "../lib/gfx/tms9918.asm"
+
+TMS_FONT_DATA: !bin "../lib/gfx/fonts/tms9918font1.o"
+
+!src "../lib/gfx/bitmap.asm"
+!src "../lib/inp/nes.asm"
+!src "../lib/sfx/ay3891x.asm"
+!src "../lib/sfx/sfxman.asm"
+
+
+
+gameName:
+!text "INVADERS", 0
+gameNameEnd:
 
 ;
 ; contants
@@ -39,7 +52,8 @@ SPRITE_HIDDEN_X  = $C0
 SPRITE_HIDDEN_Y  = $00
 
 BULLET_Y_LOADED = $D1
-BULLET_SPEED = 2
+BULLET_SPEED = 3
+BOMB_SPEED = 4
 
 PLAYER_POS_Y = 153
 LIVES_POS_Y = 170
@@ -49,7 +63,8 @@ FRAMES_PER_ANIM = 12
 MAX_X           = 6
 
 !src "gamefield.asm"
-
+!src "tile.asm"
+!src "score.asm"
 
 ;
 ; Memory address constants
@@ -80,75 +95,6 @@ rotate1:
 
 
 
-; X/Y indexes as pixel location
-; returns:
-;  TILE in HIT_TILE_X/HIT_TILE_Y
-;  TILE OFFSET in HIT_TILE_PIX_X/HIT_TILE_PIX_Y
-pixelToTileXy
-        txa
-        lsr
-        lsr
-        lsr
-        sta HIT_TILE_X
-        txa
-        and #$07
-        sta HIT_TILE_PIX_X
-        tya
-        lsr
-        lsr
-        lsr
-        sta HIT_TILE_Y
-        tya
-        and #$07
-        sta HIT_TILE_PIX_Y
-        rts
-
-decTileHitX:
-        lda HIT_TILE_PIX_X
-        beq +
-        dec HIT_TILE_PIX_X
-        rts
-+
-        dec HIT_TILE_X
-        lda #7
-        sta HIT_TILE_PIX_X
-        rts
-
-incTileHitX:
-        lda HIT_TILE_PIX_X
-        cmp #7
-        beq +
-        inc HIT_TILE_PIX_X
-        rts
-+
-        inc HIT_TILE_X
-        lda #0
-        sta HIT_TILE_PIX_X
-        rts
-
-decTileHitY:
-        lda HIT_TILE_PIX_Y
-        beq +
-        dec HIT_TILE_PIX_Y
-        rts
-+
-        dec HIT_TILE_Y
-        lda #7
-        sta HIT_TILE_PIX_Y
-        rts
-
-incTileHitY:
-        lda HIT_TILE_PIX_Y
-        cmp #7
-        beq +
-        inc HIT_TILE_PIX_Y
-        rts
-+
-        inc HIT_TILE_Y
-        lda #0
-        sta HIT_TILE_PIX_Y
-        rts
-
 onVSync:
         pha
         +tmsDisableInterrupts
@@ -159,7 +105,7 @@ onVSync:
         bne writeTicksL
         inc TICKS_H
         lda #0
-writeTicksL
+writeTicksL:
         sta TICKS_L
         lda #1
         sta V_SYNC
@@ -167,58 +113,11 @@ writeTicksL
         pla      
         rti
 
-; Add A to the score
-addScore:
-        clc
-        sed
-        adc SCORE_BCD_L
-        sta SCORE_BCD_L
-        bcc skipUpdateScoreH
-        lda SCORE_BCD_H
-        adc #1
-        sta SCORE_BCD_H
-skipUpdateScoreH
-        cld
-        rts
-
-tmsOutputBcd:
-        pha
-        lsr
-        lsr
-        lsr
-        lsr
-        ora #$30
-        sta TMS9918_RAM
-        +tmsWaitData
-        pla
-        and #$0f
-        ora #$30
-        sta TMS9918_RAM
-        +tmsWaitData
-        rts
-
-
-updateScore:
-        +tmsSetPosWrite 9, 0
-        lda SCORE_BCD_H
-        jsr tmsOutputBcd
-        lda SCORE_BCD_L
-        jsr tmsOutputBcd
-
-        +tmsSetPosWrite 26, 0
-        lda HI_SCORE_BCD_H
-        jsr tmsOutputBcd
-        lda HI_SCORE_BCD_L
-        jsr tmsOutputBcd
-
-        rts
-
 main:
-       
-
-        jsr tmsInit
+        ; program entry point
 
 restartGame:
+        jsr sfxManInit:
         sei
 
         +tmsDisableInterrupts
@@ -344,6 +243,7 @@ restartGame:
         cli
 
 nextFrame:
+        jsr sfxManTick
         cli
         +tmsEnableInterrupts
 
@@ -387,9 +287,11 @@ skipMoveLeft
 skipMoveRight
 
         ldx INVADER_BOMB1_X
-        inc INVADER_BOMB1_Y
-        inc INVADER_BOMB1_Y
-        ldy INVADER_BOMB1_Y
+        clc
+        lda #BOMB_SPEED
+        adc INVADER_BOMB1_Y
+        sta INVADER_BOMB1_Y
+        tay
 
         cpy #BOMB_END_POS_Y
         bcc afterBombEnded
@@ -405,12 +307,8 @@ afterBombEnded
         tay
 
         jsr pixelToTileXy
-
-        ldx HIT_TILE_X
-        ldy HIT_TILE_Y
         jsr tmsSetPosRead
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
 
         cmp #0
         beq shieldNotBombed
@@ -423,11 +321,12 @@ afterBombEnded
 
         ; bomb sound
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $1f
+        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $0a
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
+        ;+sfxManSetPsg1NoiseTimeout 0.5
 shieldNotBombed
 
         lda BULLET_Y
@@ -441,12 +340,8 @@ shieldNotBombed
         +tmsSpritePosXYReg SPRITE_BULLET
         
         jsr pixelToTileXy
-        
-        ldx HIT_TILE_X
-        ldy HIT_TILE_Y
         jsr tmsSetPosRead
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
 
         cmp #0
         beq +
@@ -467,8 +362,7 @@ shieldNotBombed
         jsr tmsSetPatternRead
 
         ; load the pattern row to test
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
         sta TMP_PATTERN
 
         ; was an invader pixel hit?
@@ -491,14 +385,15 @@ shieldNotBombed
         jsr killObjectAt ; returns score for hit object
 
         jsr addScore
-        jsr updateScore
+        jsr updateScoreDisplay
 
         +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
+        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $1f
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
+        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $0f
         +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
         +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
+        ;+sfxManSetPsg1NoiseTimeout 0.5
 
         ; make sure he disappears.. now
         jsr renderGameField
@@ -542,7 +437,7 @@ shieldNotBombed
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
         +tmsSpritePos SPRITE_SPLAT, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3f
+        ;+ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3f
 
         inc TONE0
         lda TONE0
@@ -696,12 +591,10 @@ clearPixel:
         ldx HIT_TILE_X
         ldy HIT_TILE_Y
         jsr tmsSetPosRead
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
         ldy HIT_TILE_PIX_Y
         jsr tmsSetPatternRead
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
         sta TMP_PATTERN
 
         jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
@@ -718,8 +611,7 @@ shieldBombed:
         jsr tmsSetPatternRead
 
         ; load the pattern row that was hit
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
         sta TMP_PATTERN
 
         jsr patternHitTest
@@ -777,8 +669,7 @@ shieldHit:
         jsr tmsSetPatternRead
 
         ; load the pattern row that was hit
-        lda TMS9918_RAM
-        +tmsWaitData
+        +tmsGet
         sta TMP_PATTERN
 
         jsr patternHitTest
@@ -828,5 +719,6 @@ COLORTAB:
        !byte $40,$00            ; BOTTOM SCREEN
        !byte $00,$00,$00,$00      ; TOP SCREEN
        !byte $00,$00            ; TOP SCREEN
+
 
 !src "patterns.asm"

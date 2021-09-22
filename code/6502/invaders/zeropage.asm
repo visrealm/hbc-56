@@ -9,8 +9,9 @@
 ; Zero page addresses
 ;
 
-TICKS_L = $48
-TICKS_H = $49
+TICKS   = $48
+TICKS_L = TICKS
+TICKS_H = (TICKS + 1)
 V_SYNC  = $4a
 
 FRAMES_COUNTER = $4f
