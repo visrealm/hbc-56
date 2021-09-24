@@ -87,23 +87,14 @@ writeTicksL:
         pla      
         rti
 
+
+
+; -----------------------------------------------------------------------------
+; main entry point
+; -----------------------------------------------------------------------------
 main:
 
-        ; program entry point
-        lda #<INVADER1_TYPE
-        sta INV1_BASE_ADDR_L
-        lda #>INVADER1_TYPE
-        sta INV1_BASE_ADDR_H
-
-        lda #<INVADER2_TYPE
-        sta INV2_BASE_ADDR_L
-        lda #>INVADER2_TYPE
-        sta INV2_BASE_ADDR_H
-
-        lda #<INVADER3_TYPE
-        sta INV3_BASE_ADDR_L
-        lda #>INVADER3_TYPE
-        sta INV3_BASE_ADDR_H
+        ; any single-time setup?
 
 restartGame:
         +tmsDisableOutput
@@ -291,6 +282,7 @@ shieldNotBombed
 
         ; pixel-level collision with invader?
         ldy HIT_TILE_PIX_Y
+        pha
         jsr tmsSetPatternRead
 
         ; load the pattern row to test
@@ -309,9 +301,13 @@ shieldNotBombed
         sty TMP_Y_POSITION
 
         jsr gameFieldXyToPixelXy
-
-        +tmsSpriteColor SPRITE_SPLAT, TMS_MED_RED
+        
         +tmsSpritePosXYReg SPRITE_SPLAT
+
+        +tmsSetAddrSpriteColor SPRITE_SPLAT
+        pla
+        jsr alienColor
+        +tmsPut
 
         jsr killObjectAt ; returns score for hit object
 

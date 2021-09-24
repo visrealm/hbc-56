@@ -814,15 +814,21 @@ tmsTileXyAtPixelXy:
         +tmsPut 
 }
 
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrSpriteColor: Change a sprite color
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrSpriteColor .ind {
+
+        ; sprite attr table
+        +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + (.ind * 4) + 3
+}
 ; -----------------------------------------------------------------------------
 ; tmsSpriteColor: Change a sprite color
 ; -----------------------------------------------------------------------------
 !macro tmsSpriteColor .ind, .color {
 
-        
-
-        ; sprite attr table
-        +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + (.ind * 4) + 3
+        +tmsSetAddrSpriteColor .ind
 
         +tmsPut .color
 }
