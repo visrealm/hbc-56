@@ -608,6 +608,12 @@ tmsInitTextTable:
         +tmsSetAddressWrite TMS_VRAM_COLOR_ADDRESS
 }
 
+; -----------------------------------------------------------------------------
+; tmsSetAddrColorTable: Initialise address for color table index
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrColorTable .ind {
+        +tmsSetAddressWrite TMS_VRAM_COLOR_ADDRESS + .ind
+}
 
 
 ; -----------------------------------------------------------------------------

@@ -287,23 +287,3 @@ initialGameField:
 !fill 5, 0
 !fill 11, 0
 
-
-shieldLayout:
-!byte 8,9,10,0,0,0,14,15,16,0,0,0,0,20,21,22,0,0,0,26,27,28
-!fill 10, 0
-!byte 11,12,13,0,0,0,17,18,19,0,0,0,0,23,24,25,0,0,0,29,30,31
-SHIELD_BYTES = * - shieldLayout
-
-bunkerLayout:
-!byte 176
-!fill 22, 177
-!byte 178
-!fill 8, 0
-!byte 179
-!fill 22, 0
-!byte 180
-!fill 8, 0
-!byte 181
-!fill 22, 182
-!byte 183
-BUNKER_BYTES = * - bunkerLayout

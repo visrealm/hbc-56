@@ -24,9 +24,7 @@ pixelToTileXy
         sta HIT_TILE_PIX_X
         
         txa
-        lsr
-        lsr
-        lsr
+        +div8
         sta HIT_TILE_X
         tax
         
@@ -35,9 +33,7 @@ pixelToTileXy
         sta HIT_TILE_PIX_Y
 
         tya
-        lsr
-        lsr
-        lsr
+        +div8
         sta HIT_TILE_Y
         tay
         rts
@@ -98,4 +94,67 @@ incTileHitY:
         inc HIT_TILE_Y
         lda #0
         sta HIT_TILE_PIX_Y
+        rts
+
+
+
+BIT0 = $80
+BIT1 = $40
+BIT2 = $20
+BIT3 = $10
+BIT4 = $08
+BIT5 = $04
+BIT6 = $02
+BIT7 = $01
+
+hitTestBits:
+!byte  BIT0, BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7
+hitTestMasks:
+!byte  !BIT0 & $ff, !BIT1, !BIT2, !BIT3, !BIT4, !BIT5, !BIT6, !BIT7
+
+; -----------------------------------------------------------------------------
+; patternHitTest: Test a pattern row for a pixel hit
+; -----------------------------------------------------------------------------
+; Inputs:
+;  A = The row pattern. Pixel bits.
+;  HIT_TILE_PIX_X = The offset to check (0 - 7)
+; Returns:
+;  Zero flag  - set if pixel not hit, clear id pixel hit
+; -----------------------------------------------------------------------------
+patternHitTest:
+        ldx HIT_TILE_PIX_X
+        and hitTestBits, x
+        rts
+
+
+; -----------------------------------------------------------------------------
+; clearPixel: Clear a pixel at
+; -----------------------------------------------------------------------------
+; Inputs:
+;  HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y
+; -----------------------------------------------------------------------------
+tileClearPixel:
+
+        ; Temporary value
+        TILE_TMP_PATTERN = R4
+
+        ; load pattern index at given tile location
+        ldx HIT_TILE_X
+        ldy HIT_TILE_Y
+        jsr tmsSetPosRead
+        +tmsGet
+
+        ; load pattern byte for given row
+        ldy HIT_TILE_PIX_Y
+        jsr tmsSetPatternRead
+        +tmsGet
+        sta TILE_TMP_PATTERN
+
+        jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
+
+        ; mask out pixel
+        ldx HIT_TILE_PIX_X
+        lda TILE_TMP_PATTERN
+        and hitTestMasks, x
+        +tmsPut
         rts

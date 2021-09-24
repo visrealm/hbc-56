@@ -61,27 +61,13 @@ MAX_X           = 6
 !src "tile.asm"
 !src "score.asm"
 !src "audio.asm"
+!src "shield.asm"
+!src "bunker.asm"
+!src "aliens.asm"
 
 ;
 ; Memory address constants
 ;
-
-ALIEN1    = $1200
-ALIEN2    = $1300
-ALIEN3    = $1400
-
-SHIELD1   = $1500
-SHIELD2   = $1540
-SHIELD3   = $1580
-SHIELD4   = $15C0
-
-INVADER1_TYPE = INVADER1
-INVADER2_TYPE = INVADER2 
-INVADER3_TYPE = INVADER3
-
-INVADER1_PATT = 128
-INVADER2_PATT = 136
-INVADER3_PATT = 144
 
 onVSync:
         pha
@@ -133,23 +119,7 @@ restartGame:
 
         +memcpy GAMEFIELD, initialGameField, 5 * 16
 
-        +setMemCpyDst ALIEN1
-        +setMemCpySrcInd INV1_BASE_ADDR_L
-        +memcpySinglePage 8 * 2 
-        +memset ALIEN1 + 16, 0, 8 * 2
-        +setMemCpyDst ALIEN2
-        +setMemCpySrcInd INV2_BASE_ADDR_L
-        +memcpySinglePage 8 * 2 
-        +memset ALIEN2 + 16, 0, 8 * 2
-        +setMemCpyDst ALIEN3
-        +setMemCpySrcInd INV3_BASE_ADDR_L
-        +memcpySinglePage 8 * 2 
-        +memset ALIEN3 + 16, 0, 8 * 2
-        +memcpy SHIELD1, SHIELD, 8 * 6
-        +memcpy SHIELD2, SHIELD, 8 * 6
-        +memcpy SHIELD3, SHIELD, 8 * 6
-        +memcpy SHIELD4, SHIELD, 8 * 6
-
+        
         lda #9
         sta GAMEFIELD_LAST_ROW
         lda #10
@@ -170,20 +140,12 @@ restartGame:
         sta TONE0
         lda #0
         sta INVADER_PIXEL_OFFSET
-        lda #0
-        sta SCORE_BCD_L
-        sta SCORE_BCD_H
 
         lda #1
         sta GAMEFIELD_OFFSET_X
         sta X_DIR
         lda #4
         sta GAMEFIELD_OFFSET_Y
-
-        lda #$03
-        sta HI_SCORE_BCD_H
-        lda #$45
-        sta HI_SCORE_BCD_L
 
         lda #TMS_R1_SPRITE_MAG2
         jsr tmsReg1ClearFields
@@ -206,45 +168,19 @@ restartGame:
         sta PLAYER_X
 
         +tmsSetAddrColorTable
-        +tmsSendData COLORTAB, 16
-        ldy #INVADER_OFFSET_COLOR
-        lda (INV1_BASE_ADDR_L), y
-        +tmsPut
-        lda (INV2_BASE_ADDR_L), y
-        +tmsPut
-        lda (INV3_BASE_ADDR_L), y
-        +tmsPut
-        +tmsSendData COLORTAB + 19, 32-19
-
-        +tmsSetAddrPattTableInd 8
-        +tmsSendData SHIELD1, 8 * 6  ; Shield1 8 - 13
-        +tmsSendData SHIELD2, 8 * 6  ; Shield2 14 - 18
-        +tmsSendData SHIELD3, 8 * 6  ; Shield3 20 - 25
-        +tmsSendData SHIELD4, 8 * 6  ; Shield4 26 - 31
-
-        +tmsSetAddrPattTableInd INVADER1_PATT
-        +tmsSendData ALIEN1, 8 * 4
-        +tmsSendData ALIEN1, 8 * 4
-        +tmsSendData ALIEN2, 8 * 4
-        +tmsSendData ALIEN2, 8 * 4
-        +tmsSendData ALIEN3, 8 * 4
-        +tmsSendData ALIEN3, 8 * 4
-
-        +tmsSetAddrPattTableInd 176
-        +tmsSendData BBORDR, 8 * 8
+        +tmsSendData COLORTAB, 32
 
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
-        +tmsPrint "SCORE 00000   HI SCORE 00000", 2, 0
-        +tmsSetPosWrite 5, 17
-        +tmsSendData shieldLayout, SHIELD_BYTES
-        +tmsSetPosWrite 4, 21
-        +tmsSendData bunkerLayout, BUNKER_BYTES
+        jsr setupAliens
+        jsr setupScore
+        jsr setupShield
+        jsr setupBunker
+
+        jsr renderGameField
 
         lda #0
-        sta SCORE_BCD_L
-        sta SCORE_BCD_H
         sta V_SYNC
 
         +tmsEnableOutput
@@ -318,7 +254,7 @@ afterBombEnded
         bcs shieldNotBombed
 
         ; shield tile hit
-        jsr shieldBombed
+        jsr testShieldBombed
         bcc shieldNotBombed
 
         jsr audioBombHit
@@ -345,7 +281,7 @@ shieldNotBombed
         bcs ++
 
         ; shield tile hit
-        jsr shieldHit
+        jsr testShieldPlayerBullet
 +
 -
         jmp .testBulletPos
@@ -359,7 +295,6 @@ shieldNotBombed
 
         ; load the pattern row to test
         +tmsGet
-        sta TMP_PATTERN
 
         ; was an invader pixel hit?
         jsr patternHitTest
@@ -442,8 +377,6 @@ shieldNotBombed
         bne ++
 
 ++
-
-
         lda #0
         sta FRAMES_COUNTER
 
@@ -454,18 +387,8 @@ shieldNotBombed
 
         and #$03
         bne +
-        +tmsSetAddrPattTableInd INVADER1_PATT
-        +tmsSetSourceAddressInd INV1_BASE_ADDR_L
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER2_PATT
-        +tmsSetSourceAddressInd INV2_BASE_ADDR_L
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER3_PATT
-        +tmsSetSourceAddressInd INV3_BASE_ADDR_L
-        +tmsSendBytes 16
 
-        lda #0
-        sta INVADER_PIXEL_OFFSET
+        jsr aliensSetTiles0
 
         lda X_DIR
         bpl .moveRight
@@ -486,45 +409,15 @@ shieldNotBombed
 +      
         cmp #1
         bne +
-        +tmsSetAddrPattTableInd INVADER1_PATT
-        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_2
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER2_PATT
-        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_2
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER3_PATT
-        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_2
-        +tmsSendBytes 16
-        lda #2
-        sta INVADER_PIXEL_OFFSET
+        jsr aliensSetTiles1
         jmp .endLoop        
 +
         cmp #2
         bne +
-        +tmsSetAddrPattTableInd INVADER1_PATT
-        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_4
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER2_PATT
-        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_4
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER3_PATT
-        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_4
-        +tmsSendBytes 16
-        lda #4
-        sta INVADER_PIXEL_OFFSET
+        jsr aliensSetTiles2
         jmp .endLoop        
 +
-        +tmsSetAddrPattTableInd INVADER1_PATT
-        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_6
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER2_PATT
-        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_6
-        +tmsSendBytes 16
-        +tmsSetAddrPattTableInd INVADER3_PATT
-        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_6
-        +tmsSendBytes 16
-        lda #6
-        sta INVADER_PIXEL_OFFSET
+        jsr aliensSetTiles3
         lda X_DIR
         bmi .moveLeft
         
@@ -557,154 +450,11 @@ jmp nextFrame
         jmp .endLoop
 
 
-BIT0 = $80
-BIT1 = $40
-BIT2 = $20
-BIT3 = $10
-BIT4 = $08
-BIT5 = $04
-BIT6 = $02
-BIT7 = $01
-
-hitTestBits:
-!byte  BIT0, BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7
-hitTestMasks:
-!byte  !BIT0 & $ff, !BIT1, !BIT2, !BIT3, !BIT4, !BIT5, !BIT6, !BIT7
-
-; Test a pattern row for a pixel hit
-; Inputs:
-;  A = The row pattern. Pixel bits.
-;  HIT_TILE_PIX_X = The offset to check (0 - 7)
-; Returns
-;  Zero flag set if pixel not hit.
-;  Zero flag clear id pixel hit
-patternHitTest:
-        ldx HIT_TILE_PIX_X
-        and hitTestBits, x
-        rts
-
-patternHit:
-        ldx HIT_TILE_PIX_X
-        and hitTestMasks, x
-        rts
-
-; Clear a pixel at
-; HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y
-clearPixel:
-        ldx HIT_TILE_X
-        ldy HIT_TILE_Y
-        jsr tmsSetPosRead
-        +tmsGet
-        ldy HIT_TILE_PIX_Y
-        jsr tmsSetPatternRead
-        +tmsGet
-        sta TMP_PATTERN
-
-        jsr tmsSetAddressWrite ; TMS_TMP_ADDRESS is already set
-
-        lda TMP_PATTERN
-        jsr patternHit
-        +tmsPut
-        rts
-
-
-shieldBombed:
-        ldy HIT_TILE_PIX_Y
-        jsr tmsSetPatternRead
-
-        ; load the pattern row that was hit
-        +tmsGet
-        sta TMP_PATTERN
-
-        jsr patternHitTest
-        beq .noBomb
-
-        jsr clearPixel
-        jsr decTileHitY
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitY
-        jsr decTileHitX
-        jsr clearPixel
-        jsr decTileHitX
-        jsr decTileHitX
-        jsr clearPixel
-        jsr incTileHitY
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitY
-        jsr decTileHitX
-        jsr clearPixel
-        jsr decTileHitX
-        jsr clearPixel
-        jsr decTileHitX
-        jsr clearPixel
-        jsr incTileHitY
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-
-        ; kill the bullet
-        ldy #BULLET_Y_LOADED
-        sty INVADER_BOMB1_Y
-        sec
-        rts
-.noBomb
-        clc
-        rts
-
-        
-; Shield hit by player bullet
-; Here, HIT_TILE_X, HIT_TILE_Y, HIT_TILE_PIX_X, HIT_TILE_PIX_Y are already set
-; A is the pattern number at that location
-; And X/Y are set to equal HIT_TILE_X and HIT_TILE_Y
-shieldHit:
-        ldy HIT_TILE_PIX_Y
-        jsr tmsSetPatternRead
-
-        ; load the pattern row that was hit
-        +tmsGet
-        sta TMP_PATTERN
-
-        jsr patternHitTest
-        beq .noHit
-
-        jsr clearPixel
-        jsr incTileHitY
-        jsr clearPixel
-        jsr decTileHitX
-        jsr decTileHitY
-        jsr clearPixel
-        jsr decTileHitY
-        jsr incTileHitX
-        jsr clearPixel
-        jsr incTileHitX
-        jsr clearPixel
-        jsr decTileHitY
-        jsr decTileHitX
-        jsr clearPixel
-
-        ; kill the bullet
-        ldy #0
-        sty BULLET_Y
-.noHit
-        rts
-
-COLOR_SHIELD = TMS_WHITE << 4 | TMS_BLACK
 COLOR_TEXT   = TMS_WHITE << 4 | TMS_BLACK
 COLOR_SHIP   = TMS_CYAN
 COLOR_BULLET = TMS_WHITE
 COLOR_BOMB   = TMS_MAGENTA
 COLOR_LIVES  = TMS_DK_BLUE
-COLOR_BUNKER = TMS_DK_BLUE << 4 | TMS_BLACK
 
 COLORTAB:
        !byte $00
@@ -716,9 +466,9 @@ COLORTAB:
        !byte $00                 ; INVADER 2
        !byte $00                 ; INVADER 3
        !byte $00,$00,$00            
-       !byte COLOR_BUNKER,$00            ; BOTTOM SCREEN
-       !byte $00,$00,$00,$00      ; TOP SCREEN
-       !byte $00,$00            ; TOP SCREEN
+       !byte COLOR_BUNKER,$00    ; BOTTOM SCREEN
+       !byte $00,$00,$00,$00     ; TOP SCREEN
+       !byte $00,$00             ; TOP SCREEN
 
 
 !src "patterns.asm"
