@@ -3,7 +3,7 @@
 HBC56_INT_VECTOR = onVSync
 
 !source "../../lib/hbc56.asm"
-!source "../../lib/sfx/ay3891x.asm"
+!source "../../lib/sfx/ayx.asm"
 
 onVSync:
         rti
@@ -104,19 +104,19 @@ NOISE0 = $62
 
 main:
 
-	jsr ay3891Init
+	jsr ayInit
         lda #0
         sta TONE0
         sta TONE1
         sta NOISE0
 
-        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $3b
-        +ay3891Write AY3891X_PSG0, AY3891X_CHA_AMPL, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_CHB_AMPL, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $0f
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
+        +ayWrite AY_PSG0, AY_ENABLES, $3b
+        +ayWrite AY_PSG0, AY_CHA_AMPL, $00
+        +ayWrite AY_PSG0, AY_CHB_AMPL, $00
+        +ayWrite AY_PSG0, AY_CHC_AMPL, $0f
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, $00
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, $08
+        +ayWrite AY_PSG0, AY_ENV_SHAPE, $09
 
 	jsr delay
 	jsr delay
@@ -134,9 +134,9 @@ main:
 .loop:
 
 	!macro playNote .note {
-		+ay3891PlayNote AY3891X_PSG0, AY3891X_CHC, .note
+		+ayPlayNote AY_PSG0, AY_CHC, .note
 		jsr delay
-		+ay3891Stop AY3891X_PSG0, AY3891X_CHC
+		+ayStop AY_PSG0, AY_CHC
 		jsr shortDelay
 	}
 

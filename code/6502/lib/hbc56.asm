@@ -16,9 +16,21 @@ DEFAULT_HBC56_NMI_VECTOR = $FFF0
 DEFAULT_HBC56_INT_VECTOR = $FFF0
 
 HBC56_BORDER     = TMS_LT_BLUE 
-HBC56_BACKGROUND = TMS_BLACK
-HBC56_LOGO       = TMS_LT_BLUE 
-HBC56_TEXT       = TMS_GREY
+HBC56_BACKGROUND = TMS_LT_BLUE
+HBC56_LOGO       = TMS_WHITE 
+HBC56_TEXT       = TMS_WHITE
+
+!macro hbc56Title .title {
+HBC56_TITLE_TEXT:
+        !text .title
+HBC56_TITLE_TEXT_LEN = * - HBC56_TITLE_TEXT
+        !byte 0 ; nul terminator for game name
+}
+
+!ifdef HBC56_TITLE_TEXT {
+HBC56_TITLE     = HBC56_TITLE_TEXT
+HBC56_TITLE_LEN = HBC56_TITLE_TEXT_LEN
+}
 
 *=$F800
 !ifdef tmsInit {
@@ -26,8 +38,7 @@ hbc56BootScreen:
         +tmsColorFgBg TMS_GREY, HBC56_BORDER
         jsr tmsSetBackground
         +tmsColorFgBg HBC56_LOGO, HBC56_BACKGROUND
-        ldx #32
-        jsr tmsInitColorTable
+        jsr tmsInitEntireColorTable
         +tmsColorFgBg HBC56_TEXT, HBC56_BACKGROUND
         ldx #16
         jsr tmsInitColorTable
@@ -42,14 +53,14 @@ hbc56BootScreen:
         +tmsSetAddrPattTableInd 200
         +tmsSendData hbc56LogoPatt, $178
 
-!ifdef HBC56_TITLE {
+!ifdef HBC56_TITLE_TEXT {
         +tmsPrintZ HBC56_TITLE, (32 - HBC56_TITLE_LEN) / 2, 15
 }
 
 !ifndef HBC56_SKIP_POST {
         jsr checkRAM
 }
-        lda #10
+        lda #8
         sta $00
 -
         jsr hbc56Delay
@@ -60,15 +71,22 @@ hbc56BootScreen:
         jsr checkVRAM
 }
 
-        lda #10
+        lda #8
         sta $00
 -
         jsr hbc56Delay
         dec $00
         bne -
 
-        jsr tmsInit
-        
+        +tmsPrintCentre "PRESS START...", 23
+
+.waitForInput        
+        +nesBranchIfNotPressed NES_START, .waitForInput
+
+        ; Disable the display
+        lda #TMS_R1_DISP_ACTIVE
+        jsr tmsReg1ClearFields
+
         jmp main
 
 checkRAM:
@@ -145,8 +163,7 @@ checkVRAM:
 .backFromErrorV        
         jsr tmsSetAddressWrite
         pla
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
 
         +inc16 TMS_TMP_ADDRESS
         lda TMS_TMP_ADDRESS
@@ -206,6 +223,11 @@ hbc56Init:
         }
 
         cli
+
+        ; Disable the display
+        lda #TMS_R1_DISP_ACTIVE
+        jsr tmsReg1ClearFields
+        
         jmp main
 
 

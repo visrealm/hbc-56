@@ -9,7 +9,7 @@
 ;
 ; Dependencies:
 ;  - hbc56.asm
-;  - lib/sfx/ay3891x.asm
+;  - lib/sfx/ayx.asm
 ;  - lib/ut/memory.asm
 ;  - lib/ut/util.asm
 
@@ -56,10 +56,10 @@ sfxManInit:
         bcs .endCheck
         ;!byte $db
 
-        +ay3891Write .psg, AY3891X_CHC_AMPL, $0
+        +ayWrite .psg, AY_CHC_AMPL, $0
 
         !if .channel != 3 {
-                +ay3891Write .psg, .channel * 2 + 1, $00
+                +ayWrite .psg, .channel * 2 + 1, $00
         }
 
         lda #0
@@ -99,14 +99,14 @@ sfxManInit:
 }
 
 sfxManTick:
-        +sfxManTestChannelTimeout CH0_TIMEOUT, AY3891X_PSG0, AY3891X_CHA
-        +sfxManTestChannelTimeout CH1_TIMEOUT, AY3891X_PSG0, AY3891X_CHB
-        +sfxManTestChannelTimeout CH2_TIMEOUT, AY3891X_PSG0, AY3891X_CHC
-        +sfxManTestChannelTimeout NOISE0_TIMEOUT, AY3891X_PSG0, AY3891X_CHN
+        +sfxManTestChannelTimeout CH0_TIMEOUT, AY_PSG0, AY_CHA
+        +sfxManTestChannelTimeout CH1_TIMEOUT, AY_PSG0, AY_CHB
+        +sfxManTestChannelTimeout CH2_TIMEOUT, AY_PSG0, AY_CHC
+        +sfxManTestChannelTimeout NOISE0_TIMEOUT, AY_PSG0, AY_CHN
 
-        +sfxManTestChannelTimeout CH3_TIMEOUT, AY3891X_PSG1, AY3891X_CHA
-        +sfxManTestChannelTimeout CH4_TIMEOUT, AY3891X_PSG1, AY3891X_CHB
-        +sfxManTestChannelTimeout CH5_TIMEOUT, AY3891X_PSG1, AY3891X_CHC
-        +sfxManTestChannelTimeout NOISE1_TIMEOUT, AY3891X_PSG1, AY3891X_CHN
+        +sfxManTestChannelTimeout CH3_TIMEOUT, AY_PSG1, AY_CHA
+        +sfxManTestChannelTimeout CH4_TIMEOUT, AY_PSG1, AY_CHB
+        +sfxManTestChannelTimeout CH5_TIMEOUT, AY_PSG1, AY_CHC
+        +sfxManTestChannelTimeout NOISE1_TIMEOUT, AY_PSG1, AY_CHN
         rts
 

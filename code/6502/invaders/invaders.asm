@@ -12,10 +12,9 @@
 !sl "invaders.lmap"
 
 HBC56_SKIP_POST = 1
-HBC56_TITLE     = gameName
-HBC56_TITLE_LEN = (gameNameEnd - HBC56_TITLE) - 1
 
 HBC56_INT_VECTOR = onVSync
+!src "../lib/ut/math_macros.asm"
 !src "../lib/hbc56.asm"
 
 !src "zeropage.asm"
@@ -32,11 +31,7 @@ TMS_FONT_DATA: !bin "../lib/gfx/fonts/tms9918font1.o"
 !src "../lib/sfx/ay3891x.asm"
 !src "../lib/sfx/sfxman.asm"
 
-
-
-gameName:
-!text "INVADERS", 0
-gameNameEnd:
++hbc56Title "6502 INVADERS"
 
 ;
 ; contants
@@ -53,7 +48,7 @@ SPRITE_HIDDEN_Y  = $00
 
 BULLET_Y_LOADED = $D1
 BULLET_SPEED = 3
-BOMB_SPEED = 4
+BOMB_SPEED = 2
 
 PLAYER_POS_Y = 153
 LIVES_POS_Y = 170
@@ -65,6 +60,7 @@ MAX_X           = 6
 !src "gamefield.asm"
 !src "tile.asm"
 !src "score.asm"
+!src "audio.asm"
 
 ;
 ; Memory address constants
@@ -79,25 +75,17 @@ SHIELD2   = $1540
 SHIELD3   = $1580
 SHIELD4   = $15C0
 
-ROTATE_ADDR = R8
+INVADER1_TYPE = INVADER1
+INVADER2_TYPE = INVADER2 
+INVADER3_TYPE = INVADER3
 
-rotate1:
-        ldx #8
--
-        dex
-        lda ALIEN1 + 8, X
-        ror     ; Get carry
-        ror ALIEN1, X
-        ror ALIEN1 + 8, X
-        cpx #0
-        bne -
-        rts
-
-
+INVADER1_PATT = 128
+INVADER2_PATT = 136
+INVADER3_PATT = 144
 
 onVSync:
         pha
-        +tmsDisableInterrupts
+        +tmsDisableInterrupts ; this is just for the emulator...
         lda TICKS_L
         clc
         adc #1
@@ -114,37 +102,48 @@ writeTicksL:
         rti
 
 main:
+
         ; program entry point
+        lda #<INVADER1_TYPE
+        sta INV1_BASE_ADDR_L
+        lda #>INVADER1_TYPE
+        sta INV1_BASE_ADDR_H
+
+        lda #<INVADER2_TYPE
+        sta INV2_BASE_ADDR_L
+        lda #>INVADER2_TYPE
+        sta INV2_BASE_ADDR_H
+
+        lda #<INVADER3_TYPE
+        sta INV3_BASE_ADDR_L
+        lda #>INVADER3_TYPE
+        sta INV3_BASE_ADDR_H
 
 restartGame:
+        +tmsDisableOutput
+
         jsr sfxManInit:
         sei
 
         +tmsDisableInterrupts
 
-        jsr ay3891Init
-
-        +ay3891Write AY3891X_PSG0, AY3891X_CHA_AMPL, $0a
-        +ay3891Write AY3891X_PSG0, AY3891X_CHB_AMPL, $0a
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
-        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
-
-        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $0e
+        jsr audioInit
 
         jsr tmsInitTextTable
 
         +memcpy GAMEFIELD, initialGameField, 5 * 16
-        +memcpy ALIEN1, INVADER1, 8 * 2
+
+        +setMemCpyDst ALIEN1
+        +setMemCpySrcInd INV1_BASE_ADDR_L
+        +memcpySinglePage 8 * 2 
         +memset ALIEN1 + 16, 0, 8 * 2
-        +memcpy ALIEN2, INVADER2, 8 * 2
+        +setMemCpyDst ALIEN2
+        +setMemCpySrcInd INV2_BASE_ADDR_L
+        +memcpySinglePage 8 * 2 
         +memset ALIEN2 + 16, 0, 8 * 2
-        +memcpy ALIEN3, INVADER3, 8 * 2
+        +setMemCpyDst ALIEN3
+        +setMemCpySrcInd INV3_BASE_ADDR_L
+        +memcpySinglePage 8 * 2 
         +memset ALIEN3 + 16, 0, 8 * 2
         +memcpy SHIELD1, SHIELD, 8 * 6
         +memcpy SHIELD2, SHIELD, 8 * 6
@@ -192,22 +191,30 @@ restartGame:
         jsr tmsReg1SetFields
 
         +tmsCreateSpritePatternQuad 0, playerSprite
-        +tmsCreateSprite SPRITE_PLAYER, 0, 124, PLAYER_POS_Y, TMS_CYAN
+        +tmsCreateSprite SPRITE_PLAYER, 0, 124, PLAYER_POS_Y, COLOR_SHIP
         +tmsCreateSpritePatternQuad 1, bulletSprite
-        +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, TMS_WHITE
+        +tmsCreateSprite SPRITE_BULLET, 4, 124, BULLET_Y_LOADED, COLOR_BULLET
         +tmsCreateSpritePatternQuad 2, explodeSprite
         +tmsCreateSprite SPRITE_SPLAT, 8, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y, TMS_TRANSPARENT
         +tmsCreateSpritePatternQuad 3, invaderBomb
-        +tmsCreateSprite SPRITE_BOMB1, 12, 124, BULLET_Y_LOADED, TMS_MAGENTA
+        +tmsCreateSprite SPRITE_BOMB1, 12, 124, BULLET_Y_LOADED, COLOR_BOMB
 
-        +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, TMS_DK_BLUE
-        +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, TMS_DK_BLUE
+        +tmsCreateSprite SPRITE_LAST_LIFE, 0, 48, LIVES_POS_Y, COLOR_LIVES
+        +tmsCreateSprite SPRITE_LAST_LIFE + 1, 0, 72, LIVES_POS_Y, COLOR_LIVES
 
-        lda #123
+        lda #(TMS_GFX_PIXELS_X - TMS_SPRITE_SIZE2X) / 2 + 4
         sta PLAYER_X
 
         +tmsSetAddrColorTable
-        +tmsSendData COLORTAB, 32
+        +tmsSendData COLORTAB, 16
+        ldy #INVADER_OFFSET_COLOR
+        lda (INV1_BASE_ADDR_L), y
+        +tmsPut
+        lda (INV2_BASE_ADDR_L), y
+        +tmsPut
+        lda (INV3_BASE_ADDR_L), y
+        +tmsPut
+        +tmsSendData COLORTAB + 19, 32-19
 
         +tmsSetAddrPattTableInd 8
         +tmsSendData SHIELD1, 8 * 6  ; Shield1 8 - 13
@@ -215,7 +222,7 @@ restartGame:
         +tmsSendData SHIELD3, 8 * 6  ; Shield3 20 - 25
         +tmsSendData SHIELD4, 8 * 6  ; Shield4 26 - 31
 
-        +tmsSetAddrPattTableInd 128
+        +tmsSetAddrPattTableInd INVADER1_PATT
         +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN1, 8 * 4
         +tmsSendData ALIEN2, 8 * 4
@@ -240,6 +247,8 @@ restartGame:
         sta SCORE_BCD_H
         sta V_SYNC
 
+        +tmsEnableOutput
+
         cli
 
 nextFrame:
@@ -258,14 +267,7 @@ gameLoop:
         cmp #BULLET_Y_LOADED
         bne skipFire
 
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_PERIOD_H, $08
-        +ay3891Write AY3891X_PSG0, AY3891X_ENV_SHAPE, $09
-        +ay3891Write AY3891X_PSG0, AY3891X_ENABLES, $38
-        lda #$08
-        sta TONE1
-        +ay3891WriteA AY3891X_PSG0, AY3891X_CHC_TONE_L
+        jsr audioFireBullet
 
         lda PLAYER_X
         clc
@@ -319,14 +321,8 @@ afterBombEnded
         jsr shieldBombed
         bcc shieldNotBombed
 
-        ; bomb sound
-        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $06
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $0a
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
-        ;+sfxManSetPsg1NoiseTimeout 0.5
+        jsr audioBombHit
+
 shieldNotBombed
 
         lda BULLET_Y
@@ -354,7 +350,7 @@ shieldNotBombed
 -
         jmp .testBulletPos
 ++
-        cmp #128
+        cmp #INVADER1_PATT ; is it an alien?
         bcc -
 
         ; pixel-level collision with invader?
@@ -387,13 +383,7 @@ shieldNotBombed
         jsr addScore
         jsr updateScoreDisplay
 
-        +ay3891Write AY3891X_PSG1, AY3891X_CHC_AMPL, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_NOISE_GEN, $1f
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_L, $00
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_PERIOD_H, $0f
-        +ay3891Write AY3891X_PSG1, AY3891X_ENV_SHAPE, $09
-        +ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $1f
-        ;+sfxManSetPsg1NoiseTimeout 0.5
+        jsr audioAlienHit
 
         ; make sure he disappears.. now
         jsr renderGameField
@@ -410,7 +400,7 @@ shieldNotBombed
         sty BULLET_Y
         +tmsSpritePosXYReg SPRITE_BULLET
 
-        jsr stopBulletSound
+        jsr audioBulletStop
 +
 
 .afterBulletCheck:
@@ -422,11 +412,7 @@ shieldNotBombed
         lda #0
         sta V_SYNC
 
-        lda TONE1
-        clc
-        adc #8
-        sta TONE1
-        +ay3891WriteA AY3891X_PSG0, AY3891X_CHC_TONE_L
+        jsr audioBulletIncreasePitch
 
         inc FRAMES_COUNTER
         lda FRAMES_COUNTER
@@ -437,7 +423,6 @@ shieldNotBombed
 
         +tmsSpriteColor SPRITE_SPLAT, TMS_TRANSPARENT
         +tmsSpritePos SPRITE_SPLAT, SPRITE_HIDDEN_X, SPRITE_HIDDEN_Y
-        ;+ay3891Write AY3891X_PSG1, AY3891X_ENABLES, $3f
 
         inc TONE0
         lda TONE0
@@ -445,18 +430,15 @@ shieldNotBombed
 
         cmp #0
         bne +
-        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 8
-        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 0
+        jsr audioAlienToneLeft
         jmp ++
 +
         cmp #2
         bne +
-        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 0
-        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 10
+        jsr audioAlienToneRight
         jmp ++
 +
-        +ay3891Write AY3891X_PSG0, AY3891X_CHA_TONE_H, 0
-        +ay3891Write AY3891X_PSG0, AY3891X_CHB_TONE_H, 0
+        jsr audioAlienTonePause
         bne ++
 
 ++
@@ -472,12 +454,15 @@ shieldNotBombed
 
         and #$03
         bne +
-        +tmsSetAddrPattTableInd 128
-        +tmsSendData INVADER1, 16
-        +tmsSetAddrPattTableInd 136
-        +tmsSendData INVADER2, 16
-        +tmsSetAddrPattTableInd 144
-        +tmsSendData INVADER3, 16
+        +tmsSetAddrPattTableInd INVADER1_PATT
+        +tmsSetSourceAddressInd INV1_BASE_ADDR_L
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER2_PATT
+        +tmsSetSourceAddressInd INV2_BASE_ADDR_L
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER3_PATT
+        +tmsSetSourceAddressInd INV3_BASE_ADDR_L
+        +tmsSendBytes 16
 
         lda #0
         sta INVADER_PIXEL_OFFSET
@@ -501,34 +486,43 @@ shieldNotBombed
 +      
         cmp #1
         bne +
-        +tmsSetAddrPattTableInd 128
-        +tmsSendData IP12L, 16
-        +tmsSetAddrPattTableInd 136
-        +tmsSendData IP22L, 16
-        +tmsSetAddrPattTableInd 144
-        +tmsSendData IP32L, 16
+        +tmsSetAddrPattTableInd INVADER1_PATT
+        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_2
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER2_PATT
+        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_2
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER3_PATT
+        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_2
+        +tmsSendBytes 16
         lda #2
         sta INVADER_PIXEL_OFFSET
         jmp .endLoop        
 +
         cmp #2
         bne +
-        +tmsSetAddrPattTableInd 128
-        +tmsSendData IP14L, 16
-        +tmsSetAddrPattTableInd 136
-        +tmsSendData IP24L, 16
-        +tmsSetAddrPattTableInd 144
-        +tmsSendData IP34L, 16
+        +tmsSetAddrPattTableInd INVADER1_PATT
+        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_4
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER2_PATT
+        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_4
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER3_PATT
+        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_4
+        +tmsSendBytes 16
         lda #4
         sta INVADER_PIXEL_OFFSET
         jmp .endLoop        
 +
-        +tmsSetAddrPattTableInd 128
-        +tmsSendData IP16L, 16
-        +tmsSetAddrPattTableInd 136
-        +tmsSendData IP26L, 16
-        +tmsSetAddrPattTableInd 144
-        +tmsSendData IP36L, 16
+        +tmsSetAddrPattTableInd INVADER1_PATT
+        +tmsSetSourceAddressIndOffset INV1_BASE_ADDR_L, INVADER_OFFSET_6
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER2_PATT
+        +tmsSetSourceAddressIndOffset INV2_BASE_ADDR_L, INVADER_OFFSET_6
+        +tmsSendBytes 16
+        +tmsSetAddrPattTableInd INVADER3_PATT
+        +tmsSetSourceAddressIndOffset INV3_BASE_ADDR_L, INVADER_OFFSET_6
+        +tmsSendBytes 16
         lda #6
         sta INVADER_PIXEL_OFFSET
         lda X_DIR
@@ -563,10 +557,19 @@ jmp nextFrame
         jmp .endLoop
 
 
+BIT0 = $80
+BIT1 = $40
+BIT2 = $20
+BIT3 = $10
+BIT4 = $08
+BIT5 = $04
+BIT6 = $02
+BIT7 = $01
+
+hitTestBits:
+!byte  BIT0, BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7
 hitTestMasks:
-!byte $80, $40, $20, $10, $08, $04, $02, $01
-killBitMasks:
-!byte $7f, $bf, $df, $ef, $f7, $fb, $fd, $fe
+!byte  !BIT0 & $ff, !BIT1, !BIT2, !BIT3, !BIT4, !BIT5, !BIT6, !BIT7
 
 ; Test a pattern row for a pixel hit
 ; Inputs:
@@ -577,12 +580,12 @@ killBitMasks:
 ;  Zero flag clear id pixel hit
 patternHitTest:
         ldx HIT_TILE_PIX_X
-        and hitTestMasks, x
+        and hitTestBits, x
         rts
 
 patternHit:
         ldx HIT_TILE_PIX_X
-        and killBitMasks, x
+        and hitTestMasks, x
         rts
 
 ; Clear a pixel at
@@ -601,8 +604,7 @@ clearPixel:
 
         lda TMP_PATTERN
         jsr patternHit
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         rts
 
 
@@ -617,6 +619,7 @@ shieldBombed:
         jsr patternHitTest
         beq .noBomb
 
+        jsr clearPixel
         jsr decTileHitY
         jsr clearPixel
         jsr incTileHitX
@@ -627,7 +630,6 @@ shieldBombed:
         jsr decTileHitX
         jsr clearPixel
         jsr decTileHitX
-        jsr clearPixel
         jsr decTileHitX
         jsr clearPixel
         jsr incTileHitY
@@ -696,27 +698,25 @@ shieldHit:
 .noHit
         rts
 
-
-
-stopBulletSound:
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_L, 0
-        +ay3891Write AY3891X_PSG0, AY3891X_CHC_TONE_H, 0
-        rts
-
+COLOR_SHIELD = TMS_WHITE << 4 | TMS_BLACK
+COLOR_TEXT   = TMS_WHITE << 4 | TMS_BLACK
+COLOR_SHIP   = TMS_CYAN
+COLOR_BULLET = TMS_WHITE
+COLOR_BOMB   = TMS_MAGENTA
+COLOR_LIVES  = TMS_DK_BLUE
+COLOR_BUNKER = TMS_DK_BLUE << 4 | TMS_BLACK
 
 COLORTAB:
        !byte $00
-       !byte $F0,$F0,$F0,$00      ; SHIELDS
-       !byte $F0,$F0            ; NUMBERS
-       !byte $F0,$F0,$F0,$F0      ; LETTERS
+       !byte COLOR_SHIELD, COLOR_SHIELD, COLOR_SHIELD, $00       ; SHIELDS
+       !byte COLOR_TEXT, COLOR_TEXT                              ; NUMBERS
+       !byte COLOR_TEXT, COLOR_TEXT, COLOR_TEXT, COLOR_TEXT      ; LETTERS
        !byte $00,$00,$00,$00,$00
-;       !byte $30,$30            ; INVADER 3
-;       !byte $50,$50            ; INVADER 2
-;       !byte $60,$60            ; INVADER 1
-       !byte $60,$50            ; INVADER 3
-       !byte $30,$50            ; INVADER 2
-       !byte $70,$70            ; INVADER 1
-       !byte $40,$00            ; BOTTOM SCREEN
+       !byte $00                 ; INVADER 1
+       !byte $00                 ; INVADER 2
+       !byte $00                 ; INVADER 3
+       !byte $00,$00,$00            
+       !byte COLOR_BUNKER,$00            ; BOTTOM SCREEN
        !byte $00,$00,$00,$00      ; TOP SCREEN
        !byte $00,$00            ; TOP SCREEN
 

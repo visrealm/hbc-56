@@ -30,6 +30,10 @@ invaderBomb:
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 
+INVADER_OFFSET_2 = IP12L - IP10L
+INVADER_OFFSET_4 = IP14L - IP10L
+INVADER_OFFSET_6 = IP16L - IP10L
+INVADER_OFFSET_COLOR = INVADER1_COLOR - IP10L
 
 INVADER1:
 IP10L  !byte $1E,$FF,$CC,$FF,$FF,$12,$21,$C0
@@ -44,6 +48,7 @@ IP18LT !byte $00,$00,$00,$00,$1E,$FF,$CC,$FF
 IP18RT !byte $00,$00,$00,$00,$00,$C0,$C0,$C0
 IP18LB !byte $FF,$12,$21,$33,$00,$00,$00,$00
 IP18RB !byte $C0,$00,$00,$00,$00,$00,$00,$00
+INVADER1_COLOR: !byte $60
 
 INVADER2:
 IP20L  !byte $63,$22,$3E,$6B,$FF,$BE,$A2,$36
@@ -58,6 +63,7 @@ IP28LT !byte $00,$00,$00,$00,$63,$22,$BE,$AA
 IP28RT !byte $00,$00,$00,$00,$00,$00,$80,$80
 IP28LB !byte $FF,$3E,$22,$C1,$00,$00,$00,$00
 IP28RB !byte $80,$00,$00,$80,$00,$00,$00,$00
+INVADER2_COLOR: !byte $50
 
 INVADER3:
 IP30L  !byte $08,$1C,$3E,$6B,$7F,$14,$22,$41
@@ -72,6 +78,7 @@ IP38LT !byte $00,$00,$00,$00,$08,$1C,$3E,$6B
 IP38RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP38LB !byte $7F,$14,$22,$14,$00,$00,$00,$00
 IP38RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER3_COLOR: !byte $30
 
 SNAKE:
 INVADER4:
@@ -87,6 +94,7 @@ IP48LT !byte $00,$00,$00,$00,$00,$3E,$2A,$3E
 IP48RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP48LB !byte $1C,$1C,$00,$00,$00,$00,$00,$00
 IP48RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER4_COLOR: !byte $A0
 
 TURNOVER:
 INVADER5:
@@ -102,6 +110,7 @@ IP58LT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP58RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP58LB !byte $00,$00,$FF,$FF,$00,$00,$00,$00
 IP58RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER5_COLOR: !byte $70
 
 FLASHER_EYES:
 INVADER6:
@@ -117,6 +126,7 @@ IP68LT !byte $00,$00,$00,$00,$3F,$3F,$0C,$7F
 IP68RT !byte $00,$00,$00,$00,$00,$00,$00,$80
 IP68LB !byte $7F,$92,$52,$2D,$00,$00,$00,$00
 IP68RB !byte $80,$40,$80,$00,$00,$00,$00,$00
+INVADER6_COLOR: !byte $C0
 
 PULSAR:
 INVADER7:
@@ -132,6 +142,7 @@ IP78LT !byte $00,$00,$00,$00,$00,$3C,$7E,$5A
 IP78RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP78LB !byte $7E,$7E,$3C,$00,$00,$00,$00,$00
 IP78RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER97COLOR: !byte $D0
 
 BAT:
 INVADER8:
@@ -147,6 +158,7 @@ IP88LT !byte $00,$00,$00,$00,$00,$5A,$BD,$99
 IP88RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP88LB !byte $42,$00,$00,$00,$00,$00,$00,$00
 IP88RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER8_COLOR: !byte $20
 
 FLASHER:
 INVADER9:
@@ -162,6 +174,7 @@ IP98LT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP98RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP98LB !byte $00,$00,$00,$00,$00,$00,$00,$00
 IP98RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADER9_COLOR: !byte $40
 
 FLASHER2:
 INVADERA:
@@ -177,6 +190,7 @@ IPA8LT !byte $00,$00,$00,$00,$3F,$3F,$0C,$7F
 IPA8RT !byte $00,$00,$00,$00,$00,$00,$00,$80
 IPA8LB !byte $7F,$92,$52,$2D,$00,$00,$00,$00
 IPA8RB !byte $80,$40,$80,$00,$00,$00,$00,$00
+INVADERA_COLOR: !byte $60
 
 EYES:
 INVADERB:
@@ -192,6 +206,7 @@ IPB8LT !byte $00,$00,$00,$00,$00,$12,$00,$00
 IPB8RT !byte $00,$00,$00,$00,$00,$00,$00,$00
 IPB8LB !byte $00,$00,$00,$00,$00,$00,$00,$00
 IPB8RB !byte $00,$00,$00,$00,$00,$00,$00,$00
+INVADERB_COLOR: !byte $90
 
 explodeSprite:
 !byte $05,$00,$22,$00,$10,$A5,$02,$45

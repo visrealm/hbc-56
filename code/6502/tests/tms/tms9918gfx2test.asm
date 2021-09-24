@@ -111,8 +111,7 @@ nextRow
         ldx #0
 
 nextCol
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut 
         dex
         bne nextCol
         dey

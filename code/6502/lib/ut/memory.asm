@@ -61,6 +61,39 @@ MEMCPY_LEN = R2
 }
 }
 
+!macro setMemCpySrc .src {
+	lda #<.src
+	sta MEMCPY_SRC
+	lda #>.src
+	sta MEMCPY_SRC + 1
+}
+
+!macro setMemCpyDst .dst {
+	lda #<.dst
+	sta MEMCPY_DST
+	lda #>.dst
+	sta MEMCPY_DST + 1
+}
+
+!macro setMemCpySrcInd .srcRef {
+	lda .srcRef
+	sta MEMCPY_SRC
+	lda .srcRef + 1
+	sta MEMCPY_SRC + 1
+}
+
+!macro setMemCpyDstInd .dstRef {
+	lda .dstRef
+	sta MEMCPY_DST
+	lda .dstRef + 1
+	sta MEMCPY_DST + 1
+}
+
+!macro memcpySinglePage .bytes {
+	ldy #.bytes
+	jsr memcpySinglePage
+}
+
 ; -----------------------------------------------------------------------------
 ; memcpySinglePage: Copy up to 255 bytes 
 ; -----------------------------------------------------------------------------

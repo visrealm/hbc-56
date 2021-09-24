@@ -181,7 +181,7 @@ fillRam:
 	dex
         tya
         
-        sta TMS9918_RAM
+        +tmsPut 
 	bne -
 	ldx #255
 	dey

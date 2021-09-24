@@ -42,13 +42,11 @@ tmsOutputBcd:
         lsr
         lsr
         ora #$30
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         pla
         and #$0f
         ora #$30
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         rts
 
 ; -----------------------------------------------------------------------------

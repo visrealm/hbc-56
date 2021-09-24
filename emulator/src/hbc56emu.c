@@ -126,6 +126,14 @@ uint8_t io_read(uint8_t addr)
       {
         val |= NES_A;
       }
+      if (keystate[SDL_SCANCODE_TAB])
+      {
+        val |= NES_SELECT;
+      }
+      if (keystate[SDL_SCANCODE_SPACE])
+      {
+        val |= NES_START;
+      }
 
       val = ~val;
     }

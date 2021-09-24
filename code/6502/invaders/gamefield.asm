@@ -19,23 +19,21 @@ GAME_ROWS  = 10
 ;  X/Y
 tileXyToGameFieldXy:
         txa
-        sec
+        clc ; clear to subtract (offset + 1)
         sbc GAMEFIELD_OFFSET_X
-        sec
-        sbc #1
-        lsr
+        +div2
         tax
 
         tya
         sec
         sbc GAMEFIELD_OFFSET_Y
-        lsr
+        +div2
         tay
         rts
 
 randomBottomRowInvader:
         lda GAMEFIELD_LAST_ROW
-        lsr
+        +div2
         sta TMP_Y_POSITION
         inc TMP_Y_POSITION
 
@@ -58,7 +56,7 @@ randomBottomRowInvader:
 
         jsr gameFieldObjectAt
 
-        cmp #128
+        cmp #INVADER1_PATT
         bcc -
 +
         ldx TMP_X_POSITION
@@ -70,7 +68,7 @@ randomBottomRowInvader:
 ; Sets the TMS location for the given gamefield offset
 gameFieldRowSetTmsPos:
         lda TMP_X_POSITION
-        asl
+        +mul2
         clc
         adc GAMEFIELD_OFFSET_X
         tax
@@ -86,24 +84,20 @@ gameFieldRowSetTmsPos:
 ;  screen pixel location of centre of the game object
 gameFieldXyToPixelXy:
         txa 
-        asl
+        +mul2
         clc
         adc GAMEFIELD_OFFSET_X
-        asl
-        asl
-        asl
+        +mul8
         clc
         adc INVADER_PIXEL_OFFSET
         adc #6
         tax
 
         tya 
-        asl
+        +mul2
         clc
         adc GAMEFIELD_OFFSET_Y
-        asl
-        asl
-        asl
+        +mul8
         sec
         sbc #6
         tay
@@ -119,9 +113,7 @@ gameFieldXyToPixelXy:
 gameFieldObjectAt:
         lda TMP_Y_POSITION
         and #$fe
-        asl
-        asl
-        asl
+        +mul8
         clc
         adc TMP_X_POSITION
         tax
@@ -136,10 +128,7 @@ gameFieldObjectAt:
 ; -----------------------------------------------------------------------------
 killObjectAt:
         lda TMP_Y_POSITION
-        asl
-        asl
-        asl
-        asl
+        +mul16
         clc
         adc TMP_X_POSITION
         tax
@@ -149,9 +138,7 @@ killObjectAt:
         sta GAMEFIELD, x
         ; return score in A
         pla
-        lsr
-        lsr
-        lsr
+        +div8
         sec
         sbc #15
         sta R10
@@ -205,8 +192,7 @@ renderGameField:
         ldx #GAME_COLS * 2 + 2
         lda #0
 -
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         dex
         bne -
 
@@ -223,14 +209,12 @@ renderGameField:
 .renderGameObjRow0
         ; get the game object at TMP_X_POSITION, TMP_Y_POSITION
         jsr gameFieldObjectAt
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         beq +
         clc
         adc #1
 +
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
 
         inc TMP_X_POSITION
         lda TMP_X_POSITION
@@ -259,14 +243,12 @@ renderGameField:
         clc
         adc #2
 +
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
         beq +
         clc
         adc #1
 +
-        sta TMS9918_RAM
-        +tmsWaitData
+        +tmsPut
 
         inc TMP_X_POSITION
         lda TMP_X_POSITION
@@ -292,30 +274,16 @@ renderGameField:
 +
         rts
 
-
-;initialGameFieldTiles:
-;!byte 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
-;!byte 0,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,136,137,  0
-;!byte 0,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,138,139,  0
-;!byte 0,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,  0
-;!byte 0,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,  0
-;!byte 0,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,132,133,  0
-;!byte 0,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,134,135,  0
-;!byte 0,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,  0
-;!byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
-;!byte 0,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,128,129,  0
-;!byte 0,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,130,131,  0
-
 initialGameField:
-!fill 11, 144
+!fill 11, INVADER3_PATT
 !fill 5, 0
-!fill 11, 136
+!fill 11, INVADER2_PATT
 !fill 5, 0
-!fill 11, 136
+!fill 11, INVADER2_PATT
 !fill 5, 0
-!fill 11, 128
+!fill 11, INVADER1_PATT
 !fill 5, 0
-!fill 11, 128
+!fill 11, INVADER1_PATT
 !fill 5, 0
 !fill 11, 0
 
