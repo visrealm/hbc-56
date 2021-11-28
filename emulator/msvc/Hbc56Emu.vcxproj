@@ -161,6 +161,7 @@
     <ClInclude Include="..\src\clock.h" />
     <ClInclude Include="..\src\debugger.h" />
     <ClInclude Include="..\src\hbc56emu.h" />
+    <ClInclude Include="..\src\keyboard.h" />
     <ClInclude Include="..\src\window.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>

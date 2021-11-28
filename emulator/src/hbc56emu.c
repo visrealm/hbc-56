@@ -23,6 +23,7 @@
 #include "tms9918_core.h"
 #include "emu2149.h"
 #include "debugger.h"
+#include "keyboard.h"
 
 char winTitleBuffer[_MAX_PATH];
 
@@ -35,7 +36,8 @@ uint16_t ioPage = 0x7f00;
 #define TMS9918_FPS 60
 #define TMS9918_DAT_ADDR 0x10
 #define TMS9918_REG_ADDR 0x11
-#define NES_IO_PORT 0x81
+#define NES_IO_PORT 0x82 // 0x81
+#define KB_IO_PORT 0x81
 
 SDL_AudioDeviceID audioDevice;
 
@@ -56,6 +58,9 @@ PSG* psg1 = NULL;
 SDL_mutex* tmsMutex = NULL;
 SDL_mutex* ayMutex = NULL;
 SDL_mutex* debugMutex = NULL;
+
+char kbQueue[16] = {0};
+int kbStart = 0, kbEnd = 0;
 
 
 #define AY3891X_IO_ADDR 0x40
@@ -136,6 +141,18 @@ uint8_t io_read(uint8_t addr)
       }
 
       val = ~val;
+    }
+    break;
+
+
+    case KB_IO_PORT:
+    {
+      val = 0x00;
+      if (kbEnd != kbStart)
+      {
+        val = kbQueue[kbStart++]; kbStart &= 0x0f;
+      }
+      
     }
     break;
   }
@@ -446,6 +463,39 @@ loop()
   }
 
   while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+      case SDL_KEYDOWN:
+        {
+          uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][0];
+          for (int i = 0; i < 8; ++i)
+          {
+            uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+            if (scanCodeByte)
+            {
+              kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
+            }
+            ps2ScanCode <<= 8;
+          }
+        }
+        break;
+
+      case SDL_KEYUP:
+        {
+        uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][1];
+        for (int i = 0; i < 8; ++i)
+        {
+          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+          if (scanCodeByte)
+          {
+            kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
+          }
+          ps2ScanCode <<= 8;
+        }
+      }
+        break;
+    }
+
+
     SDLCommonEvent(state, &event, &done);
   }
 

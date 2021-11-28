@@ -49,6 +49,9 @@
     <ClInclude Include="..\src\debugger.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\keyboard.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Hbc56Emu.rc">
