@@ -1,19 +1,17 @@
-!to "tms9918type.o", plain
-!sl "tms9918type.lmap"
-
 HBC56_SKIP_POST = 1
 
+HBC_56_BUILD = 1
+
 HBC56_INT_VECTOR = onVSync
-!src "../../lib/hbc56.asm"
-!src "../../lib/ut/memory.asm"
-!src "../../lib/ut/util.asm"
-TMS_MODEL = 9918
-!src "../../lib/ut/math_macros.asm"
-!src "../../lib/gfx/tms9918.asm"
+!src "hbc56.asm"
+!src "ut/memory.asm"
+!src "ut/util.asm"
 
+!src "ut/math_macros.asm"
+!src "gfx/tms9918.lmap"
+!src "gfx/tms9918macros.asm"
 
-!source "../../lib/inp/keyboard.asm"
-
+!source "inp/keyboard.asm"
 
 XPOS = $44
 YPOS = $45
@@ -38,6 +36,7 @@ onVSync:
         rti
 
 
+
 main:
         sei
         lda #0
@@ -46,18 +45,25 @@ main:
         sta XPOS
         sta YPOS
 
+        jsr kbInit
+
         jsr tmsInit
 
-        lda #TMS_R0_MODE_GRAPHICS_I
+        lda #TMS_R0_MODE_TEXT
         jsr tmsReg0SetFields
 
-        lda #TMS_R1_MODE_GRAPHICS_I
+        lda #TMS_R1_MODE_TEXT
         jsr tmsReg1SetFields
 
-        +tmsColorFgBg TMS_BLACK, TMS_CYAN
+        +tmsColorFgBg TMS_MED_RED, TMS_BLACK
+        jsr tmsSetBackground
 
         +tmsSetAddrNameTable
-        +tmsSendData TEXT, 32*24
+        lda #' '
+        jsr _tmsSendPage
+        jsr _tmsSendPage
+        jsr _tmsSendPage
+        ;jsr _tmsSendPage
         +tmsSetAddrNameTable
 
         cli
@@ -78,7 +84,7 @@ loop:
         bne ++
         dec XPOS
         bpl +
-        lda #31
+        lda #39
         sta XPOS
         dec YPOS
 +
@@ -91,7 +97,7 @@ loop:
         +tmsPut
         inc XPOS
         lda XPOS
-        cmp #32
+        cmp #40
         bne +
         lda #0
         sta XPOS
@@ -100,10 +106,11 @@ loop:
 
         jmp loop
 
+
 setPosition:
         ldx XPOS
         ldy YPOS
-        jsr tmsSetPosWrite
+        jsr tmsSetPosWriteText
         rts
 
 
@@ -135,31 +142,5 @@ customDelay:
 	bne -
 	rts
 
-TMS_FONT_DATA:
-!src "../../lib/gfx/fonts/tms9918font2subset.asm"
-
-TEXT:
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "                                        "
-!text "https://github.com/visrealm/vrEmuTms9918"
+*=$F800
+!bin "../../lib/gfx/tms9918.bin"
