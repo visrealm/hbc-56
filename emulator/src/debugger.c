@@ -33,7 +33,7 @@ uint16_t debugTmsMemoryAddr = 0;
 
 CPU6502Regs *cpuStatus = NULL;
 
-static const char *labelMap[0xffff] = {0};
+static const char *labelMap[0x10000] = {0};
 static VrEmuTms9918a* tms9918 = NULL;
 
 void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a* tms)

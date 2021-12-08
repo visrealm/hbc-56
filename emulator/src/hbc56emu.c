@@ -79,6 +79,7 @@ int kbStart = 0, kbEnd = 0;
 byte psg0Addr = 0;
 byte psg1Addr = 0;
 
+byte kbReadCount = 0;
 
 uint8_t io_read(uint8_t addr)
 {
@@ -150,7 +151,14 @@ uint8_t io_read(uint8_t addr)
       val = 0x00;
       if (kbEnd != kbStart)
       {
-        val = kbQueue[kbStart++]; kbStart &= 0x0f;
+        val = kbQueue[kbStart];
+
+        if (++kbReadCount & 0x01)
+        {
+          ++kbStart;
+          kbStart &= 0x0f;
+        }       
+        
       }
       
     }
@@ -556,7 +564,7 @@ main(int argc, char* argv[])
 
             SDL_strlcpy(labelMapFile, argv[i + 1], FILENAME_MAX);
             size_t ln = SDL_strlen(labelMapFile);
-            SDL_strlcpy(labelMapFile + ln - 2, ".lmap", FILENAME_MAX - ln);
+            SDL_strlcpy(labelMapFile + ln - 2, ".o.lmap", FILENAME_MAX - ln);
           }
 
           ++i;
@@ -592,6 +600,7 @@ main(int argc, char* argv[])
     SDL_RenderClear(renderer);
     screenTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, LOGICAL_DISPLAY_SIZE_X, LOGICAL_DISPLAY_SIZE_Y);
     debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
+    memset(frameBuffer, 0, sizeof(frameBuffer));
   }
 
 

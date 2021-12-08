@@ -13,7 +13,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>--resizable --rom "C:\Users\troy\Documents\hbc-56\code\6502\tests\tms\tms9918gfx2test.o"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>--resizable --rom "C:\Users\troy\Documents\hbc-56\code\6502\tests\tms\tms9918type.o"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
