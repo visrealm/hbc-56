@@ -10,12 +10,24 @@
 ; Dependencies:
 ;  - hbc56.asm
 
+!src "hbc56.inc"
+!src "ut/math_macros.asm"
+!src "gfx/tms9918macros.asm"
+
+TMS_FONT_DATA:
+!src "gfx/fonts/tms9918font2subset.asm"
+
 ; -------------------------
 ; Constants
 ; -------------------------
 TMS9918_IO_ADDR = $10
-TMS9918_REG0_SHADOW_ADDR = $210
-TMS9918_REG1_SHADOW_ADDR = $211
+TMS9918_REG0_SHADOW_ADDR = $7e10
+TMS9918_REG1_SHADOW_ADDR = $7e11
+
+TMS9918_CONSOLE_X        = $7e12
+TMS9918_CONSOLE_Y        = $7e13
+TMS9918_CONSOLE_SIZE_X   = $7e14
+TMS9918_TMP_BUFFER       = $7e20 ; 32 bytes 
 
 ; IO Ports
 TMS9918_RAM     = IO_PORT_BASE_ADDRESS | TMS9918_IO_ADDR
@@ -24,7 +36,7 @@ TMS9918_REG     = IO_PORT_BASE_ADDRESS | TMS9918_IO_ADDR | $01
 ; -----------------------------------------------------------------------------
 ; Zero page
 ; -----------------------------------------------------------------------------
-TMS_TMP_ADDRESS = R10
+TMS_TMP_ADDRESS = $ed
 
 ; -----------------------------------------------------------------------------
 ; VRAM addresses
@@ -118,29 +130,15 @@ TMS_SPRITE_SIZE2X       = TMS_SPRITE_SIZE * 2
 ; Default register values
 ; -----------------------------------------------------------------------------
 TMS_REGISTER_DATA:
-!byte TMS_R0_EXT_VDP_DISABLE | TMS_R0_MODE_GRAPHICS_I
-!byte TMS_R1_RAM_16K | TMS_R1_DISP_ACTIVE | TMS_R1_MODE_GRAPHICS_I | TMS_R1_SPRITE_MAG2
+!byte TMS_R0_EXT_VDP_DISABLE
+!byte TMS_R1_RAM_16K | TMS_R1_SPRITE_MAG2
 !byte TMS_VRAM_NAME_ADDRESS >> 10
 !byte TMS_VRAM_COLOR_ADDRESS >> 6
 !byte TMS_VRAM_PATT_ADDRESS >> 11
 !byte TMS_VRAM_SPRITE_ATTR_ADDRESS >> 7
 !byte TMS_VRAM_SPRITE_PATT_ADDRESS >> 11
-!byte TMS_BLACK << 4 | TMS_CYAN
+!byte TMS_BLACK << 4 | TMS_BLACK
 
-
-; -----------------------------------------------------------------------------
-; tmsWaitReg: Not sure how much delay we need so make a macro for now
-; -----------------------------------------------------------------------------
-!macro tmsWaitReg {
-        jsr _tmsWaitReg
-}
-
-; -----------------------------------------------------------------------------
-; tmsWaitData: Not sure how much delay we need so make a macro for now
-; -----------------------------------------------------------------------------
-!macro tmsWaitData {
-        jsr _tmsWaitData
-}
 
 _tmsWaitData:
         nop
@@ -153,26 +151,6 @@ _tmsWaitReg:
         nop
         nop
         rts
-
-; -----------------------------------------------------------------------------
-; tmsSetAddressWrite: Set an address in the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsSetAddressWrite .addr {
-        +tmsSetAddressRead ($4000 | .addr)
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddressRead: Set an address to read from the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsSetAddressRead .addr {
-        lda #<(.addr)
-        sta TMS9918_REG
-        +tmsWaitReg
-        lda #>(.addr)
-        sta TMS9918_REG
-        +tmsWaitReg
-}
-
 
 ; -----------------------------------------------------------------------------
 ; tmsSetAddressWrite: Set an address in the TMS9918 
@@ -203,77 +181,6 @@ tmsSetAddressRead:
         +tmsWaitReg
         rts
 
-; -----------------------------------------------------------------------------
-; tmsGet: Get a byte of data from the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsGet {
-        lda TMS9918_RAM
-        +tmsWaitData
-}
-
-; -----------------------------------------------------------------------------
-; tmsPut: Send a byte of data to the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsPut .byte {
-        lda #.byte
-        +tmsPut
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsPut: Send a byte (A) of data to the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsPut {
-        sta TMS9918_RAM
-        +tmsWaitData
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetColor: Set current fg/bg color
-; -----------------------------------------------------------------------------
-!macro tmsSetColor .color {
-        lda #.color
-        jsr tmsSetBackground
-}
-
-; -----------------------------------------------------------------------------
-; tmSetGraphicsMode2: Put the TMS9918 in Graphics II mode
-; -----------------------------------------------------------------------------
-!macro tmSetGraphicsMode2 {
-
-        ; Set up R0/R1 for mode 2
-        lda #TMS_R0_MODE_GRAPHICS_II
-        jsr tmsReg0SetFields
-
-        lda #TMS_R1_MODE_GRAPHICS_II
-        jsr tmsReg1SetFields
-
-        ; Update color table to upper 8KB
-        lda #$7f
-        ldx #3
-        jsr tmsSetRegister
-
-        ; Update pattern table to lower 8KB
-        lda #$07
-        ldx #4
-        jsr tmsSetRegister        
-}
-
-; -----------------------------------------------------------------------------
-; tmsDisableOutput: Disable the TMS9918 output
-; -----------------------------------------------------------------------------
-!macro tmsDisableOutput {
-        lda #TMS_R1_DISP_ACTIVE
-        jsr tmsReg1ClearFields
-}
-
-; -----------------------------------------------------------------------------
-; tmsEnableOutput: Enable the TMS9918 output
-; -----------------------------------------------------------------------------
-!macro tmsEnableOutput {
-        lda #TMS_R1_DISP_ACTIVE
-        jsr tmsReg1SetFields
-}
 
 ; -----------------------------------------------------------------------------
 ; tmsSetRegister: Set a register value
@@ -283,14 +190,14 @@ tmsSetAddressRead:
 ;  X: The register (0 - 7)
 ; -----------------------------------------------------------------------------
 tmsSetRegister:
-        sta R2
+        pha
         sta TMS9918_REG
         +tmsWaitReg
         txa
         ora #$80
         sta TMS9918_REG
         +tmsWaitReg
-        lda R2
+        pla
         rts
 
 ; -----------------------------------------------------------------------------
@@ -354,23 +261,60 @@ tmsReg1ClearFields:
         ldx #1
         bne tmsSetRegister
 
-!macro tmsEnableInterrupts {
-        lda #TMS_R1_INT_ENABLE
+; -----------------------------------------------------------------------------
+; tmsModeGraphicsI: Set up for Graphics I mode
+; -----------------------------------------------------------------------------
+tmsModeGraphicsI:
+        lda #TMS_R0_MODE_GRAPHICS_I
+        jsr tmsReg0SetFields
+
+        lda #TMS_R1_MODE_GRAPHICS_I
         jsr tmsReg1SetFields
-}
 
-!macro tmsDisableInterrupts {
-        lda #TMS_R1_INT_ENABLE
-        jsr tmsReg1ClearFields
-}
-
+        lda #32
+        sta TMS9918_CONSOLE_SIZE_X
+        rts
 
 ; -----------------------------------------------------------------------------
-; +tmsColorFgBg: Set A to the given FG / BG color
+; tmsModeGraphicsII: Set up for Graphics II mode
 ; -----------------------------------------------------------------------------
-!macro tmsColorFgBg .fg, .bg {
-        lda #(.fg << 4 | .bg)
-}
+tmsModeGraphicsII:
+        lda #TMS_R0_MODE_GRAPHICS_II
+        jsr tmsReg0SetFields
+
+        lda #TMS_R1_MODE_GRAPHICS_II
+        jsr tmsReg1SetFields
+
+        lda #32
+        sta TMS9918_CONSOLE_SIZE_X
+
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsModeText: Set up for Text mode
+; -----------------------------------------------------------------------------
+tmsModeText:
+        lda #TMS_R0_MODE_TEXT
+        jsr tmsReg0SetFields
+
+        lda #TMS_R1_MODE_TEXT
+        jsr tmsReg1SetFields
+
+        lda #40
+        sta TMS9918_CONSOLE_SIZE_X
+
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsModeMulticolor: Set up for Multicolor mode
+; -----------------------------------------------------------------------------
+tmsModeMulticolor:
+        lda #TMS_R0_MODE_MULTICOLOR
+        jsr tmsReg0SetFields
+
+        lda #TMS_R1_MODE_MULTICOLOR
+        jsr tmsReg1SetFields
+        rts
 
 ; -----------------------------------------------------------------------------
 ; tmsInit: Initialise the registers
@@ -380,6 +324,10 @@ tmsInit:
         sta TMS9918_REG0_SHADOW_ADDR
         lda TMS_REGISTER_DATA + 1
         sta TMS9918_REG1_SHADOW_ADDR
+
+        lda #0
+        sta TMS9918_CONSOLE_X
+        sta TMS9918_CONSOLE_Y
 
         ; set up the registers
         ldx #0
@@ -395,6 +343,7 @@ tmsInit:
         cpx #8
         bne -
         
+        jsr tmsModeGraphicsI
 
         ; load all data into VRAM
         jsr tmsInitPattTable
@@ -410,35 +359,21 @@ tmsInit:
 
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddressWrite: Set an address in the TMS9918
-; -----------------------------------------------------------------------------
-!macro tmsReadStatus  {
-        lda TMS9918_REG
-}
-
-; -----------------------------------------------------------------------------
 ; _tmsSendPage: Send A for a whole page
 ; -----------------------------------------------------------------------------
 _tmsSendPage:
-        ldx #0
--
+        ldx #32
+_tmsSendX8:
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
         +tmsPut
-        inx
-        bne -
+        dex
+        bne _tmsSendX8
         rts
 
 ; -----------------------------------------------------------------------------
@@ -446,55 +381,8 @@ _tmsSendPage:
 ; -----------------------------------------------------------------------------
 _tmsSendEmptyPage:
         lda #0
-        beq _tmsSendPage
+        beq _tmsSendPage ; rts in here
 
-!macro tmsSendData .sourceAddr, .numBytes {
-        lda #<.sourceAddr
-        sta TMS_TMP_ADDRESS
-        lda #>.sourceAddr
-        sta TMS_TMP_ADDRESS + 1
-
-!if .numBytes < 256 {
-        ldx #.numBytes
-        jsr tmsSendBytes
-} else {
-        !do while .numBytes > 0 {
-                !if .numBytes > 255 {
-                        ldx #0
-                        !set .numBytes = .numBytes - 256
-                } else {
-                        ldx #.numBytes
-                        !set .numBytes = 0
-                }
-                jsr tmsSendBytes
-                inc TMS_TMP_ADDRESS + 1
-        }
-}
-
-}
-
-!macro tmsSetSourceAddressInd .addr {
-	lda .addr
-	sta TMS_TMP_ADDRESS
-	lda .addr + 1
-	sta TMS_TMP_ADDRESS + 1
-}
-
-!macro tmsSetSourceAddressIndOffset .addr, .offset {
-        clc
-	lda .addr
-        adc #<.offset
-	sta TMS_TMP_ADDRESS
-	lda .addr + 1
-        adc #>.offset
-	sta TMS_TMP_ADDRESS + 1
-}
-
-
-!macro tmsSendBytes .bytes {
-        ldx #.bytes
-        jsr tmsSendBytes
-}
 ; -----------------------------------------------------------------------------
 ; tmsSendBytes: Send bytes to the TMS (up to 1 page)
 ; -----------------------------------------------------------------------------
@@ -511,35 +399,6 @@ tmsSendBytes:
         dex
         bne -
         rts
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrPattTable: Initialise address for font table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTable {
-        +tmsSetAddrPattTableInd 0
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableInd: Initialise address for pattern table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableInd .ind {
-        +tmsSetAddressWrite TMS_VRAM_PATT_ADDRESS + (8 * .ind)
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableIndRead: Initialise address for pattern table to read
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableIndRead .ind {
-        +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind)
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableIndRowRead: Initialise address for pattern table to read
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableIndRead .ind, .row {
-        +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind) + .row
-}
-
 
 ; -----------------------------------------------------------------------------
 ; tmsInitPattTable: Initialise the pattern table
@@ -571,14 +430,6 @@ tmsInitPattTable:
 
         rts
 
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrNameTable: Initialise address for base (text) table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrNameTable {
-        +tmsSetAddressWrite TMS_VRAM_NAME_ADDRESS
-}
-
 ; -----------------------------------------------------------------------------
 ; tmsInitTextTable: Initialise the text (tilemap) table
 ; -----------------------------------------------------------------------------
@@ -590,30 +441,10 @@ tmsInitTextTable:
 
 
         lda #0
-        jsr _tmsSendPage
-
-        jsr _tmsSendPage
-
-        jsr _tmsSendPage
-
-        
+        ldx #(32 * 3)
+        jsr _tmsSendX8
 
         rts
-
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrColorTable: Initialise address for color table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrColorTable {
-        +tmsSetAddressWrite TMS_VRAM_COLOR_ADDRESS
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrColorTable: Initialise address for color table index
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrColorTable .ind {
-        +tmsSetAddressWrite TMS_VRAM_COLOR_ADDRESS + .ind
-}
 
 
 ; -----------------------------------------------------------------------------
@@ -633,32 +464,18 @@ tmsInitEntireColorTable:
 ; -----------------------------------------------------------------------------
 tmsInitColorTable:
         
-        sta R0
+        pha
 
         ; color table
         +tmsSetAddrColorTable
 
-        lda R0
+        pla
 -
         +tmsPut
         dex
         bne -
 
         rts
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrSpriteAttrTable: Initialise address for sprite attributes table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpriteAttrTable {
-        +tmsSetAddrSpriteAttrTableInd 0
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrSpriteAttrTableInd: Initialise address for sprite attributes table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpriteAttrTableInd .index {
-        +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + .index * 4
-}
 
 ; -----------------------------------------------------------------------------
 ; tmsInitSpriteTable: Initialise the sprite table
@@ -697,7 +514,7 @@ tmsInitSpriteTable:
 ;  Y: Tile position Y
 ; -----------------------------------------------------------------------------
 tmsTileXyAtPixelXy:
-        sta R2
+        pha
         txa
         +div8
         tax
@@ -705,134 +522,8 @@ tmsTileXyAtPixelXy:
         tya
         +div8
         tay
-        lda R2
+        pla
         rts
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrSpritePattTable: Initialise address for sprite pattern table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpritePattTable {
-        +tmsSetAddrSpritePattTableInd 0
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrSpritePattTableInd: Initialise address for sprite pattern table
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpritePattTableInd .index {
-        +tmsSetAddressWrite TMS_VRAM_SPRITE_PATT_ADDRESS + .index * 8
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsCreateSpritePattern: Create a sprite pattern (.spriteDataAddr is 8 bytes)
-; -----------------------------------------------------------------------------
-!macro tmsCreateSpritePattern .pattInd, .spriteDataAddr {
-
-        
-
-        ; sprite pattern table
-        +tmsSetAddrSpritePattTableInd .pattInd
-
-        ldx #0
--
-        lda .spriteDataAddr,x
-        +tmsPut
-        inx
-        cpx #8
-
-        
-
-        bne -
-}
-
-; -----------------------------------------------------------------------------
-; tmsCreateSpritePatternQuad: Create a (size 1) sprite pattern 
-;   (.spriteDataAddr is 32 bytes)
-; -----------------------------------------------------------------------------
-!macro tmsCreateSpritePatternQuad .pattInd, .spriteDataAddr {
-
-        
-
-        ; sprite pattern table
-        +tmsSetAddrSpritePattTableInd .pattInd * 4
-
-        ldx #0
--
-        lda .spriteDataAddr,x
-        +tmsPut 
-        inx
-        cpx #32
-
-        
-
-        bne -
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsCreateSprite: Create a sprite
-; -----------------------------------------------------------------------------
-!macro tmsCreateSprite .ind, .pattInd, .xPos, .yPos, .color {
-
-        
-
-        ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
-
-        +tmsPut .yPos
-        +tmsPut .xPos
-        +tmsPut .pattInd
-        +tmsPut .color
-        
-}
-
-; -----------------------------------------------------------------------------
-; tmsSpritePos: Set a sprite position
-; -----------------------------------------------------------------------------
-!macro tmsSpritePos .ind, .xPos, .yPos {
-        
-
-        ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
-
-        +tmsPut .yPos
-        +tmsPut .xPos        
-}
-
-; -----------------------------------------------------------------------------
-; tmsSpritePosXYReg: Set a sprite position from x/y registers
-; -----------------------------------------------------------------------------
-!macro tmsSpritePosXYReg .ind {
-        
-
-        ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
-
-        tya
-        +tmsPut 
-        txa
-        +tmsPut 
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsSetAddrSpriteColor: Change a sprite color
-; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpriteColor .ind {
-
-        ; sprite attr table
-        +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + (.ind * 4) + 3
-}
-; -----------------------------------------------------------------------------
-; tmsSpriteColor: Change a sprite color
-; -----------------------------------------------------------------------------
-!macro tmsSpriteColor .ind, .color {
-
-        +tmsSetAddrSpriteColor .ind
-
-        +tmsPut .color
-}
-
 
 ; -----------------------------------------------------------------------------
 ; tmsHex8: Output an 8-bit byte as hexadecimal
@@ -841,12 +532,12 @@ tmsTileXyAtPixelXy:
 ;  A: The value to output
 ; -----------------------------------------------------------------------------
 tmsHex8:
-	sta R2
+	pha
         +lsr4
 	tax
 	lda .H2, x
         +tmsPut 
-	lda R2
+	pla
 	and #$0f
 	tax
 	lda .H2, x
@@ -856,20 +547,6 @@ tmsHex8:
 
 .H2 !text "0123456789abcdef"
 
-
-; -----------------------------------------------------------------------------
-; tmsSetPosWrite: Set cursor position
-; -----------------------------------------------------------------------------
-!macro tmsSetPosWrite .x, .y {
-        +tmsSetAddressWrite (TMS_VRAM_NAME_ADDRESS + .y * 32 + .x)
-}
-
-; -----------------------------------------------------------------------------
-; tmsSetPosRead: Set read cursor position
-; -----------------------------------------------------------------------------
-!macro tmsSetPosRead .x, .y {
-        +tmsSetAddressRead (TMS_VRAM_NAME_ADDRESS + .y * 32 + .x)
-}
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPosTmpAddress: Set TMS_TMP_ADDRESS for a given text position
@@ -899,6 +576,150 @@ tmsSetPosTmpAddress:
         rts
 
 ; -----------------------------------------------------------------------------
+; tmsSetPosTmpAddressText: Set TMS_TMP_ADDRESS for a given text position
+; -----------------------------------------------------------------------------
+; Inputs:
+;   X: X position (0 - 39)
+;   Y: Y position (0 - 23)
+; -----------------------------------------------------------------------------
+tmsSetPosTmpAddressText:
+        lda #>TMS_VRAM_NAME_ADDRESS
+        sta TMS_TMP_ADDRESS + 1
+        lda #<TMS_VRAM_NAME_ADDRESS
+        sta TMS_TMP_ADDRESS
+
+.tmsSetPosTmpAddressTextLoop
+        cpy #0
+        beq ++
+        clc
+        lda TMS_TMP_ADDRESS
+        adc #40
+        sta TMS_TMP_ADDRESS
+        bcc +
+        inc TMS_TMP_ADDRESS + 1
++
+        dey
+        bne .tmsSetPosTmpAddressTextLoop
+++
+        clc
+        txa
+        adc TMS_TMP_ADDRESS
+        sta TMS_TMP_ADDRESS
+        bcc +
+        inc TMS_TMP_ADDRESS + 1
++
+        rts
+
+TMP_READ_ROW = $7e18
+TMP_WRITE_ROW = $7e19
+
+tmsConsoleScrollLine:
+        lda #0
+        sta TMP_WRITE_ROW
+        lda #1
+        sta TMP_READ_ROW
+.nextRow:
+
+        ldy TMP_READ_ROW
+        ldx #0
+        jsr tmsSetPosTmpAddressText
+        jsr tmsSetAddressRead
+
+        jsr .tmsBufferIn
+
+        ldx #0
+        ldy TMP_WRITE_ROW
+        ldx #0
+        jsr tmsSetPosTmpAddressText
+        jsr tmsSetAddressWrite
+
+        jsr .tmsBufferOut
+
+
+        inc TMP_WRITE_ROW
+        inc TMP_READ_ROW
+
+        lda TMP_READ_ROW
+        cmp #25
+
+        bne .nextRow
+
+
+        ; copy to buffer 32 bytes at a time, write back  24 rows for gfx, 30 "rows" for text
+        rts
+
+.tmsBufferIn:
+        ldx #0
+-
+        +tmsGet
+        sta TMS9918_TMP_BUFFER, x
+        inx
+        cpx TMS9918_CONSOLE_SIZE_X
+        bne -
+        rts
+
+.tmsBufferOut:
+        ldx #0
+
+-
+        lda TMS9918_TMP_BUFFER, x
+        +tmsPut
+        inx
+        cpx TMS9918_CONSOLE_SIZE_X
+        bne -
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsIncPosConsole: Increment consoel position
+; -----------------------------------------------------------------------------
+tmsIncPosConsole:
+        inc TMS9918_CONSOLE_X
+        lda TMS9918_CONSOLE_X
+        cmp TMS9918_CONSOLE_SIZE_X
+        bne +
+        lda #0
+        sta TMS9918_CONSOLE_X
+        inc TMS9918_CONSOLE_Y
++
+        lda TMS9918_CONSOLE_Y
+        cmp #24
+        bne +
+        dec TMS9918_CONSOLE_Y
+        jmp tmsConsoleScrollLine
++
+        rts
+
+
+; -----------------------------------------------------------------------------
+; tmsDecPosConsole: Increment console position
+; -----------------------------------------------------------------------------
+tmsDecPosConsole:
+        dec TMS9918_CONSOLE_X
+        bpl ++
+        lda TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_X
+        dec TMS9918_CONSOLE_X
+        lda #0
+        cmp TMS9918_CONSOLE_Y
+        bne +
+        sta TMS9918_CONSOLE_X
+        rts        
++
+        dec TMS9918_CONSOLE_Y
+++
+        rts
+
+
+; -----------------------------------------------------------------------------
+; tmsSetPosConsole: Set cursor position to console position
+; -----------------------------------------------------------------------------
+tmsSetPosConsole:
+        ldx TMS9918_CONSOLE_X
+        ldy TMS9918_CONSOLE_Y
+
+        ; flow through
+
+; -----------------------------------------------------------------------------
 ; tmsSetPosWrite: Set cursor position
 ; -----------------------------------------------------------------------------
 ; Inputs:
@@ -906,9 +727,22 @@ tmsSetPosTmpAddress:
 ;   Y: Y position (0 - 23)
 ; -----------------------------------------------------------------------------
 tmsSetPosWrite:
+        lda #TMS_R1_MODE_TEXT
+        bit TMS9918_REG1_SHADOW_ADDR
+        bne tmsSetPosWriteText
         jsr tmsSetPosTmpAddress
         jmp tmsSetAddressWrite
 
+; -----------------------------------------------------------------------------
+; tmsSetPosWrite: Set cursor position (text mode)
+; -----------------------------------------------------------------------------
+; Inputs:
+;   X: X position (0 - 39)
+;   Y: Y position (0 - 23)
+; -----------------------------------------------------------------------------
+tmsSetPosWriteText:
+        jsr tmsSetPosTmpAddressText
+        jmp tmsSetAddressWrite
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPosRead: Set cursor position to read from
@@ -930,17 +764,18 @@ tmsSetPosRead:
 ;   Y: Y offset (row) in the pattern
 ; -----------------------------------------------------------------------------
 tmsSetPatternTmpAddress:
-        sta R2
+        pha
         lda #>TMS_VRAM_PATT_ADDRESS
         sta TMS_TMP_ADDRESS + 1
         
-        lda R2
+        pla
+        pha
 
         +div32
         clc
         adc TMS_TMP_ADDRESS + 1
         sta TMS_TMP_ADDRESS + 1
-        lda R2
+        pla
         and #$1f
         +mul8
         sta TMS_TMP_ADDRESS
@@ -971,71 +806,6 @@ tmsSetPatternRead:
         jsr tmsSetPatternTmpAddress
         jmp tmsSetAddressRead
 
-
-; -----------------------------------------------------------------------------
-; tmsPrint: Print immediate text
-; -----------------------------------------------------------------------------
-; Inputs:
-;  str: String to print
-;  x: x position
-;  y: y position
-; -----------------------------------------------------------------------------
-!macro tmsPrint .str, .x, .y {
-	jmp .afterText
-.textAddr
-	!text .str,0
-.afterText        
-
-        +tmsSetPosWrite .x, .y
-
-        lda #<.textAddr
-        sta STR_ADDR_L
-        lda #>.textAddr
-        sta STR_ADDR_H
-        jsr tmsPrint        
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsPrintCentre: Print centre-aligned immediate text
-; -----------------------------------------------------------------------------
-; Inputs:
-;  str: String to print
-;  y: y position
-; -----------------------------------------------------------------------------
-!macro tmsPrintCentre .str, .y {
-	jmp .afterText
-.textAddr
-	!text .str,0
-.afterText        
-
-        +tmsSetPosWrite (32 - ((.afterText - 1) - .textAddr)) / 2, .y
-
-        lda #<.textAddr
-        sta STR_ADDR_L
-        lda #>.textAddr
-        sta STR_ADDR_H
-        jsr tmsPrint        
-}
-
-
-; -----------------------------------------------------------------------------
-; tmsPrintZ: Print text
-; -----------------------------------------------------------------------------
-; Inputs:
-;  str: Address of zero-terminated string to print
-;  x: x position
-;  y: y position
-; -----------------------------------------------------------------------------
-!macro tmsPrintZ .textAddr, .x, .y {
-        +tmsSetPosWrite .x, .y
-
-        lda #<.textAddr
-        sta STR_ADDR_L
-        lda #>.textAddr
-        sta STR_ADDR_H
-        jsr tmsPrint        
-}
 
 ; -----------------------------------------------------------------------------
 ; tmsPrint: Print a null-terminated string

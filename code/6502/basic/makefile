@@ -1,5 +1,5 @@
-EMU=..\..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe
-ACME=acme -I ..\..\lib -I ..\..\kernel
+EMU=..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe
+ACME=acme -I ..\lib -I ..\kernel
 
 
 %.o: %.asm
@@ -7,7 +7,7 @@ ACME=acme -I ..\..\lib -I ..\..\kernel
 	
 remake: clean default
 
-default: tms9918type
+default: basic
 
 %: %.o
 	$(EMU) --rom $^

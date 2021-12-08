@@ -8,30 +8,25 @@
 ;
 ;
 
-!to "invaders.o", plain
-!sl "invaders.lmap"
-
 HBC56_SKIP_POST = 1
 
 HBC56_INT_VECTOR = onVSync
-!src "../lib/ut/math_macros.asm"
-!src "../lib/hbc56.asm"
+!src <ut/math_macros.asm>
+!src "hbc56.asm"
 
 !src "zeropage.asm"
-!src "../lib/ut/memory.asm"
-!src "../lib/ut/util.asm"
+!src "ut/memory.asm"
+!src "ut/util.asm"
 
-TMS_MODEL = 9918
-!src "../lib/gfx/tms9918.asm"
+!src "gfx/tms9918.lmap"
+!src "gfx/tms9918macros.asm"
 
-TMS_FONT_DATA: !bin "../lib/gfx/fonts/tms9918font1.o"
+!src "gfx/bitmap.asm"
+!src "inp/nes.asm"
+!src "sfx/ay3891x.asm"
+!src "sfx/sfxman.asm"
 
-!src "../lib/gfx/bitmap.asm"
-!src "../lib/inp/nes.asm"
-!src "../lib/sfx/ay3891x.asm"
-!src "../lib/sfx/sfxman.asm"
-
-+hbc56Title "6502 INVADERS"
+;+hbc56Title "6502 INVADERS"
 
 ;
 ; contants
@@ -97,6 +92,7 @@ main:
         ; any single-time setup?
 
 restartGame:
+        jsr tmsInit
         +tmsDisableOutput
 
         jsr sfxManInit:
@@ -468,3 +464,6 @@ COLORTAB:
 
 
 !src "patterns.asm"
+
+*=$F800
+!bin "gfx/tms9918.bin"

@@ -1,36 +1,21 @@
-HBC56_SKIP_POST = 1
+!src "kernel.inc"
 
-HBC_56_BUILD = 1
-
-HBC56_INT_VECTOR = onVSync
-!src "hbc56.asm"
-!src "ut/memory.asm"
-!src "ut/util.asm"
-
-!src "ut/math_macros.asm"
-!src "gfx/tms9918.lmap"
-!src "gfx/tms9918macros.asm"
-
-!source "inp/keyboard.asm"
-
-XPOS = $44
-YPOS = $45
-
-TICKS_L = $46
-TICKS_H = $47
-
+TICKS     = $40
+SECONDS_L = $41
+SECONDS_H = $42
+LAST_SECONDS = $43
 
 onVSync:
         pha
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #60
+        inc TICKS
+        lda TICKS
+        cmp #TMS_FPS
         bne +
         lda #0
-        inc TICKS_H
+        sta TICKS
+        +inc16 SECONDS_L
 +  
-        sta TICKS_L
+        jsr loop
         +tmsReadStatus
         pla      
         rti
@@ -40,79 +25,71 @@ onVSync:
 main:
         sei
         lda #0
-        sta TICKS_L
-        sta TICKS_H
-        sta XPOS
-        sta YPOS
+        sta TICKS
+        sta SECONDS_L
+        sta SECONDS_H
 
         jsr kbInit
 
-        jsr tmsInit
-
-        lda #TMS_R0_MODE_TEXT
-        jsr tmsReg0SetFields
-
-        lda #TMS_R1_MODE_TEXT
-        jsr tmsReg1SetFields
-
-        +tmsColorFgBg TMS_MED_RED, TMS_BLACK
-        jsr tmsSetBackground
+        jsr tmsModeText
 
         +tmsSetAddrNameTable
         lda #' '
-        jsr _tmsSendPage
-        jsr _tmsSendPage
-        jsr _tmsSendPage
-        ;jsr _tmsSendPage
-        +tmsSetAddrNameTable
+        ldx #(40 * 25 / 8)
+        jsr _tmsSendX8
 
+        +tmsSetColorFgBg TMS_LT_GREEN, TMS_BLACK
+        +tmsEnableOutput
         cli
 
+        +setIntHandler onVSync
+
+        +tmsEnableInterrupts
+-
+        jmp -
+
+
 loop:
+        jsr tmsSetPosConsole
+        lda TICKS
+        cmp #30
+        bcc +
+        lda #' '
+        +tmsPut
+        jmp ++
++ 
+        lda #$7f
+        +tmsPut
+++
         jsr kbReadAscii
         cmp #$ff
-        beq loop
+        beq .endLoop
         cmp #$0d ; enter
         bne +
-        lda #0
-        sta XPOS
-        inc YPOS
-        jsr setPosition
-        jmp loop        
+        +tmsConsoleOut ' '
+        lda #39
+        sta TMS9918_CONSOLE_X
+        jsr tmsIncPosConsole
+        jmp .endLoop    
 +
         cmp #$08 ; backspace
         bne ++
-        dec XPOS
-        bpl +
-        lda #39
-        sta XPOS
-        dec YPOS
-+
-        jsr setPosition
-        lda #' '
-        +tmsPut
-        jsr setPosition
-        jmp loop
+        +tmsConsoleOut ' '
+        jsr tmsDecPosConsole
+        jsr tmsDecPosConsole
+        +tmsConsoleOut ' '
+        jsr tmsDecPosConsole
+        jmp .endLoop
 ++
+        pha
+        jsr tmsSetPosConsole
+        pla
         +tmsPut
-        inc XPOS
-        lda XPOS
-        cmp #40
-        bne +
-        lda #0
-        sta XPOS
-        inc YPOS
-+
+        jsr tmsIncPosConsole
 
-        jmp loop
+.endLoop
 
-
-setPosition:
-        ldx XPOS
-        ldy YPOS
-        jsr tmsSetPosWriteText
         rts
-
 
 medDelay:
 	jsr delay
@@ -141,6 +118,3 @@ customDelay:
 	dey
 	bne -
 	rts
-
-*=$F800
-!bin "../../lib/gfx/tms9918.bin"

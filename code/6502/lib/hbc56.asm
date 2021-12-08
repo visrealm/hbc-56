@@ -12,71 +12,46 @@
 !initmem $FF
 cputype = $6502
 
-DEFAULT_HBC56_NMI_VECTOR = $FFF0
-DEFAULT_HBC56_INT_VECTOR = $FFF0
-
-*=$FF00
-hbc56Init:
-        cld     ; make sure we're not in decimal mode
-        ldx #$ff
-        txs
-
-        jmp main
-
-
-*=$FFF0
-        rti
-
-*=$FFFA
-!ifdef HBC56_NMI_VECTOR { !word HBC56_NMI_VECTOR } else { !word DEFAULT_HBC56_NMI_VECTOR }
-!word hbc56Init
-!ifdef HBC56_INT_VECTOR { !word HBC56_INT_VECTOR } else { !word DEFAULT_HBC56_INT_VECTOR }
-*=$8000
-
-; Base address of the 256 IO port memory range
-IO_PORT_BASE_ADDRESS	= $7f00
-
-; Virtual registers
-; ----------------------------------------------------------------------------
-R0  = $02
-R0L = R0
-R0H = R0 + 1
-R1  = $04
-R1L = R1
-R1H = R1 + 1
-R2  = $06
-R2L = R2
-R2H = R2 + 1
-R3  = $08
-R3L = R3
-R3H = R3 + 1
-R4  = $0a
-R4L = R4
-R4H = R4 + 1
-R5  = $0c
-R5L = R5
-R5H = R5 + 1
-R6  = $0e
-R6L = R6
-R6H = R6 + 1
-R7  = $10
-R7L = R7
-R7H = R7 + 1
-R8  = $12
-R8L = R8
-R8H = R8 + 1
-R9  = $14
-R9L = R9
-R9H = R9 + 1
-R10  = $16
-R10L = R10
-R10H = R10 + 1
-
+!src "hbc56.inc"
 
 ; -------------------------
 ; Zero page
 ; -------------------------
-STR_ADDR = $20
+STR_ADDR = $18
 STR_ADDR_L = STR_ADDR
 STR_ADDR_H = STR_ADDR + 1
 
+DEFAULT_HBC56_NMI_VECTOR = $FFE0
+DEFAULT_HBC56_RST_VECTOR = $8000
+DEFAULT_HBC56_INT_VECTOR = $FFE0
+
+!macro hbc56Title .title {
+HBC56_TITLE_TEXT:
+        !text .title
+HBC56_TITLE_TEXT_LEN = * - HBC56_TITLE_TEXT
+        !byte 0 ; nul terminator for game name
+}
+
+
+*=DEFAULT_HBC56_INT_VECTOR
+        rti
+
+hbc56Delay:
+	ldy #0
+hbc56CustomDelay:
+	ldx #0
+-
+	dex
+	bne -
+	ldx #0
+	dey
+	bne -
+	rts        
+
+*=$FFFA
+!ifdef HBC56_NMI_VECTOR { !word HBC56_NMI_VECTOR } else { !word DEFAULT_HBC56_NMI_VECTOR }
+!ifdef HBC56_RST_VECTOR { !word HBC56_RST_VECTOR } else { !word DEFAULT_HBC56_RST_VECTOR }
+!ifdef HBC56_INT_VECTOR { !word HBC56_INT_VECTOR } else { !word DEFAULT_HBC56_INT_VECTOR }
+
+
+*=DEFAULT_HBC56_RST_VECTOR
