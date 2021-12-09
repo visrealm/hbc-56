@@ -5,12 +5,12 @@ ACME=acme -I ..\lib -I ..\kernel
 %.o: %.asm
 	$(ACME) -o $@ -l $@.lmap $<
 	
-remake: clean default
+remake: default
 
-default: basic
+default: hbc56_mon
 
 %: %.o
-	$(EMU) --rom $^
+	$(EMU) --display 1 --rom $^
 
 .PHONY: clean
 

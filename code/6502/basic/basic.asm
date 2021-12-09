@@ -432,154 +432,25 @@ VEC_SV		= VEC_LD+2	; save vector
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 
-Ibuffs		= VEC_SV+2
+Ibuffs		= IRQ_vec+$14
 					; start of input buffer after IRQ/NMI code
-Ibuffe		= Ibuffs+$40; end of input buffer
+Ibuffe		= Ibuffs+$47; end of input buffer
 
-Ram_base		= $1000	; start of user RAM (set as needed, should be page aligned)
+Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
 Ram_top		= $7000	; end of user RAM+1 (set as needed, should be page aligned)
 
 ; This start can be changed to suit your system
-!src "kernel.inc"
 
-;*=$C000
+*=$C000
 
 ; For convenience, put jump here to reset location so it can be
 ; run from the load address.
 
-;JMP	RES_vec
+JMP	RES_vec
 
 ; BASIC cold start entry point
 
 ; new page 2 initialisation, copy block to ccflag on
-main
-	sei
-	jsr kbInit
-	jsr tmsModeText
-	+tmsSetAddrNameTable
-	lda #' '
-	ldx #(40 * 25 / 8)
-	jsr _tmsSendX8
-
-	+tmsSetColorFgBg TMS_LT_BLUE, TMS_BLACK
-	+tmsEnableOutput
-	+tmsDisableInterrupts	
-	
-	lda #<hbcInput
-	sta VEC_IN
-	lda #>hbcInput
-	sta VEC_IN+1
-
-	lda #<hbcOutput
-	sta VEC_OUT
-	lda #>hbcOutput
-	sta VEC_OUT+1
-
-	lda #<hbcLoad
-	sta VEC_LD
-	lda #>hbcLoad
-	sta VEC_LD+1
-
-
-	lda #<hbcSave
-	sta VEC_SV
-	lda #>hbcSave
-	sta VEC_SV+1
-
-	lda #<hbcSave
-	sta VEC_CC
-	lda #>hbcSave
-	sta VEC_CC+1
-	
-	lda #38
-	sta TWidth
-
-	
-	;cli	
-	
-	+tmsSetAddrNameTable
-
-	jmp LAB_COLD
-
-TEMP_ADDR = $7d35
-
-hbcInput:
-	txa
-	pha
-	tya
-	pha
-
-	jsr kbReadAscii
-	sta TEMP_ADDR
-    cmp #$ff
-	bne +
-	lda #0
-	
-	pla
-	tay
-	pla
-	tax
-	lda TEMP_ADDR
-	clc
-	rts
-+
-	pla
-	tay
-	pla
-	tax
-	lda TEMP_ADDR
-	sec
-	rts
-	
-	
-
-hbcOutput:
-	sta TEMP_ADDR
-	txa
-	pha
-	tya
-	pha
-	lda TEMP_ADDR
-    cmp #$0a ; enter
-	beq .newline
-    cmp #$08 ; backspace
-	beq .backspace
-	jsr tmsSetPosConsole
-	lda TEMP_ADDR
-	+tmsPut
-	jsr tmsIncPosConsole
-
-.endOut:
-	pla
-	tay
-	pla
-	tax
-	lda TEMP_ADDR
-	rts
-	
-.newline
-	inc TMS9918_CONSOLE_Y
-	lda #0
-	sta TMS9918_CONSOLE_X
-	jmp .endOut
-
-.backspace
-	+tmsConsoleOut ' '
-	jsr tmsDecPosConsole
-	jsr tmsDecPosConsole
-	+tmsConsoleOut ' '
-	jsr tmsDecPosConsole
-	jmp .endOut
-	
-
-hbcLoad:
-		rts
-hbcSave:
-		rts
-	
-	
-
-
 
 LAB_COLD
 	LDY	#PG2_TABE-PG2_TABS-1
@@ -624,27 +495,20 @@ TabLoop
 	STA	FAC1_o		; clear FAC1 overflow byte
 	STA	last_sh		; clear descriptor stack top item pointer high byte
 
-	LDA	#$00			; set default tab size
+	LDA	#$0E			; set default tab size
 	STA	TabSiz		; save it
 	LDA	#$03			; set garbage collect step size for descriptor stack
 	STA	g_step		; save it
 	LDX	#des_sk		; descriptor stack start
 	STX	next_s		; set descriptor stack pointer
 	JSR	LAB_CRLF		; print CR/LF
-	
-	lda #$00
-	sta Itempl
-	lda #$40
-	sta Itemph
-	
-jmp 	LAB_2D93   ; skip ram size input
-	
+
+        JMP LAB_2D93    ; Skip memory question
+
 	LDA	#<LAB_MSZM		; point to memory size message (low addr)
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
 	JSR	LAB_INLN		; print "? " and get BASIC input
-	LDX #$00
-	LDY #$80
 	STX	Bpntrl		; set BASIC execute pointer low byte
 	STY	Bpntrh		; set BASIC execute pointer high byte
 	JSR	LAB_GBYT		; get last byte back
@@ -1098,7 +962,7 @@ LAB_INLN
 LAB_134B
 	JSR	LAB_PRNA		; go print the character
 	DEX				; decrement the buffer counter (delete)
-	!byte	$2C			; make LDX into BIT abs
+	!text	$2C			; make LDX into BIT abs
 
 ; call for BASIC input (main entry point)
 
@@ -1175,7 +1039,7 @@ LAB_13AC
 	BCS	LAB_13EC		; if >= go save byte then continue crunching
 
 	STA	Scnquo		; save buffer byte as search character
-	CMP	#'\"'			; is it quote character?
+	CMP	#$22			; is it quote character?
 	BEQ	LAB_1410		; branch if so (copy quoted string)
 
 	CMP	#'*'			; compare with "*"
@@ -1494,7 +1358,7 @@ LAB_1508
 	AND	#$7F			; mask top out bit of character
 LAB_150C
 	JSR	LAB_PRNA		; go print the character
-	CMP	#'\"'			; was it " character
+	CMP	#$22			; was it " character
 	BNE	LAB_1519		; branch if not
 
 					; we are either entering or leaving a pair of quotes
@@ -2024,7 +1888,7 @@ LoopDone
 
 LAB_16F4
 	LDX	#$04			; error code $04 ("RETURN without GOSUB" error)
-	!byte	$2C			; makes next line BIT LAB_0EA2
+	!text	$2C			; makes next line BIT LAB_0EA2
 
 LAB_16F7				; do undefined statement error
 	LDX	#$0E			; error code $0E ("Undefined statement" error)
@@ -2082,7 +1946,7 @@ LAB_16FC
 
 LAB_SNBS
 	LDX	#':'			; set look for character = ":"
-	!byte	$2C			; makes next line BIT $00A2
+	!text	$2C			; makes next line BIT $00A2
 
 ; scan for next BASIC line
 ; returns Y as index to [EOL]
@@ -2103,7 +1967,7 @@ LAB_172D
 	BEQ	LAB_1719		; exit if found
 
 	INY				; increment index
-	CMP	#'\"'			; compare current character with open quote
+	CMP	#$22			; compare current character with open quote
 	BNE	LAB_172D		; if not open quote go get next character
 
 	BEQ	LAB_1725		; if found go swap search character for alt search character
@@ -2311,7 +2175,7 @@ LAB_17B3
 
 LAB_DEC
 	LDA	#<LAB_2AFD		; set -1 pointer low byte
-	!byte	$2C			; BIT abs to skip the LDA below
+	!text	$2C			; BIT abs to skip the LDA below
 
 ; perform INC
 
@@ -2546,9 +2410,8 @@ LAB_18A2
 	PHA				; save token
 	JSR	LAB_SGBY		; scan and get byte parameter
 	CMP	#$29			; is next character )
-	Beq	+
-	jmp LAB_1910		; if not do syntax error then warm start
-+
+	BNE	LAB_1910		; if not do syntax error then warm start
+
 	PLA				; get token back
 	CMP	#TK_TAB		; was it TAB ?
 	BNE	LAB_18B7		; if not go do SPC
@@ -2608,7 +2471,7 @@ LAB_18CD
 
 LAB_18E0
 	LDA	#$20			; load " "
-	jmp LAB_PRNA;!byte	$2C			; change next line to BIT LAB_3FA9
+	!text	$2C			; change next line to BIT LAB_3FA9
 
 ; print "?" character
 
@@ -2701,7 +2564,7 @@ LAB_1913
 ; perform INPUT
 
 LAB_INPUT
-	CMP	#'\"'			; compare next byte with open quote
+	CMP	#$22			; compare next byte with open quote
 	BNE	LAB_1934		; branch if no prompt string
 
 	JSR	LAB_1BC1		; print "..." string
@@ -2765,7 +2628,7 @@ LAB_1988
 
 					; else get string
 	STA	Srchc			; save search character
-	CMP	#'\"'			; was it " ?
+	CMP	#$22			; was it " ?
 	BEQ	LAB_1999		; branch if so
 
 	LDA	#':'			; else search character is ":"
@@ -2993,7 +2856,7 @@ LAB_EVNM
 
 LAB_CTNM
 	CLC				; destination is numeric
-	!byte	$24			; makes next line BIT $38
+	!text	$24			; makes next line BIT $38
 
 ; check if source is string, else do type mismatch
 
@@ -3256,7 +3119,7 @@ LAB_1BAC
 	BEQ	LAB_1BA9		; if so get FAC1 from string and return (e.g. was .123)
 
 					; it wasn't any sort of number so ..
-	CMP	#'\"'			; compare with "
+	CMP	#$22			; compare with "
 	BEQ	LAB_1BC1		; branch if open quote
 
 					; wasn't any sort of number so ..
@@ -4042,7 +3905,7 @@ LAB_1E77
 
 LAB_1E85
 	LDX	#$10			; error code $10 ("Array bounds" error)
-	!byte	$2C			; makes next bit BIT LAB_08A2
+	!text	$2C			; makes next bit BIT LAB_08A2
 
 ; do function call error
 
@@ -4490,7 +4353,7 @@ LAB_MSSP
 ; print " terminated string to Sutill/Sutilh
 
 LAB_20AE
-	LDX	#'\"'			; set terminator to "
+	LDX	#$22			; set terminator to "
 	STX	Srchc			; set search character (terminator 1)
 	STX	Asrch			; set terminator 2
 
@@ -4515,7 +4378,7 @@ LAB_20BE
 	BNE	LAB_20BE		; loop if not terminator 2
 
 LAB_20CB
-	CMP	#'\"'			; compare with "
+	CMP	#$22			; compare with "
 	BEQ	LAB_20D0		; branch if " (carry set if = !)
 
 LAB_20CF
@@ -5889,7 +5752,7 @@ LAB_2675
 	BMI	LAB_269B		; do overflow error
 
 	CLC				; clear carry for the add
-	!byte	$2C			; makes next line BIT $1410
+	!text	$2C			; makes next line BIT $1410
 LAB_2680
 	BPL	LAB_2696		; if +ve go handle underflow
 
@@ -7456,7 +7319,7 @@ LAB_FB96
 
 LAB_IRQ
 	LDX	#IrqBase		; set pointer to IRQ values
-	!byte	$2C			; make next line BIT abs.
+	!text	$2C			; make next line BIT abs.
 
 ; perform NMI {ON|OFF|CLEAR}
 
@@ -7494,7 +7357,7 @@ LAB_INEX
 LAB_SIRQ
 	CLI				; enable interrupts
 	LDX	#IrqBase		; set pointer to IRQ values
-	!byte	$2C			; make next line BIT abs.
+	!text	$2C			; make next line BIT abs.
 
 ; perform ON NMI
 
@@ -7866,9 +7729,9 @@ V_SAVE
 ; the rest of the code is tables and BASIC start-up code
 
 PG2_TABS
-	!byte	$00			; ctrl-c flag		-	$00 = enabled
-	!byte	$00			; ctrl-c byte		-	GET needs this
-	!byte	$00			; ctrl-c byte timeout	-	GET needs this
+	!text	$00			; ctrl-c flag		-	$00 = enabled
+	!text	$00			; ctrl-c byte		-	GET needs this
+	!text	$00			; ctrl-c byte timeout	-	GET needs this
 	!word	CTRLC			; ctrl c check vector
 ;	!word	xxxx			; non halting key input	-	monitor to set this
 ;	!word	xxxx			; output vector		-	monitor to set this
@@ -7922,20 +7785,20 @@ LAB_2D05
 ; page zero initialisation table $00-$12 inclusive
 
 StrTab
-	!byte	$4C			; JMP opcode
+	!text	$4C			; JMP opcode
 	!word LAB_COLD		; initial warm start vector (cold start)
 
-	!byte	$00			; these bytes are not used by BASIC
+	!text	$00			; these bytes are not used by BASIC
 	!word	$0000			; 
 	!word	$0000			; 
 	!word	$0000			; 
 
-	!byte	$4C			; JMP opcode
+	!text	$4C			; JMP opcode
 	!word	LAB_FCER		; initial user function vector ("Function call" error)
-	!byte	$00			; default NULL count
-	!byte	$00			; clear terminal position
-	!byte	$00			; default terminal width byte
-	!byte	$F2			; default limit for TAB = 14
+	!text	$00			; default NULL count
+	!text	$00			; clear terminal position
+	!text	$00			; default terminal width byte
+	!text	$F2			; default limit for TAB = 14
 	!word	Ram_base		; start of user RAM
 EndTab
 
@@ -7944,123 +7807,123 @@ LAB_MSZM
 
 LAB_SMSG
 	!text	" Bytes free",$0D,$0A,$0A
-	!text	"Troy's HBC-56 BASIC 1.0",$0A,$00
+	!text	"Enhanced BASIC 2.22 for Troy's HBC-56",$0A,$00
 
 ; numeric constants and series
 
 					; constants and series for LOG(n)
 LAB_25A0
-	!byte	$02			; counter
-	!byte	$80,$19,$56,$62	; 0.59898
-	!byte	$80,$76,$22,$F3	; 0.96147
-;##	!byte	$80,$76,$22,$F1	; 0.96147
-	!byte	$82,$38,$AA,$40	; 2.88539
-;##	!byte	$82,$38,$AA,$45	; 2.88539
+	!text	$02			; counter
+	!text	$80,$19,$56,$62	; 0.59898
+	!text	$80,$76,$22,$F3	; 0.96147
+;##	!text	$80,$76,$22,$F1	; 0.96147
+	!text	$82,$38,$AA,$40	; 2.88539
+;##	!text	$82,$38,$AA,$45	; 2.88539
 
 LAB_25AD
-	!byte	$80,$35,$04,$F3	; 0.70711	1/root 2
+	!text	$80,$35,$04,$F3	; 0.70711	1/root 2
 LAB_25B1
-	!byte	$81,$35,$04,$F3	; 1.41421	root 2
+	!text	$81,$35,$04,$F3	; 1.41421	root 2
 LAB_25B5
-	!byte	$80,$80,$00,$00	; -0.5
+	!text	$80,$80,$00,$00	; -0.5
 LAB_25B9
-	!byte	$80,$31,$72,$18	; 0.69315	LOG(2)
+	!text	$80,$31,$72,$18	; 0.69315	LOG(2)
 
 					; numeric PRINT constants
 LAB_2947
-	!byte	$91,$43,$4F,$F8	; 99999.9375 (max value with at least one decimal)
+	!text	$91,$43,$4F,$F8	; 99999.9375 (max value with at least one decimal)
 LAB_294B
-	!byte	$94,$74,$23,$F7	; 999999.4375 (max value before scientific notation)
+	!text	$94,$74,$23,$F7	; 999999.4375 (max value before scientific notation)
 LAB_294F
-	!byte	$94,$74,$24,$00	; 1000000
+	!text	$94,$74,$24,$00	; 1000000
 
 					; EXP(n) constants and series
 LAB_2AFA
-	!byte	$81,$38,$AA,$3B	; 1.4427	(1/LOG base 2 e)
+	!text	$81,$38,$AA,$3B	; 1.4427	(1/LOG base 2 e)
 LAB_2AFE
-	!byte	$06			; counter
-	!byte	$74,$63,$90,$8C	; 2.17023e-4
-	!byte	$77,$23,$0C,$AB	; 0.00124
-	!byte	$7A,$1E,$94,$00	; 0.00968
-	!byte	$7C,$63,$42,$80	; 0.05548
-	!byte	$7E,$75,$FE,$D0	; 0.24023
-	!byte	$80,$31,$72,$15	; 0.69315
-	!byte	$81,$00,$00,$00	; 1.00000
+	!text	$06			; counter
+	!text	$74,$63,$90,$8C	; 2.17023e-4
+	!text	$77,$23,$0C,$AB	; 0.00124
+	!text	$7A,$1E,$94,$00	; 0.00968
+	!text	$7C,$63,$42,$80	; 0.05548
+	!text	$7E,$75,$FE,$D0	; 0.24023
+	!text	$80,$31,$72,$15	; 0.69315
+	!text	$81,$00,$00,$00	; 1.00000
 
-;##	!byte	$07			; counter
-;##	!byte	$74,$94,$2E,$40	; -1/7! (-1/5040)
-;##	!byte	$77,$2E,$4F,$70	;  1/6! ( 1/720)
-;##	!byte	$7A,$88,$02,$6E	; -1/5! (-1/120)
-;##	!byte	$7C,$2A,$A0,$E6	;  1/4! ( 1/24)
-;##	!byte	$7E,$AA,$AA,$50	; -1/3! (-1/6)
-;##	!byte	$7F,$7F,$FF,$FF	;  1/2! ( 1/2)
-;##	!byte	$81,$80,$00,$00	; -1/1! (-1/1)
-;##	!byte	$81,$00,$00,$00	;  1/0! ( 1/1)
+;##	!text	$07			; counter
+;##	!text	$74,$94,$2E,$40	; -1/7! (-1/5040)
+;##	!text	$77,$2E,$4F,$70	;  1/6! ( 1/720)
+;##	!text	$7A,$88,$02,$6E	; -1/5! (-1/120)
+;##	!text	$7C,$2A,$A0,$E6	;  1/4! ( 1/24)
+;##	!text	$7E,$AA,$AA,$50	; -1/3! (-1/6)
+;##	!text	$7F,$7F,$FF,$FF	;  1/2! ( 1/2)
+;##	!text	$81,$80,$00,$00	; -1/1! (-1/1)
+;##	!text	$81,$00,$00,$00	;  1/0! ( 1/1)
 
 					; trigonometric constants and series
 LAB_2C78
-	!byte	$81,$49,$0F,$DB	; 1.570796371 (pi/2) as floating #
+	!text	$81,$49,$0F,$DB	; 1.570796371 (pi/2) as floating #
 LAB_2C84
-	!byte	$04			; counter
-	!byte	$86,$1E,$D7,$FB	; 39.7109
-;##	!byte	$86,$1E,$D7,$BA	; 39.7109
-	!byte	$87,$99,$26,$65	;-76.575
-;##	!byte	$87,$99,$26,$64	;-76.575
-	!byte	$87,$23,$34,$58	; 81.6022
-	!byte	$86,$A5,$5D,$E1	;-41.3417
-;##	!byte	$86,$A5,$5D,$E0	;-41.3417
+	!text	$04			; counter
+	!text	$86,$1E,$D7,$FB	; 39.7109
+;##	!text	$86,$1E,$D7,$BA	; 39.7109
+	!text	$87,$99,$26,$65	;-76.575
+;##	!text	$87,$99,$26,$64	;-76.575
+	!text	$87,$23,$34,$58	; 81.6022
+	!text	$86,$A5,$5D,$E1	;-41.3417
+;##	!text	$86,$A5,$5D,$E0	;-41.3417
 LAB_2C7C
-	!byte	$83,$49,$0F,$DB	; 6.28319 (2*pi) as floating #
-;##	!byte	$83,$49,$0F,$DA	; 6.28319 (2*pi) as floating #
+	!text	$83,$49,$0F,$DB	; 6.28319 (2*pi) as floating #
+;##	!text	$83,$49,$0F,$DA	; 6.28319 (2*pi) as floating #
 
 LAB_2CC9
-	!byte	$08			; counter
-	!byte	$78,$3A,$C5,$37	; 0.00285
-	!byte	$7B,$83,$A2,$5C	;-0.0160686
-	!byte	$7C,$2E,$DD,$4D	; 0.0426915
-	!byte	$7D,$99,$B0,$1E	;-0.0750429
-	!byte	$7D,$59,$ED,$24	; 0.106409
-	!byte	$7E,$91,$72,$00	;-0.142036
-	!byte	$7E,$4C,$B9,$73	; 0.199926
-	!byte	$7F,$AA,$AA,$53	;-0.333331
+	!text	$08			; counter
+	!text	$78,$3A,$C5,$37	; 0.00285
+	!text	$7B,$83,$A2,$5C	;-0.0160686
+	!text	$7C,$2E,$DD,$4D	; 0.0426915
+	!text	$7D,$99,$B0,$1E	;-0.0750429
+	!text	$7D,$59,$ED,$24	; 0.106409
+	!text	$7E,$91,$72,$00	;-0.142036
+	!text	$7E,$4C,$B9,$73	; 0.199926
+	!text	$7F,$AA,$AA,$53	;-0.333331
 
-;##	!byte	$08			; counter
-;##	!byte	$78,$3B,$D7,$4A	; 1/17
-;##	!byte	$7B,$84,$6E,$02	;-1/15
-;##	!byte	$7C,$2F,$C1,$FE	; 1/13
-;##	!byte	$7D,$9A,$31,$74	;-1/11
-;##	!byte	$7D,$5A,$3D,$84	; 1/9
-;##	!byte	$7E,$91,$7F,$C8	;-1/7
-;##	!byte	$7E,$4C,$BB,$E4	; 1/5
-;##	!byte	$7F,$AA,$AA,$6C	;-1/3
+;##	!text	$08			; counter
+;##	!text	$78,$3B,$D7,$4A	; 1/17
+;##	!text	$7B,$84,$6E,$02	;-1/15
+;##	!text	$7C,$2F,$C1,$FE	; 1/13
+;##	!text	$7D,$9A,$31,$74	;-1/11
+;##	!text	$7D,$5A,$3D,$84	; 1/9
+;##	!text	$7E,$91,$7F,$C8	;-1/7
+;##	!text	$7E,$4C,$BB,$E4	; 1/5
+;##	!text	$7F,$AA,$AA,$6C	;-1/3
 
 LAB_1D96	= *+1			; $00,$00 used for undefined variables
 LAB_259C
-	!byte	$81,$00,$00,$00	; 1.000000, used for INC
+	!text	$81,$00,$00,$00	; 1.000000, used for INC
 LAB_2AFD
-	!byte	$81,$80,$00,$00	; -1.00000, used for DEC. must be on the same page as +1.00
+	!text	$81,$80,$00,$00	; -1.00000, used for DEC. must be on the same page as +1.00
 
 					; misc constants
 LAB_1DF7
-	!byte	$90			;-32768 (uses first three bytes from 0.5)
+	!text	$90			;-32768 (uses first three bytes from 0.5)
 LAB_2A96
-	!byte	$80,$00,$00,$00	; 0.5
+	!text	$80,$00,$00,$00	; 0.5
 LAB_2C80
-	!byte	$7F,$00,$00,$00	; 0.25
+	!text	$7F,$00,$00,$00	; 0.25
 LAB_26B5
-	!byte	$84,$20,$00,$00	; 10.0000 divide by 10 constant
+	!text	$84,$20,$00,$00	; 10.0000 divide by 10 constant
 
 ; This table is used in converting numbers to ASCII.
 
 LAB_2A9A
 LAB_2A9B = LAB_2A9A+1
 LAB_2A9C = LAB_2A9B+1
-	!byte	$FE,$79,$60		; -100000
-	!byte	$00,$27,$10		; 10000
-	!byte	$FF,$FC,$18		; -1000
-	!byte	$00,$00,$64		; 100
-	!byte	$FF,$FF,$F6		; -10
-	!byte	$00,$00,$01		; 1
+	!text	$FE,$79,$60		; -100000
+	!text	$00,$27,$10		; 10000
+	!text	$FF,$FC,$18		; -1000
+	!text	$00,$00,$64		; 100
+	!text	$FF,$FF,$F6		; -10
+	!text	$00,$00,$01		; 1
 
 LAB_CTBL
 	!word	LAB_END-1		; END
@@ -8190,67 +8053,67 @@ LAB_FTBM	= LAB_FTBL+$01
 ; hierarchy and action addresses for operator
 
 LAB_OPPT
-	!byte	$79			; +
+	!text	$79			; +
 	!word	LAB_ADD-1
-	!byte	$79			; -
+	!text	$79			; -
 	!word	LAB_SUBTRACT-1
-	!byte	$7B			; *
+	!text	$7B			; *
 	!word	LAB_MULTIPLY-1
-	!byte	$7B			; /
+	!text	$7B			; /
 	!word	LAB_DIVIDE-1
-	!byte	$7F			; ^
+	!text	$7F			; ^
 	!word	LAB_POWER-1
-	!byte	$50			; AND
+	!text	$50			; AND
 	!word	LAB_AND-1
-	!byte	$46			; EOR			new operator
+	!text	$46			; EOR			new operator
 	!word	LAB_EOR-1
-	!byte	$46			; OR
+	!text	$46			; OR
 	!word	LAB_OR-1
-	!byte	$56			; >>			new operator
+	!text	$56			; >>			new operator
 	!word	LAB_RSHIFT-1
-	!byte	$56			; <<			new operator
+	!text	$56			; <<			new operator
 	!word	LAB_LSHIFT-1
-	!byte	$7D			; >
+	!text	$7D			; >
 	!word	LAB_GTHAN-1
-	!byte	$5A			; =
+	!text	$5A			; =
 	!word	LAB_EQUAL-1
-	!byte	$64			; <
+	!text	$64			; <
 	!word	LAB_LTHAN-1
 
 ; keywords start with ..
 ; this is the first character table and must be in alphabetic order
 
 TAB_1STC
-	!byte	"*"
-	!byte	"+"
-	!byte	"-"
-	!byte	"/"
-	!byte	"<"
-	!byte	"="
-	!byte	">"
-	!byte	"?"
-	!byte	"A"
-	!byte	"B"
-	!byte	"C"
-	!byte	"D"
-	!byte	"E"
-	!byte	"F"
-	!byte	"G"
-	!byte	"H"
-	!byte	"I"
-	!byte	"L"
-	!byte	"M"
-	!byte	"N"
-	!byte	"O"
-	!byte	"P"
-	!byte	"R"
-	!byte	"S"
-	!byte	"T"
-	!byte	"U"
-	!byte	"V"
-	!byte	"W"
-	!byte	"^"
-	!byte	$00			; table terminator
+	!text	"*"
+	!text	"+"
+	!text	"-"
+	!text	"/"
+	!text	"<"
+	!text	"="
+	!text	">"
+	!text	"?"
+	!text	"A"
+	!text	"B"
+	!text	"C"
+	!text	"D"
+	!text	"E"
+	!text	"F"
+	!text	"G"
+	!text	"H"
+	!text	"I"
+	!text	"L"
+	!text	"M"
+	!text	"N"
+	!text	"O"
+	!text	"P"
+	!text	"R"
+	!text	"S"
+	!text	"T"
+	!text	"U"
+	!text	"V"
+	!text	"W"
+	!text	"^"
+	!text	$00			; table terminator
 
 ; pointers to keyword tables
 
@@ -8294,27 +8157,27 @@ TAB_CHRT
 ; end marker (#$00)
 
 TAB_STAR
-	!byte TK_MUL,$00		; *
+	!text TK_MUL,$00		; *
 TAB_PLUS
-	!byte TK_PLUS,$00		; +
+	!text TK_PLUS,$00		; +
 TAB_MNUS
-	!byte TK_MINUS,$00	; -
+	!text TK_MINUS,$00	; -
 TAB_SLAS
-	!byte TK_DIV,$00		; /
+	!text TK_DIV,$00		; /
 TAB_LESS
 LBB_LSHIFT
-	!byte	"<",TK_LSHIFT	; <<	note - "<<" must come before "<"
-	!byte TK_LT			; <
-	!byte	$00
+	!text	"<",TK_LSHIFT	; <<	note - "<<" must come before "<"
+	!text TK_LT			; <
+	!text	$00
 TAB_EQUL
-	!byte TK_EQUAL,$00	; =
+	!text TK_EQUAL,$00	; =
 TAB_MORE
 LBB_RSHIFT
-	!byte	">",TK_RSHIFT	; >>	note - ">>" must come before ">"
-	!byte TK_GT			; >
-	!byte	$00
+	!text	">",TK_RSHIFT	; >>	note - ">>" must come before ">"
+	!text TK_GT			; >
+	!text	$00
 TAB_QEST
-	!byte TK_PRINT,$00	; ?
+	!text TK_PRINT,$00	; ?
 TAB_ASCA
 LBB_ABS
 	!text	"BS(",TK_ABS	; ABS(
@@ -8324,7 +8187,7 @@ LBB_ASC
 	!text	"SC(",TK_ASC	; ASC(
 LBB_ATN
 	!text	"TN(",TK_ATN	; ATN(
-	!byte	$00
+	!text	$00
 TAB_ASCB
 LBB_BINS
 	!text	"IN$(",TK_BINS	; BIN$(
@@ -8335,7 +8198,7 @@ LBB_BITSET
 LBB_BITTST
 	!text	"ITTST(",TK_BITTST
 					; BITTST(
-	!byte	$00
+	!text	$00
 TAB_ASCC
 LBB_CALL
 	!text	"ALL",TK_CALL	; CALL
@@ -8363,7 +8226,7 @@ LBB_DOKE
 	!text	"OKE",TK_DOKE	; DOKE note - "DOKE" must come before "DO"
 LBB_DO
 	!text	"O",TK_DO		; DO
-	!byte	$00
+	!text	$00
 TAB_ASCE
 LBB_ELSE
 	!text	"LSE",TK_ELSE	; ELSE
@@ -8373,7 +8236,7 @@ LBB_EOR
 	!text	"OR",TK_EOR		; EOR
 LBB_EXP
 	!text	"XP(",TK_EXP	; EXP(
-	!byte	$00
+	!text	$00
 TAB_ASCF
 LBB_FN
 	!text	"N",TK_FN		; FN
@@ -8381,7 +8244,7 @@ LBB_FOR
 	!text	"OR",TK_FOR		; FOR
 LBB_FRE
 	!text	"RE(",TK_FRE	; FRE(
-	!byte	$00
+	!text	$00
 TAB_ASCG
 LBB_GET
 	!text	"ET",TK_GET		; GET
@@ -8389,11 +8252,11 @@ LBB_GOSUB
 	!text	"OSUB",TK_GOSUB	; GOSUB
 LBB_GOTO
 	!text	"OTO",TK_GOTO	; GOTO
-	!byte	$00
+	!text	$00
 TAB_ASCH
 LBB_HEXS
 	!text	"EX$(",TK_HEXS	; HEX$(
-	!byte	$00
+	!text	$00
 TAB_ASCI
 LBB_IF
 	!text	"F",TK_IF		; IF
@@ -8405,7 +8268,7 @@ LBB_INT
 	!text	"NT(",TK_INT	; INT(
 LBB_IRQ
 	!text	"RQ",TK_IRQ		; IRQ
-	!byte	$00
+	!text	$00
 TAB_ASCL
 LBB_LCASES
 	!text	"CASE$(",TK_LCASES
@@ -8424,7 +8287,7 @@ LBB_LOG
 	!text	"OG(",TK_LOG	; LOG(
 LBB_LOOP
 	!text	"OOP",TK_LOOP	; LOOP
-	!byte	$00
+	!text	$00
 TAB_ASCM
 LBB_MAX
 	!text	"AX(",TK_MAX	; MAX(
@@ -8432,7 +8295,7 @@ LBB_MIDS
 	!text	"ID$(",TK_MIDS	; MID$(
 LBB_MIN
 	!text	"IN(",TK_MIN	; MIN(
-	!byte	$00
+	!text	$00
 TAB_ASCN
 LBB_NEW
 	!text	"EW",TK_NEW		; NEW
@@ -8444,7 +8307,7 @@ LBB_NOT
 	!text	"OT",TK_NOT		; NOT
 LBB_NULL
 	!text	"ULL",TK_NULL	; NULL
-	!byte	$00
+	!text	$00
 TAB_ASCO
 LBB_OFF
 	!text	"FF",TK_OFF		; OFF
@@ -8452,19 +8315,19 @@ LBB_ON
 	!text	"N",TK_ON		; ON
 LBB_OR
 	!text	"R",TK_OR		; OR
-	!byte	$00
+	!text	$00
 TAB_ASCP
 LBB_PEEK
 	!text	"EEK(",TK_PEEK	; PEEK(
 LBB_PI
-	!byte	"I",TK_PI		; PI
+	!text	"I",TK_PI		; PI
 LBB_POKE
 	!text	"OKE",TK_POKE	; POKE
 LBB_POS
 	!text	"OS(",TK_POS	; POS(
 LBB_PRINT
 	!text	"RINT",TK_PRINT	; PRINT
-	!byte	$00
+	!text	$00
 TAB_ASCR
 LBB_READ
 	!text	"EAD",TK_READ	; READ
@@ -8486,7 +8349,7 @@ LBB_RND
 	!text	"ND(",TK_RND	; RND(
 LBB_RUN
 	!text	"UN",TK_RUN		; RUN
-	!byte	$00
+	!text	$00
 TAB_ASCS
 LBB_SADD
 	!text	"ADD(",TK_SADD	; SADD(
@@ -8508,7 +8371,7 @@ LBB_STRS
 	!text	"TR$(",TK_STRS	; STR$(
 LBB_SWAP
 	!text	"WAP",TK_SWAP	; SWAP
-	!byte	$00
+	!text	$00
 TAB_ASCT
 LBB_TAB
 	!text	"AB(",TK_TAB	; TAB(
@@ -8520,7 +8383,7 @@ LBB_TO
 	!text	"O",TK_TO		; TO
 LBB_TWOPI
 	!text	"WOPI",TK_TWOPI	; TWOPI
-	!byte	$00
+	!text	$00
 TAB_ASCU
 LBB_UCASES
 	!text	"CASE$(",TK_UCASES
@@ -8529,13 +8392,13 @@ LBB_UNTIL
 	!text	"NTIL",TK_UNTIL	; UNTIL
 LBB_USR
 	!text	"SR(",TK_USR	; USR(
-	!byte	$00
+	!text	$00
 TAB_ASCV
 LBB_VAL
 	!text	"AL(",TK_VAL	; VAL(
 LBB_VPTR
 	!text	"ARPTR(",TK_VPTR	; VARPTR(
-	!byte	$00
+	!text	$00
 TAB_ASCW
 LBB_WAIT
 	!text	"AIT",TK_WAIT	; WAIT
@@ -8543,9 +8406,9 @@ LBB_WHILE
 	!text	"HILE",TK_WHILE	; WHILE
 LBB_WIDTH
 	!text	"IDTH",TK_WIDTH	; WIDTH
-	!byte	$00
+	!text	$00
 TAB_POWR
-	!byte	TK_POWER,$00	; ^
+	!text	TK_POWER,$00	; ^
 
 ; new decode table for LIST
 ; Table is ..
@@ -8555,218 +8418,218 @@ TAB_POWR
 ; note if length is 1 then the pointer is ignored
 
 LAB_KEYT
-	!byte	3,'E'
+	!text	3,'E'
 	!word	LBB_END		; END
-	!byte	3,'F'
+	!text	3,'F'
 	!word	LBB_FOR		; FOR
-	!byte	4,'N'
+	!text	4,'N'
 	!word	LBB_NEXT		; NEXT
-	!byte	4,'D'
+	!text	4,'D'
 	!word	LBB_DATA		; DATA
-	!byte	5,'I'
+	!text	5,'I'
 	!word	LBB_INPUT		; INPUT
-	!byte	3,'D'
+	!text	3,'D'
 	!word	LBB_DIM		; DIM
-	!byte	4,'R'
+	!text	4,'R'
 	!word	LBB_READ		; READ
-	!byte	3,'L'
+	!text	3,'L'
 	!word	LBB_LET		; LET
-	!byte	3,'D'
+	!text	3,'D'
 	!word	LBB_DEC		; DEC
-	!byte	4,'G'
+	!text	4,'G'
 	!word	LBB_GOTO		; GOTO
-	!byte	3,'R'
+	!text	3,'R'
 	!word	LBB_RUN		; RUN
-	!byte	2,'I'
+	!text	2,'I'
 	!word	LBB_IF		; IF
-	!byte	7,'R'
+	!text	7,'R'
 	!word	LBB_RESTORE		; RESTORE
-	!byte	5,'G'
+	!text	5,'G'
 	!word	LBB_GOSUB		; GOSUB
-	!byte	6,'R'
+	!text	6,'R'
 	!word	LBB_RETIRQ		; RETIRQ
-	!byte	6,'R'
+	!text	6,'R'
 	!word	LBB_RETNMI		; RETNMI
-	!byte	6,'R'
+	!text	6,'R'
 	!word	LBB_RETURN		; RETURN
-	!byte	3,'R'
+	!text	3,'R'
 	!word	LBB_REM		; REM
-	!byte	4,'S'
+	!text	4,'S'
 	!word	LBB_STOP		; STOP
-	!byte	2,'O'
+	!text	2,'O'
 	!word	LBB_ON		; ON
-	!byte	4,'N'
+	!text	4,'N'
 	!word	LBB_NULL		; NULL
-	!byte	3,'I'
+	!text	3,'I'
 	!word	LBB_INC		; INC
-	!byte	4,'W'
+	!text	4,'W'
 	!word	LBB_WAIT		; WAIT
-	!byte	4,'L'
+	!text	4,'L'
 	!word	LBB_LOAD		; LOAD
-	!byte	4,'S'
+	!text	4,'S'
 	!word	LBB_SAVE		; SAVE
-	!byte	3,'D'
+	!text	3,'D'
 	!word	LBB_DEF		; DEF
-	!byte	4,'P'
+	!text	4,'P'
 	!word	LBB_POKE		; POKE
-	!byte	4,'D'
+	!text	4,'D'
 	!word	LBB_DOKE		; DOKE
-	!byte	4,'C'
+	!text	4,'C'
 	!word	LBB_CALL		; CALL
-	!byte	2,'D'
+	!text	2,'D'
 	!word	LBB_DO		; DO
-	!byte	4,'L'
+	!text	4,'L'
 	!word	LBB_LOOP		; LOOP
-	!byte	5,'P'
+	!text	5,'P'
 	!word	LBB_PRINT		; PRINT
-	!byte	4,'C'
+	!text	4,'C'
 	!word	LBB_CONT		; CONT
-	!byte	4,'L'
+	!text	4,'L'
 	!word	LBB_LIST		; LIST
-	!byte	5,'C'
+	!text	5,'C'
 	!word	LBB_CLEAR		; CLEAR
-	!byte	3,'N'
+	!text	3,'N'
 	!word	LBB_NEW		; NEW
-	!byte	5,'W'
+	!text	5,'W'
 	!word	LBB_WIDTH		; WIDTH
-	!byte	3,'G'
+	!text	3,'G'
 	!word	LBB_GET		; GET
-	!byte	4,'S'
+	!text	4,'S'
 	!word	LBB_SWAP		; SWAP
-	!byte	6,'B'
+	!text	6,'B'
 	!word	LBB_BITSET		; BITSET
-	!byte	6,'B'
+	!text	6,'B'
 	!word	LBB_BITCLR		; BITCLR
-	!byte	3,'I'
+	!text	3,'I'
 	!word	LBB_IRQ		; IRQ
-	!byte	3,'N'
+	!text	3,'N'
 	!word	LBB_NMI		; NMI
 
 ; secondary commands (can't start a statement)
 
-	!byte	4,'T'
+	!text	4,'T'
 	!word	LBB_TAB		; TAB
-	!byte	4,'E'
+	!text	4,'E'
 	!word	LBB_ELSE		; ELSE
-	!byte	2,'T'
+	!text	2,'T'
 	!word	LBB_TO		; TO
-	!byte	2,'F'
+	!text	2,'F'
 	!word	LBB_FN		; FN
-	!byte	4,'S'
+	!text	4,'S'
 	!word	LBB_SPC		; SPC
-	!byte	4,'T'
+	!text	4,'T'
 	!word	LBB_THEN		; THEN
-	!byte	3,'N'
+	!text	3,'N'
 	!word	LBB_NOT		; NOT
-	!byte	4,'S'
+	!text	4,'S'
 	!word	LBB_STEP		; STEP
-	!byte	5,'U'
+	!text	5,'U'
 	!word	LBB_UNTIL		; UNTIL
-	!byte	5,'W'
+	!text	5,'W'
 	!word	LBB_WHILE		; WHILE
-	!byte	3,'O'
+	!text	3,'O'
 	!word	LBB_OFF		; OFF
 
 ; opperators
 
-	!byte	1,'+'
+	!text	1,'+'
 	!word	$0000			; +
-	!byte	1,'-'
+	!text	1,'-'
 	!word	$0000			; -
-	!byte	1,'*'
+	!text	1,'*'
 	!word	$0000			; *
-	!byte	1,'/'
+	!text	1,'/'
 	!word	$0000			; /
-	!byte	1,'^'
+	!text	1,'^'
 	!word	$0000			; ^
-	!byte	3,'A'
+	!text	3,'A'
 	!word	LBB_AND		; AND
-	!byte	3,'E'
+	!text	3,'E'
 	!word	LBB_EOR		; EOR
-	!byte	2,'O'
+	!text	2,'O'
 	!word	LBB_OR		; OR
-	!byte	2,'>'
+	!text	2,'>'
 	!word	LBB_RSHIFT		; >>
-	!byte	2,'<'
+	!text	2,'<'
 	!word	LBB_LSHIFT		; <<
-	!byte	1,'>'
+	!text	1,'>'
 	!word	$0000			; >
-	!byte	1,'='
+	!text	1,'='
 	!word	$0000			; =
-	!byte	1,'<'
+	!text	1,'<'
 	!word	$0000			; <
 
 ; functions
 
-	!byte	4,'S'			;
+	!text	4,'S'			;
 	!word	LBB_SGN		; SGN
-	!byte	4,'I'			;
+	!text	4,'I'			;
 	!word	LBB_INT		; INT
-	!byte	4,'A'			;
+	!text	4,'A'			;
 	!word	LBB_ABS		; ABS
-	!byte	4,'U'			;
+	!text	4,'U'			;
 	!word	LBB_USR		; USR
-	!byte	4,'F'			;
+	!text	4,'F'			;
 	!word	LBB_FRE		; FRE
-	!byte	4,'P'			;
+	!text	4,'P'			;
 	!word	LBB_POS		; POS
-	!byte	4,'S'			;
+	!text	4,'S'			;
 	!word	LBB_SQR		; SQR
-	!byte	4,'R'			;
+	!text	4,'R'			;
 	!word	LBB_RND		; RND
-	!byte	4,'L'			;
+	!text	4,'L'			;
 	!word	LBB_LOG		; LOG
-	!byte	4,'E'			;
+	!text	4,'E'			;
 	!word	LBB_EXP		; EXP
-	!byte	4,'C'			;
+	!text	4,'C'			;
 	!word	LBB_COS		; COS
-	!byte	4,'S'			;
+	!text	4,'S'			;
 	!word	LBB_SIN		; SIN
-	!byte	4,'T'			;
+	!text	4,'T'			;
 	!word	LBB_TAN		; TAN
-	!byte	4,'A'			;
+	!text	4,'A'			;
 	!word	LBB_ATN		; ATN
-	!byte	5,'P'			;
+	!text	5,'P'			;
 	!word	LBB_PEEK		; PEEK
-	!byte	5,'D'			;
+	!text	5,'D'			;
 	!word	LBB_DEEK		; DEEK
-	!byte	5,'S'			;
+	!text	5,'S'			;
 	!word	LBB_SADD		; SADD
-	!byte	4,'L'			;
+	!text	4,'L'			;
 	!word	LBB_LEN		; LEN
-	!byte	5,'S'			;
+	!text	5,'S'			;
 	!word	LBB_STRS		; STR$
-	!byte	4,'V'			;
+	!text	4,'V'			;
 	!word	LBB_VAL		; VAL
-	!byte	4,'A'			;
+	!text	4,'A'			;
 	!word	LBB_ASC		; ASC
-	!byte	7,'U'			;
+	!text	7,'U'			;
 	!word	LBB_UCASES		; UCASE$
-	!byte	7,'L'			;
+	!text	7,'L'			;
 	!word	LBB_LCASES		; LCASE$
-	!byte	5,'C'			;
+	!text	5,'C'			;
 	!word	LBB_CHRS		; CHR$
-	!byte	5,'H'			;
+	!text	5,'H'			;
 	!word	LBB_HEXS		; HEX$
-	!byte	5,'B'			;
+	!text	5,'B'			;
 	!word	LBB_BINS		; BIN$
-	!byte	7,'B'			;
+	!text	7,'B'			;
 	!word	LBB_BITTST		; BITTST
-	!byte	4,'M'			;
+	!text	4,'M'			;
 	!word	LBB_MAX		; MAX
-	!byte	4,'M'			;
+	!text	4,'M'			;
 	!word	LBB_MIN		; MIN
-	!byte	2,'P'			;
+	!text	2,'P'			;
 	!word	LBB_PI		; PI
-	!byte	5,'T'			;
+	!text	5,'T'			;
 	!word	LBB_TWOPI		; TWOPI
-	!byte	7,'V'			;
+	!text	7,'V'			;
 	!word	LBB_VPTR		; VARPTR
-	!byte	6,'L'			;
+	!text	6,'L'			;
 	!word	LBB_LEFTS		; LEFT$
-	!byte	7,'R'			;
+	!text	7,'R'			;
 	!word	LBB_RIGHTS		; RIGHT$
-	!byte	5,'M'			;
+	!text	5,'M'			;
 	!word	LBB_MIDS		; MID$
 
 ; BASIC messages, mostly error messages
@@ -8819,11 +8682,11 @@ ERR_CN	!text	"Can't continue",$00
 ERR_UF	!text	"Undefined function",$00
 ERR_LD	!text	"LOOP without DO",$00
 
-;ERR_UV	!byte	"Undefined variable",$00
+;ERR_UV	!text	"Undefined variable",$00
 
 ; the above error has been tested and works (see code and comments below LAB_1D8B)
 
-;ERR_UA	!byte	"Undimensioned array",$00
+;ERR_UA	!text	"Undimensioned array",$00
 
 LAB_BMSG	!text	$0D,$0A,"Break",$00
 LAB_EMSG	!text	" Error",$00
