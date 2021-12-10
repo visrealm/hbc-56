@@ -12,6 +12,7 @@
 #include "debugger.h"
 
 #include <stdlib.h>
+#include <ctype.h>
 
 #define DEBUGGER_STRIDE (DEBUGGER_WIDTH_PX * DEBUGGER_BPP)
 

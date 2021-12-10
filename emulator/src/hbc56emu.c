@@ -36,7 +36,10 @@ uint16_t ioPage = 0x7f00;
 #define TMS9918_FPS 60
 #define TMS9918_DAT_ADDR 0x10
 #define TMS9918_REG_ADDR 0x11
-#define NES_IO_PORT 0x82 // 0x81
+
+// currently keyboard and NES use the same port (I haven't built separate hardware... yet)
+// NES controller is the default.  Use the --keyboard command-line to enable the keyboard instead
+#define NES_IO_PORT 0x81  
 #define KB_IO_PORT 0x81
 
 SDL_AudioDeviceID audioDevice;
@@ -80,6 +83,7 @@ byte psg0Addr = 0;
 byte psg1Addr = 0;
 
 byte kbReadCount = 0;
+int keyboardMode = 0;
 
 uint8_t io_read(uint8_t addr)
 {
@@ -102,7 +106,23 @@ uint8_t io_read(uint8_t addr)
       }
       break;
 
-    case NES_IO_PORT:
+    case NES_IO_PORT:  /* same as KB_IO_PORT */
+    if (keyboardMode)
+    {
+      val = 0x00;
+      if (kbEnd != kbStart)
+      {
+        val = kbQueue[kbStart];
+
+        if (++kbReadCount & 0x01)
+        {
+          ++kbStart;
+          kbStart &= 0x0f;
+        }
+
+      }
+    }
+    else
     {
       const Uint8* keystate = SDL_GetKeyboardState(NULL);
       int isNumLockOff = (SDL_GetModState() & KMOD_NUM) == 0;
@@ -142,25 +162,6 @@ uint8_t io_read(uint8_t addr)
       }
 
       val = ~val;
-    }
-    break;
-
-
-    case KB_IO_PORT:
-    {
-      val = 0x00;
-      if (kbEnd != kbStart)
-      {
-        val = kbQueue[kbStart];
-
-        if (++kbReadCount & 0x01)
-        {
-          ++kbStart;
-          kbStart &= 0x0f;
-        }       
-        
-      }
-      
     }
     break;
   }
@@ -244,7 +245,7 @@ void mem_write(uint16_t addr, uint8_t val)
 
   else if (addr < 0x8000)
   {
-    ram[addr] = val;
+    ram[addr & 0x7fff] = val;
   }
 }
 
@@ -441,10 +442,10 @@ loop()
     SDL_UpdateTexture(screenTex, NULL, frameBuffer, LOGICAL_DISPLAY_SIZE_X * LOGICAL_DISPLAY_BPP);
 
     SDL_Rect dest;
-    dest.x = (LOGICAL_DISPLAY_SIZE_X * 1.5 - LOGICAL_DISPLAY_SIZE_X) / 2;
+    dest.x = (int)(LOGICAL_DISPLAY_SIZE_X * 1.5 - LOGICAL_DISPLAY_SIZE_X) / 2;
     dest.y = 0;
-    dest.w = LOGICAL_DISPLAY_SIZE_X * 1.5;
-    dest.h = LOGICAL_WINDOW_SIZE_Y;
+    dest.w = (int)(LOGICAL_DISPLAY_SIZE_X * 1.5);
+    dest.h = (int)(LOGICAL_WINDOW_SIZE_Y);
     if (debugWindowShown)
     {
       dest.x = 0;
@@ -462,8 +463,8 @@ loop()
 
       debuggerUpdate(debugWindowTex);//, NULL, debugFrameBuffer, DEBUGGER_WIDTH_PX * LOGICAL_DISPLAY_BPP);
       dest.x = dest.w;
-      dest.w = DEBUGGER_WIDTH_PX * .5;
-      dest.h = DEBUGGER_HEIGHT_PX * .5;
+      dest.w = (int)(DEBUGGER_WIDTH_PX * .5);
+      dest.h = (int)(DEBUGGER_HEIGHT_PX * .5);
       SDL_RenderCopy(renderer, debugWindowTex, NULL, &dest);
     }
 
@@ -474,6 +475,11 @@ loop()
     switch (event.type) {
       case SDL_KEYDOWN:
         {
+          if (event.key.keysym.sym == SDLK_F5) break;
+          if (event.key.keysym.sym == SDLK_F10) break;
+          if (event.key.keysym.sym == SDLK_F11) break;
+          if (event.key.keysym.sym == SDLK_F12) break;
+
           uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][0];
           for (int i = 0; i < 8; ++i)
           {
@@ -489,6 +495,11 @@ loop()
 
       case SDL_KEYUP:
         {
+        if (event.key.keysym.sym == SDLK_F5) break;
+        if (event.key.keysym.sym == SDLK_F10) break;
+        if (event.key.keysym.sym == SDLK_F11) break;
+        if (event.key.keysym.sym == SDLK_F12) break;
+
         uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][1];
         for (int i = 0; i < 8; ++i)
         {
@@ -538,6 +549,9 @@ main(int argc, char* argv[])
 
   char labelMapFile[FILENAME_MAX] = {0};
 
+  memset(ram, 0xff, sizeof(ram));
+  memset(rom, 0xff, sizeof(rom));
+
   /* Initialize test framework */
   state = SDLCommonCreateState(argv, SDL_INIT_VIDEO | SDL_INIT_AUDIO);
   if (!state) {
@@ -566,6 +580,12 @@ main(int argc, char* argv[])
             size_t ln = SDL_strlen(labelMapFile);
             SDL_strlcpy(labelMapFile + ln - 2, ".o.lmap", FILENAME_MAX - ln);
           }
+          else
+          {
+            SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' does not exist.", argv[i + 1]);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+            return 2;
+          }
 
           ++i;
         }
@@ -575,6 +595,12 @@ main(int argc, char* argv[])
       {
         consumed = 1;
         debugPaused = 1;
+      }
+      /* use keyboard instead of NES controller */
+      else if (SDL_strcasecmp(argv[i], "--keyboard") == 0)
+      {
+        consumed = 1;
+        keyboardMode = 1;
       }
 
     }

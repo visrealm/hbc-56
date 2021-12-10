@@ -1907,22 +1907,22 @@ break;
     case SDLK_KP_9:
       if (withControl)
       {
-        debugTmsMemoryAddr -= 64;
+        debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
       }
       else
       {
-        debugMemoryAddr -= 64;
+        debugMemoryAddr -= withShift ? 0x1000 : 64;
       }
       break;
     case SDLK_PAGEDOWN:
     case SDLK_KP_3:
       if (withControl)
       {
-        debugTmsMemoryAddr += 64;
+        debugTmsMemoryAddr += withShift ? 0x1000 : 64;
       }
       else
       {
-        debugMemoryAddr += 64;
+        debugMemoryAddr += withShift ? 0x1000 : 64;
       }
       break;
 
