@@ -1,4 +1,4 @@
-# hbc-56
+# Troy's HBC-56
 My Homebrew 8-bit Computer
 
 <img src="img/repository.png" alt="HBC-56" width="640px">
@@ -35,16 +35,38 @@ The emulator defaults to NES mode. The buttons are mapped as follows:
 * Start= Space
 
 #### Keyboard mode
-Use the --keyboard command line option to run the emulator in keyboard mode. Some of the demos require this and the makefiles are set up accordingly.
+Use the `--keyboard` command line option to run the emulator in keyboard mode. Some of the demos require this and the makefiles are set up accordingly.
  
 
 ## Running the demos
 1. Build the emulator in MSVC (emulator\msvc\Hbc56Emu.sln) - Release mode
-2. For each path (basic, invaders, tests\tms, tests\sfx), open a console to the path and type make (this will build the default program and run it in the emulator:
+2. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system
+3. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your path
+4. For each path (basic, invaders, tests\tms, tests\sfx):
+ * Open a console to the path
+ * Type `make` (this will build the default program and run it in the emulator:
 
- <img src="img/make.png" alt="Make the demos" width="640px">
+  <img src="img/make.png" alt="Make the demos" width="640px">
 
 <img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="1279px">
+
+#### Manually building a demo
+Example: invaders
+```
+cd code\6502\invaders
+acme -I ..\lib -I ..\kernel -o invaders.o -l invaders.o.lmap invaders.asm
+```
+#### Manually running a demo
+Example: invaders
+```
+cd code\6502\invaders
+..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe --rom invaders.o
+```
+Example: basic
+```
+cd code\6502\basic
+..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
+```
 
 
 ## Videos
