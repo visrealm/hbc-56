@@ -7,7 +7,7 @@ ACME=acme -I ..\lib -I ..\kernel
 	
 remake: default
 
-default: hbc56_mon
+default: basic_tms
 
 %: %.o
 	$(EMU) --keyboard --rom $^
