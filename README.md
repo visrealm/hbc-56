@@ -48,6 +48,13 @@ Use the `--keyboard` command line option to run the emulator in keyboard mode. S
 
   <img src="img/make.png" alt="Make the demos" width="640px">
 
+ * Type `make <basefile>` (filename without extension) to build and run a specific demo eg:
+
+```
+cd code\6502\tests\tms
+make tms9918gfx2text
+```
+
 <img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="1279px">
 
 #### Manually building a demo
