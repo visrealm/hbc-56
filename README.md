@@ -25,9 +25,27 @@ I have also included an emulator for this system. The emulator supports:
 * Examine CPU and VDP registers, RAM and VRAM.
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: https://github.com/visrealm/vrEmuTms9918
 * Support for the dual AY-3-8910 audio.
+
+#### NES mode
+The emulator defaults to NES mode. The buttons are mapped as follows:
+* DPAD = Arrow keys
+* A = Left Shift
+* B = Left Ctrl
+* Select = Tab
+* Start= Space
+
+#### Keyboard mode
+Use the --keyboard command line option to run the emulator in keyboard mode. Some of the demos require this and the makefiles are set up accordingly.
  
 
+## Running the demos
+1. Build the emulator in MSVC (emulator\msvc\Hbc56Emu.sln) - Release mode
+2. For each path (basic, invaders, tests\tms, tests\sfx), open a console to the path and type make (this will build the default program and run it in the emulator:
+
+ <img src="img/make.png" alt="Make the demos" width="640px">
+
 <img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="1279px">
+
 
 ## Videos
 [![Backplane 6502 + TMS9918: Invaders](https://img.visualrealmsoftware.com/youtube/thumb/Ug6Ppz-NF2Q)](https://www.youtube.com/watch?v=Ug6Ppz-NF2Q "Backplane 6502 + TMS9918: Invaders")
