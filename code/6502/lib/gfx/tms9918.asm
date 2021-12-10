@@ -12,7 +12,7 @@
 
 !src "hbc56.inc"
 !src "ut/math_macros.asm"
-!src "gfx/tms9918macros.asm"
+!src "gfx/tms9918_macros.asm"
 
 TMS_FONT_DATA:
 !src "gfx/fonts/tms9918font2subset.asm"
@@ -27,7 +27,7 @@ TMS9918_REG1_SHADOW_ADDR = $7e11
 TMS9918_CONSOLE_X        = $7e12
 TMS9918_CONSOLE_Y        = $7e13
 TMS9918_CONSOLE_SIZE_X   = $7e14
-TMS9918_TMP_BUFFER       = $7e20 ; 32 bytes 
+TMS9918_TMP_BUFFER       = $7e20 ; 40 bytes 
 
 ; IO Ports
 TMS9918_RAM     = IO_PORT_BASE_ADDRESS | TMS9918_IO_ADDR
@@ -670,9 +670,10 @@ tmsConsoleScrollLine:
         rts
 
 ; -----------------------------------------------------------------------------
-; tmsIncPosConsole: Increment consoel position
+; tmsIncPosConsole: Increment console position
 ; -----------------------------------------------------------------------------
 tmsIncPosConsole:
+        ;!byte $db
         inc TMS9918_CONSOLE_X
         lda TMS9918_CONSOLE_X
         cmp TMS9918_CONSOLE_SIZE_X
@@ -683,7 +684,7 @@ tmsIncPosConsole:
 +
         lda TMS9918_CONSOLE_Y
         cmp #24
-        bne +
+        bcc +
         dec TMS9918_CONSOLE_Y
         jmp tmsConsoleScrollLine
 +

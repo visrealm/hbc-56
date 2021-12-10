@@ -8,8 +8,6 @@
 ;
 ;
 
-;!src "gfx/tms9918macros.asm"
-
 HBC56_BORDER     = TMS_DK_BLUE 
 HBC56_BACKGROUND = TMS_DK_BLUE
 HBC56_LOGO       = TMS_WHITE 
@@ -21,9 +19,14 @@ HBC56_TITLE_LEN = HBC56_TITLE_TEXT_LEN
 }
 
 HBC56_PRESS_ANY_KEY_TEXT:
-        !text "PRESS ANY KEY..."
+        !text "        PRESS ANY KEY...        "
 HBC56_PRESS_ANY_KEY_TEXT_LEN = * - HBC56_PRESS_ANY_KEY_TEXT
-        !byte 0 ; nul terminator for game name
+        !byte 0
+
+HBC56_PRESS_ANY_NES_TEXT:
+        !text "     PRESS 'A' TO BEGIN ...     "
+HBC56_PRESS_ANY_NES_TEXT_LEN = * - HBC56_PRESS_ANY_NES_TEXT
+        !byte 0
 
 
 hbc56BootScreen:

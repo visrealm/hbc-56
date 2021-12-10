@@ -15,7 +15,9 @@
 ; -------------------------
 KB_IO_PORT	= $81
 
-KB_FLAGS        = $7e81
+KB_FLAGS        = $7ea1
+KB_TMP_X        = $7ea2
+KB_TMP_Y        = $7ea3
 
 KB_SHIFT_DOWN   = %00000001
 KB_CTRL_DOWN    = %00000010
@@ -83,11 +85,40 @@ kbWaitForKey:
         rts
 
 ; -----------------------------------------------------------------------------
+; isAlpha: Is the ASCII character a letter (A-Z or a-z)
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: ASCII character
+; Outputs:
+;   Carry set if alpha, carry clear if not alpha
+; -----------------------------------------------------------------------------
+isAlpha:
+        cmp #'A'
+        bcc .notAlpha   ; less than 'A'?
+        cmp #'Z' + 1
+        bcc .isAlpha    ; less than or equal 'Z'?
+        cmp #'a'
+        bcc .notAlpha   ; less than 'a'?
+        cmp #'z' + 1
+        bcs .notAlpha   ; less than or equal 'z'?
+
+.isAlpha
+        sec
+        rts
+
+.notAlpha:
+        clc
+        rts
+
+; -----------------------------------------------------------------------------
 ; kbRead: Read keyboard buffer
 ; -----------------------------------------------------------------------------
 ; Outputs:
 ;   A: Value of the buffer
+; -----------------------------------------------------------------------------
 kbReadAscii:
+        stx KB_TMP_X
+        sty KB_TMP_Y
         jsr .kbReadByte
         cpx #KB_RELEASE
         bne .keyPressed
@@ -106,8 +137,7 @@ kbReadAscii:
         and KB_FLAGS
         sta KB_FLAGS
 +
-        lda #$ff
-        rts
+        jmp .noCharacterRead
 
 .keyPressed:
         cpx #KB_SCANCODE_LEFT_SHIFT
@@ -122,14 +152,12 @@ kbReadAscii:
         lda #KB_SHIFT_DOWN
         ora KB_FLAGS
         sta KB_FLAGS
-        lda #$ff
-        jmp .endKbReadAscii
+        jmp .noCharacterRead
 .capsLockPressed:
         lda #KB_CAPS_LOCK
         eor KB_FLAGS
         sta KB_FLAGS
-        lda #$ff
-        jmp .endKbReadAscii
+        jmp .noCharacterRead
 
 +
         lda #KB_SHIFT_DOWN
@@ -140,23 +168,32 @@ kbReadAscii:
 ++
         lda KEY_MAP, x
 .haveKey
-        ;jmp .endKbReadAscii
-        tax
         cmp #$ff
-        beq +
+        beq .noCharacterRead
+        tax
         lda #KB_CAPS_LOCK
         bit KB_FLAGS
-        beq +
+        beq .dontSwitchCase
         txa
-        and #$40
-        beq +
-        txa
+        jsr isAlpha
+        bcc .dontSwitchCase
         eor #$20
+        sec
+        ldx KB_TMP_X
+        ldy KB_TMP_Y
         rts
-+
-        txa
 
-.endKbReadAscii
+.dontSwitchCase
+        sec
+        txa
+        ldx KB_TMP_X
+        ldy KB_TMP_Y
+        rts
+
+.noCharacterRead
+        ldx KB_TMP_X
+        ldy KB_TMP_Y
+        clc
         rts
 
 

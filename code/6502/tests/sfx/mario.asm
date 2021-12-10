@@ -1,12 +1,12 @@
-!to "mario.o", plain
+!src "hbc56kernel.inc"
 
-HBC56_INT_VECTOR = onVSync
+!source "sfx/ay3891x.asm"
 
-!source "../../lib/hbc56.asm"
-!source "../../lib/sfx/ayx.asm"
 
-onVSync:
-        rti
+hbc56Meta:
+        +setHbcMetaTitle "MARIO BROS AUDIO TEST"
+        rts
+
 
 TONE0 = $60
 TONE1 = $61
@@ -102,7 +102,9 @@ NOISE0 = $62
  NOTE_D8  = 4699
  NOTE_DS8 = 4978
 
-main:
+
+hbc56Main:
+
 
 	jsr ayInit
         lda #0
@@ -237,16 +239,18 @@ main:
 	+playNote NOTE_D4
 	+playNote NOTE_B3
 	jsr toneDelay
-	jsr delay
+	jsr medDelay
 
         jmp .loop
 
 toneDelay:
 	ldy #200
+	jsr customDelay
+	ldy #200
 	jmp customDelay
 
 shortDelay:
-	ldy #64
+	ldy #128
 	jmp customDelay
 
 medDelay:

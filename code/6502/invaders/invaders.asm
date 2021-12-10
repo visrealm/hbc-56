@@ -8,25 +8,13 @@
 ;
 ;
 
-HBC56_SKIP_POST = 1
-
-HBC56_INT_VECTOR = onVSync
-!src <ut/math_macros.asm>
-!src "hbc56.asm"
+!src "hbc56kernel.inc"
 
 !src "zeropage.asm"
-!src "ut/memory.asm"
-!src "ut/util.asm"
 
-!src "gfx/tms9918.lmap"
-!src "gfx/tms9918macros.asm"
-
-!src "gfx/bitmap.asm"
-!src "inp/nes.asm"
+;!src "gfx/bitmap.asm"
 !src "sfx/ay3891x.asm"
 !src "sfx/sfxman.asm"
-
-;+hbc56Title "6502 INVADERS"
 
 ;
 ; contants
@@ -60,34 +48,15 @@ MAX_X           = 6
 !src "bunker.asm"
 !src "aliens.asm"
 
-;
-; Memory address constants
-;
-
-onVSync:
-        pha
-        +tmsDisableInterrupts ; this is just for the emulator...
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #TMS_FPS
-        bne writeTicksL
-        inc TICKS_H
-        lda #0
-writeTicksL:
-        sta TICKS_L
-        lda #1
-        sta V_SYNC
-        +tmsReadStatus
-        pla      
-        rti
-
-
+hbc56Meta:
+        +setHbcMetaTitle "HBC-56 INVADERS"
+        +setHbcMetaNES
+        rts
 
 ; -----------------------------------------------------------------------------
 ; main entry point
 ; -----------------------------------------------------------------------------
-main:
+hbc56Main:
 
         ; any single-time setup?
 
@@ -167,7 +136,7 @@ restartGame:
 
         jsr renderGameField
 
-        lda #0
+        lda TICKS
         sta V_SYNC
 
         +tmsEnableOutput
@@ -181,6 +150,7 @@ nextFrame:
 
 gameLoop:
         lda V_SYNC
+        cmp TICKS
         beq gameLoop
         sei
         +tmsDisableInterrupts
@@ -336,7 +306,7 @@ shieldNotBombed
         ldy #PLAYER_POS_Y
         +tmsSpritePosXYReg SPRITE_PLAYER
 
-        lda #0
+        lda TICKS
         sta V_SYNC
 
         jsr audioBulletIncreasePitch
@@ -465,5 +435,4 @@ COLORTAB:
 
 !src "patterns.asm"
 
-*=$F800
-!bin "gfx/tms9918.bin"
+

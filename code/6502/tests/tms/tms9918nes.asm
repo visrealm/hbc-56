@@ -1,15 +1,13 @@
-!to "tms9918nes.o", plain
+!src "hbc56kernel.inc"
 
-HBC56_INT_VECTOR = onVSync
+XPOS = $44
+YPOS = $45
 
-!source "../../lib/hbc56.asm"
 
-TMS_MODEL = 9929
-!source "../../lib/gfx/tms9918.asm"
-!source "../../lib/gfx/fonts/tms9918font1.asm"
-
-!source "../../lib/gfx/bitmap.asm"
-!source "../../lib/inp/nes.asm"
+hbc56Meta:
+        +setHbcMetaTitle "TMS9918 NES TEST"
+        +setHbcMetaNES
+        rts
 
 BUFFER_ADDR = $1000
 
@@ -38,37 +36,17 @@ YPOS = $45
 XPOS1 = $46
 YPOS1 = $47
 
-TICKS_L = $48
-TICKS_H = $49
-
-
-onVSync:
-        pha
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #TMS_FPS
-        bne +
-        lda #0
-        inc TICKS_H
-+  
-        sta TICKS_L
-        +tmsReadStatus
-        pla      
-        rti
-
-
-main:
-
+hbc56Main:
 	lda #0
-	sta PIX_ADDR_L
 
         sei
-        lda #0
-        sta TICKS_L
-        sta TICKS_H
 
-        jsr tmsInit
+        jsr tmsModeGraphicsI
+
+        jsr tmsInitTextTable ; clear the name table
+
+        +tmsEnableOutput
+        +tmsEnableInterrupts
 
         +tmsPrint "TROY'S HBC-56 BASIC READY", 1, 15
         +tmsPrint ">10 PRINT \"HELLO WORLD!\"", 0, 17
@@ -125,7 +103,7 @@ loop:
 
 COLOR = $89
 IMG = $8a
-LAST_TICKS_H = $8b
+LAST_SECONDS_L = $8b
 
 outputSeconds:
         sei
@@ -178,7 +156,7 @@ outputSeconds:
 
         ; flashing cursor
         lda #(TMS_FPS / 2)
-        cmp TICKS_L
+        cmp HBC56_TICKS
         bcc +
         +tmsPrint ' ', 1, 23
         jmp ++
@@ -186,14 +164,14 @@ outputSeconds:
         +tmsPrint 127, 1, 23
 ++
 
-        lda TICKS_H
-        cmp LAST_TICKS_H
+        lda HBC56_SECONDS_L
+        cmp LAST_SECONDS_L
         beq .endOutput
-        sta LAST_TICKS_H
+        sta LAST_SECONDS_L
 
         ; output seconds (as hex)
         +tmsSetPosWrite 1, 1
-        lda TICKS_H
+        lda HBC56_SECONDS_L
         jsr tmsHex8  ; calls cli
         sei
 

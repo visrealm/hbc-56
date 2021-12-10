@@ -1,20 +1,6 @@
-!to "tms9918gfx2test.o", plain
+!src "hbc56kernel.inc"
 
-HBC56_INT_VECTOR = onVSync
-
-!source "../../lib/hbc56.asm"
-
-!source "../../lib/gfx/tms9918.asm"
-
-
-XPOS = $44
-YPOS = $45
-
-TICKS   = $46
-TICKS_L = TICKS
-TICKS_H = TICKS + 1
-
-CONFIG_STEP = $48
+YPOS = $48
 
 setupNameTable:
         +tmsSetAddrNameTable
@@ -31,64 +17,37 @@ setupPatternTable:
         +tmsSendData testImg, $1800
         rts
 
-onVSync:
-        pha
-        lda CONFIG_STEP
-        beq doneConfig
-        cmp #3
-        bne doneNameTable
-        jsr setupNameTable
-        dec CONFIG_STEP
-        jmp endInt
+hbc56Meta:
+        +setHbcMetaTitle "TMS9918 GRAPHICS II TEST"
+        rts
 
-doneNameTable:
-        cmp #2
-        bne doneColorTable
-        jsr setupColorTable
-        dec CONFIG_STEP
-        jmp endInt
-
-doneColorTable:
-        jsr setupPatternTable
-        dec CONFIG_STEP
-        +tmsEnableOutput
-
-doneConfig
-        jsr doFrame
-
-endInt
-        +tmsReadStatus
-        pla      
-        rti
-
-
-
-main:
+hbc56Main:
         sei
-        lda #0
-        sta TICKS_L
-        sta TICKS_H
-        sta YPOS
-        
-        lda #3
-        sta CONFIG_STEP
 
-        jsr tmsInit
+        jsr tmsModeGraphicsII
 
         +tmsDisableInterrupts
         +tmsDisableOutput
 
-        +tmSetGraphicsMode2
 
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
         +tmsEnableInterrupts
+        +tmsEnableOutput
 
         cli
 
+        jsr setupNameTable
+        jsr setupColorTable
+        jsr setupPatternTable
+
+
 loop:
+        jsr doFrame
+        jsr delay
         jmp loop
+
 
 doFrame:
         +tmsSetAddrColorTable
@@ -160,7 +119,6 @@ TMS_NAME_DATA:
         }
 }
 
-TMS_FONT_DATA:
 TMS_COLOR_DATA:
 
 !for c, 0, 11 {
@@ -171,4 +129,5 @@ TMS_COLOR_DATA:
 
 
 testImg:
-!bin "metallica.bin"
+!bin "mode2test.bin"
+;!bin "metallica.bin"

@@ -7807,7 +7807,7 @@ LAB_MSZM
 
 LAB_SMSG
 	!text	" Bytes free",$0D,$0A,$0A
-	!text	"Enhanced BASIC 2.22 for Troy's HBC-56",$0A,$00
+	!text	"EhBASIC 2.22 for Troy's HBC-56",$0A,$00
 
 ; numeric constants and series
 

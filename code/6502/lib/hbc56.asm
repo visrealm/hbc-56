@@ -46,7 +46,8 @@ hbc56CustomDelay:
 	ldx #0
 	dey
 	bne -
-	rts        
+	rts
+
 
 *=$FFFA
 !ifdef HBC56_NMI_VECTOR { !word HBC56_NMI_VECTOR } else { !word DEFAULT_HBC56_NMI_VECTOR }

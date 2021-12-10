@@ -1,11 +1,12 @@
-!to "tms9918test.o", plain
+!src "hbc56kernel.inc"
 
-HBC56_INT_VECTOR = onVSync
+XPOS = $44
+YPOS = $45
 
-!source "hbc56.asm"
 
-!source "gfx/tms9918.asm"
-!source "gfx/fonts/tms9918font1.asm"
+hbc56Meta:
+        +setHbcMetaTitle "TMS9918 GRAPHICS I TEST"
+        rts
 
 sprite1:
 !byte %00001000
@@ -30,33 +31,15 @@ sprite2:
 XPOS = $44
 YPOS = $45
 
-TICKS_L = $46
-TICKS_H = $47
-
-
-onVSync:
-        pha
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #60
-        bne +
-        lda #0
-        inc TICKS_H
-+  
-        sta TICKS_L
-        +tmsReadStatus
-        pla      
-        rti
-
-
-main:
+hbc56Main:
         sei
-        lda #0
-        sta TICKS_L
-        sta TICKS_H
 
-        jsr tmsInit
+        jsr tmsModeGraphicsI
+
+        jsr tmsInitTextTable ; clear the name table
+
+        +tmsEnableOutput
+        +tmsEnableInterrupts
 
         +tmsPrint "TROY'S HBC-56 BASIC READY", 1, 15
         +tmsPrint ">10 PRINT \"HELLO WORLD!\"", 0, 17
@@ -156,7 +139,7 @@ COLOR = $89
 outputSeconds:
         sei
         +tmsSetPosWrite 1, 1
-        lda TICKS_H
+        lda HBC56_SECONDS_L
         jsr tmsHex8
 
         inc COLOR

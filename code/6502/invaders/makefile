@@ -1,5 +1,5 @@
 EMU=..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe
-ACME=acme -I ..\lib
+ACME=acme -I ..\lib -I ..\kernel
 
 
 %.o: %.asm

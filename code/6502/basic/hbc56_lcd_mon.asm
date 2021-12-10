@@ -1,8 +1,14 @@
-; BASIC for the HBC-56
+; BASIC for the HBC-56 (LCD version)
 
 !src "hbc56kernel.inc"
 
 !src "basic.asm"
+
+LCD_MODEL = 12864
+
+LCD_BUFF_ERADDR = $7d00
+
+!src "lcd/lcd.asm"
 
 SAVE_X = $E0		; For saving registers
 SAVE_Y = $E1
@@ -15,27 +21,13 @@ NMI_vec	= IRQ_vec+$0A	; NMI code vector
 
 ; reset vector points here
 
-hbc56Meta:
-        +setHbcMetaTitle "HBC-56 BASIC"
-        rts
-
 RES_vec
-hbc56Main:
+main:
         sei
         jsr kbInit
-        jsr tmsModeText
-        +tmsSetAddrNameTable
-        lda #' '
-        ldx #(40 * 25 / 8)
-        jsr _tmsSendX8          ; clear the screen
-
-        ; set up the display
-        +tmsSetColorFgBg TMS_WHITE,TMS_DK_BLUE
-        +tmsEnableOutput
-        +tmsEnableInterrupts    ; Gives us the console cursor, etc.
-
-        lda #HBC56_CONSOLE_FLAG_CURSOR
-        sta HBC56_CONSOLE_FLAGS
+        jsr lcdInit
+        jsr lcdDisplayOn
+        jsr lcdCursorBlinkOn
 
 	LDY	#END_CODE-LAB_vec	; set index/count
 LAB_stlp
@@ -63,10 +55,7 @@ SCRNout
         beq .backspace
 
         ; regular character
-        jsr tmsSetPosConsole
-        lda SAVE_A
-        +tmsPut
-        jsr tmsIncPosConsole
+        jsr lcdChar ; outputs A to the LCD - auto-scrolls too :)
 
 
 .endOut:
@@ -78,18 +67,11 @@ SCRNout
 
 
 .newline
-        +tmsConsoleOut ' '
-        lda #39
-        sta TMS9918_CONSOLE_X
-        jsr tmsIncPosConsole
+        jsr lcdNextLine ; scroll to the next line... scroll screen if on last line
         jmp .endOut
 
 .backspace
-        +tmsConsoleOut ' '      ; clear cursor
-        jsr tmsDecPosConsole
-        jsr tmsDecPosConsole
-        +tmsConsoleOut ' '
-        jsr tmsDecPosConsole
+        ; TBD... 
         jmp .endOut
 
 	RTS

@@ -9,9 +9,9 @@
 ; Zero page addresses
 ;
 
-TICKS   = $48
+TICKS   = HBC56_TICKS
 TICKS_L = TICKS
-TICKS_H = (TICKS + 1)
+TICKS_H = HBC56_SECONDS_L
 V_SYNC  = $4a
 
 FRAMES_COUNTER = $4f

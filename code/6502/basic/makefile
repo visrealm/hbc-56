@@ -10,7 +10,7 @@ remake: default
 default: hbc56_mon
 
 %: %.o
-	$(EMU) --display 1 --rom $^
+	$(EMU) --keyboard --rom $^
 
 .PHONY: clean
 

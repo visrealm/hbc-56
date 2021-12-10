@@ -1,34 +1,11 @@
-!src "kernel.inc"
+!src "hbc56kernel.inc"
 
-TICKS     = $40
-SECONDS_L = $41
-SECONDS_H = $42
-LAST_SECONDS = $43
+hbc56Meta:
+        +setHbcMetaTitle "CONSOLE TEST"
+        rts
 
-onVSync:
-        pha
-        inc TICKS
-        lda TICKS
-        cmp #TMS_FPS
-        bne +
-        lda #0
-        sta TICKS
-        +inc16 SECONDS_L
-+  
-        jsr loop
-        +tmsReadStatus
-        pla      
-        rti
-
-
-
-main:
+hbc56Main:
         sei
-        lda #0
-        sta TICKS
-        sta SECONDS_L
-        sta SECONDS_H
-
         jsr kbInit
 
         jsr tmsModeText
@@ -42,54 +19,45 @@ main:
         +tmsEnableOutput
         cli
 
-        +setIntHandler onVSync
-
         +tmsEnableInterrupts
--
-        jmp -
 
+        +consoleEnableCursor
 
 loop:
-        jsr tmsSetPosConsole
-        lda TICKS
-        cmp #30
-        bcc +
-        lda #' '
-        +tmsPut
-        jmp ++
-+ 
-        lda #$7f
-        +tmsPut
-++
         jsr kbReadAscii
-        cmp #$ff
-        beq .endLoop
+        bcc .endLoop
         cmp #$0d ; enter
         bne +
+        sei
         +tmsConsoleOut ' '
         lda #39
         sta TMS9918_CONSOLE_X
         jsr tmsIncPosConsole
+        cli
         jmp .endLoop    
 +
         cmp #$08 ; backspace
         bne ++
+        sei
         +tmsConsoleOut ' '
         jsr tmsDecPosConsole
         jsr tmsDecPosConsole
         +tmsConsoleOut ' '
         jsr tmsDecPosConsole
+        cli
         jmp .endLoop
 ++
+        sei
         pha
         jsr tmsSetPosConsole
         pla
         +tmsPut
         jsr tmsIncPosConsole
+        cli
 
 .endLoop
-
-        rts
+        jmp loop
+        ;rts
 
 medDelay:
 	jsr delay

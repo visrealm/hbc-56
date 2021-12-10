@@ -30,17 +30,14 @@ NES_A           = %00000001
 
 NES_TMP = R7L
 
-!macro nesBranchIfPressed .buttonMask, addr {
-        lda #.buttonMask
-        jsr nesPressed
-        bcs addr
-}
-
-!macro nesBranchIfNotPressed .buttonMask, addr {
-        lda #.buttonMask
-        jsr nesPressed
-        bcc addr
-}
+; -----------------------------------------------------------------------------
+; nesWaitForPress: Wait for a NES button press
+; -----------------------------------------------------------------------------
+nesWaitForPress:
+        lda NES_IO_ADDR
+        cmp #$ff
+        beq nesWaitForPress
+        rts
 
 ; -----------------------------------------------------------------------------
 ; nesPressed: Is a button pressed?

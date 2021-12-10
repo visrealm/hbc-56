@@ -1,55 +1,23 @@
-!to "tms9918mctest.o", plain
+!src "hbc56kernel.inc"
 
-HBC56_INT_VECTOR = onVSync
+hbc56Meta:
+        +setHbcMetaTitle "TMS9918 MULTICOLOR TEST"
+        +setHbcMetaNES
+        rts
 
-!source "../../lib/hbc56.asm"
-!source "../../lib/gfx/fonts/tms9918font2subset.asm"
-!source "../../lib/gfx/tms9918.asm"
-
-
-XPOS = $44
-YPOS = $45
-
-TICKS_L = $46
-TICKS_H = $47
-
-
-onVSync:
-        pha
-        lda TICKS_L
-        clc
-        adc #1
-        cmp #60
-        bne +
-        lda #0
-        inc TICKS_H
-+  
-        sta TICKS_L
-        +tmsReadStatus
-        pla      
-        rti
-
-
-main:
+hbc56Main:
         sei
-        lda #0
-        sta TICKS_L
-        sta TICKS_H
-        sta YPOS
 
-        jsr tmsInit
-
-        lda #TMS_R0_MODE_MULTICOLOR
-        jsr tmsReg0SetFields
-
-        lda #TMS_R1_MODE_MULTICOLOR
-        jsr tmsReg1SetFields
+        jsr tmsModeMulticolor
 
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
         +tmsSetAddrNameTable
         +tmsSendData TMS_NAME_DATA, $300
+
+        +tmsEnableOutput
+        +tmsEnableInterrupts
 
         cli
 
