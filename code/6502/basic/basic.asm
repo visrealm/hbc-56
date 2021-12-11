@@ -441,7 +441,7 @@ Ram_top		= $7000	; end of user RAM+1 (set as needed, should be page aligned)
 
 ; This start can be changed to suit your system
 
-*=$C000
+*=$9000
 
 ; For convenience, put jump here to reset location so it can be
 ; run from the load address.
@@ -7807,7 +7807,7 @@ LAB_MSZM
 
 LAB_SMSG
 	!text	" Bytes free",$0D,$0A,$0A
-	!text	"EhBASIC 2.22 for Troy's HBC-56",$0A,$00
+	!text	"HBC-56 BASIC",$0A,$00
 
 ; numeric constants and series
 

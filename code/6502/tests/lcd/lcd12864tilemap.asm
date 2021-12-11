@@ -1,23 +1,26 @@
-!to "lcd12864tilemap.o", plain
+!src "hbc56kernel.inc"
 
-!source "hbc56.asm"
-
-LCD_BUFFER_ADDR = $0200
+LCD_BUFFER_ADDR = $7d00
 LCD_MODEL = 12864
+
 !source "gfx/bitmap.asm"
 !source "lcd/lcd.asm"
-!source "ut/memory.asm"
 
 !align 255, 0
 c64FontData:
-	!bin "c64-font-ascii.bin"
+	!bin "lcd/fonts/c64-font-ascii.bin"
 
 !source "gfx/tilemap.asm"
 
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "LCD TILEMAP"
+        +consoleLCDMode
+        rts
 
-
-
-main:
+hbc56Main:
 
 	jsr lcdInit
 	jsr lcdHome

@@ -18,7 +18,7 @@ hbc56SetupDisplay:
         ldx #(40 * 25 / 8)
         jsr _tmsSendX8
 
-        +tmsSetColorFgBg TMS_WHITE,TMS_DK_BLUE
+        +tmsSetColorFgBg TMS_CYAN,TMS_BLACK
 
         +tmsEnableInterrupts    ; gives us the console cursor, etc.
         +tmsEnableOutput

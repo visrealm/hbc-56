@@ -268,6 +268,21 @@ lcdChar:
 	rts
 
 ; -----------------------------------------------------------------------------
+; lcdBackspace: Backspace a character
+; -----------------------------------------------------------------------------
+lcdBackspace:
+	jsr lcdWait
+	lda #LCD_CMD_SHIFT | LCD_CMD_SHIFT_LEFT
+	sta LCD_CMD
+	jsr lcdWait
+	lda #' '
+	sta LCD_DATA
+	jsr lcdWait
+	lda #LCD_CMD_SHIFT | LCD_CMD_SHIFT_LEFT
+	sta LCD_CMD
+	rts
+
+; -----------------------------------------------------------------------------
 ; lcdInt8: Output an 8-bit integer
 ; -----------------------------------------------------------------------------
 ; Inputs:

@@ -18,6 +18,7 @@ SAVE_A          = $E2
 
 ; ascii constants
 ASCII_RETURN    = $0A
+ASCII_CR        = $0D
 ASCII_BACKSPACE = $08
 
 ; put the IRQ and NMI code in RAM so that it can be changed
@@ -29,6 +30,7 @@ NMI_vec         = IRQ_vec+$0A   ; NMI code vector
 ; -----------------------------------------------------------------------------
 hbc56Meta:
         +setHbcMetaTitle "HBC-56 BASIC"
+        +consoleLCDMode
         rts
 
 ; -----------------------------------------------------------------------------

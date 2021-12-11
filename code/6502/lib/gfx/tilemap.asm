@@ -46,19 +46,19 @@ TILE_SIZE		= 8	; size of each tile (in px)
 ; -------------------------
 ; Zero page
 ; -------------------------
-TILEMAP_ADDR		= R5
-TILEMAP_TMP_BUFFER_ADDR	= R6
-TILEMAP_TMP_TILES_ADDR	= R7
-TILEMAP_TMP_BUF_ROW	= R8L
-TILEMAP_TMP_BUF_COL	= R8H
-TILEMAP_TMP_TILE_ROW	= R9L
-TILEMAP_TMP_OUTPUT_ROW	= R9H
-TILEMAP_TMP_1		= R10L
-TILEMAP_TMP_2		= R10H
+TILEMAP_ADDR		= $30
+TILEMAP_TMP_BUFFER_ADDR	= TILEMAP_ADDR + 2
+TILEMAP_TMP_TILES_ADDR	= TILEMAP_ADDR + 4
+TILEMAP_TMP_BUF_ROW	= TILEMAP_ADDR + 6
+TILEMAP_TMP_BUF_COL	= TILEMAP_ADDR + 7
+TILEMAP_TMP_TILE_ROW	= TILEMAP_ADDR + 8
+TILEMAP_TMP_OUTPUT_ROW	= TILEMAP_ADDR + 9
+TILEMAP_TMP_1		= TILEMAP_ADDR + 10
+TILEMAP_TMP_2		= TILEMAP_ADDR + 11
 
 ; Temporary - a single instance
-TILEMAP_FIXED_ADDRESS = $2f0
-TILEMAP_DEFAULT_BUFFER_ADDRESS = $1000
+TILEMAP_FIXED_ADDRESS          = $7b00
+TILEMAP_DEFAULT_BUFFER_ADDRESS = $7c00
 
 !macro tilemapCreate .bufferAddr, .tilesetAddr, .sizeFlags, .invertAddr, .dirtyAddr {
 	!if <.tilesetAddr != 0 { !error "tilemapCreate: Tileset address must be page-aligned" }
@@ -155,6 +155,41 @@ tilemapInit:
 
 
 ; -----------------------------------------------------------------------------
+; tilemapRenderRow: Render a row of the tilemap
+; -----------------------------------------------------------------------------
+; Inputs:
+;  TILEMAP_ADDR: Address of tilemap structure
+;  y: Row to render (0-7)
+; -----------------------------------------------------------------------------
+tilemapRenderRow:
+	tya
+	and #$07
+	sta TILEMAP_TMP_BUF_ROW
+	sta TILEMAP_TMP_2
+	asl
+	asl
+	asl
+	lda #56
+	sta TILEMAP_TMP_OUTPUT_ROW
+
+	inc TILEMAP_TMP_2
+
+	; set the working tilemap buffer address
+	ldy #TILEMAP_BUFFER_ADDR
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_BUFFER_ADDR + 1
+
+	; reset temp variables to zero
+	lda #0
+	sta TILEMAP_TMP_BUFFER_ADDR ; LSB
+	sta TILEMAP_TMP_TILES_ADDR  ; LSB
+	sta TILEMAP_TMP_BUF_COL
+	sta TILEMAP_TMP_TILE_ROW
+
+	jmp .tilemapRenderFrom
+
+
+; -----------------------------------------------------------------------------
 ; tilemapRender: Render the tilemap
 ; -----------------------------------------------------------------------------
 ; Inputs:
@@ -162,6 +197,9 @@ tilemapInit:
 ; -----------------------------------------------------------------------------
 tilemapRender:
 
+
+	lda #8
+	sta TILEMAP_TMP_2
 
 	; set the working tilemap buffer address
 	ldy #TILEMAP_BUFFER_ADDR
@@ -177,11 +215,12 @@ tilemapRender:
 	sta TILEMAP_TMP_TILE_ROW
 	sta TILEMAP_TMP_OUTPUT_ROW
 
-	ldy #0
+.tilemapRenderFrom
+	ldy TILEMAP_TMP_OUTPUT_ROW
 	jsr lcdGraphicsSetRow
 
 	; iterate over the buffer rows and columns
--
+.renderRow
 	lda #0
 	sta TILEMAP_TMP_1
 
@@ -236,7 +275,7 @@ tilemapRender:
 	inc TILEMAP_TMP_BUF_COL
 	lda #16
 	cmp TILEMAP_TMP_BUF_COL
-	bne -
+	bne .renderRow
 
 	; increment tile row (row within tile) and check against tile size
 	lda #0
@@ -249,15 +288,15 @@ tilemapRender:
 
 	lda #TILE_SIZE
 	cmp TILEMAP_TMP_TILE_ROW
-	bne -
+	bne .renderRow
 
 	; increment row and check against # rows
 	lda #0
 	sta TILEMAP_TMP_TILE_ROW
 	inc TILEMAP_TMP_BUF_ROW
-	lda #8
+	lda TILEMAP_TMP_2
 	cmp TILEMAP_TMP_BUF_ROW
-	bne -
+	bne .renderRow
 
 	rts
 

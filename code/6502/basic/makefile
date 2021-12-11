@@ -9,11 +9,11 @@ remake: default
 
 default: basic_tms
 
-%: %.o
-	$(EMU) --keyboard --rom $^
-
-.PHONY: clean
+.PHONY: clean default
 
 clean:
 	rm -f *.o *.lmap
 	
+%: %.o
+	$(EMU) --keyboard --rom $^
+

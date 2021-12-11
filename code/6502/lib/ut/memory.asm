@@ -14,9 +14,9 @@ UT_MEMORY_ASM_ = 1
 
 !zone memcpy {
 
-MEMCPY_DST = R0
-MEMCPY_SRC = R1
-MEMCPY_LEN = R2
+MEMCPY_DST = $e9
+MEMCPY_SRC = $eb
+MEMCPY_LEN = $ed
 
 ; -----------------------------------------------------------------------------
 ; memcpySinglePage: Copy up to 255 bytes 
@@ -196,8 +196,8 @@ memcpyMultiPagePort:
 
 !zone memset {
 
-MEMSET_DST = R0
-MEMSET_LEN = R1
+MEMSET_DST = $eb
+MEMSET_LEN = $ed
 
 ; -----------------------------------------------------------------------------
 ; memset: Set a fixed number of bytes to a single value

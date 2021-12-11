@@ -45,6 +45,7 @@ HBC56_SECONDS_H     = HBC56_SECONDS_L + 1
 HBC56_CONSOLE_FLAGS = HBC56_SECONDS_H + 1
 HBC56_CONSOLE_FLAG_CURSOR = $80
 HBC56_CONSOLE_FLAG_NES    = $40
+HBC56_CONSOLE_FLAG_LCD    = $20
 
 HBC56_TMP_X     = HBC56_CONSOLE_FLAGS + 1
 HBC56_TMP_Y     = HBC56_CONSOLE_FLAGS + 2
@@ -130,7 +131,9 @@ kernelMain:
         jsr hbc56Delay
         jsr hbc56Delay
 
+        lda HBC56_CONSOLE_FLAG_LCD
         bit HBC56_CONSOLE_FLAGS
+        bne .afterInput         ; LCD - skip input
         bvc .keyboardInput
 
         ; NES input

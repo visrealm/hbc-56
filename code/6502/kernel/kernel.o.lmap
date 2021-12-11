@@ -27,6 +27,7 @@
 	tmsDecPosConsole	= $f877	; unused
 	TMS_CYAN	= $7
 	HBC56_TITLE	= $f000
+	HBC56_CONSOLE_FLAG_LCD	= $20
 	memcpyMultiPage	= $f055	; unused
 	tmsSetRegister	= $f5d6
 	KB_FLAGS	= $7ea1
@@ -35,7 +36,7 @@
 	NES_TMP	= $10
 	RTI_OPCODE	= $40
 	TMS_VRAM_SPRITE_ATTR_ADDRESS	= $3b00
-	MEMCPY_SRC	= $4
+	MEMCPY_SRC	= $eb
 	HBC56_TITLE_LEN	= $1a
 	HBC56_TMP_Y	= $7e85
 	HBC56_TMP_X	= $7e84
@@ -72,7 +73,7 @@
 	kernelMain	= $fbe2	; ?
 	hbc56LogoPattEnd	= $fb97	; unused
 	IO_PORT_BASE_ADDRESS	= $7f00
-	MEMSET_LEN	= $4
+	MEMSET_LEN	= $ed
 	HBC56_PRESS_ANY_KEY_TEXT_LEN	= $20
 	HBC56_BORDER	= $4
 	R10L	= $16	; unused
@@ -87,13 +88,13 @@
 	NES_DOWN	= $20	; unused
 	tmsReg1ClearFields	= $f60c
 	NES_SELECT	= $4	; unused
-	MEMSET_DST	= $2
+	MEMSET_DST	= $eb
 	DEFAULT_HBC56_NMI_VECTOR	= $ffe0	; unused
 	HBC56_TITLE_TEXT_LEN	= $1a
 	NES_UP	= $10	; unused
 	TMS_TXT_TILES_X	= $28
 	TMS_TXT_TILES_Y	= $18
-	MEMCPY_DST	= $2
+	MEMCPY_DST	= $e9
 	TMS_R1_DISP_ACTIVE	= $40
 	tmsInitColorTable	= $f732
 	tmsSetPosTmpAddress	= $f7ba
@@ -113,7 +114,7 @@
 	NES_A	= $1	; unused
 	HBC56_SECONDS_L	= $7e81
 	DEFAULT_HBC56_RST_VECTOR	= $8000
-	MEMCPY_LEN	= $6
+	MEMCPY_LEN	= $ed
 	tmsReg0ClearFields	= $f5f6	; unused
 	kbWaitData	= $f0de	; unused
 	TMS9918_TMP_BUFFER	= $7e20
