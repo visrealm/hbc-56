@@ -10,3 +10,6 @@
 [submodule "emulator/modules/ay38910"]
 	path = emulator/modules/ay38910
 	url = https://github.com/visrealm/emu2149.git
+[submodule "emulator/modules/lcd"]
+	path = emulator/modules/lcd
+	url = https://github.com/visrealm/vrEmuLcd.git
