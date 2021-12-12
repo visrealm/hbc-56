@@ -49,6 +49,12 @@
         sta HBC56_CONSOLE_FLAGS
 }
 
+!macro consoleDisableCursor {
+        lda HBC56_CONSOLE_FLAGS
+        eor #HBC56_CONSOLE_FLAG_CURSOR
+        sta HBC56_CONSOLE_FLAGS
+}
+
 !macro consoleLCDMode {
         lda HBC56_CONSOLE_FLAGS
         ora #HBC56_CONSOLE_FLAG_LCD

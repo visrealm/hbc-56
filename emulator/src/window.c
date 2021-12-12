@@ -516,7 +516,12 @@ SDLCommonLogUsage(SDLCommonState* state, const char* argv0, const char** options
   int i;
 
   SDL_Log("USAGE: %s", argv0);
-  SDL_Log("    %s", "[--trackmem]");
+
+  if (options) {
+    for (i = 0; options[i] != NULL; i++) {
+      SDL_Log("    %s", options[i]);
+    }
+  }
 
   if (state->flags & SDL_INIT_VIDEO) {
     for (i = 0; i < SDL_arraysize(video_usage); i++) {
@@ -527,12 +532,6 @@ SDLCommonLogUsage(SDLCommonState* state, const char* argv0, const char** options
   if (state->flags & SDL_INIT_AUDIO) {
     for (i = 0; i < SDL_arraysize(audio_usage); i++) {
       SDL_Log("    %s", audio_usage[i]);
-    }
-  }
-
-  if (options) {
-    for (i = 0; options[i] != NULL; i++) {
-      SDL_Log("    %s", options[i]);
     }
   }
 }

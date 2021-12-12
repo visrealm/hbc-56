@@ -1,23 +1,30 @@
-!to "lcd12864gfx.o", plain
+!src "hbc56kernel.inc"
 
+BUFFER_ADDR = $1000
 LCD_MODEL = 12864
 
-!source "hbc56.asm"
 !source "gfx/bitmap.asm"
 !source "lcd/lcd.asm"
-!source "lcd/lcd12864b.asm"
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "GRAPHICS LCD TEST"
+        +consoleLCDMode
+        rts
+
 
 LCD_BASIC           = LCD_INITIALIZE
 LCD_EXTENDED        = LCD_INITIALIZE | LCD_CMD_12864B_EXTENDED
 
 DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
 
-BUFFER_ADDR = $0200
 SEED        = $0f
 
 TMP1 = $44
 
-main:
+hbc56Main:
 
 	jsr lcdInit
 	jsr lcdClear

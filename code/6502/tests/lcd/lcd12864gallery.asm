@@ -1,14 +1,20 @@
-!to "lcd12864gallery.o", plain
-
-!source "hbc56.asm"
-!source "gfx/bitmap.asm"
-
-LCD_MODEL = 12864
-!source "lcd/lcd.asm"
+!src "hbc56kernel.inc"
 
 BUFFER_ADDR = $1000
+LCD_MODEL = 12864
 
-main:
+!source "gfx/bitmap.asm"
+!source "lcd/lcd.asm"
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "PICTURE GALLERY"
+        +consoleLCDMode
+        rts
+
+hbc56Main:
 
 	jsr lcdInit
 	jsr lcdClear
@@ -150,7 +156,7 @@ IMG_DATA_OFFSET = 130  ; GIMP
 !fill 256 - IMG_DATA_OFFSET
 
 livData:
-	!bin "liv.bmp"
+	!bin "img/liv.bmp"
 
 LIV_IMG = livData + IMG_DATA_OFFSET
 
@@ -159,7 +165,7 @@ LIV_IMG = livData + IMG_DATA_OFFSET
 !fill 256 - IMG_DATA_OFFSET
 
 logoData:
-	!bin "logo.bmp"
+	!bin "img/logo.bmp"
 
 LOGO_IMG = logoData + IMG_DATA_OFFSET
 
@@ -168,7 +174,7 @@ LOGO_IMG = logoData + IMG_DATA_OFFSET
 !fill 256 - IMG_DATA_OFFSET
 
 roxData:
-	!bin "rox.bmp"
+	!bin "img/rox.bmp"
 
 ROX_IMG = roxData + IMG_DATA_OFFSET
 
@@ -177,6 +183,6 @@ ROX_IMG = roxData + IMG_DATA_OFFSET
 !fill 256 - IMG_DATA_OFFSET
 
 selfieData:
-	!bin "selfie.bmp"
+	!bin "img/selfie.bmp"
 
 SELFIE_IMG = selfieData + IMG_DATA_OFFSET

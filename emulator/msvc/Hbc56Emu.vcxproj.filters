@@ -23,6 +23,9 @@
     <Filter Include="src">
       <UniqueIdentifier>{3ddcc3a9-0113-414a-8f65-b694c083196b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\LCD">
+      <UniqueIdentifier>{e232384f-63ad-4558-a0ed-9aef54caaa69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h">
@@ -51,6 +54,12 @@
     </ClInclude>
     <ClInclude Include="..\src\keyboard.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lcd.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h">
+      <Filter>modules\LCD</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -90,6 +99,12 @@
     </ClCompile>
     <ClCompile Include="..\src\debugger.c">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lcd.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c">
+      <Filter>modules\LCD</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

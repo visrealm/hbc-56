@@ -71,7 +71,7 @@ hbc56Out:
         lsr
         lsr
         tay
-        jsr tilemapRender;Row
+        jsr tilemapRenderRow
 
         ldx SAVE_X
         ldy SAVE_Y

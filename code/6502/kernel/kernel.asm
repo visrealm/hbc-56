@@ -81,6 +81,13 @@ onVSync:
         pla      
         rti
 
+consoleEnableCursor:
+        +consoleEnableCursor
+        rts
+
+consoleDisableCursor:
+        +consoleDisableCursor
+        rts
 
 kernelMain:
         cld     ; make sure we're not in decimal mode

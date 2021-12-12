@@ -24,6 +24,7 @@
 #include "emu2149.h"
 #include "debugger.h"
 #include "keyboard.h"
+#include "lcd.h"
 
 char winTitleBuffer[_MAX_PATH];
 
@@ -42,6 +43,12 @@ uint16_t ioPage = 0x7f00;
 #define NES_IO_PORT 0x81  
 #define KB_IO_PORT 0x81
 
+#define LCD_IO_PORT 0x02
+
+#define LCD_IO_CMD   LCD_IO_PORT
+#define LCD_IO_DATA  (LCD_IO_CMD | 0x01)
+
+
 SDL_AudioDeviceID audioDevice;
 
 
@@ -57,6 +64,7 @@ SDL_AudioDeviceID audioDevice;
 VrEmuTms9918a *tms9918 = NULL;
 PSG* psg0 = NULL;
 PSG* psg1 = NULL;
+LCDWindow *lcdw = NULL;
 
 SDL_mutex* tmsMutex = NULL;
 SDL_mutex* ayMutex = NULL;
@@ -104,6 +112,14 @@ uint8_t io_read(uint8_t addr)
         val = vrEmuTms9918aReadStatus(tms9918);
         SDL_UnlockMutex(tmsMutex);
       }
+      break;
+
+    case LCD_IO_CMD:
+      if (lcdw && lcdw->lcd) val = vrEmuLcdReadAddress(lcdw->lcd);
+      break;
+
+    case LCD_IO_DATA:
+      if (lcdw && lcdw->lcd) val = vrEmuLcdReadByte(lcdw->lcd);
       break;
 
     case NES_IO_PORT:  /* same as KB_IO_PORT */
@@ -187,6 +203,14 @@ void io_write(uint8_t addr, uint8_t val)
       vrEmuTms9918aWriteAddr(tms9918, val);
       SDL_UnlockMutex(tmsMutex);
     }
+    break;
+
+  case LCD_IO_CMD:
+    if (lcdw && lcdw->lcd) vrEmuLcdSendCommand(lcdw->lcd, val);
+    break;
+
+  case LCD_IO_DATA:
+    if (lcdw && lcdw->lcd) vrEmuLcdWriteByte(lcdw->lcd, val);
     break;
 
   case (AY3891X_S0 | AY3891X_ADDR):
@@ -471,6 +495,8 @@ loop()
     SDL_RenderPresent(renderer);
   }
 
+  lcdWindowUpdate(lcdw);
+
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
       case SDL_KEYDOWN:
@@ -557,11 +583,13 @@ main(int argc, char* argv[])
   if (!state) {
     return 1;
   }
+  int romLoaded = 0;
+  LCDType lcdType = LCD_NONE;
   for (i = 1; i < argc;) {
     int consumed;
 
     consumed = SDLCommonArg(state, i);
-    if (consumed == 0) {
+    if (consumed <= 0) {
       consumed = -1;
       if (SDL_strcasecmp(argv[i], "--rom") == 0) {
         if (argv[i + 1]) {
@@ -573,12 +601,21 @@ main(int argc, char* argv[])
 
           if (ptr)
           {
-            fread(rom, 1, sizeof(rom), ptr);
+            size_t romBytesRead = fread(rom, 1, sizeof(rom), ptr);
             fclose(ptr);
 
-            SDL_strlcpy(labelMapFile, argv[i + 1], FILENAME_MAX);
-            size_t ln = SDL_strlen(labelMapFile);
-            SDL_strlcpy(labelMapFile + ln - 2, ".o.lmap", FILENAME_MAX - ln);
+            if (romBytesRead != sizeof(rom))
+            {
+              SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' must be %d bytes.", argv[i + 1], (int)sizeof(rom));
+              SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+            }
+            else
+            {
+              romLoaded = 1;
+              SDL_strlcpy(labelMapFile, argv[i + 1], FILENAME_MAX);
+              size_t ln = SDL_strlen(labelMapFile);
+              SDL_strlcpy(labelMapFile + ln - 2, ".o.lmap", FILENAME_MAX - ln);
+            }
           }
           else
           {
@@ -602,14 +639,40 @@ main(int argc, char* argv[])
         consumed = 1;
         keyboardMode = 1;
       }
-
+      /* enable the lcd? */
+      else if (SDL_strcasecmp(argv[i], "--lcd") == 0)
+      {
+        if (argv[i + 1])
+        {
+          consumed = 1;
+          switch (atoi(argv[i + 1]))
+          {
+            case 1602:
+              lcdType = LCD_1602;
+              break;
+            case 2004:
+              lcdType = LCD_2004;
+              break;
+            case 12864:
+              lcdType = LCD_GRAPHICS;
+              break;
+          }
+          ++i;
+        }
+      }
     }
     if (consumed < 0) {
-      static const char* options[] = { "[--blend none|blend|add|mod]", "[--cyclecolor]", "[--cyclealpha]", NULL };
+      static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]", NULL};
       SDLCommonLogUsage(state, argv[0], options);
-      return 1;
+      return 2;
     }
     i += consumed;
+  }
+
+  if (romLoaded == 0) {
+    static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL};
+    SDLCommonLogUsage(state, argv[0], options);
+    return 2;
   }
 
   state->window_title = winTitleBuffer;
@@ -665,6 +728,7 @@ main(int argc, char* argv[])
 
   SDL_PauseAudioDevice(audioDevice, 0);
 
+  lcdw = lcdWindowCreate(lcdType);
 
 //  SDL_CreateWindow("Debugger", 50, 50, 320, 200, 0);
 
@@ -685,7 +749,11 @@ main(int argc, char* argv[])
   SDL_DestroyMutex(tmsMutex);
   tmsMutex = NULL;
 
+  lcdWindowDestroy(lcdw);
+  lcdw = NULL;
+
   SDLCommonQuit(state);
+
 
   /* Print out some timing information */
   now = SDL_GetTicks();

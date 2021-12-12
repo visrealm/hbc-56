@@ -7,9 +7,9 @@
 ; https://github.com/visrealm/hbc-56
 
 
-!src "kernel.inc"
+!src "hbc56kernel.inc"
 
-LCD_MODEL = 12864
+LCD_MODEL = 2004
 
 LCD_BUFFER_ADDR = $7d00
 
@@ -17,7 +17,17 @@ LCD_BUFFER_ADDR = $7d00
 
 TMP_CHAR = R0
 
-main:
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "CHARACTER LCD CONSOLE"
+        +consoleLCDMode
+        rts
+
+
+hbc56Main:
         sei
         jsr kbInit
         jsr lcdInit

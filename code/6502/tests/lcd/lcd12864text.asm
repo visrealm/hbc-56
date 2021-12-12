@@ -1,12 +1,21 @@
-!to "lcd12864text.o", plain
+!src "hbc56kernel.inc"
 
-!source "hbc56.asm"
-
-LCD_BUFFER_ADDR = $0200
+LCD_BUFFER_ADDR = $7d00
 LCD_MODEL = 12864
+
+!source "gfx/bitmap.asm"
 !source "lcd/lcd.asm"
 
-main:
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "LCD 12864 TEXT"
+        +consoleLCDMode
+        rts
+
+hbc56Main:
 
 	jsr lcdInit
 	jsr lcdHome

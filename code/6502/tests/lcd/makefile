@@ -7,10 +7,13 @@ ACME=acme -I ..\..\lib -I ..\..\kernel
 	
 remake: clean default
 
-default: tms9918type
+default: lcdtype
+
+lcd12864%: lcd12864%.o
+	$(EMU) --lcd 12864 --keyboard --rom $^
 
 %: %.o
-	$(EMU) --keyboard --rom $^
+	$(EMU) --lcd 2004 --keyboard --rom $^
 
 tms9918nes: tms9918nes.o
 	$(EMU) --rom $^

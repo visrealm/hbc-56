@@ -1,4 +1,4 @@
-	HBC56_RST_VECTOR	= $fbe2	; ?
+	HBC56_RST_VECTOR	= $fbf4	; ?
 	TMS_LT_RED	= $9	; unused
 	TMS_GFX_TILE_WIDTH	= $8
 	TMS_SPRITE_SIZE	= $8
@@ -70,7 +70,7 @@
 	KB_NUM_LOCK	= $10	; unused
 	TMS_R1_DISP_BLANK	= $0	; unused
 	hbc56LogoPatt	= $fa1f	; ?
-	kernelMain	= $fbe2	; ?
+	kernelMain	= $fbf4	; ?
 	hbc56LogoPattEnd	= $fb97	; unused
 	IO_PORT_BASE_ADDRESS	= $7f00
 	MEMSET_LEN	= $ed
@@ -122,6 +122,7 @@
 	tmsSetPosWriteText	= $f8a7	; ?
 	tmsInitTextTable	= $f718	; ?
 	TMS_R1_INT_ENABLE	= $20	; unused
+	consoleDisableCursor	= $fbeb	; unused
 	hbc56BootScreen	= $f933
 	TMS_GFX_TILE_HEIGHT	= $8
 	TMS_LT_BLUE	= $5	; unused
@@ -171,7 +172,7 @@
 	KB_SCANCODE_CAPS_LOCK	= $58
 	tmsInitPattTable	= $f6db	; ?
 	tmsModeMulticolor	= $f648	; unused
-	HBC56_CONSOLE_FLAG_CURSOR	= $80	; unused
+	HBC56_CONSOLE_FLAG_CURSOR	= $80
 	R0L	= $2	; unused
 	R8H	= $13
 	_tmsSendX8	= $f694
@@ -199,6 +200,7 @@
 	tmsSetPosRead	= $f8ad	; unused
 	STR_ADDR	= $18
 	tmsHex8	= $f78d	; unused
+	consoleEnableCursor	= $fbe2	; unused
 	KEY_MAP	= $f1a1	; ?
 	KB_CTRL_DOWN	= $2	; unused
 	TMS9918_REG0_SHADOW_ADDR	= $7e10
