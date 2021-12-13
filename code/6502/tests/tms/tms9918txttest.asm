@@ -19,6 +19,9 @@ hbc56Main:
 
         +tmsEnableOutput
 
+	lda #16
+	sta YPOS
+
         cli
 
 loop:

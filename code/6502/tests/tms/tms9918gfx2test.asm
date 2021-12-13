@@ -33,15 +33,14 @@ hbc56Main:
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
-        +tmsEnableInterrupts
-        +tmsEnableOutput
-
-        cli
 
         jsr setupNameTable
         jsr setupColorTable
         jsr setupPatternTable
 
+        +tmsEnableOutput
+
+        cli
 
 loop:
         jsr doFrame

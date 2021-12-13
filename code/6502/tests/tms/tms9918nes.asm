@@ -46,7 +46,6 @@ hbc56Main:
         jsr tmsInitTextTable ; clear the name table
 
         +tmsEnableOutput
-        +tmsEnableInterrupts
 
         +tmsPrint "TROY'S HBC-56 BASIC READY", 1, 15
         +tmsPrint ">10 PRINT \"HELLO WORLD!\"", 0, 17
@@ -71,11 +70,13 @@ hbc56Main:
         +tmsCreateSprite 1, 1, 56, 40, TMS_MAGENTA
         +tmsCreateSprite 2, 0, 80, 80, TMS_MED_RED
         +tmsCreateSprite 3, 1, 96, 80, TMS_MED_RED
+        +tmsEnableInterrupts
 
         cli
 
 
 loop:
+        sei
         jsr outputSeconds
 
         ldx XPOS
@@ -95,6 +96,7 @@ loop:
         adc #16
         tax
         +tmsSpritePosXYReg 3
+        cli
 
         ldy #8
         jsr customDelay        
@@ -106,8 +108,6 @@ IMG = $8a
 LAST_SECONDS_L = $8b
 
 outputSeconds:
-        sei
-
         +tmsSetPosWrite 8, 1
         +nesBranchIfNotPressed NES_LEFT, +
         +tmsPut 'L'
@@ -173,10 +173,8 @@ outputSeconds:
         +tmsSetPosWrite 1, 1
         lda HBC56_SECONDS_L
         jsr tmsHex8  ; calls cli
-        sei
 
 .endOutput
-        cli
         rts
 
 
