@@ -42,7 +42,7 @@ Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](https:/
 
 ```
 cd code\6502\tests\tms
-make tms9918gfx2text
+make tms9918gfx2test
 ```
 
 <img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode2demo.gif" alt="HBC-56 Emulator" width="800px">
