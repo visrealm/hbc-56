@@ -27,7 +27,7 @@ I have also included an emulator for this system. The emulator supports:
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: https://github.com/visrealm/vrEmuTms9918
 * Support for the dual AY-3-8910 audio.
 
-Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](https://github.com/visrealm/hbc-56/tree/master/emulator)
+Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](emulator)
 
 ## Running the demos
 1. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system
