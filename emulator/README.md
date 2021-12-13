@@ -29,7 +29,7 @@ The emulator supports the following command-line options:
   * **`2004`**  - 20 x 4 Character LCD
   * **`12864`** - 128 x 64 Graphics LCD (Also works as a 16 x 4 character LCD with 8x16 glyphs).
   See [12864B Datasheet](https://www.exploreembedded.com/wiki/images/7/77/QC12864B.pdf)
-<p align="center"><img src="https://visrealm.github.io/hbc-56/img/emu_glcd.png" alt="HBC-56 Emulator LCD Window" width="594px"></p>
+<p align="center"><img src="https://visrealm.github.io/hbc-56/img/glcd_basic.gif" alt="HBC-56 Emulator LCD Window" width="588px"></p>
 
 ## NES controller key mapping
 * **`<Arrow keys>`** - Directional pad (DPAD)
