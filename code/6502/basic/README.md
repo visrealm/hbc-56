@@ -22,7 +22,7 @@ To build and run manually:
 ```
 cd code\6502\basic
 acme -I ..\lib -I ..\kernel -o basic_tms.o -l basic_tms.o.lmap basic_tms.asm
-..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
+..\..\..\emulator\bin\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
 ```
 
 ## Versions / drivers

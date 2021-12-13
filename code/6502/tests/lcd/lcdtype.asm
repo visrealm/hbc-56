@@ -9,8 +9,6 @@
 
 !src "hbc56kernel.inc"
 
-LCD_MODEL = 2004
-
 LCD_BUFFER_ADDR = $7d00
 
 !src "lcd/lcd.asm"
@@ -45,12 +43,12 @@ loop:
 +
         cmp #$08 ; backspace
         bne ++
-        ; TBD
+        jsr lcdBackspace
         jmp .endLoop
 ++
         sei
         lda TMP_CHAR
-        jsr lcdChar
+        jsr lcdCharScroll
         cli
 
 .endLoop

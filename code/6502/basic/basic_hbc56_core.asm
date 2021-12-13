@@ -20,6 +20,7 @@ SAVE_A          = $E2
 ASCII_RETURN    = $0A
 ASCII_CR        = $0D
 ASCII_BACKSPACE = $08
+ASCII_BELL      = $07
 
 ; put the IRQ and NMI code in RAM so that it can be changed
 IRQ_vec         = VEC_SV+2      ; IRQ code vector

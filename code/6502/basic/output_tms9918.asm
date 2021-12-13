@@ -46,6 +46,10 @@ hbc56Out:
 
         jsr tmsSetPosConsole    ; regular character
         lda SAVE_A
+
+        cmp #$07        ; bell (end of buffer)
+        beq .bellOut
+
         +tmsPut
         jsr tmsIncPosConsole    ; increment display position
 
@@ -55,6 +59,10 @@ hbc56Out:
         lda SAVE_A
         cli                     ; enable interrupts
         rts
+
+.bellOut
+        jsr hbc56Bell
+        jmp .endOut
 
 .newline                        ; handle newline character
         +tmsConsoleOut ' '

@@ -12,8 +12,7 @@
 
 !src "zeropage.asm"
 
-;!src "gfx/bitmap.asm"
-!src "sfx/ay3891x.asm"
+!src "sfx/ay3891x_macros.asm"
 !src "sfx/sfxman.asm"
 
 ;

@@ -180,14 +180,11 @@ lcdWait:
 	rts
 
 ; -----------------------------------------------------------------------------
-; lcdWaitPreserve: Wait until the LCD is no longer busy Preserves A
+; lcdWaitPreserve: Wait until the LCD is no longer busy Preserves A, address in x
 ; -----------------------------------------------------------------------------
 lcdWaitPreserve:
-	pha
--
-	lda LCD_CMD
-	bmi -; branch if bit 7 is set
-	pla
+	ldy LCD_CMD
+	bmi lcdWaitPreserve; branch if bit 7 is set
 	rts
 
 ; -----------------------------------------------------------------------------
@@ -268,18 +265,56 @@ lcdChar:
 	rts
 
 ; -----------------------------------------------------------------------------
+; lcdCharScroll: Output a character, scroll if required
+; -----------------------------------------------------------------------------
+; Inputs:
+;  A: The character to output
+; -----------------------------------------------------------------------------
+lcdCharScroll:
+	jsr lcdWaitPreserve
+	sta LCD_DATA
+
+	; Y is previous address
+	jsr lcdCurrentLine
+	sta $7a87
+	jsr lcdWaitPreserve
+	jsr lcdCurrentLine
+	eor $7a87
+	beq +
+	inc $7a87
+	lda $7a87
+	jmp lcdGotoLine
++
+	rts
+
+; -----------------------------------------------------------------------------
 ; lcdBackspace: Backspace a character
 ; -----------------------------------------------------------------------------
 lcdBackspace:
-	jsr lcdWait
+	jsr lcdWaitPreserve
+	; Y is previous address
+	jsr lcdCurrentLine
+	sta $7a87
+
 	lda #LCD_CMD_SHIFT | LCD_CMD_SHIFT_LEFT
 	sta LCD_CMD
+	jsr lcdWait
+	jsr lcdWaitPreserve
+	jsr lcdCurrentLine
+	eor $7a87
+	beq +
+	dec $7a87
+	bmi +
+	lda $7a87
+	jmp lcdGotoLineEnd
++
 	jsr lcdWait
 	lda #' '
 	sta LCD_DATA
 	jsr lcdWait
 	lda #LCD_CMD_SHIFT | LCD_CMD_SHIFT_LEFT
 	sta LCD_CMD
+
 	rts
 
 ; -----------------------------------------------------------------------------
@@ -359,6 +394,233 @@ lcdHex8:
 .H !text "0123456789abcdef"
 
 
+
+
+lcdCurrentLine4:
+	cpy #LCD_ADDR_LINE4
+	bcs .lcdLine4
+	cpy #LCD_ADDR_LINE2
+	bcs .lcdLine2
+	cpy #LCD_ADDR_LINE3
+	bcs .lcdLine3
+	jmp .lcdLine1
+
+lcdCurrentLine2:
+	cpy #LCD_ADDR_LINE2
+	bcs .lcdLine2
+	jmp .lcdLine1
+
+.lcdLine1
+	lda #1
+	rts
+
+.lcdLine2
+	lda #2
+	rts
+
+.lcdLine3
+	lda #3
+	rts
+
+.lcdLine4
+	lda #4
+	rts
+
+; -----------------------------------------------------------------------------
+; lcdCurrentLine: Return the current line/row
+; -----------------------------------------------------------------------------
+lcdCurrentLine:
+!if LCD_ROWS > 2 {
+	jmp lcdCurrentLine4
+} else {
+	jmp lcdCurrentLine2
+}
+
+
+
+; -----------------------------------------------------------------------------
+; lcdGotoLineEnd: Go to end of line in 'A'
+; -----------------------------------------------------------------------------
+lcdGotoLineEnd:
+!if LCD_ROWS > 2 {
+	cmp #4
+	beq lcdLineFourEnd
+	cmp #3
+	beq lcdLineThreeEnd
+}
+	cmp #2
+	beq lcdLineTwoEnd
+	jmp lcdLineOneEnd
+
+
+; -----------------------------------------------------------------------------
+; lcdLineOneEnd: Move cursor to end of line 1
+; -----------------------------------------------------------------------------
+lcdLineOneEnd:
+	pha
+!if LCD_MODEL = 12864 {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+} else {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE1) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+}
+	pla
+	rts
+
+; -----------------------------------------------------------------------------
+; lcdLineTwoEnd: Move cursor to end of line 2
+; -----------------------------------------------------------------------------
+lcdLineTwoEnd:
+	pha
+!if LCD_MODEL = 12864 {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+} else {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE2) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+}
+	pla
+	rts
+
+
+ !if LCD_ROWS > 2 {
+; -----------------------------------------------------------------------------
+; lcdLineThreeEnd: Move cursor to end of line 3
+; -----------------------------------------------------------------------------
+lcdLineThreeEnd:
+	pha
+!if LCD_MODEL = 12864 {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+} else {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE3) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+}
+	pla
+	rts
+
+; -----------------------------------------------------------------------------
+; lcdLineFourEnd: Move cursor to end of line 4
+; -----------------------------------------------------------------------------
+lcdLineFourEnd:
+	pha
+!if LCD_MODEL = 12864 {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS/2) - 1
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+} else {
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	jsr lcdRead
+	pha
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	lda #' '
+	jsr lcdChar
+	jsr lcdChar
+	lda #(LCD_CMD_SET_DRAM_ADDR | LCD_ADDR_LINE4) + (LCD_COLUMNS) - 2
+	sta LCD_CMD
+	pla
+	jsr lcdChar
+}
+	pla
+	rts
+
+
+; -----------------------------------------------------------------------------
+; lcdGotoLine: Go to line in 'A'
+; -----------------------------------------------------------------------------
+lcdGotoLine:
+!if LCD_ROWS > 2 {
+	cmp #4
+	beq lcdLineFour
+	cmp #3
+	beq lcdLineThree
+}
+	cmp #2
+	beq lcdLineTwo
+	cmp #1
+	beq lcdLineOne
+	jmp lcdScrollUp
+
+
 ; -----------------------------------------------------------------------------
 ; lcdLineOne: Move cursor to line 1
 ; -----------------------------------------------------------------------------
@@ -400,7 +662,8 @@ lcdLineFour:
 	sta LCD_CMD
 	pla
 	rts
- 
+ }
+
 ; -----------------------------------------------------------------------------
 ; lcdNextLine4: Move cursor to next line (4-row LCD version)
 ; -----------------------------------------------------------------------------
@@ -415,8 +678,8 @@ lcdNextLine4:
 	bcs lcdLineFour
 	
 	jmp lcdLineTwo
-
-}
+ }
+ 
 
 ; -----------------------------------------------------------------------------
 ; lcdNextLine2: Move cursor to next line (2-row LCD version)
@@ -446,7 +709,7 @@ lcdNextLine:
 ; -----------------------------------------------------------------------------
 lcdReadLine:
 	ldy #0
-	jsr lcdRead
+	;jsr lcdRead
 -
 	jsr lcdRead
 	sta (STR_ADDR), y

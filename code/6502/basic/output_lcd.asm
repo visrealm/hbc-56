@@ -8,7 +8,6 @@
 ;
 
 
-LCD_MODEL        = 12864                ; 128x64 graphics LCD
 LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
 
 !src "lcd/lcd.asm"                      ; lcd library
@@ -39,11 +38,14 @@ hbc56Out:
         cmp #ASCII_BACKSPACE
         beq .backspace
 
+        cmp #ASCII_BELL ; bell (end of buffer)
+        beq .bellOut
+
         cmp #ASCII_CR   ; omit these
         beq .endOut
 
         ; regular character
-        jsr lcdChar ; outputs A to the LCD - auto-scrolls too :)
+        jsr lcdCharScroll ; outputs A to the LCD - auto-scrolls too :)
 
 
 .endOut:
@@ -52,6 +54,10 @@ hbc56Out:
         lda SAVE_A
         cli
         rts
+
+.bellOut
+        jsr hbc56Bell
+        jmp .endOut
 
 
 .newline

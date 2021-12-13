@@ -8,7 +8,6 @@
 ;
 
 
-LCD_MODEL        = 12864                ; 128x64 graphics LCD
 LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
 
 TILE_OFFSET = $e3
@@ -53,6 +52,9 @@ hbc56Out:
         cmp #ASCII_BACKSPACE
         beq .backspace
 
+        cmp #ASCII_BELL ; bell (end of buffer)
+        beq .bellOut
+
         cmp #ASCII_CR   ; omit these
         beq .endOut
 
@@ -71,7 +73,7 @@ hbc56Out:
         lsr
         lsr
         tay
-        jsr tilemapRenderRow
+        jsr tilemapRender;//Row
 
         ldx SAVE_X
         ldy SAVE_Y
@@ -79,6 +81,9 @@ hbc56Out:
         cli
         rts
 
+.bellOut
+        jsr hbc56Bell
+        jmp .endOut
 
 .newline
         lda TILE_OFFSET

@@ -20,29 +20,19 @@ All source code and schematics are available in this repository.
 
 ## Emulator
 I have also included an emulator for this system. The emulator supports:
+
 * Realtime execution of code (at 4MHz).
 * Step through disassembled code with labels.
 * Examine CPU and VDP registers, RAM and VRAM.
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: https://github.com/visrealm/vrEmuTms9918
 * Support for the dual AY-3-8910 audio.
 
-#### NES mode
-The emulator defaults to NES mode. The buttons are mapped as follows:
-* DPAD = Arrow keys
-* A = Left Shift
-* B = Left Ctrl
-* Select = Tab
-* Start= Space
-
-#### Keyboard mode
-Use the `--keyboard` command line option to run the emulator in keyboard mode. Some of the demos require this and the makefiles are set up accordingly.
- 
+Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](https://github.com/visrealm/hbc-56/tree/master/emulator)
 
 ## Running the demos
-1. Build the emulator in MSVC (emulator\msvc\Hbc56Emu.sln) - Release mode
-2. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system
-3. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your path
-4. For each path (basic, invaders, tests\tms, tests\sfx):
+1. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system
+2. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your path
+3. For each path (basic, invaders, tests\tms, tests\sfx):
  * Open a console to the path
  * Type `make` (this will build the default program and run it in the emulator:
 
@@ -55,7 +45,7 @@ cd code\6502\tests\tms
 make tms9918gfx2text
 ```
 
-<img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="1279px">
+<img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode2demo.gif" alt="HBC-56 Emulator" width="800px">
 
 #### Manually building a demo
 Example: invaders
@@ -67,12 +57,12 @@ acme -I ..\lib -I ..\kernel -o invaders.o -l invaders.o.lmap invaders.asm
 Example: invaders
 ```
 cd code\6502\invaders
-..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe --rom invaders.o
+..\..\..\emulator\bin\Hbc56Emu.exe --rom invaders.o
 ```
 Example: basic
 ```
 cd code\6502\basic
-..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
+..\..\..\emulator\bin\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
 ```
 
 

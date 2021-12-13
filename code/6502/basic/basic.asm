@@ -436,7 +436,7 @@ Ibuffs		= IRQ_vec+$14
 					; start of input buffer after IRQ/NMI code
 Ibuffe		= Ibuffs+$47; end of input buffer
 
-Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
+Ram_base	= $0400	; start of user RAM (set as needed, should be page aligned)
 Ram_top		= $7000	; end of user RAM+1 (set as needed, should be page aligned)
 
 ; This start can be changed to suit your system
@@ -501,10 +501,15 @@ TabLoop
 	STA	g_step		; save it
 	LDX	#des_sk		; descriptor stack start
 	STX	next_s		; set descriptor stack pointer
-	JSR	LAB_CRLF		; print CR/LF
+
+	lda #$00
+	sta Itempl
+	lda #$68
+	sta Itemph	; 16KB
 
         JMP LAB_2D93    ; Skip memory question
 
+	JSR	LAB_CRLF		; print CR/LF
 	LDA	#<LAB_MSZM		; point to memory size message (low addr)
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
@@ -594,7 +599,7 @@ LAB_2DB6
 
 ;	INC	Smemh			; increment start of mem high byte
 LAB_2E05
-	JSR	LAB_CRLF		; print CR/LF
+	;JSR	LAB_CRLF		; print CR/LF
 	JSR	LAB_1463		; do "NEW" and "CLEAR"
 	LDA	Ememl			; get end of mem low byte
 	SEC				; set carry for subtract
@@ -602,7 +607,10 @@ LAB_2E05
 	TAX				; copy to X
 	LDA	Ememh			; get end of mem high byte
 	SBC	Smemh			; subtract start of mem high byte
-	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
+
+; TS: Don't print free RAM
+;	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
+
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
@@ -2382,8 +2390,8 @@ LAB_1866
 ; print CR/LF
 
 LAB_CRLF
-	LDA	#$0D			; load [CR]
-	JSR	LAB_PRNA		; go print the character
+	;LDA	#$0D			; load [CR]
+	;JSR	LAB_PRNA		; go print the character
 	LDA	#$0A			; load [LF]
 	BNE	LAB_PRNA		; go print the character and return, branch always
 
@@ -7806,8 +7814,7 @@ LAB_MSZM
 	!text	$0D,$0A,"Memory size ",$00
 
 LAB_SMSG
-	!text	" Bytes free",$0D,$0A,$0A
-	!text	"HBC-56 BASIC",$0A,$00
+	!text	"HBC-56 BASIC",$00
 
 ; numeric constants and series
 
@@ -8688,10 +8695,10 @@ ERR_LD	!text	"LOOP without DO",$00
 
 ;ERR_UA	!text	"Undimensioned array",$00
 
-LAB_BMSG	!text	$0D,$0A,"Break",$00
+LAB_BMSG	!text	"Break",$00
 LAB_EMSG	!text	" Error",$00
 LAB_LMSG	!text	" in line ",$00
-LAB_RMSG	!text	$0D,$0A,"Ready",$0D,$0A,$00
+LAB_RMSG	!text	$0A,"Ready",$0A,$00
 
 LAB_IMSG	!text	" Extra ignored",$0D,$0A,$00
 LAB_REDO	!text	" Redo from start",$0D,$0A,$00

@@ -32,6 +32,7 @@ JMP_OPCODE = $4c
 !src "inp/keyboard.asm"
 
 !src "gfx/tms9918.asm"
+!src "sfx/ay3891x.asm"
 
 !src "kernel_macros.asm"
 
@@ -52,6 +53,11 @@ HBC56_TMP_Y     = HBC56_CONSOLE_FLAGS + 2
 
 onVSync:
         pha
+        
+        ; this is just for the emulator... 
+        ; otherwise, we only see this interrupt handler repeating in the debuggeer
+        +tmsDisableInterrupts 
+
         inc HBC56_TICKS
         lda HBC56_TICKS
         cmp #TMS_FPS
@@ -77,6 +83,8 @@ onVSync:
         lda #$7f
         +tmsPut
 ++
+        +tmsEnableInterrupts 
+        
         +tmsReadStatus
         pla      
         rti
@@ -88,6 +96,14 @@ consoleEnableCursor:
 consoleDisableCursor:
         +consoleDisableCursor
         rts
+
+hbc56Bell:
+        +ayPlayNote AY_PSG0, AY_CHC, NOTE_C
+        jsr hbc56Delay
+        jsr hbc56Delay
+        +ayStop AY_PSG0, AY_CHC
+        rts
+
 
 kernelMain:
         cld     ; make sure we're not in decimal mode
@@ -106,6 +122,14 @@ kernelMain:
 
         sei
         jsr kbInit
+        jsr ayInit
+
+        +ayWrite AY_PSG0, AY_ENABLES, $3b
+        +ayWrite AY_PSG0, AY_CHC_AMPL, $0f
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, $00
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, $80;.duration
+        +ayWrite AY_PSG0, AY_ENV_SHAPE, $0e
+
         !ifdef tmsInit { jsr tmsInit }
         !ifdef lcdInit { jsr lcdInit }
 
@@ -138,7 +162,7 @@ kernelMain:
         jsr hbc56Delay
         jsr hbc56Delay
 
-        lda HBC56_CONSOLE_FLAG_LCD
+        lda #HBC56_CONSOLE_FLAG_LCD
         bit HBC56_CONSOLE_FLAGS
         bne .afterInput         ; LCD - skip input
         bvc .keyboardInput
@@ -154,6 +178,8 @@ kernelMain:
         jsr kbWaitForKey
 
 .afterInput
+
+        jsr hbc56Delay
 
         cli
 

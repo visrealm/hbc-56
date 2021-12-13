@@ -1,5 +1,27 @@
+/*
+ * Troy's HBC-56 Emulator - LCD module
+ *
+ * Copyright (c) 2021 Troy Schrapel
+ *
+ * This code is licensed under the MIT license
+ *
+ * https://github.com/visrealm/hbc-56/emulator
+ *
+ */
+ 
 #include "lcd.h"
 #include <memory.h>
+
+static const size_t scale = 8;
+
+static const size_t borderX = 10;
+static const size_t borderY = 5;
+static const size_t TEX_BPP = 3;
+
+
+static const lcdColors[3][3] = { {0x7d, 0xbe, 0x00},  /* no pixel */
+                                {0x5f, 0xa9, 0x00},  /* off */
+                                {0x1c, 0x14, 0x00} }; /* on */
 
 LCDWindow* lcdWindowCreate(LCDType lcdType) {
 
@@ -25,25 +47,38 @@ LCDWindow* lcdWindowCreate(LCDType lcdType) {
         return NULL;
     }
 
-    int scale = 5;
-
     size_t nativeWidth = vrEmuLcdNumPixelsX(lcdw->lcd);
     size_t nativeHeight = vrEmuLcdNumPixelsY(lcdw->lcd);
 
+    size_t pixelsWidth = (nativeWidth + (borderX * 2)) * scale;
+    size_t pixelsHeight = (nativeHeight + (borderY * 2)) * scale;
+
+
     Uint32 windowFlags = 0;
     lcdw->window = SDL_CreateWindow("HBC-56 LCD Display", 50, 50,
-                              nativeWidth * scale,
-                              nativeHeight * scale,
+                              (int)pixelsWidth / 2,
+                              (int)pixelsHeight / 2,
                               windowFlags);
 
-
     lcdw->renderer = SDL_CreateRenderer(lcdw->window, -1, SDL_RENDERER_SOFTWARE);
-    SDL_RenderSetLogicalSize(lcdw->renderer, nativeWidth, nativeHeight);
-    SDL_SetRenderDrawColor(lcdw->renderer, 0xA8, 0xC6, 0x4E, 0xFF);
-    SDL_RenderClear(lcdw->renderer);
-    lcdw->tex = SDL_CreateTexture(lcdw->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, nativeWidth, nativeHeight);
-    lcdw->frameBuffer = malloc(nativeWidth * nativeHeight * 3);
-    if (lcdw->frameBuffer) memset(lcdw->frameBuffer, 0, nativeWidth * nativeHeight * 3);
+    SDL_RenderSetLogicalSize(lcdw->renderer, (int)pixelsWidth, (int)pixelsHeight);
+    lcdw->tex = SDL_CreateTexture(lcdw->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, (int)pixelsWidth, (int)pixelsHeight);
+    SDL_SetTextureScaleMode(lcdw->tex, SDL_ScaleModeBest);
+    lcdw->frameBuffer = malloc(pixelsWidth * pixelsHeight * TEX_BPP);
+    if (lcdw->frameBuffer)
+    {
+
+      char* ptr = lcdw->frameBuffer - 1;
+      for (size_t y = 0; y < pixelsHeight; ++y)
+      {
+        for (size_t x = 0; x < pixelsWidth; ++x)
+        {
+          *(++ptr) = lcdColors[0][0];
+          *(++ptr) = lcdColors[0][1];
+          *(++ptr) = lcdColors[0][2];
+        }
+      }
+    }
 
     lcdWindowUpdate(lcdw);
   }
@@ -67,9 +102,6 @@ void lcdWindowDestroy(LCDWindow* lcdw)
   }
 }
 
-static lcdColors[3][3] = {{0x7d, 0xbe, 0x00},  /* no pixel */
-                          {0x6f, 0xb9, 0x00},  /* off */
-                          {0x2c, 0x24, 0x00}}; /* on */
 
 void lcdWindowUpdate(LCDWindow* lcdw) {
   if (lcdw && lcdw->lcd)
@@ -79,24 +111,37 @@ void lcdWindowUpdate(LCDWindow* lcdw) {
     int w = vrEmuLcdNumPixelsX(lcdw->lcd);
     int h = vrEmuLcdNumPixelsY(lcdw->lcd);
 
-    char *ptr = lcdw->frameBuffer - 1;
+    size_t pixelsWidth = (w + (borderX * 2)) * scale;
+    size_t pixelsHeight = (h + (borderY * 2)) * scale;
+
+    size_t xOffset = borderX * scale;
+    size_t yOffset = borderY * scale;
+    size_t stride = pixelsWidth * TEX_BPP;
 
     for (int y = 0; y < h; ++y)
     {
       for (int x = 0; x < w; ++x)
       {
         char state = vrEmuLcdPixelState(lcdw->lcd, x, y);
-
         ++state;
 
-        *(++ptr) = lcdColors[state][0];
-        *(++ptr) = lcdColors[state][1];
-        *(++ptr) = lcdColors[state][2];
+        for (int iy = 0; iy < scale - 1; ++iy)
+        {
+          char* ptr = lcdw->frameBuffer + (yOffset + y * scale + iy) * stride + (xOffset + x * scale) * TEX_BPP;
+          --ptr;
+
+          for (int ix = 0; ix < scale - 1; ++ix)
+          {
+            *(++ptr) = lcdColors[state][0];
+            *(++ptr) = lcdColors[state][1];
+            *(++ptr) = lcdColors[state][2];
+          }
+        }
       }
     }
 
-    SDL_UpdateTexture(lcdw->tex, NULL, lcdw->frameBuffer, w * 3);
-    SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, NULL);
+    SDL_UpdateTexture(lcdw->tex, NULL, lcdw->frameBuffer, (int)stride);
+    SDL_RenderCopyF(lcdw->renderer, lcdw->tex, NULL, NULL);
 
     SDL_RenderPresent(lcdw->renderer);
 

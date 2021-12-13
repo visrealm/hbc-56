@@ -1,9 +1,13 @@
-EMU=..\..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe
+EMU=..\..\..\..\emulator\bin\Hbc56Emu.exe
 ACME=acme -I ..\..\lib -I ..\..\kernel
 
+LCD_MODEL = 12864
+
+lcd12864%.o: lcd12864%.asm
+	$(ACME) -o $@ -l $@.lmap $<
 
 %.o: %.asm
-	$(ACME) -o $@ -l $@.lmap $<
+	$(ACME) -DLCD_MODEL=$(LCD_MODEL) -o $@ -l $@.lmap $<
 	
 remake: clean default
 
@@ -13,10 +17,7 @@ lcd12864%: lcd12864%.o
 	$(EMU) --lcd 12864 --keyboard --rom $^
 
 %: %.o
-	$(EMU) --lcd 2004 --keyboard --rom $^
-
-tms9918nes: tms9918nes.o
-	$(EMU) --rom $^
+	$(EMU) --lcd $(LCD_MODEL) --keyboard --rom $^
 
 .PHONY: clean
 

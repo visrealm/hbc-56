@@ -1,4 +1,4 @@
-EMU=..\..\..\emulator\msvc\x64\Release\Hbc56Emu.exe
+EMU=..\..\..\emulator\bin\Hbc56Emu.exe
 ACME=acme -I ..\lib
 
 

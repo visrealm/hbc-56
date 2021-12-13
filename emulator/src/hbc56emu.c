@@ -125,7 +125,6 @@ uint8_t io_read(uint8_t addr)
     case NES_IO_PORT:  /* same as KB_IO_PORT */
     if (keyboardMode)
     {
-      val = 0x00;
       if (kbEnd != kbStart)
       {
         val = kbQueue[kbStart];
@@ -672,6 +671,10 @@ main(int argc, char* argv[])
   if (romLoaded == 0) {
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL};
     SDLCommonLogUsage(state, argv[0], options);
+
+    SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+
     return 2;
   }
 
@@ -688,6 +691,9 @@ main(int argc, char* argv[])
     SDL_SetRenderDrawColor(renderer, 0,0,0, 0xFF);
     SDL_RenderClear(renderer);
     screenTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, LOGICAL_DISPLAY_SIZE_X, LOGICAL_DISPLAY_SIZE_Y);
+    
+    SDL_SetTextureScaleMode(screenTex, SDL_ScaleModeBest); // remove this for sharp scaling
+
     debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
     memset(frameBuffer, 0, sizeof(frameBuffer));
   }

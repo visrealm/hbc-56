@@ -6,10 +6,8 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-;
-; Dependencies:
-;  - hbc56.asm
 
+!src "sfx/ay3891x_macros.asm"
 
 ; -------------------------
 ; Constants
@@ -79,42 +77,6 @@ AY_PORTA        = AY_R14
 AY_PORTB        = AY_R15
 
 AY_CLOCK_FREQ   = 2000000
-
-!macro ayWrite .dev, .reg, .val {
-
-        lda #.reg
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_ADDR | .dev
-        lda #.val
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_WRITE | .dev
-}        
-
-
-!macro ayWriteX .dev, .reg, .val {
-
-        lda #.reg
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_ADDR | .dev
-        lda #.val
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_WRITE | .dev
-}
-
-!macro ayWriteA .dev, .reg {
-        pha
-        lda #.reg
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_ADDR | .dev
-        pla
-        sta IO_PORT_BASE_ADDRESS | AY_IO_ADDR | AY_WRITE | .dev
-}
-
-!macro ayPlayNote .dev, .chan, .freq {
-        .val = AY_CLOCK_FREQ / (16.0 * .freq)
-        +ayWrite .dev, AY_CHA_TONE_L + (.chan * 2), <.val
-        +ayWrite .dev, AY_CHA_TONE_H + (.chan * 2), >.val
-}
-
-!macro ayStop .dev, .chan{
-        +ayWrite .dev, AY_CHA_TONE_L + (.chan * 2), 0
-        +ayWrite .dev, AY_CHA_TONE_H + (.chan * 2), 0
-}
 
 NOTE_A  = 440
 NOTE_As = 466.16
