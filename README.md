@@ -30,16 +30,17 @@ I have also included an emulator for this system. The emulator supports:
 Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](emulator)
 
 ## Running the demos
-1. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system
-2. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your path
+1. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system and in your PATH
+2. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your PATH
 3. For each path (basic, invaders, tests\tms, tests\sfx):
  * Open a console to the path
  * Type `make` (this will build the default program and run it in the emulator:
 
   <img src="img/make.png" alt="Make the demos" width="640px">
 
+ * Type `make all` to build and run all demos in the directory
  * Type `make <basefile>` (filename without extension) to build and run a specific demo eg:
-
+ 
 ```
 cd code\6502\tests\tms
 make tms9918gfx2test
