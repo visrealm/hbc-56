@@ -88,7 +88,7 @@
 
 
 ; -----------------------------------------------------------------------------
-; memcpy: Copy a fixed number of bytes from src ram to dest port
+; memcpyPort: Copy a fixed number of bytes from src ram to dest port
 ; -----------------------------------------------------------------------------
 ; Inputs:
 ;	src: source address
@@ -154,3 +154,4 @@
 	jsr memsetMultiPage
 }
 }
+

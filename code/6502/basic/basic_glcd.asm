@@ -9,5 +9,5 @@
 
 !src "basic_hbc56_core.asm"             ; core basic
 
-!src "input.asm"                        ; input routines
-!src "output_lcd_12864.asm"             ; output routines
+!src "drivers/input.asm"                        ; input routines
+!src "drivers/output_lcd_12864.asm"             ; output routines

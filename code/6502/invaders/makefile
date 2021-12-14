@@ -1,17 +1,21 @@
-EMU=..\..\..\emulator\bin\Hbc56Emu.exe
-ACME=acme -I ..\lib -I ..\kernel
+# Troy's HBC-56 - Invaders makefile
+#
+# Copyright (c) 2021 Troy Schrapel
+#
+# This code is licensed under the MIT license
+#
+# https://github.com/visrealm/hbc-56
+#
+#
 
-
-%.o: %.asm
-	$(ACME) -o $@ -l $@.lmap $<
+ROOT_PATH=../
 
 default: invaders
 
-%: %.o
-	$(EMU) --rom $^
+include $(ROOT_PATH)makefile
 
-.PHONY: clean default
+%: %.o
+	$(HBC56EMU) --rom $<
 
 clean:
 	rm -f *.o *.lmap
-	

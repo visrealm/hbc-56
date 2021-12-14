@@ -1801,6 +1801,7 @@ break;
           }
         }
       }
+      *done = 1;
     }
     break;
     case SDL_WINDOWEVENT_FOCUS_LOST:

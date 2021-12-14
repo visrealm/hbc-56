@@ -16,7 +16,7 @@
                 {
                         "label": "Run invaders",
                         "type": "shell",
-                        "command": "..\\..\\emulator\\msvc\\x64\\Release\\Hbc56Emu --resizable --renderer software --rom \"invaders\\invaders.o\"",
+                        "command": "..\\..\\emulator\\bin\\Hbc56Emu --resizable --renderer software --rom \"invaders\\invaders.o\"",
                         "problemMatcher": [],
                         "dependsOn":["Build invaders"],
                         "group": {

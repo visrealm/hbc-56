@@ -1,3 +1,12 @@
+; Troy's HBC-56 - CPU tests (degugging emulator issues)
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
+
 !src "hbc56kernel.inc"
 
 hbc56Main:

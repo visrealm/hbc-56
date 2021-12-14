@@ -1,6 +1,13 @@
-!src "hbc56kernel.inc"
+; Troy's HBC-56 - Mario bros tune
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
 
-!source "sfx/ay3891x.asm"
+!src "hbc56kernel.inc"
 
 
 hbc56Meta:
@@ -120,24 +127,12 @@ hbc56Main:
         +ayWrite AY_PSG0, AY_ENV_PERIOD_H, $08
         +ayWrite AY_PSG0, AY_ENV_SHAPE, $09
 
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
 
 .loop:
 
 	!macro playNote .note {
 		+ayPlayNote AY_PSG0, AY_CHC, .note
-		jsr delay
+		jsr toneDelay
 		+ayStop AY_PSG0, AY_CHC
 		jsr shortDelay
 	}

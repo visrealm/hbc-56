@@ -1,26 +1,21 @@
-EMU=..\..\..\..\emulator\bin\Hbc56Emu.exe
-ACME=acme -I ..\..\lib -I ..\..\kernel
+# Troy's HBC-56 - LCD tests makefile
+#
+# Copyright (c) 2021 Troy Schrapel
+#
+# This code is licensed under the MIT license
+#
+# https://github.com/visrealm/hbc-56
+#
+#
 
-LCD_MODEL = 12864
-
-lcd12864%.o: lcd12864%.asm
-	$(ACME) -o $@ -l $@.lmap $<
-
-%.o: %.asm
-	$(ACME) -DLCD_MODEL=$(LCD_MODEL) -o $@ -l $@.lmap $<
-	
-remake: clean default
+ROOT_PATH=../../
 
 default: lcdtype
 
-lcd12864%: lcd12864%.o
-	$(EMU) --lcd 12864 --keyboard --rom $^
+include $(ROOT_PATH)makefile
 
 %: %.o
-	$(EMU) --lcd $(LCD_MODEL) --keyboard --rom $^
-
-.PHONY: clean
+	$(HBC56EMU) --lcd 12864 --keyboard --rom $<
 
 clean:
 	rm -f *.o *.lmap
-	

@@ -120,9 +120,9 @@ TMS_NAME_DATA:
 
 TMS_COLOR_DATA:
 
-!for c, 0, 11 {
-        !for r, 0, 511 {
-                !byte (c + 2) << 4
+!for .c, 0, 11 {
+        !for .r, 0, 511 {
+                !byte (.c + 2) << 4
         }
 }
 

@@ -1,19 +1,21 @@
-EMU=..\..\..\..\emulator\bin\Hbc56Emu.exe
-ACME=acme -I ..\..\lib -I ..\..\kernel
+# Troy's HBC-56 - Audio tests makefile
+#
+# Copyright (c) 2021 Troy Schrapel
+#
+# This code is licensed under the MIT license
+#
+# https://github.com/visrealm/hbc-56
+#
+#
 
-
-%.o: %.asm
-	$(ACME) -o $@ -l $@.lmap $<
-	
-remake: clean default
+ROOT_PATH=../../
 
 default: mario
 
-%: %.o
-	$(EMU) --keyboard --rom $^
+include $(ROOT_PATH)makefile
 
-.PHONY: clean
+%: %.o
+	$(HBC56EMU) --keyboard --rom $<
 
 clean:
 	rm -f *.o *.lmap
-	

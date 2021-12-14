@@ -6,9 +6,6 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-;
-; Dependencies:
-;  - hbc56.asm
 
 !src "hbc56.inc"
 !src "ut/math_macros.asm"
@@ -218,6 +215,7 @@ tmsSetBackground:
 ; -----------------------------------------------------------------------------
 tmsReg0SetFields:
         ora TMS9918_REG0_SHADOW_ADDR
+.tmsReg0SetFields:
         sta TMS9918_REG0_SHADOW_ADDR
         ldx #0
         beq tmsSetRegister
@@ -231,9 +229,7 @@ tmsReg0SetFields:
 tmsReg0ClearFields:
         eor #$ff
         and TMS9918_REG0_SHADOW_ADDR
-        sta TMS9918_REG0_SHADOW_ADDR
-        ldx #0
-        beq tmsSetRegister
+        jmp .tmsReg0SetFields
 
 
 ; -----------------------------------------------------------------------------
@@ -244,6 +240,7 @@ tmsReg0ClearFields:
 ; -----------------------------------------------------------------------------
 tmsReg1SetFields:
         ora TMS9918_REG1_SHADOW_ADDR
+.tmsReg1SetFields:
         sta TMS9918_REG1_SHADOW_ADDR
         ldx #1
         bne tmsSetRegister
@@ -257,9 +254,7 @@ tmsReg1SetFields:
 tmsReg1ClearFields:
         eor #$ff
         and TMS9918_REG1_SHADOW_ADDR
-        sta TMS9918_REG1_SHADOW_ADDR
-        ldx #1
-        bne tmsSetRegister
+        jmp .tmsReg1SetFields
 
 ; -----------------------------------------------------------------------------
 ; tmsModeGraphicsI: Set up for Graphics I mode

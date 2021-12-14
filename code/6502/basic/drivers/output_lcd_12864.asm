@@ -12,7 +12,6 @@ LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
 
 TILE_OFFSET = $e3
 
-!src "lcd/lcd.asm"                      ; lcd library
 !align 255, 0
 c64FontData:
 	!bin "lcd/fonts/c64-font-ascii.bin"

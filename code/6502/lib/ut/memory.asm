@@ -12,8 +12,6 @@
 
 UT_MEMORY_ASM_ = 1
 
-!zone memcpy {
-
 MEMCPY_DST = $e9
 MEMCPY_SRC = $eb
 MEMCPY_LEN = $ed
@@ -160,81 +158,8 @@ memcpyMultiPagePort:
 ; -----------------------------------------------------------------------------
 
 
-
-; -----------------------------------------------------------------------------
-; memcpy: Copy a fixed number of bytes from src ram to dest port
-; -----------------------------------------------------------------------------
-; Inputs:
-;	src: source address
-;	dst: destination address
-;	cnt: number of bytes
-; -----------------------------------------------------------------------------
-!macro memcpyPort dst, src, cnt {
-	lda #<src
-	sta MEMCPY_SRC
-	lda #>src
-	sta MEMCPY_SRC + 1
-
-	lda #<dst
-	sta MEMCPY_DST
-	lda #>dst
-	sta MEMCPY_DST + 1
-
-	!if cnt <= 255 {
-		ldy #<cnt					
-		jsr memcpySinglePagePort
-	} else {
-		lda #<cnt
-		sta MEMCPY_LEN
-		lda #>cnt
-		sta MEMCPY_LEN + 1
-		jsr memcpyMultiPagePort
-	}
-}
-
-} ; memcpy
-
-!zone memset {
-
 MEMSET_DST = $eb
 MEMSET_LEN = $ed
-
-; -----------------------------------------------------------------------------
-; memset: Set a fixed number of bytes to a single value
-; -----------------------------------------------------------------------------
-; Inputs:
-;	dst: destination address
-;	val: the byte value
-;	cnt: number of bytes
-; -----------------------------------------------------------------------------
-!macro memset dst, val, cnt {
-!if cnt <= 8 {
-	lda #val
-	!for i, 0, cnt - 1 {
-	sta dst + i
-	}
-} else if cnt <= 255 {
-	ldx #cnt
-	lda #val
--
-	dex
-	sta dst, x
-	cpx #0
-	bne -
-} else {
-	lda #<dst
-	sta MEMSET_DST
-	lda #>dst
-	sta MEMSET_DST + 1
-	lda #<cnt
-	sta MEMSET_LEN
-	lda #>cnt
-	sta MEMSET_LEN + 1
-	lda #val
-	jsr memsetMultiPage
-}
-
-}
 
 
 ; -----------------------------------------------------------------------------
@@ -290,5 +215,3 @@ memsetMultiPage:
 	bne -
 .doneSet3
 	rts
-
-} ; memset

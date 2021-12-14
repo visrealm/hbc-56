@@ -22,6 +22,10 @@ for infile in sys.argv[1:]:
         pattIn = open(infile, "rb")
         pattOut = open(f + ".patt","wb")
         indOut = open(f + ".ind","wb")
+        indSize = 0
+        pattSaved = 0
+
+        print("Processing:    ", infile)
         
         index = IND_OFFSET
         ul = pattIn.read(8)
@@ -30,17 +34,26 @@ for infile in sys.argv[1:]:
             #print(val)
             if val in valDict:
                 indOut.write(bytes([valDict[val] & 0xff]))
+                pattSaved += 1
+                indSize += 1
             else:
                 valDict[val] = index
                 indOut.write(bytes([index & 0xff]))
                 pattOut.write(struct.pack('Q', val))
-                index = index + 1
+                index += 1
+                indSize += 1
             ul = pattIn.read(8)
 
 
         pattIn.close()
         pattOut.close()
         indOut.close()
+        
+        print("Index size:    ", indSize)
+        print("Patterns saved:", pattSaved,"=",pattSaved*8,"bytes")
+        print("Total size:    ", os.path.getsize(f + ".patt")+os.path.getsize(f + ".ind"),"bytes")
+        print("Created files: ", f + ".patt", f + ".ind")
+        
     except IOError:
         print("cannot convert", infile)
             

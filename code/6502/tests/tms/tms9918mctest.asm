@@ -1,3 +1,12 @@
+; Troy's HBC-56 - TMS9918 Multicolor mode test
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
+
 !src "hbc56kernel.inc"
 
 hbc56Meta:
@@ -18,20 +27,22 @@ hbc56Main:
 
         +tmsEnableOutput
         +tmsEnableInterrupts
-
-        cli
-
 loop:
+
+        sei
         +tmsSetAddrPattTable
         +tmsSendData TMS_BIRD_DATA, $800
+        cli
 
         jsr medDelay
         jsr medDelay
         jsr medDelay
         jsr medDelay
 
+        sei
         +tmsSetAddrPattTable
         +tmsSendData TMS_PATTERN_DATA, $800
+        cli
 
         jsr medDelay
         jsr medDelay
@@ -63,9 +74,9 @@ customDelay:
 
 TMS_NAME_DATA:
 
-!for y, 0, 23 {
-!for x, 0, 31 {
-        !byte x + ((y & $fc) << 3)
+!for .y, 0, 23 {
+!for .x, 0, 31 {
+        !byte .x + ((.y & $fc) << 3)
 }
 }
 

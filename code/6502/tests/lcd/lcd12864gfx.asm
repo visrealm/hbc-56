@@ -1,10 +1,15 @@
+; Troy's HBC-56 - LCD graphics tests
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
 !src "hbc56kernel.inc"
 
 BUFFER_ADDR = $1000
 LCD_MODEL = 12864
-
-!source "gfx/bitmap.asm"
-!source "lcd/lcd.asm"
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel

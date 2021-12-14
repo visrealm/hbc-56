@@ -1,20 +1,17 @@
-; 6502 LCD Type - HBC-56
+; Troy's HBC-56 - LCD Type - HBC-56
 ;
 ; Copyright (c) 2021 Troy Schrapel
 ;
 ; This code is licensed under the MIT license
 ;
 ; https://github.com/visrealm/hbc-56
-
+;
 
 !src "hbc56kernel.inc"
 
 LCD_BUFFER_ADDR = $7d00
 
-!src "lcd/lcd.asm"
-
 TMP_CHAR = R0
-
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel

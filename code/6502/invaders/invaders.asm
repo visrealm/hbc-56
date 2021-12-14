@@ -12,7 +12,6 @@
 
 !src "zeropage.asm"
 
-!src "sfx/ay3891x_macros.asm"
 !src "sfx/sfxman.asm"
 
 ;

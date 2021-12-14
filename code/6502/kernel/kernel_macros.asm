@@ -27,8 +27,8 @@
 }
 
 !macro setHbcMetaNES {
-        lda HBC56_CONSOLE_FLAGS
-        ora #HBC56_CONSOLE_FLAG_NES
+        lda #HBC56_CONSOLE_FLAG_NES
+        ora HBC56_CONSOLE_FLAGS
         sta HBC56_CONSOLE_FLAGS
 }
 
@@ -60,3 +60,8 @@
         ora #HBC56_CONSOLE_FLAG_LCD
         sta HBC56_CONSOLE_FLAGS
 }
+
+!macro setBreakpoint {
+       !byte $db 
+}
+

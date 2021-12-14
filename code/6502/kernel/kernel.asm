@@ -12,38 +12,44 @@ HBC56_INT_VECTOR = $7e00
 HBC56_NMI_VECTOR = $7e04
 HBC56_RST_VECTOR = kernelMain
 
-HBC56_META_VECTOR = $eff0
+HBC56_KERNEL_START = $e800
+HBC56_META_VECTOR  = HBC56_KERNEL_START-4
 
 TMS_MODEL = 9918
-
 RTI_OPCODE = $40
 JMP_OPCODE = $4c
 
+LCD_MODEL = 12864
+!ifndef LCD_MODEL {
+        LCD_MODEL = 12864
+}
 !src "hbc56.asm"
-
-*=$f000
+*=HBC56_KERNEL_START
 
 +hbc56Title "github.com/visrealm/hbc-56"
 
 !src "ut/bcd.asm"
 !src "ut/memory.asm"
 
+
 !src "inp/nes.asm"
 !src "inp/keyboard.asm"
 
 !src "gfx/tms9918.asm"
 !src "sfx/ay3891x.asm"
+!src "gfx/bitmap.asm"
+!src "lcd/lcd.asm"
 
 !src "kernel_macros.asm"
 
 !src "bootscreen.asm"
-!src "memtest.asm"
 
 HBC56_TICKS         = $7e80
 HBC56_SECONDS_L     = HBC56_TICKS + 1
 HBC56_SECONDS_H     = HBC56_SECONDS_L + 1
+HBC56_TMP           = HBC56_SECONDS_H + 1
 
-HBC56_CONSOLE_FLAGS = HBC56_SECONDS_H + 1
+HBC56_CONSOLE_FLAGS = HBC56_TMP + 1
 HBC56_CONSOLE_FLAG_CURSOR = $80
 HBC56_CONSOLE_FLAG_NES    = $40
 HBC56_CONSOLE_FLAG_LCD    = $20
@@ -84,7 +90,7 @@ onVSync:
         +tmsPut
 ++
         +tmsEnableInterrupts 
-        
+
         +tmsReadStatus
         pla      
         rti
@@ -139,33 +145,21 @@ kernelMain:
 
         +tmsEnableOutput
 
+        lda #20
+        sta HBC56_TMP
+-
         jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
-        jsr hbc56Delay
+        dec HBC56_TMP
+        bne -
 
-        lda #HBC56_CONSOLE_FLAG_LCD
-        bit HBC56_CONSOLE_FLAGS
+        lda HBC56_CONSOLE_FLAGS
+        and #HBC56_CONSOLE_FLAG_LCD
         bne .afterInput         ; LCD - skip input
-        bvc .keyboardInput
+
+        lda #HBC56_CONSOLE_FLAG_NES
+        and HBC56_CONSOLE_FLAGS
+        beq .keyboardInput
+
 
         ; NES input
         +tmsPrintZ HBC56_PRESS_ANY_NES_TEXT, (32 - HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 15
@@ -188,3 +182,6 @@ kernelMain:
         +setIntHandler onVSync
 
         jmp DEFAULT_HBC56_RST_VECTOR
+
+;!warn "Kernel size: ", *-$f000
+;!warn "Bytes remaining: ", DEFAULT_HBC56_INT_VECTOR-*

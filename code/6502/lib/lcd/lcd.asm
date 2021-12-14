@@ -6,9 +6,6 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-; Dependencies:
-;  - hbc56.asm
-
 
 ; -------------------------
 ; Constants
@@ -50,12 +47,13 @@ LCD_CMD_2LINE			= $08
 !ifndef LCD_MODEL {
 	!warn "Set LCD_MODEL to one of: 1602, 2004 or 12864. Defaulting to 1602"
 	LCD_MODEL = 1602
-} 
+}
+
+!src "lcd/lcd_macros.asm"
 
 ; -------------------------
 ; Constants
 ; -------------------------
-
 !if LCD_MODEL = 1602 {
 	LCD_ROWS = 2
 	LCD_COLUMNS = 16
@@ -96,6 +94,9 @@ lcdInit:
 	jsr lcdWait
 	lda #LCD_INITIALIZE
 	sta LCD_CMD
+	jsr lcdClear
+	jsr lcdHome
+	jsr lcdDisplayOff
 	rts
 
 
@@ -123,6 +124,15 @@ lcdHome:
 lcdDisplayOn:
 	jsr lcdWait
 	lda #DISPLAY_MODE
+	sta LCD_CMD
+	rts
+
+; -----------------------------------------------------------------------------
+; lcdDisplayOn: Turn the display on
+; -----------------------------------------------------------------------------
+lcdDisplayOff:
+	jsr lcdWait
+	lda #LCD_CMD_DISPLAY
 	sta LCD_CMD
 	rts
 
@@ -199,24 +209,6 @@ lcdRead:
 	rts
 
 ; -----------------------------------------------------------------------------
-; lcdPrint: Print immediate text
-; -----------------------------------------------------------------------------
-; Inputs:
-;  str: String to print
-; -----------------------------------------------------------------------------
-!macro lcdPrint str {
-	jmp +
-.textAddr
-	!text str,0
-+
-	lda #<.textAddr
-	sta STR_ADDR_L
-	lda #>.textAddr
-	sta STR_ADDR_H
-	jsr lcdPrint
-}
-
-; -----------------------------------------------------------------------------
 ; lcdPrint: Print a null-terminated string
 ; -----------------------------------------------------------------------------
 ; Inputs:
@@ -239,19 +231,6 @@ lcdPrint:
 	jmp -
 ++
 	rts
-
-; -----------------------------------------------------------------------------
-; lcdChar: Print immediate character
-; -----------------------------------------------------------------------------
-; Inputs:
-;  c: Character to print
-; -----------------------------------------------------------------------------
-!macro lcdChar c {
-	pha
-	lda #c
-	jsr lcdChar
-	pla
-}
 
 ; -----------------------------------------------------------------------------
 ; lcdChar: Output a character
@@ -394,7 +373,7 @@ lcdHex8:
 .H !text "0123456789abcdef"
 
 
-
+!if LCD_ROWS > 2 {
 
 lcdCurrentLine4:
 	cpy #LCD_ADDR_LINE4
@@ -404,6 +383,16 @@ lcdCurrentLine4:
 	cpy #LCD_ADDR_LINE3
 	bcs .lcdLine3
 	jmp .lcdLine1
+
+.lcdLine3
+	lda #3
+	rts
+
+.lcdLine4
+	lda #4
+	rts
+
+} ; LCD_ROWS > 2
 
 lcdCurrentLine2:
 	cpy #LCD_ADDR_LINE2
@@ -416,14 +405,6 @@ lcdCurrentLine2:
 
 .lcdLine2
 	lda #2
-	rts
-
-.lcdLine3
-	lda #3
-	rts
-
-.lcdLine4
-	lda #4
 	rts
 
 ; -----------------------------------------------------------------------------
@@ -604,6 +585,8 @@ lcdLineFourEnd:
 	rts
 
 
+} ; LCD_ROWS > 2
+
 ; -----------------------------------------------------------------------------
 ; lcdGotoLine: Go to line in 'A'
 ; -----------------------------------------------------------------------------
@@ -662,8 +645,7 @@ lcdLineFour:
 	sta LCD_CMD
 	pla
 	rts
- }
-
+ 
 ; -----------------------------------------------------------------------------
 ; lcdNextLine4: Move cursor to next line (4-row LCD version)
 ; -----------------------------------------------------------------------------
@@ -739,7 +721,9 @@ lcdScrollUp:
 	jsr lcdWait
 	jsr lcdLineOne
 	jsr lcdPrint
-	
+
+!if LCD_ROWS > 2 {
+
 	jsr lcdWait
 	jsr lcdLineThree
 	jsr lcdReadLine
@@ -756,12 +740,21 @@ lcdScrollUp:
 	
 	jsr lcdWait
 	jsr lcdLineFour
+} else {
+	jsr lcdWait
+	jsr lcdLineTwo
+}
+
 	ldx #LCD_COLUMNS
 -
 	+lcdChar ' '
 	dex
 	bne -
 	jsr lcdWait
+!if LCD_ROWS > 2 {
 	jsr lcdLineFour
+} else {
+	jsr lcdLineTwo
+}
 	pla
 	rts

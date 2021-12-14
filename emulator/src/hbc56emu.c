@@ -159,11 +159,11 @@ uint8_t io_read(uint8_t addr)
       {
         val |= NES_DOWN;
       }
-      if (keystate[SDL_SCANCODE_LCTRL])
+      if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL])
       {
         val |= NES_B;
       }
-      if (keystate[SDL_SCANCODE_LSHIFT])
+      if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT])
       {
         val |= NES_A;
       }
@@ -399,6 +399,16 @@ int SDLCALL cpuThread(void* unused)
 }
 
 
+void hbc56Reset()
+{
+  kbStart = 0;
+  kbEnd = 0;
+
+  cpu6502_rst();
+  PSG_reset(psg0);
+  PSG_reset(psg1);
+}
+
 
 void
 loop()
@@ -500,10 +510,16 @@ loop()
     switch (event.type) {
       case SDL_KEYDOWN:
         {
+          SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+
           if (event.key.keysym.sym == SDLK_F5) break;
           if (event.key.keysym.sym == SDLK_F10) break;
           if (event.key.keysym.sym == SDLK_F11) break;
           if (event.key.keysym.sym == SDLK_F12) break;
+          if (withControl && event.key.keysym.sym == SDLK_r)
+          {
+            break;
+          }
 
           uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][0];
           for (int i = 0; i < 8; ++i)
@@ -520,22 +536,30 @@ loop()
 
       case SDL_KEYUP:
         {
-        if (event.key.keysym.sym == SDLK_F5) break;
-        if (event.key.keysym.sym == SDLK_F10) break;
-        if (event.key.keysym.sym == SDLK_F11) break;
-        if (event.key.keysym.sym == SDLK_F12) break;
-
-        uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][1];
-        for (int i = 0; i < 8; ++i)
-        {
-          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
-          if (scanCodeByte)
+          SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+          if (event.key.keysym.sym == SDLK_F5) break;
+          if (event.key.keysym.sym == SDLK_F10) break;
+          if (event.key.keysym.sym == SDLK_F11) break;
+          if (event.key.keysym.sym == SDLK_F12) break;
+          if (withControl && event.key.keysym.sym == SDLK_r)
           {
-            kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
+            hbc56Reset();
+            break;
           }
-          ps2ScanCode <<= 8;
+          if (event.key.keysym.sym == SDLK_LCTRL) break;
+          if (event.key.keysym.sym == SDLK_RCTRL) break;
+
+          uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][1];
+          for (int i = 0; i < 8; ++i)
+          {
+            uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+            if (scanCodeByte)
+            {
+              kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
+            }
+            ps2ScanCode <<= 8;
+          }
         }
-      }
         break;
     }
 
@@ -560,6 +584,7 @@ loop()
   }
 #endif
 }
+
 
 int
 main(int argc, char* argv[])
@@ -727,9 +752,8 @@ main(int argc, char* argv[])
   then = SDL_GetTicks();
   done = 0;
 
-  cpu6502_rst();
-  PSG_reset(psg0);
-  PSG_reset(psg1);
+  hbc56Reset();
+
   debuggerInit(cpu6502_get_regs(), labelMapFile, tms9918);
 
   SDL_PauseAudioDevice(audioDevice, 0);

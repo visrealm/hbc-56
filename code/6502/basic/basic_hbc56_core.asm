@@ -9,7 +9,7 @@
 
 !src "hbc56kernel.inc"
 
-!src "basic.asm"        ; EhBASIC
+!src "ehbasic/basic.asm"        ; EhBASIC
 
 ; For saving registers
 SAVE_X          = $E0        

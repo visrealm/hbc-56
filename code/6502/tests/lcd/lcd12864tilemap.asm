@@ -1,10 +1,18 @@
+; Troy's HBC-56 - LCD Tilemap tests
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
+
 !src "hbc56kernel.inc"
 
 LCD_BUFFER_ADDR = $7d00
 LCD_MODEL = 12864
 
 !source "gfx/bitmap.asm"
-!source "lcd/lcd.asm"
 
 !align 255, 0
 c64FontData:

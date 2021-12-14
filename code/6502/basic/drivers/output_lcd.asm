@@ -10,9 +10,6 @@
 
 LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
 
-!src "lcd/lcd.asm"                      ; lcd library
-
-
 ; -----------------------------------------------------------------------------
 ; hbc56SetupDisplay - Setup the display (LCD)
 ; -----------------------------------------------------------------------------

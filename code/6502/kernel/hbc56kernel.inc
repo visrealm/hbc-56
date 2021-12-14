@@ -17,8 +17,10 @@ cputype = $6502
 !src "ut/math_macros.asm"
 !src "ut/memory_macros.asm"
 !src "gfx/tms9918_macros.asm"
+!src "lcd/lcd_macros.asm"
 !src "inp/nes_macros.asm"
 !src "inp/keyboard_macros.asm"
+!src "sfx/ay3891x_macros.asm"
 !src "kernel_macros.asm"
 
 *=HBC56_META_VECTOR
@@ -28,7 +30,7 @@ cputype = $6502
         rts
 }
 
-*=$f000
+*=HBC56_KERNEL_START
 !bin "kernel.o"
 
 *=DEFAULT_HBC56_RST_VECTOR

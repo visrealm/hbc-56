@@ -1,19 +1,23 @@
-EMU=..\..\..\emulator\bin\Hbc56Emu.exe
-ACME=acme -I ..\lib
+# Troy's HBC-56 - Kernel makefile
+#
+# Copyright (c) 2021 Troy Schrapel
+#
+# This code is licensed under the MIT license
+#
+# https://github.com/visrealm/hbc-56
+#
+#
 
+ROOT_PATH:=../
 
-%.o: %.asm
+include ../makefile
+
+kernel.o: kernel.asm  $(ROOT_PATH)kernel/*.asm $(ROOT_PATH)lib/**/*.asm $(ROOT_PATH)lib/*.asm
 	$(ACME) -o $@ -l $@.lmap $<
 
 default: kernel.o
-
-remake: clean default
-
-%: %.o
-	$(EMU) --rom $^
 
 .PHONY: clean default
 
 clean:
 	rm -f *.o *.lmap
-	
