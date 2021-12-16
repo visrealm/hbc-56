@@ -9,6 +9,24 @@
 ;
 
 
+!ifndef BCD_RAM_START { BCD_RAM_START = $10
+        !warn "BCD_RAM_START not provided. Defaulting to ", BCD_RAM_START
+}
+
+; -------------------------
+; High RAM
+; -------------------------
+BCD_TMP1	= BCD_RAM_START
+BCD_TMP2	= BCD_RAM_START + 1
+BCD_TMP3	= BCD_RAM_START + 2
+BCD_RAM_SIZE	= 3
+
+
+!if BCD_RAM_END < (BCD_RAM_START + BCD_RAM_SIZE) {
+	!error "BCD_RAM requires ",BCD_RAM_SIZE," bytes. Allocated ",BCD_RAM_END - BCD_RAM_START
+}
+
+
 ; -----------------------------------------------------------------------------
 ; bin2bcd8: convert an unsigned byte to a 2-digit bcd value
 ; -----------------------------------------------------------------------------
@@ -18,20 +36,20 @@
 ;   BCD value in R8
 ; -----------------------------------------------------------------------------
 bin2bcd8:
-  sta R7L
+  sta BCD_TMP1
   lda #0
-  sta R8L
-  sta R8H
+  sta BCD_TMP2
+  sta BCD_TMP3
   ldx #8 
   sed    
 .loop:
-  asl R7L
-  lda R8L
-  adc R8L
-  sta R8L
-  lda R8H
-  adc R8H
-  sta R8H
+  asl BCD_TMP1
+  lda BCD_TMP2
+  adc BCD_TMP2
+  sta BCD_TMP2
+  lda BCD_TMP3
+  adc BCD_TMP3
+  sta BCD_TMP3
   dex
   bne .loop
   cld   

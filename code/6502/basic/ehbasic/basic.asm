@@ -8695,8 +8695,8 @@ ERR_LD	!text	"LOOP without DO",$00
 
 ;ERR_UA	!text	"Undimensioned array",$00
 
-LAB_BMSG	!text	"Break",$00
-LAB_EMSG	!text	" Error",$00
+LAB_BMSG	!text	$07, "Break",$00
+LAB_EMSG	!text	$07, " Error",$00
 LAB_LMSG	!text	" in line ",$00
 LAB_RMSG	!text	$0A,"Ready",$0A,$00
 

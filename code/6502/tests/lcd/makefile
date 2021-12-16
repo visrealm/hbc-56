@@ -19,3 +19,5 @@ include $(ROOT_PATH)makefile
 
 clean:
 	rm -f *.o *.lmap
+
+all: lcdtype lcd12864tilemap lcd12864text lcd12864gfx lcd12864gallery

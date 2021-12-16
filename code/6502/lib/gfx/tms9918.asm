@@ -8,8 +8,8 @@
 ;
 
 !src "hbc56.inc"
-!src "ut/math_macros.asm"
-!src "gfx/tms9918_macros.asm"
+!src "ut/math.inc"
+!src "gfx/tms9918.inc"
 
 TMS_FONT_DATA:
 !src "gfx/fonts/tms9918font2subset.asm"
@@ -17,23 +17,55 @@ TMS_FONT_DATA:
 ; -------------------------
 ; Constants
 ; -------------------------
-TMS9918_IO_ADDR = $10
-TMS9918_REG0_SHADOW_ADDR = $7e10
-TMS9918_REG1_SHADOW_ADDR = $7e11
+!ifndef TMS9918_IO_PORT { TMS9918_IO_PORT = $10
+        !warn "TMS9918_IO_PORT not provided. Defaulting to ", TMS9918_IO_PORT
+}
 
-TMS9918_CONSOLE_X        = $7e12
-TMS9918_CONSOLE_Y        = $7e13
-TMS9918_CONSOLE_SIZE_X   = $7e14
-TMS9918_TMP_BUFFER       = $7e20 ; 40 bytes 
+!ifndef TMS9918_ZP_START { TMS9918_ZP_START = $ed
+        !warn "TMS9918_ZP_START not provided. Defaulting to ", TMS9918_ZP_START
+}
 
-; IO Ports
-TMS9918_RAM     = IO_PORT_BASE_ADDRESS | TMS9918_IO_ADDR
-TMS9918_REG     = IO_PORT_BASE_ADDRESS | TMS9918_IO_ADDR | $01
+!ifndef TMS9918_RAM_START { TMS9918_RAM_START = $7e10
+        !warn "TMS9918_RAM_START not provided. Defaulting to ", TMS9918_RAM_START
+}
 
 ; -----------------------------------------------------------------------------
 ; Zero page
 ; -----------------------------------------------------------------------------
-TMS_TMP_ADDRESS = $ed
+TMS_TMP_ADDRESS = TMS9918_ZP_START      ; 2 bytes
+TMS9918_ZP_SIZE = 2                     ; LAST ZP ADDRESS
+
+; -----------------------------------------------------------------------------
+; High RAM
+; -----------------------------------------------------------------------------
+TMS9918_REG0_SHADOW_ADDR = TMS9918_RAM_START
+TMS9918_REG1_SHADOW_ADDR = TMS9918_RAM_START + 1
+
+TMS9918_CONSOLE_X        = TMS9918_RAM_START + 2
+TMS9918_CONSOLE_Y        = TMS9918_RAM_START + 3
+TMS9918_CONSOLE_SIZE_X   = TMS9918_RAM_START + 4
+TMS9918_REGY             = TMS9918_RAM_START + 5
+TMS9918_TMP_READ_ROW     = TMS9918_RAM_START + 6
+TMS9918_TMP_WRITE_ROW    = TMS9918_RAM_START + 7
+
+TMS9918_TMP_BUFFER       = TMS9918_RAM_START + 10 ; 40 bytes 
+TMS9918_RAM_SIZE         = 50
+
+
+
+!if TMS9918_ZP_END < (TMS9918_ZP_START + TMS9918_ZP_SIZE) {
+	!error "TMS9918_ZP requires ",TMS9918_ZP_SIZE," bytes. Allocated ",TMS9918_ZP_END - TMS9918_ZP_START
+}
+
+!if TMS9918_RAM_END < (TMS9918_RAM_START + TMS9918_RAM_SIZE) {
+	!error "TMS9918_RAM requires ",TMS9918_RAM_SIZE," bytes. Allocated ",TMS9918_RAM_END - TMS9918_RAM_START
+}
+
+
+; IO Ports
+TMS9918_RAM     = IO_PORT_BASE_ADDRESS | TMS9918_IO_PORT
+TMS9918_REG     = IO_PORT_BASE_ADDRESS | TMS9918_IO_PORT | $01
+
 
 ; -----------------------------------------------------------------------------
 ; VRAM addresses
@@ -436,7 +468,7 @@ tmsInitTextTable:
 
 
         lda #0
-        ldx #(32 * 3)
+        ldx #(42 * 3)
         jsr _tmsSendX8
 
         rts
@@ -605,17 +637,15 @@ tmsSetPosTmpAddressText:
 +
         rts
 
-TMP_READ_ROW = $7e18
-TMP_WRITE_ROW = $7e19
 
 tmsConsoleScrollLine:
         lda #0
-        sta TMP_WRITE_ROW
+        sta TMS9918_TMP_WRITE_ROW
         lda #1
-        sta TMP_READ_ROW
+        sta TMS9918_TMP_READ_ROW
 .nextRow:
 
-        ldy TMP_READ_ROW
+        ldy TMS9918_TMP_READ_ROW
         ldx #0
         jsr tmsSetPosTmpAddressText
         jsr tmsSetAddressRead
@@ -623,7 +653,7 @@ tmsConsoleScrollLine:
         jsr .tmsBufferIn
 
         ldx #0
-        ldy TMP_WRITE_ROW
+        ldy TMS9918_TMP_WRITE_ROW
         ldx #0
         jsr tmsSetPosTmpAddressText
         jsr tmsSetAddressWrite
@@ -631,10 +661,10 @@ tmsConsoleScrollLine:
         jsr .tmsBufferOut
 
 
-        inc TMP_WRITE_ROW
-        inc TMP_READ_ROW
+        inc TMS9918_TMP_WRITE_ROW
+        inc TMS9918_TMP_READ_ROW
 
-        lda TMP_READ_ROW
+        lda TMS9918_TMP_READ_ROW
         cmp #25
 
         bne .nextRow
@@ -822,3 +852,82 @@ tmsPrint:
 	bne -
 +
 	rts
+
+
+; -----------------------------------------------------------------------------
+; tmsConsoleOut: Print a null-terminated string
+; -----------------------------------------------------------------------------
+; Inputs:
+;  'A': Character to output to console
+; -----------------------------------------------------------------------------
+tmsConsoleOut:
+        sty TMS9918_REGY
+        php
+        sei
+        cmp #$0d ; enter
+        beq .tmsConsoleNewline
+        cmp #$0a ; enter
+        beq .tmsConsoleNewline
+
+        cmp #$08 ; backspace
+        beq .tmsConsoleBackspace
+
+        pha
+        jsr tmsSetPosConsole
+        pla
+        +tmsPut
+        jsr tmsIncPosConsole
+
+.endConsoleOut
+        plp
+        ldy TMS9918_REGY
+        rts
+
+.tmsConsoleNewline
+        jsr tmsConsoleNewline
+        jmp .endConsoleOut
+
+.tmsConsoleBackspace
+        jsr tmsConsoleBackspace
+        jmp .endConsoleOut
+
+
+; -----------------------------------------------------------------------------
+; tmsConsolePrint: Print a null-terminated string (console mode)
+; -----------------------------------------------------------------------------
+; Inputs:
+;  STR_ADDR: Contains address of null-terminated string
+; Prerequisites:
+;  TMS address already set using +tmsSetAddressWrite
+; -----------------------------------------------------------------------------
+tmsConsolePrint:
+	ldy #0
+-
+	+tmsWaitData
+	lda (STR_ADDR), y
+	beq +
+        jsr tmsConsoleOut
+	iny
+	bne -
++
+	rts
+
+; -----------------------------------------------------------------------------
+; tmsConsoleNewline: Output a newline to the console (scrolls if on last line)
+; -----------------------------------------------------------------------------
+tmsConsoleNewline:
+        +tmsConsoleOut ' '
+        lda #39
+        sta TMS9918_CONSOLE_X
+        jmp tmsIncPosConsole
+
+
+; -----------------------------------------------------------------------------
+; tmsConsoleBackspace: Output a backspace to the console
+; -----------------------------------------------------------------------------
+tmsConsoleBackspace:
+        +tmsConsoleOut ' '
+        jsr tmsDecPosConsole
+        jsr tmsDecPosConsole
+        +tmsConsoleOut ' '
+        jmp tmsDecPosConsole

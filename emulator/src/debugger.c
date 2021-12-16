@@ -36,6 +36,14 @@ CPU6502Regs *cpuStatus = NULL;
 
 static const char *labelMap[0x10000] = {0};
 static VrEmuTms9918a* tms9918 = NULL;
+char tmpBuffer[256] = {0};
+
+int isProbablyConstant(const char* str)
+{
+  SDL_strlcpy(tmpBuffer, str, sizeof(tmpBuffer) - 1);
+  SDL_strupr(tmpBuffer);
+  return SDL_strcmp(str, tmpBuffer) == 0;
+}
 
 void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a* tms)
 {
@@ -105,7 +113,7 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a
 
       uint16_t addr = (uint16_t)value;
 
-      //if (!labelMap[addr])
+      if (!labelMap[addr] || isProbablyConstant(labelMap[addr]))
       {
         char* label = malloc((labelEnd - labelStart) + 1);
         SDL_strlcpy(label, lineBuffer + labelStart, labelEnd - labelStart + 1);
@@ -207,7 +215,7 @@ static int addrtable[256] = {
   /* C */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
   /* D */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* D */
   /* E */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
-  /* F */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx  /* F */ };
+  /* F */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, imp  /* F */ };
 
 static char *opcodes[256] = {
   /*           |  0  |  1   |  2   |  3   |  4   |  5   |  6   |  7   |  8   |  9   |  A   |  B   |  C   |  D   |  E   |  F  |      */
@@ -226,7 +234,7 @@ static char *opcodes[256] = {
   /* C */      "cpy", "cmp", "nop", "dcp", "cpy", "cmp", "dec", "dcp", "iny", "cmp", "dex", "nop", "cpy", "cmp", "dec", "dcp", /* C */
   /* D */      "bne", "cmp", "nop", "dcp", "nop", "cmp", "dec", "dcp", "cld", "cmp", "nop", "dcp", "nop", "cmp", "dec", "dcp", /* D */
   /* E */      "cpx", "sbc", "nop", "isb", "cpx", "sbc", "inc", "isb", "inx", "sbc", "nop", "sbc", "cpx", "sbc", "inc", "isb", /* E */
-  /* F */      "beq", "sbc", "nop", "isb", "nop", "sbc", "inc", "isb", "sed", "sbc", "nop", "isb", "nop", "sbc", "inc", "isb"  /* F */ };
+  /* F */      "beq", "sbc", "nop", "isb", "nop", "sbc", "inc", "isb", "sed", "sbc", "nop", "isb", "nop", "sbc", "inc", "-"  /* F */ };
 
 void debuggerUpdate(SDL_Texture* tex)
 {

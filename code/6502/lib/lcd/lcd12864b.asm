@@ -14,11 +14,9 @@
 ; -------------------------
 ; Constants
 ; -------------------------
-LCD_CMD_12864B_EXTENDED 	 = $04
-
-LCD_CMD_EXT_GRAPHICS_ENABLE  = $02
-
-LCD_CMD_EXT_GRAPHICS_ADDR    = $80
+LCD_CMD_12864B_EXTENDED		= $04
+LCD_CMD_EXT_GRAPHICS_ENABLE	= $02
+LCD_CMD_EXT_GRAPHICS_ADDR	= $80
 
 
 LCD_BASIC           = LCD_INITIALIZE
@@ -40,6 +38,18 @@ lcdGraphicsMode:
 	sta LCD_CMD
 	rts
 
+; -----------------------------------------------------------------------------
+; lcdTextMode: Initialise the LCD text mode
+; -----------------------------------------------------------------------------
+lcdTextMode:
+	jsr lcdWait
+	lda #LCD_EXTENDED
+	sta LCD_CMD
+
+	jsr lcdWait
+	lda #LCD_EXTENDED
+	sta LCD_CMD
+	rts
 
 
 ; -----------------------------------------------------------------------------
@@ -71,9 +81,6 @@ lcdGraphicsSetRow:
 	rts
 
 
-!ifdef _GFX_BITMAP_A {
-
-
 ; -----------------------------------------------------------------------------
 ; lcdImage: Output a full-screen image from memory (XY upper-left)
 ; -----------------------------------------------------------------------------
@@ -83,9 +90,9 @@ lcdGraphicsSetRow:
 lcdImage:
 
 	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
+	sta PIX_ADDR + 1
 	ldx #0
-	stx PIX_ADDR_L
+	stx PIX_ADDR
 
 .imageLoop:
 
@@ -119,13 +126,13 @@ lcdImage:
 	cpy #16
 	bne .imgRowLoop
 	
-	lda PIX_ADDR_L
+	lda PIX_ADDR
 	clc
 	adc #16
 	bcc +
-	inc PIX_ADDR_H
+	inc PIX_ADDR + 1
 +
-	sta PIX_ADDR_L
+	sta PIX_ADDR
 
 	inx
 	cpx #64
@@ -145,9 +152,9 @@ lcdImageVflip:
 	lda BITMAP_ADDR_H
 	clc
 	adc #3
-	sta PIX_ADDR_H
+	sta PIX_ADDR + 1
 	ldx #240
-	stx PIX_ADDR_L
+	stx PIX_ADDR
 	ldx #0
 
 .imageLoopV:
@@ -182,19 +189,17 @@ lcdImageVflip:
 	cpy #16
 	bne .imgRowLoopV
 	
-	lda PIX_ADDR_L
+	lda PIX_ADDR
 	sec
 	sbc #16
 	bcs +
 	lda #240
-	dec PIX_ADDR_H
+	dec PIX_ADDR + 1
 +
-	sta PIX_ADDR_L
+	sta PIX_ADDR
 
 	inx
 	cpx #64
 	bne .imageLoopV
 
 	rts
-	
-} ; _GFX_BITMAP_A

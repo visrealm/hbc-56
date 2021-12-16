@@ -37,8 +37,8 @@ randomBottomRowInvader:
         sta TMP_Y_POSITION
         inc TMP_Y_POSITION
 
-        lda TICKS_H
-        eor TICKS_L
+        lda HBC56_SECONDS_L
+        eor HBC56_TICKS
         eor PLAYER_X
         eor SCORE_BCD_L
         and #$0f
@@ -141,13 +141,13 @@ killObjectAt:
         +div8
         sec
         sbc #15
-        sta R10
+        sta GAMEFIELD_TMP
         sed
         clc
-        adc R10
-        adc R10
-        adc R10
-        adc R10
+        adc GAMEFIELD_TMP
+        adc GAMEFIELD_TMP
+        adc GAMEFIELD_TMP
+        adc GAMEFIELD_TMP
         cld
         rts
 

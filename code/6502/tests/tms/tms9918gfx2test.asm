@@ -1,3 +1,12 @@
+; Troy's HBC-56 - TMS9918 Graphics II mode test
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
+
 !src "hbc56kernel.inc"
 
 YPOS = $48
@@ -18,7 +27,7 @@ setupPatternTable:
         rts
 
 hbc56Meta:
-        +setHbcMetaTitle "TMS9918 GRAPHICS II TEST"
+        +setHbcMetaTitle "TMS GFXII MODE"
         rts
 
 hbc56Main:

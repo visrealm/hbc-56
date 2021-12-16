@@ -14,13 +14,6 @@ cputype = $6502
 
 !src "hbc56.inc"
 
-; -------------------------
-; Zero page
-; -------------------------
-STR_ADDR = $18
-STR_ADDR_L = STR_ADDR
-STR_ADDR_H = STR_ADDR + 1
-
 DEFAULT_HBC56_NMI_VECTOR = $FFE0
 DEFAULT_HBC56_RST_VECTOR = $8000
 DEFAULT_HBC56_INT_VECTOR = $FFE0

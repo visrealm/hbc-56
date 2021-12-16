@@ -15,6 +15,7 @@ Current cards:
 
 Current breadboard circuits:
 * NES controller
+* PS/2 keyboard controller
 
 All source code and schematics are available in this repository.
 
@@ -65,6 +66,29 @@ Example: basic
 cd code\6502\basic
 ..\..\..\emulator\bin\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
 ```
+
+
+## Memory map
+
+THe HBC-56 has 64KB addressable memory divided into RAM, ROM and IO as follows:
+
+| From | To | Purpose |
+|--|--|--|
+| $0000 | $7eff | RAM |
+| $7f00 | $7fff | I/O |
+| $8000 | $ffff | ROM |
+
+The RAM and ROM is further divided by the HBC-56 Kernel:
+
+| From | To | Size | Purpose |
+|--|--|--|--|
+| $0000 | $00ff | 256 bytes | Zero page |
+| $0100 | $01ff | 256 bytes | Stack |
+| $0200 | $79ff | 30 kilobytes | User RAM |
+| $7a00 | $7eff | 1280 bytes | Kernel RAM |
+| $7f00 | $7fff | 256 bytes | I/O |
+| $8000 | $dfff | 24 kilobytes | User ROM |
+| $e000 | $ffff | 8 kilobytes | Kernel ROM |
 
 
 ## Videos

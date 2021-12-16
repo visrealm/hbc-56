@@ -10,7 +10,7 @@
 !src "hbc56kernel.inc"
 
 hbc56Meta:
-        +setHbcMetaTitle "TMS9918 MULTICOLOR TEST"
+        +setHbcMetaTitle "TMS MULTICOLOR"
         +setHbcMetaNES
         rts
 

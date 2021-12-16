@@ -11,42 +11,58 @@
 ;
 
 ; -----------------------------------------------------------------------------
-; memcpy: Copy a fixed number of bytes from src to dest
+; store16: Write a 16-bit immediate value to memory
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	src: source address
-;	dst: destination address
-;	cnt: number of bytes
+;	.dst: destination address
+;	.val16: 16-bit value
 ; -----------------------------------------------------------------------------
-!macro memcpy dst, src, cnt {
-!if cnt <= 8 {
-	!for i, 0, cnt - 1 {
-		lda src + i
-		sta dst + i
+!macro store16 .dst, .val16 {
+        lda #<.val16
+        sta .addr
+        lda #>.val16
+        sta .addr + 1
+}
+
+; -----------------------------------------------------------------------------
+; memcpy: Copy a fixed number of bytes from .src to dest
+; -----------------------------------------------------------------------------
+; Inputs:
+;	.src: source address
+;	.dst: destination address
+;	.cnt: number of bytes
+; -----------------------------------------------------------------------------
+!macro memcpy .dst, .src, .cnt {
+!if .cnt <= 0 {
+	!error "memcpy: invalid count: ", .cnt
+} else if .cnt <= 8 {
+	!for i, 0, .cnt - 1 {
+		lda .src + i
+		sta .dst + i
 	}
-} else { !if cnt <= 255 {
-	ldx #cnt
+} else { !if .cnt <= 256 {
+	ldx #0
 -
-	dex
-	lda src, x
-	sta dst, x
-	cpx #0
+	lda .src, x
+	sta .dst, x
+	inx
+	cpx #(.cnt & $ff)	
 	bne -
 } else {
-	lda #<src
+	lda #<.src
 	sta MEMCPY_SRC
-	lda #>src
+	lda #>.src
 	sta MEMCPY_SRC + 1
 
-	lda #<dst
+	lda #<.dst
 	sta MEMCPY_DST
-	lda #>dst
+	lda #>.dst
 	sta MEMCPY_DST + 1
 
 
-		lda #<cnt
+		lda #<.cnt
 		sta MEMCPY_LEN
-		lda #>cnt
+		lda #>.cnt
 		sta MEMCPY_LEN + 1
 		jsr memcpyMultiPage
 	}
@@ -82,76 +98,90 @@
 }
 
 !macro memcpySinglePage .bytes {
+
+	!if .bytes <= 0 {
+		!error "memcpySinglePage: invalid count: ", .bytes
+	}	
+
 	ldy #.bytes
 	jsr memcpySinglePage
 }
 
 
 ; -----------------------------------------------------------------------------
-; memcpyPort: Copy a fixed number of bytes from src ram to dest port
+; memcpyPort: Copy a fixed number of bytes from .src ram to dest port
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	src: source address
-;	dst: destination address
-;	cnt: number of bytes
+;	.src: source address
+;	.dst: destination address
+;	.cnt: number of bytes
 ; -----------------------------------------------------------------------------
-!macro memcpyPort dst, src, cnt {
-	lda #<src
+!macro memcpyPort .dst, .src, .cnt {
+	!if .cnt <= 0 {
+		!error "memcpyPort: invalid count: ", .cnt
+	}
+	
+	lda #<.src
 	sta MEMCPY_SRC
-	lda #>src
+	lda #>.src
 	sta MEMCPY_SRC + 1
 
-	lda #<dst
+	lda #<.dst
 	sta MEMCPY_DST
-	lda #>dst
+	lda #>.dst
 	sta MEMCPY_DST + 1
 
-	!if cnt <= 255 {
-		ldy #<cnt					
+	!if .cnt <= 255 {
+		ldy #<.cnt					
 		jsr memcpySinglePagePort
 	} else {
-		lda #<cnt
+		lda #<.cnt
 		sta MEMCPY_LEN
-		lda #>cnt
+		lda #>.cnt
 		sta MEMCPY_LEN + 1
 		jsr memcpyMultiPagePort
 	}
 }
 
+!zone {
 
 ; -----------------------------------------------------------------------------
 ; memset: Set a fixed number of bytes to a single value
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	dst: destination address
+;	.dst: destination address
 ;	val: the byte value
-;	cnt: number of bytes
+;	.cnt: number of bytes
 ; -----------------------------------------------------------------------------
-!macro memset dst, val, cnt {
-!if cnt <= 8 {
-	lda #val
-	!for i, 0, cnt - 1 {
-	sta dst + i
+!macro memset .dst, .val, .cnt {
+!if .cnt <= 0 {
+	!error "memset: invalid count: ", .cnt
+} else if .cnt <= 8 {
+	lda #.val
+	!for i, 0, .cnt - 1 {
+	sta .dst + i
 	}
-} else if cnt <= 255 {
-	ldx #cnt
-	lda #val
+} else if .cnt <= 255 {
+	ldx #.cnt
+	lda #.val
 -
 	dex
-	sta dst, x
+	sta .dst, x
 	cpx #0
 	bne -
 } else {
-	lda #<dst
-	sta MEMSET_DST
-	lda #>dst
-	sta MEMSET_DST + 1
-	lda #<cnt
-	sta MEMSET_LEN
-	lda #>cnt
-	sta MEMSET_LEN + 1
-	lda #val
+	lda #<.dst
+	sta MEM_DST
+	lda #>.dst
+	sta MEM_DST + 1
+	lda #<.cnt
+	sta MEM_LEN
+	lda #>.cnt
+	sta MEM_LEN + 1
+	lda #.val
 	jsr memsetMultiPage
 }
 }
 
+
+}

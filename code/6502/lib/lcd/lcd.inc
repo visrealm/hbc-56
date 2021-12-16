@@ -38,3 +38,23 @@
 	jsr lcdChar
 	pla
 }
+
+
+; -----------------------------------------------------------------------------
+; lcdConsolePrint: Print immediate text to console
+; -----------------------------------------------------------------------------
+; Inputs:
+;  str: String to print
+; -----------------------------------------------------------------------------
+!macro lcdConsolePrint .str {
+	jmp .afterText
+.textAddr
+	!text .str,0
+.afterText        
+
+        lda #<.textAddr
+        sta STR_ADDR_L
+        lda #>.textAddr
+        sta STR_ADDR_H
+        jsr lcdConsolePrint        
+}

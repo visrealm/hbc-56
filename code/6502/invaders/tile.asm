@@ -136,7 +136,7 @@ patternHitTest:
 tileClearPixel:
 
         ; Temporary value
-        TILE_TMP_PATTERN = R4
+        TILE_TMP_PATTERN = GAMEFIELD_TMP
 
         ; load pattern index at given tile location
         ldx HIT_TILE_X

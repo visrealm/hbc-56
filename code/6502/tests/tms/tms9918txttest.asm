@@ -14,7 +14,7 @@ YPOS = $45
 
 
 hbc56Meta:
-        +setHbcMetaTitle "TMS9918 TEXT MODE TEST"
+        +setHbcMetaTitle "TMS9918 TXT MODE"
         rts
 
 hbc56Main:

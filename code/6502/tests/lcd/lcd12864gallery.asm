@@ -10,6 +10,8 @@
 
 BUFFER_ADDR = $1000
 
+TMP1 	= HBC56_KERNEL_RAM_START
+
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel
 ; -----------------------------------------------------------------------------
@@ -27,7 +29,7 @@ hbc56Main:
 start:
 
 	lda #0
-	sta PIX_ADDR_L
+	sta PIX_ADDR
 	
 
 
@@ -68,19 +70,19 @@ rectDemo:
 	jsr bitmapClear
 
 	lda #30
-	sta R2
+	sta TMP1
 
 -	
 	lda #31
 	sec
-	sbc R2
+	sbc TMP1
 	sta BITMAP_X1
 	sta BITMAP_Y1
-	lda R2
+	lda TMP1
 	clc
 	adc #96	
 	sta BITMAP_X2
-	lda R2
+	lda TMP1
 	clc
 	adc #32	
 	sta BITMAP_Y2
@@ -91,24 +93,24 @@ rectDemo:
 	
 	;jsr medDelay
 	
-	dec R2
-	dec R2
+	dec TMP1
+	dec TMP1
 	bne -
 
 	lda #0
-	sta R2
+	sta TMP1
 
 -	
 	lda #31
 	sec
-	sbc R2
+	sbc TMP1
 	sta BITMAP_X1
 	sta BITMAP_Y1
-	lda R2
+	lda TMP1
 	clc
 	adc #96	
 	sta BITMAP_X2
-	lda R2
+	lda TMP1
 	clc
 	adc #32
 	sta BITMAP_Y2
@@ -119,9 +121,9 @@ rectDemo:
 	
 	;jsr medDelay
 	
-	inc R2
-	inc R2
-	lda R2
+	inc TMP1
+	inc TMP1
+	lda TMP1
 	cmp #30
 	bne -
 
@@ -130,28 +132,17 @@ rectDemo:
 
 
 longDelay:
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	; flow through
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
 
+	jmp hbc56Delay
 
-delay:
-	ldx #255
-	ldy #255
-.loop:
-	dex
-	bne .loop 
-	ldx #255
-	dey
-	bne .loop
-	rts
 	
 ;IMG_DATA_OFFSET = 62  ; Paint
 IMG_DATA_OFFSET = 130  ; GIMP

@@ -112,10 +112,27 @@
 }
 
 !macro tmsConsoleOut .char {
-        jsr tmsSetPosConsole
         lda #.char
-        +tmsPut
-        jsr tmsIncPosConsole
+        jsr tmsConsoleOut
+}
+
+; -----------------------------------------------------------------------------
+; tmsConsolePrint: Print immediate text to console
+; -----------------------------------------------------------------------------
+; Inputs:
+;  str: String to print
+; -----------------------------------------------------------------------------
+!macro tmsConsolePrint .str {
+	jmp .afterText
+.textAddr
+	!text .str,0
+.afterText        
+
+        lda #<.textAddr
+        sta STR_ADDR_L
+        lda #>.textAddr
+        sta STR_ADDR_H
+        jsr tmsConsolePrint        
 }
 
 ; -----------------------------------------------------------------------------

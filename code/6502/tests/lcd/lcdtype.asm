@@ -9,15 +9,13 @@
 
 !src "hbc56kernel.inc"
 
-LCD_BUFFER_ADDR = $7d00
-
-TMP_CHAR = R0
+TMP_CHAR        = HBC56_USER_ZP_START 
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel
 ; -----------------------------------------------------------------------------
 hbc56Meta:
-        +setHbcMetaTitle "CHARACTER LCD CONSOLE"
+        +setHbcMetaTitle "LCD CONSOLE MODE"
         +consoleLCDMode
         rts
 

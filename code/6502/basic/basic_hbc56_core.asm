@@ -12,35 +12,19 @@
 !src "ehbasic/basic.asm"        ; EhBASIC
 
 ; For saving registers
-SAVE_X          = $E0        
-SAVE_Y          = $E1
-SAVE_A          = $E2
-
-; ascii constants
-ASCII_RETURN    = $0A
-ASCII_CR        = $0D
-ASCII_BACKSPACE = $08
-ASCII_BELL      = $07
+SAVE_X          = $14
+SAVE_Y          = $15
+SAVE_A          = $16
 
 ; put the IRQ and NMI code in RAM so that it can be changed
 IRQ_vec         = VEC_SV+2      ; IRQ code vector
 NMI_vec         = IRQ_vec+$0A   ; NMI code vector
 
 ; -----------------------------------------------------------------------------
-; metadata for the HBC-56 kernel
-; -----------------------------------------------------------------------------
-hbc56Meta:
-        +setHbcMetaTitle "HBC-56 BASIC"
-        +consoleLCDMode
-        rts
-
-; -----------------------------------------------------------------------------
 ; main entry point
 ; -----------------------------------------------------------------------------
 hbc56Main:
 RES_vec:
-        sei                     ; disable interrupts
-
         jsr hbc56SetupDisplay
 
         ; copy I/O vectors

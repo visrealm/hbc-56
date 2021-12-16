@@ -13,33 +13,54 @@
 ; Width
 ; Height
 
-_GFX_BITMAP_A = 1
+
+
+!ifndef BITMAP_ZP_START { BITMAP_ZP_START = $f0
+        !warn "BITMAP_ZP_START not provided. Defaulting to ", BITMAP_ZP_START
+}
+
+!ifndef BITMAP_RAM_START { BITMAP_RAM_START = $7c00
+        !warn "BITMAP_RAM_START not provided. Defaulting to ", BITMAP_RAM_START
+}
 
 ; -------------------------
 ; Zero page
 ; -------------------------
-PIX_ADDR   = $20
-PIX_ADDR_L = PIX_ADDR
-PIX_ADDR_H = PIX_ADDR + 1
+PIX_ADDR		= BITMAP_ZP_START
+BITMAP_ADDR_H   	= BITMAP_ZP_START+2
+BITMAP_ZP_SIZE		= 4
 
-BITMAP_ADDR_H   = $22
+; -----------------------------------------------------------------------------
+; High RAM
+; -----------------------------------------------------------------------------
 
-BITMAP_X       = $24
-BITMAP_Y       = $25
+BITMAP_X       = BITMAP_RAM_START + 1
+BITMAP_Y       = BITMAP_RAM_START + 2
 BITMAP_X1      = BITMAP_X
 BITMAP_Y1      = BITMAP_Y
-BITMAP_X2      = $26
-BITMAP_Y2      = $27
+BITMAP_X2      = BITMAP_RAM_START + 5
+BITMAP_Y2      = BITMAP_RAM_START + 6
 
-BITMAP_LINE_STYLE     = $28
-BITMAP_LINE_STYLE_ODD = $29
+BITMAP_LINE_STYLE     = BITMAP_RAM_START + 7
+BITMAP_LINE_STYLE_ODD = BITMAP_RAM_START + 8
 
-BITMAP_TMP1    = $2a
-BITMAP_TMP2    = $2b
-BITMAP_TMP3    = $2c
-BITMAP_TMP4    = $2d
-BITMAP_TMP5    = $2e
+BITMAP_TMP1    = BITMAP_RAM_START + 9
+BITMAP_TMP2    = BITMAP_RAM_START + 10
+BITMAP_TMP3    = BITMAP_RAM_START + 11
+BITMAP_TMP4    = BITMAP_RAM_START + 12
+BITMAP_TMP5    = BITMAP_RAM_START + 13
+BITMAP_TMP6    = BITMAP_RAM_START + 14
 
+BITMAP_RAM_SIZE	= 16
+
+
+!if BITMAP_ZP_END < (BITMAP_ZP_START + BITMAP_ZP_SIZE) {
+	!error "BITMAP_ZP requires ",BITMAP_ZP_SIZE," bytes. Allocated ",BITMAP_ZP_END - BITMAP_ZP_START
+}
+
+!if BITMAP_RAM_END < (BITMAP_RAM_START + BITMAP_RAM_SIZE) {
+	!error "BITMAP_RAM requires ",BITMAP_RAM_SIZE," bytes. Allocated ",BITMAP_RAM_END - BITMAP_RAM_START
+}
 
 
 
@@ -67,9 +88,9 @@ bitmapClear:
 bitmapFill:
 	sta BITMAP_TMP1
 	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
+	sta PIX_ADDR + 1
 	ldx #0
-	stx PIX_ADDR_L
+	stx PIX_ADDR
 
 	lda BITMAP_TMP1	
 	ldy #0
@@ -78,7 +99,7 @@ bitmapFill:
 	sta (PIX_ADDR), y
 	iny
 	bne -
-	inc PIX_ADDR_H
+	inc PIX_ADDR + 1
 	dex
 	bne -
 	
@@ -93,9 +114,9 @@ bitmapFill:
 ; -----------------------------------------------------------------------------
 bitmapXor:
 	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
+	sta PIX_ADDR + 1
 	ldx #0
-	stx PIX_ADDR_L
+	stx PIX_ADDR
 
 	ldy #0
 	ldx #4
@@ -106,7 +127,7 @@ bitmapXor:
 	
 	iny
 	bne -
-	inc PIX_ADDR_H
+	inc PIX_ADDR + 1
 	dex
 	bne -
 	
@@ -127,9 +148,9 @@ bitmapXor:
 _bitmapOffset:
 
 	lda BITMAP_ADDR_H
-	sta PIX_ADDR_H
+	sta PIX_ADDR + 1
 	ldx #0
-	stx PIX_ADDR_L
+	stx PIX_ADDR
 	
 	lda BITMAP_Y
 	lsr
@@ -137,8 +158,8 @@ _bitmapOffset:
 	lsr
 	lsr
 	clc
-	adc PIX_ADDR_H
-	sta PIX_ADDR_H
+	adc PIX_ADDR + 1
+	sta PIX_ADDR + 1
 	
 	lda BITMAP_Y
 	and #$0f
@@ -146,7 +167,7 @@ _bitmapOffset:
 	asl
 	asl
 	asl
-	sta PIX_ADDR_L
+	sta PIX_ADDR
 	
 	lda BITMAP_X
 	lsr
@@ -410,11 +431,11 @@ bitmapLineV:
 	inx
 	lda #16
 	clc
-	adc	PIX_ADDR_L
+	adc PIX_ADDR
 	bcc +
-	inc PIX_ADDR_H
+	inc PIX_ADDR + 1
 +
-	sta PIX_ADDR_L
+	sta PIX_ADDR
     clc
 	bcc -
 ++
@@ -482,7 +503,7 @@ bitmapLine:
 
 _bitmapLineWide:  ; a line that is wider than it is tall
 	
-	D = R0
+	D = BITMAP_TMP6
 	
 	Y = BITMAP_TMP3
 	
@@ -533,7 +554,7 @@ _bitmapLineWide:  ; a line that is wider than it is tall
 	
 _bitmapLineTall:  ; a line that is taller than it is wide
 	
-	D = R0
+	D = BITMAP_TMP6
 	
 	X = BITMAP_TMP3
 	

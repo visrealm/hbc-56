@@ -6,14 +6,27 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-; Dependencies:
-;  - hbc56.asm
 
 
+!ifndef NES_IO_PORT { NES_IO_PORT = $81
+        !warn "NES_IO_PORT not provided. Defaulting to ", NES_IO_PORT
+}
+
+!ifndef NES_RAM_START { NES_RAM_START = $7ea1
+        !warn "NES_RAM_START not provided. Defaulting to ", NES_RAM_START
+}
+
 ; -------------------------
-; Constants
+; High RAM
 ; -------------------------
-NES_IO_PORT	= $81
+NES_TMP        = NES_RAM_START
+NES_RAM_SIZE   = 1
+
+
+!if NES_RAM_END < (NES_RAM_START + NES_RAM_SIZE) {
+	!error "NES_RAM requires ",NES_RAM_SIZE," bytes. Allocated ",NES_RAM_END - NES_RAM_START
+}
+
 
 ; IO Ports
 NES_IO_ADDR     = IO_PORT_BASE_ADDRESS | NES_IO_PORT
@@ -27,8 +40,6 @@ NES_START       = %00001000
 NES_SELECT      = %00000100
 NES_B           = %00000010
 NES_A           = %00000001
-
-NES_TMP = R7L
 
 ; -----------------------------------------------------------------------------
 ; nesWaitForPress: Wait for a NES button press

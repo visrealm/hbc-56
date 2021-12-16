@@ -16,7 +16,29 @@ TILE_OFFSET = $e3
 c64FontData:
 	!bin "lcd/fonts/c64-font-ascii.bin"
 
-!source "gfx/tilemap.asm"
+onVsync:
+        lda HBC56_TICKS
+        beq .doCursor
+        cmp #30
+        beq .doCursor
+        rts
+
+.doCursor:
+        lda HBC56_TICKS
+        beq +
+        lda #' '
+        jmp ++
++ 
+        lda #$ff
+++
+
+        sty HBC56_TMP_Y
+        ldy TILE_OFFSET
+        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        ldy HBC56_TMP_Y
+        jsr tilemapRender
+
+        rts
 
 ; -----------------------------------------------------------------------------
 ; hbc56SetupDisplay - Setup the display (LCD)
@@ -33,6 +55,10 @@ hbc56SetupDisplay:
 
         lda #0
         sta TILE_OFFSET
+
+        +hbc56SetVsyncCallback onVsync
+        +tmsEnableInterrupts
+
         rts
 
 ; -----------------------------------------------------------------------------
@@ -72,7 +98,7 @@ hbc56Out:
         lsr
         lsr
         tay
-        jsr tilemapRender;//Row
+        jsr tilemapRenderRow
 
         ldx SAVE_X
         ldy SAVE_Y
@@ -85,6 +111,18 @@ hbc56Out:
         jmp .endOut
 
 .newline
+        lda #' '
+        ldy TILE_OFFSET
+        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        ; just render this row
+        lda TILE_OFFSET
+        lsr
+        lsr
+        lsr
+        lsr
+        tay
+        jsr tilemapRenderRow
+
         lda TILE_OFFSET
         clc
         adc #16
@@ -94,6 +132,9 @@ hbc56Out:
         jmp .endOut
 
 .backspace
+        lda #' '
+        ldy TILE_OFFSET
+        sta (TILEMAP_TMP_BUFFER_ADDR), y
         dec TILE_OFFSET
         ldy TILE_OFFSET
         lda #' '

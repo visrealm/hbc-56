@@ -19,11 +19,6 @@ hbc56Main:
 
         jsr tmsModeText
 
-        +tmsSetAddrNameTable
-        lda #' '
-        ldx #(40 * 25 / 8)
-        jsr _tmsSendX8
-
         +tmsSetColorFgBg TMS_LT_GREEN, TMS_BLACK
         +tmsEnableOutput
         cli
@@ -32,66 +27,12 @@ hbc56Main:
 
         +consoleEnableCursor
 
-loop:
+
+.consoleLoop:
         jsr kbReadAscii
-        bcc .endLoop
-        cmp #$0d ; enter
-        bne +
-        sei
-        +tmsConsoleOut ' '
-        lda #39
-        sta TMS9918_CONSOLE_X
-        jsr tmsIncPosConsole
-        cli
-        jmp .endLoop    
-+
-        cmp #$08 ; backspace
-        bne ++
-        sei
-        +tmsConsoleOut ' '
-        jsr tmsDecPosConsole
-        jsr tmsDecPosConsole
-        +tmsConsoleOut ' '
-        jsr tmsDecPosConsole
-        cli
-        jmp .endLoop
-++
-        sei
-        pha
-        jsr tmsSetPosConsole
-        pla
-        +tmsPut
-        jsr tmsIncPosConsole
-        cli
+        bcc .consoleLoop
 
-.endLoop
-        jmp loop
-        ;rts
+        ; output 'A' to console
+        jsr tmsConsoleOut
 
-medDelay:
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-
-
-delay:
-	ldx #255
-	ldy #255
--
-	dex
-	bne -
-	ldx #255
-	dey
-	bne -
-	rts
-
-customDelay:
-	ldx #255
--
-	dex
-	bne -
-	ldx #255
-	dey
-	bne -
-	rts
+        jmp .consoleLoop

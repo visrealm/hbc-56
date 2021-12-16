@@ -12,8 +12,6 @@
 
 !src "zeropage.asm"
 
-!src "sfx/sfxman.asm"
-
 ;
 ; contants
 ;
@@ -134,11 +132,11 @@ restartGame:
 
         jsr renderGameField
 
-        lda TICKS
+        lda HBC56_TICKS
         sta V_SYNC
 
         +tmsEnableOutput
-
+        +tmsEnableInterrupts
         cli
 
 nextFrame:
@@ -146,9 +144,14 @@ nextFrame:
         cli
         +tmsEnableInterrupts
 
+
 gameLoop:
+        
+        jsr testjumpOut
+        jsr testjumpOut
+        jsr testjumpOut
         lda V_SYNC
-        cmp TICKS
+        cmp HBC56_TICKS
         beq gameLoop
         sei
         +tmsDisableInterrupts
@@ -246,7 +249,7 @@ shieldNotBombed
 
         ; pixel-level collision with invader?
         ldy HIT_TILE_PIX_Y
-        pha
+        sta TEMP1
         jsr tmsSetPatternRead
 
         ; load the pattern row to test
@@ -269,7 +272,7 @@ shieldNotBombed
         +tmsSpritePosXYReg SPRITE_SPLAT
 
         +tmsSetAddrSpriteColor SPRITE_SPLAT
-        pla
+        lda TEMP1
         jsr alienColor
         +tmsPut
 
@@ -304,7 +307,7 @@ shieldNotBombed
         ldy #PLAYER_POS_Y
         +tmsSpritePosXYReg SPRITE_PLAYER
 
-        lda TICKS
+        lda HBC56_TICKS
         sta V_SYNC
 
         jsr audioBulletIncreasePitch
@@ -409,6 +412,19 @@ jmp nextFrame
 +
         jmp .endLoop
 
+testjumpOut3:
+        LDA #14
+        rts
+
+testjumpOut2:
+        LDA #13
+        jsr testjumpOut3
+        rts
+
+testjumpOut:
+        LDA #12
+        jsr testjumpOut2
+        rts
 
 COLOR_TEXT   = TMS_WHITE << 4 | TMS_BLACK
 COLOR_SHIP   = TMS_CYAN

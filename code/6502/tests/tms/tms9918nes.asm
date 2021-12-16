@@ -1,3 +1,13 @@
+; Troy's HBC-56 - TMS9918/NES test
+;
+; Copyright (c) 2021 Troy Schrapel
+;
+; This code is licensed under the MIT license
+;
+; https://github.com/visrealm/hbc-56
+;
+
+
 !src "hbc56kernel.inc"
 
 XPOS = $44

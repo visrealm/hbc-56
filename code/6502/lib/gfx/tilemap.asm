@@ -15,11 +15,64 @@
 ; InvertAddressH   (Page-aligned invert flags - MSB) (optional)
 ; DirtyAddressH    (Page-aligned dirty flags - MSB)  (optional)
 
-TILEMAP_BUFFER_ADDR	= 0
-TILEMAP_SIZE		= TILEMAP_BUFFER_ADDR + 1
+!src "gfx/tilemap.inc"
+
+
+!ifndef TILEMAP_ZP_START { TILEMAP_ZP_START = $f0
+        !warn "TILEMAP_ZP_START not provided. Defaulting to ", TILEMAP_ZP_START
+}
+
+!ifndef TILEMAP_RAM_START { TILEMAP_RAM_START = $7d00
+        !warn "TILEMAP_RAM_START not provided. Defaulting to ", TILEMAP_RAM_START
+}
+
+!if (TILEMAP_RAM_START & $ff) != 0 {
+        !error "TILEMAP_RAM_START must be on a page boundary"
+}
+
+; -------------------------
+; Zero page
+; -------------------------
+TILEMAP_ADDR		= TILEMAP_ZP_START
+TILEMAP_TMP_BUFFER_ADDR	= TILEMAP_ZP_START + 2
+TILEMAP_TMP_TILES_ADDR	= TILEMAP_ZP_START + 4
+TILEMAP_ZP_SIZE		= 6
+
+; -----------------------------------------------------------------------------
+; High RAM
+; -----------------------------------------------------------------------------
+TILEMAP_DEFAULT_BUFFER_ADDRESS = TILEMAP_RAM_START
+
+TILEMAP_TMP_BUF_ROW	= TILEMAP_RAM_START + $100
+TILEMAP_TMP_BUF_COL	= TILEMAP_RAM_START + $101
+TILEMAP_TMP_TILE_ROW	= TILEMAP_RAM_START + $102
+TILEMAP_TMP_OUTPUT_ROW	= TILEMAP_RAM_START + $103
+TILEMAP_TMP_1		= TILEMAP_RAM_START + $104
+TILEMAP_TMP_2		= TILEMAP_RAM_START + $105
+
+; Temporary - a single instance
+TILEMAP_FIXED_ADDRESS          = TILEMAP_RAM_START + $106
+
+TILEMAP_RAM_SIZE               = $110
+
+
+!if TILEMAP_ZP_END < (TILEMAP_ZP_START + TILEMAP_ZP_SIZE) {
+	!error "TILEMAP_ZP requires ",TILEMAP_ZP_SIZE," bytes. Allocated ",TILEMAP_ZP_END - TILEMAP_ZP_START
+}
+
+!if TILEMAP_RAM_END < (TILEMAP_RAM_START + TILEMAP_RAM_SIZE) {
+	!error "TILEMAP_RAM requires ",TILEMAP_RAM_SIZE," bytes. Allocated ",TILEMAP_RAM_END - TILEMAP_RAM_START
+}
+
+; -------------------------
+; Tilemap structure
+; -------------------------
+TILEMAP_BUFFER_ADDR	= 0				; High byte of page-aligned buffer
+TILEMAP_SIZE		= TILEMAP_BUFFER_ADDR + 1	; Size flags
 TILEMAP_TILES_ADDR	= TILEMAP_SIZE + 1
-TILEMAP_INVERT_ADDR	= TILEMAP_TILES_ADDR + 1
+TILEMAP_INVERT_ADDR	= TILEMAP_TILES_ADDR + 1	; High byte of tilemap
 TILEMAP_DIRTY_ADDR	= TILEMAP_INVERT_ADDR + 1
+TILEMAP_STRUCTURE_SIZE  = TILEMAP_DIRTY_ADDR
 
 ; -------------------------
 ; Contants
@@ -33,65 +86,8 @@ TILEMAP_SIZE_Y_32	= %00001000
 
 TILE_SIZE		= 8	; size of each tile (in px)
 
-; Tilemapview structure
-; ---------------------
-; TilemapAddressH
-; ScrollX
-; ScrollY
-; TileScrollXY
 
 
-
-
-; -------------------------
-; Zero page
-; -------------------------
-TILEMAP_ADDR		= $30
-TILEMAP_TMP_BUFFER_ADDR	= TILEMAP_ADDR + 2
-TILEMAP_TMP_TILES_ADDR	= TILEMAP_ADDR + 4
-TILEMAP_TMP_BUF_ROW	= TILEMAP_ADDR + 6
-TILEMAP_TMP_BUF_COL	= TILEMAP_ADDR + 7
-TILEMAP_TMP_TILE_ROW	= TILEMAP_ADDR + 8
-TILEMAP_TMP_OUTPUT_ROW	= TILEMAP_ADDR + 9
-TILEMAP_TMP_1		= TILEMAP_ADDR + 10
-TILEMAP_TMP_2		= TILEMAP_ADDR + 11
-
-; Temporary - a single instance
-TILEMAP_FIXED_ADDRESS          = $7b00
-TILEMAP_DEFAULT_BUFFER_ADDRESS = $7c00
-
-!macro tilemapCreate .bufferAddr, .tilesetAddr, .sizeFlags, .invertAddr, .dirtyAddr {
-	!if <.tilesetAddr != 0 { !error "tilemapCreate: Tileset address must be page-aligned" }
-	!if >.tilesetAddr < 3 { !error "tilemapCreate: Tileset address must be greater than $2ff" }
-	!if <.bufferAddr != 0 { !error "tilemapCreate: Buffer address must be page-aligned" }
-	!if >.bufferAddr < 3 { !error "tilemapCreate: Buffer address must be greater than $2ff" }
-	!if .invertAddr != 0 and <.invertAddr != 0  {!error "tilemapCreate: Invert address must be page-aligned"}
-	!if .invertAddr != 0 and >.invertAddr < 3  {!error "tilemapCreate: Invert address must be greater than $2ff"}
-	!if .dirtyAddr != 0 and <.dirtyAddr != 0  {!error "tilemapCreate: Dirty address must be page-aligned"}
-	!if .dirtyAddr != 0 and >.dirtyAddr < 3  {!error "tilemapCreate: Dirty address must be greater than $2ff"}
-
-	lda #<TILEMAP_FIXED_ADDRESS
-	sta TILEMAP_ADDR
-	lda #>TILEMAP_FIXED_ADDRESS
-	sta TILEMAP_ADDR + 1
-
-	lda #>.bufferAddr
-	sta TILEMAP_FIXED_ADDRESS + TILEMAP_BUFFER_ADDR
-	lda #.sizeFlags
-	sta TILEMAP_FIXED_ADDRESS + TILEMAP_SIZE
-	lda #>.tilesetAddr
-	sta TILEMAP_FIXED_ADDRESS + TILEMAP_TILES_ADDR
-	lda #>.invertAddr
-	sta TILEMAP_FIXED_ADDRESS + TILEMAP_INVERT_ADDR
-	lda #>.dirtyAddr
-	sta TILEMAP_FIXED_ADDRESS + TILEMAP_DIRTY_ADDR
-
-	jsr tilemapInit
-}
-
-!macro tilemapCreateDefault .size, .tileset {
-	+tilemapCreate TILEMAP_DEFAULT_BUFFER_ADDRESS, .tileset, .size, $0, $0
-}
 
 ; -----------------------------------------------------------------------------
 ; tilemapInit: Initialise a tilemap
@@ -101,52 +97,52 @@ TILEMAP_DEFAULT_BUFFER_ADDRESS = $7c00
 ; -----------------------------------------------------------------------------
 tilemapInit:
 	ldy #0
-	sty MEMSET_LEN
-	sty MEMSET_LEN + 1
-	sty MEMSET_DST
+	sty MEM_LEN
+	sty MEM_LEN + 1
+	sty MEM_DST
 	sty TILEMAP_TMP_BUFFER_ADDR
 	lda (TILEMAP_ADDR), y  ; buffer address H
-	sta MEMSET_DST + 1
+	sta MEM_DST + 1
 	sta TILEMAP_TMP_BUFFER_ADDR
 
 	ldy #TILEMAP_SIZE
 
 	lda #0
-	sta MEMSET_LEN + 1
+	sta MEM_LEN + 1
 	lda #128
-	sta MEMSET_LEN         ; size in bytes
+	sta MEM_LEN         ; size in bytes
 	lda (TILEMAP_ADDR), y  ; size flags
 	sta TILEMAP_TMP_1
 	beq ++
 
 	lda #0
-	sta MEMSET_LEN
+	sta MEM_LEN
 	lda #1
-	sta MEMSET_LEN + 1
+	sta MEM_LEN + 1
 
 	; check size flags, multiple size
 	lda #TILEMAP_SIZE_X_32 | TILEMAP_SIZE_X_64
 	bit TILEMAP_TMP_1
 	beq +
-	asl MEMSET_LEN + 1
+	asl MEM_LEN + 1
 	lda #TILEMAP_SIZE_X_64
 	bit TILEMAP_TMP_1
 	beq +
-	asl MEMSET_LEN + 1
+	asl MEM_LEN + 1
 +
 	lda #TILEMAP_SIZE_Y_16 | TILEMAP_SIZE_Y_32
 	bit TILEMAP_TMP_1
 	beq ++
-	asl MEMSET_LEN + 1
+	asl MEM_LEN + 1
 	lda #TILEMAP_SIZE_Y_32
 	bit TILEMAP_TMP_1
 	beq ++
-	asl MEMSET_LEN + 1
+	asl MEM_LEN + 1
 ++
-	lsr MEMSET_LEN + 1
+	lsr MEM_LEN + 1
 
-	; here, MEMSET_DST and MEMSET_LEN are set. clear the buffer.
-	lda #$cc
+	; here, MEM_DST and MEM_LEN are set. clear the buffer.
+	lda #$00
 	jsr memsetMultiPage
 
 	; todo: invert & dirty
@@ -169,7 +165,6 @@ tilemapRenderRow:
 	asl
 	asl
 	asl
-	lda #56
 	sta TILEMAP_TMP_OUTPUT_ROW
 
 	inc TILEMAP_TMP_2

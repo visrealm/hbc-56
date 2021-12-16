@@ -12,7 +12,12 @@ ROOT_PATH:=../
 
 include ../makefile
 
-kernel.o: kernel.asm  $(ROOT_PATH)kernel/*.asm $(ROOT_PATH)lib/**/*.asm $(ROOT_PATH)lib/*.asm
+kernel.o: kernel.asm  \
+          $(ROOT_PATH)kernel/*.asm \
+	  $(ROOT_PATH)lib/**/*.asm \
+	  $(ROOT_PATH)lib/**/*.inc \
+	  $(ROOT_PATH)lib/*.asm \
+	  $(ROOT_PATH)lib/*.inc
 	$(ACME) -o $@ -l $@.lmap $<
 
 default: kernel.o

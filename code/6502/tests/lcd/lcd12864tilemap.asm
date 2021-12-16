@@ -9,16 +9,9 @@
 
 !src "hbc56kernel.inc"
 
-LCD_BUFFER_ADDR = $7d00
-LCD_MODEL = 12864
-
-!source "gfx/bitmap.asm"
-
 !align 255, 0
 c64FontData:
 	!bin "lcd/fonts/c64-font-ascii.bin"
-
-!source "gfx/tilemap.asm"
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel

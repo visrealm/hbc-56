@@ -7,15 +7,52 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-; -------------------------
-; Constants
-; -------------------------
-LCD_IO_ADDR	= $02
 
+
+!ifndef LCD_IO_PORT { LCD_IO_PORT = $02
+        !warn "LCD_IO_PORT not provided. Defaulting to ", LCD_IO_PORT
+}
+
+!ifndef LCD_ZP_START { LCD_ZP_START = LCD_TMP1
+        !warn "LCD_ZP_START not provided. Defaulting to ", LCD_ZP_START
+}
+
+!ifndef LCD_RAM_START { LCD_RAM_START = $7d00
+        !warn "LCD_RAM_START not provided. Defaulting to ", LCD_RAM_START
+}
+
+; -------------------------
+; Zero page
+; -------------------------
+LCD_TMP1	= LCD_ZP_START
+LCD_TMP2	= LCD_ZP_START + 1
+LCD_ZP_SIZE	= 2
+
+
+; -------------------------
+; High RAM
+; -------------------------
+LCD_BUFFER_ADDR	= LCD_RAM_START
+LCD_RAM_SIZE    = 40
+
+
+!if LCD_ZP_END < (LCD_ZP_START + LCD_ZP_SIZE) {
+	!error "LCD_ZP requires ",LCD_ZP_SIZE," bytes. Allocated ",LCD_ZP_END - LCD_ZP_START
+}
+
+!if LCD_RAM_END < (LCD_RAM_START + LCD_RAM_SIZE) {
+	!error "LCD_RAM requires ",LCD_RAM_SIZE," bytes. Allocated ",LCD_RAM_END - LCD_RAM_START
+}
+
+
+
+; -------------------------
+; Contants
+; -------------------------
 
 ; IO Ports
-LCD_CMD		= IO_PORT_BASE_ADDRESS | LCD_IO_ADDR
-LCD_DATA	= IO_PORT_BASE_ADDRESS | LCD_IO_ADDR | $01
+LCD_CMD		= IO_PORT_BASE_ADDRESS | LCD_IO_PORT
+LCD_DATA	= IO_PORT_BASE_ADDRESS | LCD_IO_PORT | $01
 
 ; Commands
 LCD_CMD_CLEAR			= %00000001
@@ -49,7 +86,7 @@ LCD_CMD_2LINE			= $08
 	LCD_MODEL = 1602
 }
 
-!src "lcd/lcd_macros.asm"
+!src "lcd/lcd.inc"
 
 ; -------------------------
 ; Constants
@@ -255,13 +292,13 @@ lcdCharScroll:
 
 	; Y is previous address
 	jsr lcdCurrentLine
-	sta $7a87
+	sta LCD_TMP1
 	jsr lcdWaitPreserve
 	jsr lcdCurrentLine
-	eor $7a87
+	eor LCD_TMP1
 	beq +
-	inc $7a87
-	lda $7a87
+	inc LCD_TMP1
+	lda LCD_TMP1
 	jmp lcdGotoLine
 +
 	rts
@@ -273,18 +310,18 @@ lcdBackspace:
 	jsr lcdWaitPreserve
 	; Y is previous address
 	jsr lcdCurrentLine
-	sta $7a87
+	sta LCD_TMP1
 
 	lda #LCD_CMD_SHIFT | LCD_CMD_SHIFT_LEFT
 	sta LCD_CMD
 	jsr lcdWait
 	jsr lcdWaitPreserve
 	jsr lcdCurrentLine
-	eor $7a87
+	eor LCD_TMP1
 	beq +
-	dec $7a87
+	dec LCD_TMP1
 	bmi +
-	lda $7a87
+	lda LCD_TMP1
 	jmp lcdGotoLineEnd
 +
 	jsr lcdWait
@@ -304,8 +341,8 @@ lcdBackspace:
 ; -----------------------------------------------------------------------------
 lcdInt8:
 
-.B = R4L
-.C = R4H
+.B = LCD_TMP1
+.C = LCD_TMP2
 
 	pha
 	ldx #1
@@ -691,7 +728,6 @@ lcdNextLine:
 ; -----------------------------------------------------------------------------
 lcdReadLine:
 	ldy #0
-	;jsr lcdRead
 -
 	jsr lcdRead
 	sta (STR_ADDR), y
@@ -708,12 +744,10 @@ lcdReadLine:
 lcdScrollUp:
 	pha
 
-!ifdef LCD_BUFFER_ADDR {
 	lda #<LCD_BUFFER_ADDR
 	sta STR_ADDR_L
 	lda #>LCD_BUFFER_ADDR
 	sta STR_ADDR_H
-}
 
 	jsr lcdWait
 	jsr lcdLineTwo
@@ -758,3 +792,51 @@ lcdScrollUp:
 }
 	pla
 	rts
+
+; -----------------------------------------------------------------------------
+; lcdConsoleOut: Print a null-terminated string
+; -----------------------------------------------------------------------------
+; Inputs:
+;  'A': Character to output to console
+; -----------------------------------------------------------------------------
+lcdConsoleOut:
+        sty TMS9918_REGY
+        cmp #ASCII_RETURN
+        beq .newline
+        cmp #ASCII_BACKSPACE
+        beq .backspace
+        cmp #ASCII_CR   ; omit these
+        beq .endOut
+
+        ; regular character
+        jsr lcdCharScroll ; outputs A to the LCD - auto-scrolls too :)
+
+.endOut:
+        ldy TMS9918_REGY
+        rts
+
+.newline
+        jsr lcdNextLine ; scroll to the next line... scroll screen if on last line
+        jmp .endOut
+
+.backspace
+        jsr lcdBackspace 
+        jmp .endOut
+
+; -----------------------------------------------------------------------------
+; lcdConsolePrint: Print a null-terminated string (console mode)
+; -----------------------------------------------------------------------------
+; Inputs:
+;  STR_ADDR: Contains address of null-terminated string
+; -----------------------------------------------------------------------------
+lcdConsolePrint:
+	ldy #0
+-
+	lda (STR_ADDR), y
+	beq +
+        jsr lcdConsoleOut
+	iny
+	bne -
++
+	rts
+

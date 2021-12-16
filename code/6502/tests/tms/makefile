@@ -21,7 +21,7 @@ include $(ROOT_PATH)makefile
 tms9918nes: tms9918nes.o
 	$(HBC56EMU) --rom $<
 
-all: tms9918type tms9918txttest tms9918nes tms9918mctest tms9918gfx2test tms9918cputests
+all: tms9918type tms9918txttest tms9918nes tms9918mctest tms9918gfx2test
 
 clean:
 	rm -f *.o *.lmap

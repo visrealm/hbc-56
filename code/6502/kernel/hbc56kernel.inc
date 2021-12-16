@@ -14,14 +14,15 @@ cputype = $6502
 
 !src "kernel.o.lmap"
 
-!src "ut/math_macros.asm"
-!src "ut/memory_macros.asm"
-!src "gfx/tms9918_macros.asm"
-!src "lcd/lcd_macros.asm"
-!src "inp/nes_macros.asm"
-!src "inp/keyboard_macros.asm"
-!src "sfx/ay3891x_macros.asm"
-!src "kernel_macros.asm"
+!src "ut/math.inc"
+!src "ut/memory.inc"
+!src "gfx/tms9918.inc"
+!src "gfx/tilemap.inc"
+!src "lcd/lcd.inc"
+!src "inp/nes.inc"
+!src "inp/keyboard.inc"
+!src "sfx/ay3891x.inc"
+!src "kernel.inc"
 
 *=HBC56_META_VECTOR
 !ifdef hbc56Meta {

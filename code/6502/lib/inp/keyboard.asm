@@ -6,19 +6,31 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-; Dependencies:
-;  - hbc56.asm
 
+!ifndef KB_IO_PORT { KB_IO_PORT = $81
+        !warn "KB_IO_PORT not provided. Defaulting to ", KB_IO_PORT
+}
+
+!ifndef KB_RAM_START { KB_RAM_START = $7ea1
+        !warn "KB_RAM_START not provided. Defaulting to ", KB_RAM_START
+}
 
 ; -------------------------
-; Constants
+; High RAM
 ; -------------------------
-KB_IO_PORT	= $81
+KB_FLAGS        = KB_RAM_START
+KB_TMP_X        = KB_RAM_START + 1
+KB_TMP_Y        = KB_RAM_START + 2
+KB_RAM_SIZE     = 3
 
-KB_FLAGS        = $7ea1
-KB_TMP_X        = $7ea2
-KB_TMP_Y        = $7ea3
 
+!if KB_RAM_END < (KB_RAM_START + KB_RAM_SIZE) {
+	!error "KB_RAM requires ",KB_RAM_SIZE," bytes. Allocated ",KB_RAM_END - KB_RAM_START
+}
+
+; -------------------------
+; Contants
+; -------------------------
 KB_SHIFT_DOWN   = %00000001
 KB_CTRL_DOWN    = %00000010
 KB_ALT_DOWN     = %00000100
@@ -33,12 +45,6 @@ KB_SCANCODE_CAPS_LOCK    = $58
 
 ; IO Ports
 KB_IO_ADDR     = IO_PORT_BASE_ADDRESS | KB_IO_PORT
-
-!macro kbBranchIfNotPressed .buttonMask, addr {
-        jsr kbReadAscii
-        cmp #.buttonMask
-        bne addr
-}
 
 ; -----------------------------------------------------------------------------
 ; kbWaitData: Not sure how much delay we need so make a macro for now

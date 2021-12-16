@@ -10,18 +10,30 @@
 ;
 ;
 
-UT_MEMORY_ASM_ = 1
 
-MEMCPY_DST = $e9
-MEMCPY_SRC = $eb
-MEMCPY_LEN = $ed
+!ifndef MEMORY_ZP_START { MEMORY_ZP_START = MEMORY_TMP1
+        !warn "MEMORY_ZP_START not provided. Defaulting to ", MEMORY_ZP_START
+}
+
+; -------------------------
+; Zero page
+; -------------------------
+MEM_DST	= MEMORY_ZP_START
+MEM_SRC	= MEMORY_ZP_START + 2
+MEM_LEN	= MEMORY_ZP_START + 4
+MEMORY_ZP_SIZE	= 6
+
+
+!if MEMORY_ZP_END < (MEMORY_ZP_START + MEMORY_ZP_SIZE) {
+	!error "MEMORY_ZP requires ",MEMORY_ZP_SIZE," bytes. Allocated ",MEMORY_ZP_END - MEMORY_ZP_START
+}
 
 ; -----------------------------------------------------------------------------
 ; memcpySinglePage: Copy up to 255 bytes 
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	MEMCPY_SRC: src address
-;	MEMCPY_DST: dst address
+;	MEM_SRC: src address
+;	MEM_DST: dst address
 ;	Y:	bytes
 ; -----------------------------------------------------------------------------
 memcpySinglePage:
@@ -29,8 +41,8 @@ memcpySinglePage:
 	beq .endMemcpySinglePage
 -
 	dey
-	lda (MEMCPY_SRC), Y
-	sta (MEMCPY_DST), Y
+	lda (MEM_SRC), Y
+	sta (MEM_DST), Y
 	cpy #0
 	bne -
 .endMemcpySinglePage:
@@ -43,8 +55,8 @@ memcpySinglePage:
 ; memcpySinglePagePort: Copy up to 255 bytes 
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	MEMCPY_SRC: src address
-;	MEMCPY_DST: dst address (port)
+;	MEM_SRC: src address
+;	MEM_DST: dst address (port)
 ;	Y:	bytes
 ; -----------------------------------------------------------------------------
 memcpySinglePagePort:
@@ -52,8 +64,8 @@ memcpySinglePagePort:
 	beq .endMemcpySinglePagePort
 -
 	dey
-	lda (MEMCPY_SRC), Y
-	sta MEMCPY_DST
+	lda (MEM_SRC), Y
+	sta MEM_DST
 	cpy #0
 	bne -
 .endMemcpySinglePagePort
@@ -66,21 +78,21 @@ memcpySinglePagePort:
 ; memcpyMultiPage: Copy an up to 2^15 bytes 
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	MEMCPY_SRC: src address
-;	MEMCPY_DST: dst address
-;	MEMCPY_LEN: length
+;	MEM_SRC: src address
+;	MEM_DST: dst address
+;	MEM_LEN: length
 ; -----------------------------------------------------------------------------
 memcpyMultiPage:
 
 !ifdef ALLOW_SELF_MODIFYING_CODE {
-	lda MEMCPY_SRC
+	lda MEM_SRC
 	sta .loadIns + 1
-	lda MEMCPY_SRC + 1
+	lda MEM_SRC + 1
 	sta .loadIns + 2
 
-	lda MEMCPY_DST
+	lda MEM_DST
 	sta .storeIns + 1
-	lda MEMCPY_DST + 1
+	lda MEM_DST + 1
 	sta .storeIns + 2
 
 .loadIns:
@@ -96,23 +108,23 @@ memcpyMultiPage:
 	bne .loadIns
 } else {
 	ldy #0
-	ldx MEMCPY_LEN + 1
+	ldx MEM_LEN + 1
 - 
-	lda (MEMCPY_SRC),y ; could unroll to any power of 2
-	sta (MEMCPY_DST),y
+	lda (MEM_SRC),y ; could unroll to any power of 2
+	sta (MEM_DST),y
 	iny
 	bne -
 	dex
 	beq .memcpyMultiPageRemaining
-	inc MEMCPY_SRC + 1
-	inc MEMCPY_DST + 1
+	inc MEM_SRC + 1
+	inc MEM_DST + 1
 	jmp -
 .memcpyMultiPageRemaining ; remaining bytes
-	ldx MEMCPY_LEN
+	ldx MEM_LEN
 	beq .memcpyMultiPageEnd
 - ; X bytes
-	lda (MEMCPY_SRC),y
-	sta (MEMCPY_DST),y
+	lda (MEM_SRC),y
+	sta (MEM_DST),y
 	iny
 	dex
 	bne -
@@ -127,29 +139,29 @@ memcpyMultiPage:
 ; memcpyMultiPagePort: Copy an up to 2^15 bytes 
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	MEMCPY_SRC: src address
-;	MEMCPY_DST: dst address (port)
-;	MEMCPY_LEN: length
+;	MEM_SRC: src address
+;	MEM_DST: dst address (port)
+;	MEM_LEN: length
 ; -----------------------------------------------------------------------------
 memcpyMultiPagePort:
 
 	ldy #0
-	ldx MEMCPY_LEN + 1
+	ldx MEM_LEN + 1
 - 
-	lda (MEMCPY_SRC),y ; could unroll to any power of 2
-	sta MEMCPY_DST
+	lda (MEM_SRC),y ; could unroll to any power of 2
+	sta MEM_DST
 	iny
 	bne -
 	dex
 	beq .memcpyMultiPagePortRemaining
-	inc MEMCPY_SRC + 1
+	inc MEM_SRC + 1
 	jmp -
 .memcpyMultiPagePortRemaining ; remaining bytes
-	ldx MEMCPY_LEN
+	ldx MEM_LEN
 	beq .memcpyMultiPagePortEnd
 - ; X bytes
-	lda (MEMCPY_SRC),y
-	sta MEMCPY_DST
+	lda (MEM_SRC),y
+	sta MEM_DST
 	iny
 	dex
 	bne -
@@ -158,16 +170,12 @@ memcpyMultiPagePort:
 ; -----------------------------------------------------------------------------
 
 
-MEMSET_DST = $eb
-MEMSET_LEN = $ed
-
-
 ; -----------------------------------------------------------------------------
 ; memsetSinglePage: set a block of memory data
 ; -----------------------------------------------------------------------------
 ; Inputs:
 ;	 A:	value to set
-;	 MEMSET_DST: start address
+;	 MEM_DST: start address
 ;	 Y:	bytes
 ; -----------------------------------------------------------------------------
 memsetSinglePage:
@@ -175,7 +183,7 @@ memsetSinglePage:
 	beq .doneCpy
 -
 	dey
-	sta (MEMSET_DST), y
+	sta (MEM_DST), y
 	cpy #0
 	bne -
 .doneCpy
@@ -187,29 +195,29 @@ memsetSinglePage:
 ; -----------------------------------------------------------------------------
 ; Inputs:
 ;	 A: value
-;	 MEMSET_DST: start address
-;	 MEMSET_LEN: length
+;	 MEM_DST: start address
+;	 MEM_LEN: length
 ; -----------------------------------------------------------------------------
 memsetMultiPage:
-	ldx MEMSET_LEN + 1
+	ldx MEM_LEN + 1
 	bne .doneSet
-	ldy MEMSET_LEN
+	ldy MEM_LEN
 	jmp memsetSinglePage
 .doneSet
 	ldy #0
 - 
-	sta (MEMSET_DST),y ; could unroll to any power of 2
+	sta (MEM_DST),y ; could unroll to any power of 2
 	iny
 	bne -
 	dex
 	beq .doneSet2
-	inc MEMSET_DST + 1
+	inc MEM_DST + 1
 	jmp -
 .doneSet2 ; remaining bytes
-	ldx MEMSET_LEN
+	ldx MEM_LEN
 	beq .doneSet3
 - ; X bytes
-	sta (MEMSET_DST),y
+	sta (MEM_DST),y
 	iny
 	dex
 	bne -

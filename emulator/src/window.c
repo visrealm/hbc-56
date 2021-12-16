@@ -26,6 +26,7 @@ static const char* audio_usage[] = {
 extern int debugWindowShown;
 extern int debugStep;
 extern int debugStepOver;
+extern int debugStepOut;
 extern int debugPaused;
 extern SDL_mutex* debugMutex;
 extern uint16_t debugMemoryAddr;
@@ -1931,7 +1932,16 @@ break;
       {
         if (debugPaused)
         {
-          debugStep = 1;
+          if (withShift)
+          {
+            debugStepOver = 0;
+            debugStepOut = 1;
+          }
+          else
+          {
+            debugStepOver = 0;
+            debugStep = 1;
+          }
         }
         SDL_UnlockMutex(debugMutex);
       }

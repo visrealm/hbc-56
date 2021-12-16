@@ -9,13 +9,12 @@
 !src "hbc56kernel.inc"
 
 BUFFER_ADDR = $1000
-LCD_MODEL = 12864
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel
 ; -----------------------------------------------------------------------------
 hbc56Meta:
-        +setHbcMetaTitle "GRAPHICS LCD TEST"
+        +setHbcMetaTitle "GRAPHICS MODE"
         +consoleLCDMode
         rts
 
@@ -27,7 +26,7 @@ DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURS
 
 SEED        = $0f
 
-TMP1 = $44
+TMP1 	= HBC56_KERNEL_RAM_START
 
 hbc56Main:
 
@@ -44,10 +43,6 @@ hbc56Main:
 	sta LCD_CMD
 
 start:
-
-	lda #0
-	sta PIX_ADDR_L
-	
 	lda #>BUFFER_ADDR
 	sta BITMAP_ADDR_H
 	

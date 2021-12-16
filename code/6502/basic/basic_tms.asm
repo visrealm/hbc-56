@@ -12,3 +12,11 @@
 
 !src "drivers/input.asm"                        ; input routines
 !src "drivers/output_tms9918.asm"               ; output routines
+
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "BASIC (TMS9918)"
+        rts

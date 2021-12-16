@@ -8,12 +8,13 @@
 ;
 ;
 
+; can be anywhere. we own the place at this stage
+LOGO_BUFFER = $3000     
 
 HBC56_BORDER     = TMS_DK_BLUE 
 HBC56_BACKGROUND = TMS_DK_BLUE
 HBC56_LOGO       = TMS_WHITE 
 HBC56_TEXT       = TMS_WHITE
-
 
 !ifdef HBC56_TITLE_TEXT {
 HBC56_TITLE     = HBC56_TITLE_TEXT
@@ -21,15 +22,26 @@ HBC56_TITLE_LEN = HBC56_TITLE_TEXT_LEN
 }
 
 HBC56_PRESS_ANY_KEY_TEXT:
-        !text "        PRESS ANY KEY...        "
-HBC56_PRESS_ANY_KEY_TEXT_LEN = * - HBC56_PRESS_ANY_KEY_TEXT
-        !byte 0
+        !text "PRESS ANY KEY...",0
+HBC56_PRESS_ANY_KEY_TEXT_LEN = *-HBC56_PRESS_ANY_KEY_TEXT-1
 
 HBC56_PRESS_ANY_NES_TEXT:
-        !text "     PRESS 'A' TO BEGIN ...     "
-HBC56_PRESS_ANY_NES_TEXT_LEN = * - HBC56_PRESS_ANY_NES_TEXT
-        !byte 0
+        !text "PRESS A TO BEGIN...",0
+HBC56_PRESS_ANY_NES_TEXT_LEN = *-HBC56_PRESS_ANY_NES_TEXT-1
 
+
+!align 255, 0
+hbc56FontLcd:
+!bin "lcd/fonts/c64-alnum.bin"
+hbc56LogoLcd:
+!bin "res/hbc56lcd.bin"
+
+
+hbc56LogoInd:
+!bin "res/hbc56boot.ind"
+hbc56LogoPatt:
+!bin "res/hbc56boot.patt"
+hbc56LogoPattEnd:        
 
 hbc56BootScreen:
         +tmsColorFgBg HBC56_LOGO, HBC56_BACKGROUND
@@ -48,6 +60,8 @@ hbc56BootScreen:
         +tmsSetAddrPattTableInd 200
         +tmsSendData hbc56LogoPatt, $178
 
+        +tmsPrintZ HBC56_META_TITLE, 8, 15
+
 
 !ifdef HBC56_TITLE_TEXT {
         +tmsPrintZ HBC56_TITLE, (32 - HBC56_TITLE_LEN) / 2, 23
@@ -56,11 +70,23 @@ hbc56BootScreen:
         +tmsColorFgBg TMS_GREY, HBC56_BORDER
         jsr tmsSetBackground
 
+!if LCD_MODEL = 12864 {
+        jsr lcdInit
+        jsr lcdGraphicsMode
+        +memset LOGO_BUFFER, $00, 1024
+        +memcpy LOGO_BUFFER + 128, hbc56LogoLcd, 256
+        lda #>LOGO_BUFFER
+        sta BITMAP_ADDR_H
+        jsr lcdImage
+
+        +memset LOGO_BUFFER, $0, 128
+        +tilemapCreateDefault (TILEMAP_SIZE_X_16 | TILEMAP_SIZE_Y_8), hbc56FontLcd-(32*8)
+        +memset TILEMAP_DEFAULT_BUFFER_ADDRESS, ' ', 128
+
+        +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, HBC56_META_TITLE, 16
+
+        ldy #6
+        jsr tilemapRenderRow
+
+}
         rts
-
-
-hbc56LogoInd:
-!bin "hbc56boot.ind"
-hbc56LogoPatt:
-!bin "hbc56boot.patt"
-hbc56LogoPattEnd:

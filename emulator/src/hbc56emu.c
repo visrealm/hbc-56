@@ -179,6 +179,22 @@ uint8_t io_read(uint8_t addr)
       val = ~val;
     }
     break;
+
+    case (AY3891X_S0 | AY3891X_READ):
+      if (SDL_LockMutex(ayMutex) == 0)
+      {
+        val = PSG_readReg(psg0, psg0Addr);
+        SDL_UnlockMutex(ayMutex);
+      }
+      break;
+
+    case (AY3891X_S1 | AY3891X_READ):
+      if (SDL_LockMutex(ayMutex) == 0)
+      {
+        val = PSG_readReg(psg1, psg1Addr);
+        SDL_UnlockMutex(ayMutex);
+      }
+      break;
   }
 
   return val;
@@ -277,14 +293,21 @@ void mem_write(uint16_t addr, uint8_t val)
 static SDLCommonState* state;
 
 int done;
+int completedWarmUpSamples = 0;
 
 void hbc56AudioCallback(
   void* userdata,
   Uint8* stream,
   int    len)
 {
+  const int warmUpSamples = 20000;
+
   int samples = len / (sizeof(float) * 2);
   float* str = (float*)stream;
+
+  static float lastSample0 = 0.0f;
+  static float lastSample1 = 0.0f;
+
   if (SDL_LockMutex(ayMutex) == 0)
   {
     for (int i = 0; i < samples; ++i)
@@ -292,11 +315,39 @@ void hbc56AudioCallback(
       PSG_calc(psg0);
       PSG_calc(psg1);
 
+      // slowly bring output to resting level
+      if (!done && completedWarmUpSamples < warmUpSamples)
+      {
+        str[i * 2] = -0.5f * ((float)completedWarmUpSamples / (float)warmUpSamples);
+        str[i * 2 + 1] = -0.5f * ((float)completedWarmUpSamples / (float)warmUpSamples);
+        lastSample0 = str[i * 2];
+        lastSample1 = str[i * 2 + 1];
+        ++completedWarmUpSamples;
+        continue;
+      }
+      // slowly bring output to zero
+      else if (done)
+      {
+        str[i * 2] = lastSample0 * 0.9995f;
+        str[i * 2 + 1] = lastSample1 * 0.9995f;
+        lastSample0 = str[i * 2];
+        lastSample1 = str[i * 2 + 1];
+        if (completedWarmUpSamples > 0) completedWarmUpSamples -= 1;
+        continue;
+      }
+
       int16_t l = psg0->ch_out[0] + psg1->ch_out[0] + (psg0->ch_out[2] + psg1->ch_out[2]);
       int16_t r = psg0->ch_out[1] + psg1->ch_out[1] + (psg0->ch_out[2] + psg1->ch_out[2]);
 
-      str[i * 2] = ((float)l) / (float)SHRT_MAX;
-      str[i * 2 + 1] = ((float)r) / (float)SHRT_MAX;
+      // convert the range 0.0 -> 8192 * 4 to -1.0 to 1.0.
+      float thisSample0 = ((float)l / (8192.0f * 4)) - 0.5f;
+      float thisSample1 = ((float)r / (8192.0f * 4)) - 0.5f;
+
+      str[i * 2] = thisSample0 * 0.2f + lastSample0 * 0.8f;
+      str[i * 2 + 1] = thisSample1 * 0.2f + lastSample1 * 0.8f;
+
+      lastSample0 = str[i * 2];
+      lastSample1 = str[i * 2 + 1];
     }
     SDL_UnlockMutex(ayMutex);
   }
@@ -334,6 +385,9 @@ int debugWindowShown = 1;
 int debugStep = 0;
 int debugStepOver = 0;
 int debugPaused = 0;
+int debugStepOut = 0;
+uint16_t callStack[128] = {0};
+int callStackPtr = 0;
 
 #define CLOCK_FREQ 4000000
 
@@ -354,7 +408,7 @@ int SDLCALL cpuThread(void* unused)
     initialLastTime = lastTime;
     while (lastTime < currentTime)
     {
-      if (triggerIrq)
+      if (triggerIrq && !debugPaused)
       {
         cpu6502_irq();
         triggerIrq = 0;
@@ -362,13 +416,17 @@ int SDLCALL cpuThread(void* unused)
 
       if (SDL_LockMutex(debugMutex) == 0)
       {
-        if (debugStepOver && !breakPc)
+        uint8_t opcode = mem_read(cpu6502_get_regs()->pc);
+        int isJsr = (opcode == 0x20);
+        int isRts = (opcode == 0x60);
+
+        if (isJsr)
         {
-          if (mem_read(cpu6502_get_regs()->pc) == 0x20)
-          {
-            breakPc = cpu6502_get_regs()->pc + 3;
-          }
-          debugStepOver = 0;
+          callStack[callStackPtr++] = cpu6502_get_regs()->pc + 3;
+        }
+        else if (isRts && callStackPtr)
+        {
+          --callStackPtr;
         }
 
         if (!debugPaused || debugStep || breakPc)
@@ -384,6 +442,16 @@ int SDLCALL cpuThread(void* unused)
             debugPaused = debugWindowShown = 1;
           }
         }
+
+        if (debugStepOver && !breakPc)
+        {
+          if (isJsr)
+          {
+            breakPc = cpu6502_get_regs()->pc + 3;
+          }
+          debugStepOver = 0;
+        }
+
         SDL_UnlockMutex(debugMutex);
       }
       lastTime = initialLastTime + (thisLoopTicks * ticksPerClock);
@@ -449,10 +517,8 @@ loop()
       {
         /* are vsync interrupts enabled? */
         byte r1 = vrEmuTms9918aRegValue(tms9918, 1);
-        if (r1 & 0x20)
-        {
-          triggerIrq = 1;
-        }
+        triggerIrq = r1 & 0x20;
+        if (debugPaused) triggerIrq = 0;
       }
 
       for (int x = 0; x < LOGICAL_DISPLAY_SIZE_X; ++x)
@@ -742,6 +808,7 @@ main(int argc, char* argv[])
 
   tms9918 = vrEmuTms9918aNew();
 
+
   psg0 = PSG_new(2000000, have.freq);
   psg1 = PSG_new(2000000, have.freq);
 
@@ -772,6 +839,13 @@ main(int argc, char* argv[])
     SDL_Delay(1);
 }
 #endif
+
+  // cool down audio
+  SDL_Delay(250);
+
+  SDL_PauseAudio(1);
+  SDL_CloseAudio();
+  SDL_AudioQuit();
 
   vrEmuTms9918aDestroy(tms9918);
   tms9918 = NULL;

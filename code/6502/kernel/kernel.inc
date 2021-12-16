@@ -32,6 +32,13 @@
         sta HBC56_CONSOLE_FLAGS
 }
 
+!macro hbc56SetVsyncCallback .vsync {
+        lda #<.vsync
+        sta HBC56_VSYNC_CALLBACK
+        lda #>.vsync
+        sta HBC56_VSYNC_CALLBACK + 1
+}
+
 !macro setHbcMetaTitle .titleStr {
         jmp .hbcMetaTitleOut
 .titleStrLabel:
@@ -39,8 +46,13 @@
 .titleStrLabelLen = * - .titleStrLabel
         !byte 0 ; nul terminator for game name
 
+!if .titleStrLabelLen > HBC56_META_TITLE_MAX_LEN {
+        !error "setHbcMetaTitle: Title metadata limited to ",HBC56_META_TITLE_MAX_LEN,"bytes"
+}
 .hbcMetaTitleOut:
-        +tmsPrintZ .titleStrLabel, (32 - .titleStrLabelLen) / 2, 15
+        +memcpy HBC56_META_TITLE + (HBC56_META_TITLE_MAX_LEN-.titleStrLabelLen)/2, .titleStrLabel, .titleStrLabelLen
+        lda #.titleStrLabelLen
+        sta HBC56_META_TITLE_LEN
 }
 
 !macro consoleEnableCursor {
@@ -51,7 +63,7 @@
 
 !macro consoleDisableCursor {
         lda HBC56_CONSOLE_FLAGS
-        eor #HBC56_CONSOLE_FLAG_CURSOR
+        and #!HBC56_CONSOLE_FLAG_CURSOR & $ff
         sta HBC56_CONSOLE_FLAGS
 }
 

@@ -11,3 +11,12 @@
 
 !src "drivers/input.asm"                        ; input routines
 !src "drivers/output_lcd.asm"                   ; output routines
+
+
+; -----------------------------------------------------------------------------
+; metadata for the HBC-56 kernel
+; -----------------------------------------------------------------------------
+hbc56Meta:
+        +setHbcMetaTitle "BASIC (LCD)"
+        +consoleLCDMode
+        rts
