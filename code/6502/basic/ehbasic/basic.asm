@@ -284,7 +284,7 @@ IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
 ;			= $ED		; unused
 ;			= $EE		; unused
 
-Decss			= $EF		; number to decimal string start
+Decss			= $E2		; number to decimal string start
 Decssp1		= Decss+1	; number to decimal string start
 
 ;			= $FF		; decimal string end

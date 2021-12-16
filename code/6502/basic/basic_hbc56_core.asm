@@ -12,9 +12,9 @@
 !src "ehbasic/basic.asm"        ; EhBASIC
 
 ; For saving registers
-SAVE_X          = $14
-SAVE_Y          = $15
-SAVE_A          = $16
+SAVE_X          = HBC56_USER_ZP_START
+SAVE_Y          = HBC56_USER_ZP_START + 1
+SAVE_A          = HBC56_USER_ZP_START + 2
 
 ; put the IRQ and NMI code in RAM so that it can be changed
 IRQ_vec         = VEC_SV+2      ; IRQ code vector

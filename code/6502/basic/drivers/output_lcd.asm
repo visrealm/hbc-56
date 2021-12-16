@@ -7,9 +7,6 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-
-LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
-
 ; -----------------------------------------------------------------------------
 ; hbc56SetupDisplay - Setup the display (LCD)
 ; -----------------------------------------------------------------------------
@@ -30,6 +27,7 @@ hbc56Out:
         stx SAVE_X
         sty SAVE_Y
         sta SAVE_A
+
         cmp #ASCII_RETURN
         beq .newline
         cmp #ASCII_BACKSPACE

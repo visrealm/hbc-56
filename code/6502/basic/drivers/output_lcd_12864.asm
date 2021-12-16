@@ -8,9 +8,7 @@
 ;
 
 
-LCD_BUFFER_ADDR  = $7d00                ; temp buffer for copies
-
-TILE_OFFSET = $e3
+TILE_OFFSET = HBC56_USER_ZP_START + 3
 
 !align 255, 0
 c64FontData:
@@ -34,7 +32,7 @@ onVsync:
 
         sty HBC56_TMP_Y
         ldy TILE_OFFSET
-        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         ldy HBC56_TMP_Y
         jsr tilemapRender
 
@@ -44,14 +42,14 @@ onVsync:
 ; hbc56SetupDisplay - Setup the display (LCD)
 ; -----------------------------------------------------------------------------
 hbc56SetupDisplay:
+
+        sei
+
 	jsr lcdInit
-	jsr lcdHome
 	jsr lcdClear
 	jsr lcdGraphicsMode
 
 	+tilemapCreateDefault (TILEMAP_SIZE_X_16 | TILEMAP_SIZE_Y_8), c64FontData
-        
-        jsr tilemapRender
 
         lda #0
         sta TILE_OFFSET
@@ -85,7 +83,7 @@ hbc56Out:
 
         ; regular character
         ldy TILE_OFFSET
-        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         inc TILE_OFFSET
         jsr checkTileOffset
 
@@ -97,9 +95,9 @@ hbc56Out:
         lsr
         lsr
         lsr
+
         tay
         jsr tilemapRenderRow
-
         ldx SAVE_X
         ldy SAVE_Y
         lda SAVE_A
@@ -113,7 +111,7 @@ hbc56Out:
 .newline
         lda #' '
         ldy TILE_OFFSET
-        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         ; just render this row
         lda TILE_OFFSET
         lsr
@@ -121,7 +119,7 @@ hbc56Out:
         lsr
         lsr
         tay
-        jsr tilemapRenderRow
+        jsr tilemapRender
 
         lda TILE_OFFSET
         clc
@@ -134,15 +132,16 @@ hbc56Out:
 .backspace
         lda #' '
         ldy TILE_OFFSET
-        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         dec TILE_OFFSET
         ldy TILE_OFFSET
         lda #' '
-        sta (TILEMAP_TMP_BUFFER_ADDR), y
+        sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         jmp .endOut
 	rts
 
 checkTileOffset:
+
         lda TILE_OFFSET
         cmp #128
         bcc .offsetOk
@@ -151,7 +150,7 @@ checkTileOffset:
         ldx #0
         ldy #16
 -
-        lda (TILEMAP_TMP_BUFFER_ADDR), y
+        lda TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         sta TILEMAP_DEFAULT_BUFFER_ADDRESS, x
         inx
         iny

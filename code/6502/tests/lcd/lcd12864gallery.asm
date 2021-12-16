@@ -10,7 +10,7 @@
 
 BUFFER_ADDR = $1000
 
-TMP1 	= HBC56_KERNEL_RAM_START
+TMP1 	= HBC56_USER_ZP_START
 
 ; -----------------------------------------------------------------------------
 ; metadata for the HBC-56 kernel

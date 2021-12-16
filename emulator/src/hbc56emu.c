@@ -420,14 +420,6 @@ int SDLCALL cpuThread(void* unused)
         int isJsr = (opcode == 0x20);
         int isRts = (opcode == 0x60);
 
-        if (isJsr)
-        {
-          callStack[callStackPtr++] = cpu6502_get_regs()->pc + 3;
-        }
-        else if (isRts && callStackPtr)
-        {
-          --callStackPtr;
-        }
 
         if (!debugPaused || debugStep || breakPc)
         {
@@ -665,7 +657,7 @@ main(int argc, char* argv[])
 
   char labelMapFile[FILENAME_MAX] = {0};
 
-  memset(ram, 0xff, sizeof(ram));
+  memset(ram, 0xcd, sizeof(ram));
   memset(rom, 0xff, sizeof(rom));
 
   /* Initialize test framework */

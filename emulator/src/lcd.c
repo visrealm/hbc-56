@@ -55,7 +55,7 @@ LCDWindow* lcdWindowCreate(LCDType lcdType) {
 
 
     Uint32 windowFlags = 0;
-    lcdw->window = SDL_CreateWindow("HBC-56 LCD Display", 100, 100,
+    lcdw->window = SDL_CreateWindow("HBC-56 LCD Display", (1580 - ((int)pixelsWidth / 2))/2, (1080 - ((int)pixelsHeight/ 2)) / 2,
                               (int)pixelsWidth / 2,
                               (int)pixelsHeight / 2,
                               windowFlags);
