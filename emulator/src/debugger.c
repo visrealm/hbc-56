@@ -272,7 +272,7 @@ int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
   if (labelMap[addr])
   {
     int oldFgColor = fgColor;
-    if (i != 0) fgColor = blue;
+    if (i != 0 && fgColor != red) fgColor = blue;
     debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
     len += (int)SDL_strlen(labelMap[addr]);
 #if OUTPUT_HEX_WITH_LABEL
@@ -318,7 +318,7 @@ int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value
 
   if (labelMap[addr])
   {
-    if (i != 0) fgColor = blue;
+    if (i != 0 && fgColor != red) fgColor = blue;
     debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
     len += (int)SDL_strlen(labelMap[addr]);
 #if OUTPUT_HEX_WITH_LABEL
@@ -338,7 +338,6 @@ int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value
     if (len > 5)
     {
       debuggerOutput("]", x + len, i + disassemblyVpos); ++len;
-      fgColor = oldFgColor;
 #endif
 
   }
@@ -356,35 +355,26 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
   memset(debuggerFrameBuffer, 0, sizeof(debuggerFrameBuffer));
 
-  static uint8_t lastA = 0;
-  static uint8_t lastX = 0;
-  static uint8_t lastY = 0;
-  static uint8_t lastS = 0;
-  static uint8_t lastF = 0;
+  static CPU6502Regs prevRegs;
+  static CPU6502Regs lastRegs;
+  static uint16_t lastPc;
 
-  static int aChanged = 0;
-  static int xChanged = 0;
-  static int yChanged = 0;
-  static int sChanged = 0;
-  static int fChanged = 0;
   static uint16_t highlightAddr = 0;
 
-  static uint16_t lastPC = 0;
-
   fgColor = green;
-  if (aChanged) fgColor = red;
+  if (lastRegs.a != cpuStatus->a) fgColor = red;
   debuggerOutput("A:  $", 0, 1);
   debuggerOutputHex(cpuStatus->a,5,1);
   debuggerOutput(SDL_itoa(cpuStatus->a,buffer,10),10,1);
 
   fgColor = green;
-  if (xChanged) fgColor = red;
+  if (lastRegs.x != cpuStatus->x) fgColor = red;
   debuggerOutput("X:  $", 0, 2);
   debuggerOutputHex(cpuStatus->x,5,2);
   debuggerOutput(SDL_itoa(cpuStatus->x,buffer,10),10,2);
 
   fgColor = green;
-  if (yChanged) fgColor = red;
+  if (lastRegs.y != cpuStatus->y) fgColor = red;
   debuggerOutput("Y:  $", 0, 3);
   debuggerOutputHex(cpuStatus->y,5,3);
   debuggerOutput(SDL_itoa(cpuStatus->y,buffer,10),10,3);
@@ -394,43 +384,35 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
   debuggerOutput(SDL_itoa(cpuStatus->pc, buffer, 10), 30, 1);
 
   fgColor = green;
-  if (sChanged) fgColor = red;
+  if (lastRegs.s != cpuStatus->s) fgColor = red;
   debuggerOutput("SP: $1", 20, 2);
   debuggerOutputHex(cpuStatus->s, 26, 2);
   debuggerOutput(SDL_itoa(cpuStatus->s, buffer, 10), 30, 2);
 
+  fgColor = green;
   debuggerOutput("F:", 20, 3);
 
-  fgColor = cpuStatus->p.n ? green : dkgreen;
+  fgColor = cpuStatus->p.n ? (lastRegs.p.n == cpuStatus->p.n ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.n ? 'N' : 'n', 24, 3);
-  fgColor = cpuStatus->p.v ? green : dkgreen;
+  fgColor = cpuStatus->p.v ? (lastRegs.p.v == cpuStatus->p.v ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.v ? 'V' : 'v', 25, 3);
-  fgColor = cpuStatus->p.d ? green : dkgreen;
+  fgColor = cpuStatus->p.d ? (lastRegs.p.d == cpuStatus->p.d ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.d ? 'D' : 'd', 26, 3);
-  fgColor = cpuStatus->p.i ? green : dkgreen;
+  fgColor = cpuStatus->p.i ? (lastRegs.p.i == cpuStatus->p.i ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.i ? 'I' : 'i', 27, 3);
-  fgColor = cpuStatus->p.z ? green : dkgreen;
+  fgColor = cpuStatus->p.z ? (lastRegs.p.z == cpuStatus->p.z ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.z ? 'Z' : 'z', 28, 3);
-  fgColor = cpuStatus->p.c ? green : dkgreen;
+  fgColor = cpuStatus->p.c ? (lastRegs.p.c == cpuStatus->p.c ? green : red) : dkgreen;
   debuggerOutputChar(cpuStatus->p.c ? 'C' : 'c', 29, 3);
 
 
   fgColor = green;
 
-  if (lastPC != cpuStatus->pc)
+  if (lastPc != cpuStatus->pc)
   {
-    aChanged = (lastA != cpuStatus->a);
-    xChanged = (lastX != cpuStatus->x);
-    yChanged = (lastY != cpuStatus->y);
-    sChanged = (lastS != cpuStatus->s);
-    fChanged = (lastF != cpuStatus->p_);
-
-    lastA = cpuStatus->a;
-    lastX = cpuStatus->x;
-    lastY = cpuStatus->y;
-    lastS = cpuStatus->s;
-    lastF = cpuStatus->p_;
-    lastPC = cpuStatus->pc;
+    lastPc = cpuStatus->pc;
+    lastRegs = prevRegs;
+    prevRegs = *cpuStatus;
   }
 
   uint16_t pc = cpuStatus->pc;
