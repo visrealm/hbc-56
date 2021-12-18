@@ -30,6 +30,8 @@ hbc56Main:
 
 	+tilemapCreateDefault (TILEMAP_SIZE_X_16 | TILEMAP_SIZE_Y_8), c64FontData
 
+        +tilemapSetActive TILEMAP_FIXED_ADDRESS
+
 TILE_OFFSET = $c0
 
         lda #32
@@ -51,7 +53,7 @@ start:
 
         ;+memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS, screenBuffer, 128
 
-        jsr tilemapRender
+        jsr tilemapRenderToLcd
 
         inc TILE_OFFSET
 

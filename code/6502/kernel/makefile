@@ -32,7 +32,7 @@ kernel.o: kernel.asm  \
 	  $(ROOT_PATH)kernel/makefile \
 	  $(ROOT_PATH)makefile \
 	  $(CONFID)
-	$(ACME) $(KERNEL_DEFINES) -o $@ -l $@.lmap $<
+	$(ACME) $(KERNEL_DEFINES) -r $@.rpt -o $@ -l $@.lmap $<
 
 default: kernel.o
 

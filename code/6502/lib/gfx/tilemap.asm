@@ -33,6 +33,20 @@ HAVE_TILEMAP = 1
 }
 
 ; -------------------------
+; Tilemap structure
+; -------------------------
+TILEMAP_BUFFER_ADDR	= 0				; High byte of page-aligned buffer
+TILEMAP_SIZE		= 1	; Size flags
+TILEMAP_TILES_ADDR	= 2
+TILEMAP_INVERT_ADDR	= 3	; High byte of tilemap
+TILEMAP_DIRTY_ADDR	= 4
+TILEMAP_WIDTH_TILES     = 5
+TILEMAP_HEIGHT_TILES    = 6
+TILEMAP_TILE_SIZE_PX    = 7
+TILEMAP_STRUCTURE_SIZE  = TILEMAP_TILE_SIZE_PX
+
+
+; -------------------------
 ; Zero page
 ; -------------------------
 TILEMAP_ADDR		= TILEMAP_ZP_START
@@ -51,11 +65,14 @@ TILEMAP_TMP_TILE_ROW	= TILEMAP_RAM_START + $82
 TILEMAP_TMP_OUTPUT_ROW	= TILEMAP_RAM_START + $83
 TILEMAP_TMP_1		= TILEMAP_RAM_START + $84
 TILEMAP_TMP_2		= TILEMAP_RAM_START + $85
+TILEMAP_TMP_TILES_W	= TILEMAP_RAM_START + $86
+TILEMAP_TMP_TILES_H	= TILEMAP_RAM_START + $87
+TILEMAP_TMP_TILE_SIZE	= TILEMAP_RAM_START + $88
 
-TILEMAP_FIXED_ADDRESS          = TILEMAP_RAM_START + $100
+TILEMAP_FIXED_ADDRESS   = TILEMAP_RAM_START + $100
 
+TILEMAP_RAM_SIZE        = TILEMAP_RAM_START - (TILEMAP_FIXED_ADDRESS + TILEMAP_STRUCTURE_SIZE)
 
-TILEMAP_RAM_SIZE               = $116
 
 
 !if TILEMAP_ZP_END < (TILEMAP_ZP_START + TILEMAP_ZP_SIZE) {
@@ -65,16 +82,6 @@ TILEMAP_RAM_SIZE               = $116
 !if TILEMAP_RAM_END < (TILEMAP_RAM_START + TILEMAP_RAM_SIZE) {
 	!error "TILEMAP_RAM requires ",TILEMAP_RAM_SIZE," bytes. Allocated ",TILEMAP_RAM_END - TILEMAP_RAM_START
 }
-
-; -------------------------
-; Tilemap structure
-; -------------------------
-TILEMAP_BUFFER_ADDR	= 0				; High byte of page-aligned buffer
-TILEMAP_SIZE		= TILEMAP_BUFFER_ADDR + 1	; Size flags
-TILEMAP_TILES_ADDR	= TILEMAP_SIZE + 1
-TILEMAP_INVERT_ADDR	= TILEMAP_TILES_ADDR + 1	; High byte of tilemap
-TILEMAP_DIRTY_ADDR	= TILEMAP_INVERT_ADDR + 1
-TILEMAP_STRUCTURE_SIZE  = TILEMAP_DIRTY_ADDR
 
 ; -------------------------
 ; Contants
@@ -104,61 +111,104 @@ tilemapInit:
 	sty MEM_DST
 	lda (TILEMAP_ADDR), y  ; buffer address H
 	sta MEM_DST + 1
-	sta TILEMAP_TMP_BUFFER_ADDR 
+	sta TILEMAP_TMP_BUFFER_ADDR + 1
 
 	ldy #TILEMAP_SIZE
 
+@MIN_WIDTH=16
+@MIN_HEIGHT=8
+
+	lda #@MIN_WIDTH		; minimum width
+	sta TILEMAP_TMP_BUF_COL	; temporary storage for x tiles
+	lda #@MIN_HEIGHT	; minimum height
+	sta TILEMAP_TMP_BUF_ROW ; temporary storage for y tiles
+
 	lda #0
 	sta MEM_LEN + 1
-	lda #128
-	sta MEM_LEN         ; size in bytes
-	lda (TILEMAP_ADDR), y  ; size flags
+	lda #(@MIN_WIDTH * @MIN_HEIGHT)	; base size (16 x 8)
+	sta MEM_LEN     		; size in bytes
+	lda (TILEMAP_ADDR), y  		; size flags
 	sta TILEMAP_TMP_1
 	beq ++
 
-	lda #0
-	sta MEM_LEN
-	lda #1
-	sta MEM_LEN + 1
 
 	; check size flags, multiple size
 	lda #TILEMAP_SIZE_X_32 | TILEMAP_SIZE_X_64
 	bit TILEMAP_TMP_1
 	beq +
-	asl MEM_LEN + 1
+	asl MEM_LEN
+	rol MEM_LEN  + 1
+	asl TILEMAP_TMP_BUF_COL
 	lda #TILEMAP_SIZE_X_64
 	bit TILEMAP_TMP_1
 	beq +
-	asl MEM_LEN + 1
+	asl MEM_LEN
+	rol MEM_LEN  + 1
+	asl TILEMAP_TMP_BUF_COL
 +
 	lda #TILEMAP_SIZE_Y_16 | TILEMAP_SIZE_Y_32
 	bit TILEMAP_TMP_1
 	beq ++
-	asl MEM_LEN + 1
+	asl MEM_LEN
+	rol MEM_LEN  + 1
+	asl TILEMAP_TMP_BUF_ROW
 	lda #TILEMAP_SIZE_Y_32
 	bit TILEMAP_TMP_1
 	beq ++
-	asl MEM_LEN + 1
+	asl MEM_LEN
+	rol MEM_LEN  + 1
+	asl TILEMAP_TMP_BUF_ROW
 ++
-	lsr MEM_LEN + 1
-
-	; here, MEM_DST and MEM_LEN are set. clear the buffer.
+	; MEM_DST and MEM_LEN are set. clear the buffer.
 	lda #$00
 	jsr memsetMultiPage
+
+	lda TILEMAP_TMP_BUF_COL
+	ldy #TILEMAP_WIDTH_TILES
+	sta (TILEMAP_ADDR), y
+
+	lda TILEMAP_TMP_BUF_ROW
+	ldy #TILEMAP_HEIGHT_TILES
+	sta (TILEMAP_ADDR), y
+
 	; todo: invert & dirty
 
+	jsr tilemapSetActive
+
 	rts
+
+; -----------------------------------------------------------------------------
+; tilemapSetActive: Set the current/active tilemap
+; -----------------------------------------------------------------------------
+; Inputs:
+;  TILEMAP_ADDR: Address of tilemap structure
+; -----------------------------------------------------------------------------
+tilemapSetActive:
+	ldy #TILEMAP_WIDTH_TILES
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_TILES_W
+
+	ldy #TILEMAP_HEIGHT_TILES
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_TILES_H
+
+	ldy #TILEMAP_TILE_SIZE_PX
+	lda (TILEMAP_ADDR), y
+	sta TILEMAP_TMP_TILE_SIZE
+	rts
+
 
 !if LCD_GRAPHICS=1 {
 
 ; -----------------------------------------------------------------------------
-; tilemapRenderRow: Render a row of the tilemap
+; tilemapRenderRowToLcd: Render a row of the current/active tilemap
 ; -----------------------------------------------------------------------------
+; Prerequisites:
+;  tilemapSetActive called for the tilemap
 ; Inputs:
-;  TILEMAP_ADDR: Address of tilemap structure
 ;  y: Row to render (0-7)
 ; -----------------------------------------------------------------------------
-tilemapRenderRow:
+tilemapRenderRowToLcd:
 	tya
 	and #$07
 	sta TILEMAP_TMP_BUF_ROW
@@ -186,15 +236,14 @@ tilemapRenderRow:
 
 
 ; -----------------------------------------------------------------------------
-; tilemapRender: Render the tilemap
+; tilemapRenderToLcd: Render the current/active tilemap
 ; -----------------------------------------------------------------------------
-; Inputs:
-;  TILEMAP_ADDR: Address of tilemap structure
+; Prerequisites:
+;  tilemapSetActive called for the tilemap
 ; -----------------------------------------------------------------------------
-tilemapRender:
+tilemapRenderToLcd:
 
-
-	lda #8
+	lda TILEMAP_TMP_TILES_H
 	sta TILEMAP_TMP_2
 
 	; set the working tilemap buffer address
@@ -216,7 +265,9 @@ tilemapRender:
 	jsr lcdGraphicsSetRow
 
 	; iterate over the buffer rows and columns
-.renderRow
+@renderRow
+;!byte $db
+
 	lda #0
 	sta TILEMAP_TMP_1
 
@@ -269,9 +320,9 @@ tilemapRender:
 
 	; increment column and check against # columns
 	inc TILEMAP_TMP_BUF_COL
-	lda #16
+	lda TILEMAP_TMP_TILES_W
 	cmp TILEMAP_TMP_BUF_COL
-	bne .renderRow
+	bne @renderRow
 
 	; increment tile row (row within tile) and check against tile size
 	lda #0
@@ -282,9 +333,9 @@ tilemapRender:
 
 	jsr lcdGraphicsSetRow
 
-	lda #TILE_SIZE
+	lda TILEMAP_TMP_TILE_SIZE
 	cmp TILEMAP_TMP_TILE_ROW
-	bne .renderRow
+	bne @renderRow
 
 	; increment row and check against # rows
 	lda #0
@@ -292,7 +343,7 @@ tilemapRender:
 	inc TILEMAP_TMP_BUF_ROW
 	lda TILEMAP_TMP_2
 	cmp TILEMAP_TMP_BUF_ROW
-	bne .renderRow
+	bne @renderRow
 
 	rts
 

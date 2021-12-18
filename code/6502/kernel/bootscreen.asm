@@ -93,7 +93,7 @@ hbc56BootScreen:
                 +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, HBC56_META_TITLE, 16
 
                 ldy #6
-                jsr tilemapRenderRow
+                jsr tilemapRenderRowToLcd
 
         } else {
                 !if LCD_ROWS > 2 { +lcdPrint "\n" }

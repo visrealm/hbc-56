@@ -7,7 +7,19 @@
                         "label": "Assemble and test",
                         "type": "shell",
                         "command": "make -C \"${fileDirname}\" ${fileBasenameNoExtension}",
-                        "problemMatcher": [],
+                        "problemMatcher": {
+                                "owner": "acme",
+                                "fileLocation": [
+                                    "relative",
+                                    "${workspaceFolder}/lib"
+                                ],
+                                "pattern": {
+                                    "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
+                                    "file": 2,
+                                    "location": 3,
+                                    "message": 1
+                                }
+                            },
                         "group": {
                                 "kind": "test",
                                 "isDefault": true
@@ -17,7 +29,19 @@
                         "label": "Assemble",
                         "type": "shell",
                         "command": "make -C \"${fileDirname}\" ${fileBasenameNoExtension}.o",
-                        "problemMatcher": [],
+                        "problemMatcher": {
+                                "owner": "acme",
+                                "fileLocation": [
+                                    "relative",
+                                    "${fileDirname}"
+                                ],
+                                "pattern": {
+                                    "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
+                                    "file": 2,
+                                    "location": 3,
+                                    "message": 1
+                                }
+                            },
                         "group": {
                                 "kind": "build",
                                 "isDefault": true

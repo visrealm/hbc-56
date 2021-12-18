@@ -340,7 +340,7 @@ kernelMain:
                 !ifdef HAVE_GRAPHICS_LCD {
                         +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_NES_TEXT, 16
                         ldy #6
-                        jsr tilemapRenderRow
+                        jsr tilemapRenderRowToLcd
                 } else {
                         lda #<.HBC56_PRESS_ANY_NES_TEXT
                         sta STR_ADDR_L
@@ -364,7 +364,7 @@ kernelMain:
                 !ifdef HAVE_GRAPHICS_LCD {
                         +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_KEY_TEXT, 16
                         ldy #6
-                        jsr tilemapRenderRow
+                        jsr tilemapRenderRowToLcd
                 } else {
                         lda #<.HBC56_PRESS_ANY_KEY_TEXT
                         sta STR_ADDR_L

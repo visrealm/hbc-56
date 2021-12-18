@@ -34,7 +34,7 @@ onVsync:
         ldy TILE_OFFSET
         sta TILEMAP_DEFAULT_BUFFER_ADDRESS, y
         ldy HBC56_TMP_Y
-        jsr tilemapRender
+        jsr tilemapRenderToLcd
 
         rts
 
@@ -99,7 +99,7 @@ hbc56Out:
         lsr
 
         tay
-        jsr tilemapRenderRow
+        jsr tilemapRenderRowToLcd
         ldx SAVE_X
         ldy SAVE_Y
         lda SAVE_A
@@ -121,7 +121,7 @@ hbc56Out:
         lsr
         lsr
         tay
-        jsr tilemapRender
+        jsr tilemapRenderToLcd
 
         lda TILE_OFFSET
         clc
@@ -164,7 +164,7 @@ checkTileOffset:
         ; clear the last row
         +memset TILEMAP_DEFAULT_BUFFER_ADDRESS + 128 - 16, ' ', 16
 
-        jsr tilemapRender
+        jsr tilemapRenderToLcd
 
 .offsetOk
         rts
