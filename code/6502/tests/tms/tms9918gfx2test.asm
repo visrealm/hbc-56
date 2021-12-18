@@ -53,7 +53,7 @@ hbc56Main:
 
 loop:
         jsr doFrame
-        jsr delay
+        +hbc56CustomDelay 64
         jmp loop
 
 
@@ -85,35 +85,6 @@ nextCol
         bne nextRow
 
         pla
-	rts
-
-
-medDelay:
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-
-
-delay:
-	ldx #0
-	ldy #0
--
-	dex
-	bne -
-	ldx #0
-	dey
-	bne -
-	rts
-
-customDelay:
-	ldx #0
--
-	dex
-	bne -
-	ldx #0
-	dey
-	bne -
 	rts
 
 .palette

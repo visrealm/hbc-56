@@ -13,7 +13,7 @@
 ; Width
 ; Height
 
-
+HAVE_BITMAP = 1
 
 !ifndef BITMAP_ZP_START { BITMAP_ZP_START = $f0
         !warn "BITMAP_ZP_START not provided. Defaulting to ", BITMAP_ZP_START
@@ -71,7 +71,7 @@ BITMAP_RAM_SIZE	= 16
 ;  BITMAP_ADDR_H: Contains page-aligned address of 1-bit 128x64 bitmap
 ; -----------------------------------------------------------------------------
 bitmapClear:
-    lda #$ff
+    	lda #$ff
 	sta BITMAP_LINE_STYLE
 	lda #0
 	

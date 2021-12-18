@@ -7,8 +7,6 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-
-
 !ifndef LCD_IO_PORT { LCD_IO_PORT = $02
         !warn "LCD_IO_PORT not provided. Defaulting to ", LCD_IO_PORT
 }
@@ -21,6 +19,8 @@
         !warn "LCD_RAM_START not provided. Defaulting to ", LCD_RAM_START
 }
 
+HAVE_LCD = 1
+
 ; -------------------------
 ; Zero page
 ; -------------------------
@@ -32,8 +32,9 @@ LCD_ZP_SIZE	= 2
 ; -------------------------
 ; High RAM
 ; -------------------------
-LCD_BUFFER_ADDR	= LCD_RAM_START
-LCD_RAM_SIZE    = 40
+.LCD_BUFFER_ADDR	= LCD_RAM_START
+.LCD_REGY_TMP		= LCD_RAM_START + 40
+LCD_RAM_SIZE    	= 42
 
 
 !if LCD_ZP_END < (LCD_ZP_START + LCD_ZP_SIZE) {
@@ -165,7 +166,7 @@ lcdDisplayOn:
 	rts
 
 ; -----------------------------------------------------------------------------
-; lcdDisplayOn: Turn the display on
+; lcdDisplayOff: Turn the display off
 ; -----------------------------------------------------------------------------
 lcdDisplayOff:
 	jsr lcdWait
@@ -432,9 +433,9 @@ lcdCurrentLine4:
 } ; LCD_ROWS > 2
 
 lcdCurrentLine2:
-	cpy #LCD_ADDR_LINE2
-	bcs .lcdLine2
-	jmp .lcdLine1
+	cpy #LCD_ADDR_LINE1+LCD_COLUMNS;16;LCD_ADDR_LINE2
+	bcc .lcdLine1
+	jmp .lcdLine2
 
 .lcdLine1
 	lda #1
@@ -707,7 +708,7 @@ lcdNextLine2:
 	jsr lcdWait
 	; A now contains address
 	cmp #LCD_ADDR_LINE2
-	bcs lcdLineOne
+	bcs lcdScrollUp
 	jmp lcdLineTwo
 
 ; -----------------------------------------------------------------------------
@@ -744,9 +745,9 @@ lcdReadLine:
 lcdScrollUp:
 	pha
 
-	lda #<LCD_BUFFER_ADDR
+	lda #<.LCD_BUFFER_ADDR
 	sta STR_ADDR_L
-	lda #>LCD_BUFFER_ADDR
+	lda #>.LCD_BUFFER_ADDR
 	sta STR_ADDR_H
 
 	jsr lcdWait
@@ -755,10 +756,10 @@ lcdScrollUp:
 	jsr lcdWait
 	jsr lcdLineOne
 	jsr lcdPrint
+	jsr lcdWait
 
 !if LCD_ROWS > 2 {
 
-	jsr lcdWait
 	jsr lcdLineThree
 	jsr lcdReadLine
 	jsr lcdWait
@@ -775,7 +776,6 @@ lcdScrollUp:
 	jsr lcdWait
 	jsr lcdLineFour
 } else {
-	jsr lcdWait
 	jsr lcdLineTwo
 }
 
@@ -800,19 +800,21 @@ lcdScrollUp:
 ;  'A': Character to output to console
 ; -----------------------------------------------------------------------------
 lcdConsoleOut:
-        sty TMS9918_REGY
+        sty .LCD_REGY_TMP
         cmp #ASCII_RETURN
         beq .newline
         cmp #ASCII_BACKSPACE
         beq .backspace
         cmp #ASCII_CR   ; omit these
         beq .endOut
+        cmp #0
+        beq .endOut
 
         ; regular character
         jsr lcdCharScroll ; outputs A to the LCD - auto-scrolls too :)
 
 .endOut:
-        ldy TMS9918_REGY
+        ldy .LCD_REGY_TMP
         rts
 
 .newline

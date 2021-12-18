@@ -13,6 +13,8 @@
         !warn "SFXMAN_RAM_START not provided. Defaulting to ", SFXMAN_RAM_START
 }
 
+HAVE_SFX_MAN = 1
+
 CH0_TIMEOUT     = SFXMAN_RAM_START
 CH1_TIMEOUT     = SFXMAN_RAM_START + 2
 CH2_TIMEOUT     = SFXMAN_RAM_START + 4

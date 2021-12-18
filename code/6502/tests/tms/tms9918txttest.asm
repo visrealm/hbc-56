@@ -27,6 +27,7 @@ hbc56Main:
         +tmsSendData TEXT, 40*24
 
         +tmsEnableOutput
+        +tmsDisableInterrupts
 
 	lda #16
 	sta YPOS
@@ -34,14 +35,14 @@ hbc56Main:
         cli
 
 loop:
-        lda YPOS
-        clc
-        adc #1
-        sta YPOS
+        ldy YPOS
+        iny
+        sty YPOS
+	tya
         ldx #7
         jsr tmsSetRegister
 
-        jsr medDelay
+        ;jsr medDelay
 
         jmp loop
 

@@ -12,15 +12,18 @@ ROOT_PATH=../
 
 default: basic_tms
 
+#basic_lcd:	LCD_MODEL = 2004
+basic_lcd:	DISABLE_KERNEL_MODULES += TMS9918
+
+#DISABLE_KERNEL_MODULES += AY3891X
+
 include $(ROOT_PATH)makefile
 
 %: %.o
 	$(HBC56EMU) --keyboard --rom $<
 
 %lcd: %lcd.o
-	$(HBC56EMU) --lcd 12864  --keyboard --rom $<
-
-all: basic_tms basic_lcd basic_glcd
+	$(HBC56EMU) --lcd $(LCD_MODEL) --keyboard --rom $<
 
 clean:
 	rm -f *.o *.lmap

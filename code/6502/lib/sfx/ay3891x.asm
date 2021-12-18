@@ -14,6 +14,8 @@
         !warn "AY_IO_PORT not provided. Defaulting to ", AY_IO_PORT
 }
 
+HAVE_AY3891X = 1
+
 ; -------------------------
 ; Constants
 ; -------------------------

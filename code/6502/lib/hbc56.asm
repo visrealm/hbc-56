@@ -25,7 +25,6 @@ HBC56_TITLE_TEXT_LEN = * - HBC56_TITLE_TEXT
         !byte 0 ; nul terminator for game name
 }
 
-
 *=DEFAULT_HBC56_INT_VECTOR
         rti
 
@@ -40,7 +39,6 @@ hbc56CustomDelay:
 	dey
 	bne -
 	rts
-
 
 *=$FFFA
 !ifdef HBC56_NMI_VECTOR { !word HBC56_NMI_VECTOR } else { !word DEFAULT_HBC56_NMI_VECTOR }

@@ -6,10 +6,9 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-; Prerequisites:
-;  - lcd.asm
-;  - bitmap.asm
 
+
+HAVE_GRAPHICS_LCD = 1
 
 ; -------------------------
 ; Constants

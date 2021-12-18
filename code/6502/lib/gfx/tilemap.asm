@@ -17,6 +17,8 @@
 
 !src "gfx/tilemap.inc"
 
+HAVE_TILEMAP = 1
+
 
 !ifndef TILEMAP_ZP_START { TILEMAP_ZP_START = $f0
         !warn "TILEMAP_ZP_START not provided. Defaulting to ", TILEMAP_ZP_START
@@ -141,13 +143,13 @@ tilemapInit:
 	lsr MEM_LEN + 1
 
 	; here, MEM_DST and MEM_LEN are set. clear the buffer.
-	lda #$cc
+	lda #$00
 	jsr memsetMultiPage
-
 	; todo: invert & dirty
 
 	rts
 
+!if LCD_GRAPHICS=1 {
 
 ; -----------------------------------------------------------------------------
 ; tilemapRenderRow: Render a row of the tilemap
@@ -294,3 +296,4 @@ tilemapRender:
 
 	rts
 
+}

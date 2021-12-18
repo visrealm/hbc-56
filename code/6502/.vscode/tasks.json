@@ -4,23 +4,22 @@
         "version": "2.0.0",
         "tasks": [
                 {
-                        "label": "Build invaders",
+                        "label": "Assemble and test",
                         "type": "shell",
-                        "command": "cd invaders;acme -l invaders.lmap invaders.asm",
+                        "command": "make -C \"${fileDirname}\" ${fileBasenameNoExtension}",
                         "problemMatcher": [],
                         "group": {
-                                "kind": "build",
+                                "kind": "test",
                                 "isDefault": true
                         }
                 },
                 {
-                        "label": "Run invaders",
+                        "label": "Assemble",
                         "type": "shell",
-                        "command": "..\\..\\emulator\\bin\\Hbc56Emu --resizable --renderer software --rom \"invaders\\invaders.o\"",
+                        "command": "make -C \"${fileDirname}\" ${fileBasenameNoExtension}.o",
                         "problemMatcher": [],
-                        "dependsOn":["Build invaders"],
                         "group": {
-                                "kind": "test",
+                                "kind": "build",
                                 "isDefault": true
                         }
                 }

@@ -54,8 +54,10 @@ hbc56SetupDisplay:
         lda #0
         sta TILE_OFFSET
 
+!ifdef tmsInit {
         +hbc56SetVsyncCallback onVsync
         +tmsEnableInterrupts
+}
 
         rts
 

@@ -17,12 +17,17 @@ HBC56EMU=$(ROOT_PATH)../../emulator/bin/Hbc56Emu.exe
 # Comile command
 ACME=acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
 
+LCD_MODEL?=12864
+
+export LCD_MODEL
+export DISABLE_KERNEL_MODULES
+
 # Every project should depend on the kernel
-kernel: 
-	$(MAKE) -C $(ROOT_PATH)kernel kernel.o
+kernel:
+	"$(MAKE)" -C $(ROOT_PATH)kernel kernel.o
 
 # Default compile task
-%.o: %.asm kernel
-	$(ACME) -o $@ -l $@.lmap $<
+%.o: %.asm kernel makefile $(ROOT_PATH)makefile
+	$(ACME) -o $@ -l $@.lmap -r $@.rpt $<
 
 .PHONY: clean

@@ -12,12 +12,16 @@ ROOT_PATH=../../
 
 default: lcdtype
 
+lcdtype: LCD_MODEL = 2004
+
+DISABLE_KERNEL_MODULES = TMS9918
+
 include $(ROOT_PATH)makefile
 
 %: %.o
-	$(HBC56EMU) --lcd 12864 --keyboard --rom $<
+	$(HBC56EMU) --lcd $(LCD_MODEL) --keyboard --rom $<
 
 clean:
 	rm -f *.o *.lmap
 
-all: lcdtype lcd12864tilemap lcd12864text lcd12864gfx lcd12864gallery
+all: lcd12864tilemap lcd12864text lcd12864gfx lcd12864gallery

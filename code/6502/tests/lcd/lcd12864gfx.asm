@@ -24,9 +24,10 @@ LCD_EXTENDED        = LCD_INITIALIZE | LCD_CMD_12864B_EXTENDED
 
 DISPLAY_MODE  = <(LCD_CMD_DISPLAY | LCD_CMD_DISPLAY_ON) ; | LCD_CMD_DISPLAY_CURSOR | LCD_CMD_DISPLAY_CURSOR_BLINK)
 
-SEED        = $0f
 
 TMP1 	= HBC56_USER_ZP_START
+TMP2 	= HBC56_USER_ZP_START + 1
+SEED    = HBC56_USER_ZP_START + 2
 
 hbc56Main:
 
@@ -45,10 +46,32 @@ hbc56Main:
 start:
 	lda #>BUFFER_ADDR
 	sta BITMAP_ADDR_H
+
 	
 mainLoop:
 
+	jsr bitmapClear
+	jsr pixelDemo
+	jsr medDelay
+
+	jsr bitmapClear
+	jsr lineDemo
+	jsr medDelay
+
+	jsr bitmapClear
+	lda #64
+	sta TMP2
+.loop
+	jsr randomLineDemo
+	dec TMP2
+	bne .loop
+
+	jsr medDelay
+
+	jsr bitmapClear
 	jsr rectDemo
+	jsr medDelay
+
 
 	jmp mainLoop
 
@@ -113,32 +136,58 @@ randomLineDemo:
 
 pixelDemo:
 	lda #63
-	sta TMP1
--	
-	lda TMP1
 	sta BITMAP_X
 	sta BITMAP_Y
+-	
 	jsr bitmapSetPixel
 	
 	jsr lcdImage
-	;jsr delay
 	
-	dec TMP1
+	dec BITMAP_X
+	dec BITMAP_Y
 	bne -
 
 	lda #63
-	sta TMP1
--	
-	lda TMP1
 	sta BITMAP_X
 	sta BITMAP_Y
+-	
 	jsr bitmapClearPixel
 
 	jsr lcdImage
-	;jsr delay
-	
-	dec TMP1
+	dec BITMAP_X
+	dec BITMAP_Y
 	bne -
+
+
+
+	lda #63
+	sta BITMAP_Y
+	clc
+	adc #20
+	sta BITMAP_X
+
+-	
+	jsr bitmapSetPixel
+	
+	jsr lcdImage
+	
+	inc BITMAP_X
+	dec BITMAP_Y
+	bne -
+
+	lda #63
+	sta BITMAP_Y
+	clc
+	adc #20
+	sta BITMAP_X
+-	
+	jsr bitmapClearPixel
+
+	jsr lcdImage
+	inc BITMAP_X
+	dec BITMAP_Y
+	bne -
+
 
 	rts
 
@@ -226,8 +275,6 @@ lineDemo:
 	
 	jsr lcdImage
 	
-	jsr medDelay
-	
 	dec TMP1
 	dec TMP1
 	bne -
@@ -247,8 +294,6 @@ lineDemo:
 	
 	jsr lcdImage
 	
-	jsr medDelay
-	
 	dec TMP1
 	dec TMP1
 	bne -
@@ -256,30 +301,18 @@ lineDemo:
 
 
 longDelay:
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
-	jsr delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
+	jsr hbc56Delay
 	; flow through
 
 medDelay:
-	jsr delay
-	jsr delay
-
-
-delay:
-	ldx #255
-	ldy #255
-.loop:
-	dex
-	bne .loop 
-	ldx #255
-	dey
-	bne .loop
-	rts
+	jsr hbc56Delay
+	jsr hbc56Delay
 
 rand:
     lda SEED

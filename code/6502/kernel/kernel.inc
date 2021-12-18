@@ -77,3 +77,7 @@
        !byte $db 
 }
 
+!macro hbc56CustomDelay .delay {
+        ldy #.delay
+        jsr hbc56CustomDelay
+}

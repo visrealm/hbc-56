@@ -55,7 +55,7 @@
 ; tmsPut: Send a byte of data to the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsPut .byte {
-        lda #.byte
+        lda #(.byte & 0xff)
         +tmsPut
 }
 
@@ -321,6 +321,31 @@
         
 
         bne -
+}
+
+
+!macro tmsCreateSpritePatternImm .ind, .spriteDataImm {
+
+        ; sprite pattern table
+        +tmsSetAddrSpritePattTableInd .ind
+
+        !for i, 0, 8 {
+                +tmsPut <(.spriteDataImm >> (56 - 8 * i))
+        }
+}
+
+!macro tmsCreatePatternImm .ind, .b0, .b1, .b2, .b3, .b4, .b5, .b6, .b7 {
+
+        ; sprite pattern table
+        +tmsSetAddrPattTableInd .ind
+        +tmsPut .b0
+        +tmsPut .b2
+        +tmsPut .b2
+        +tmsPut .b3
+        +tmsPut .b4
+        +tmsPut .b5
+        +tmsPut .b6
+        +tmsPut .b7
 }
 
 

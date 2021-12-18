@@ -60,7 +60,6 @@ restartGame:
         jsr tmsInit
         +tmsDisableOutput
 
-        jsr sfxManInit:
         sei
 
         +tmsDisableInterrupts
@@ -140,7 +139,6 @@ restartGame:
         cli
 
 nextFrame:
-        jsr sfxManTick
         cli
         +tmsEnableInterrupts
 

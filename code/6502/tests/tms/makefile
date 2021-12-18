@@ -12,6 +12,8 @@ ROOT_PATH=../../
 
 default: tms9918type
 
+DISABLE_KERNEL_MODULES = LCD  
+
 include $(ROOT_PATH)makefile
 
 %: %.o

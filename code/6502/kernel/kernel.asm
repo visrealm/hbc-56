@@ -15,13 +15,8 @@ HBC56_RST_VECTOR = kernelMain
 HBC56_KERNEL_START = $e000
 HBC56_META_VECTOR  = HBC56_KERNEL_START-4
 
-TMS_MODEL = 9918
 RTI_OPCODE = $40
 JMP_OPCODE = $4c
-
-!ifndef LCD_MODEL {
-        LCD_MODEL = 12864
-}
 
 ; -------------------------
 ; I/O devices
@@ -37,34 +32,39 @@ NES_IO_PORT             = $81
 ; -------------------------
 HBC56_KERNEL_ZP_START   = $18
 
-TILEMAP_ZP_START = HBC56_KERNEL_ZP_START
-TILEMAP_ZP_END  = TILEMAP_ZP_START + 6
+TILEMAP_ZP_START        = HBC56_KERNEL_ZP_START
+TILEMAP_ZP_END          = TILEMAP_ZP_START + 6
 
-BITMAP_ZP_START = TILEMAP_ZP_END
-BITMAP_ZP_END   = BITMAP_ZP_START + 6
+BITMAP_ZP_START         = TILEMAP_ZP_END
+BITMAP_ZP_END           = BITMAP_ZP_START + 6
 
-TMS9918_ZP_START = BITMAP_ZP_END
-TMS9918_ZP_END  = TMS9918_ZP_START + 4
+!ifdef HBC56_DISABLE_TMS9918 { .TMS_ZP_SIZE = 0 } else { .TMS_ZP_SIZE = 4 }
+TMS9918_ZP_START        = BITMAP_ZP_END
+TMS9918_ZP_END          = TMS9918_ZP_START + .TMS_ZP_SIZE
 
-LCD_ZP_START    = TMS9918_ZP_END
-LCD_ZP_END      = LCD_ZP_START + 2
+!ifdef HBC56_DISABLE_LCD { .LCD_ZP_SIZE = 0 } else { .LCD_ZP_SIZE = 2 }
+LCD_ZP_START            = TMS9918_ZP_END
+LCD_ZP_END              = LCD_ZP_START + .LCD_ZP_SIZE
 
-MEMORY_ZP_START = LCD_ZP_END
-MEMORY_ZP_END   = MEMORY_ZP_START + 6
+MEMORY_ZP_START         = LCD_ZP_END
+MEMORY_ZP_END           = MEMORY_ZP_START + 6
 
-STR_ADDR        = MEMORY_ZP_END
-STR_ADDR_L      = MEMORY_ZP_END
-STR_ADDR_H      = MEMORY_ZP_END + 1
+STR_ADDR                = MEMORY_ZP_END
+STR_ADDR_L              = MEMORY_ZP_END
+STR_ADDR_H              = MEMORY_ZP_END + 1
 
-HBC56_USER_ZP_START   = STR_ADDR_H + 2
+HBC56_KERNEL_ZP_END     = STR_ADDR_H + 1
+HBC56_USER_ZP_START     = HBC56_KERNEL_ZP_END
 
 ;!warn "Total ZP used: ",STR_ADDR_H-HBC56_KERNEL_ZP_START
 
 
+!ifndef HAVE_TMS9918 { HBC56_DISABLE_SFXMAN=1 }
+
 ; -------------------------
 ; Kernel RAM
 ; -------------------------
-HBC56_KERNEL_RAM_START  = $7800
+HBC56_KERNEL_RAM_START  = $7b00
 
 TILEMAP_RAM_START       = HBC56_KERNEL_RAM_START
 TILEMAP_RAM_END         = TILEMAP_RAM_START + $116
@@ -72,14 +72,17 @@ TILEMAP_RAM_END         = TILEMAP_RAM_START + $116
 BITMAP_RAM_START        = TILEMAP_RAM_END
 BITMAP_RAM_END          = BITMAP_RAM_START + 16
 
+!ifdef HBC56_DISABLE_TMS9918 { .TMS_RAM_SIZE = 0 } else { .TMS_RAM_SIZE = 50 }
 TMS9918_RAM_START       = BITMAP_RAM_END
-TMS9918_RAM_END         = TMS9918_RAM_START + 50
+TMS9918_RAM_END         = TMS9918_RAM_START + .TMS_RAM_SIZE
 
+!ifdef HBC56_DISABLE_LCD { .LCD_RAM_SIZE = 0 } else { .LCD_RAM_SIZE = 42 }
 LCD_RAM_START           = TMS9918_RAM_END
-LCD_RAM_END             = LCD_RAM_START + 40
+LCD_RAM_END             = LCD_RAM_START + .LCD_RAM_SIZE
 
+!ifdef HBC56_DISABLE_SFXMAN { .SFXMAN_RAM_SIZE = 0 } else { .SFXMAN_RAM_SIZE = 18 }
 SFXMAN_RAM_START        = LCD_RAM_END
-SFXMAN_RAM_END          = SFXMAN_RAM_START + 18
+SFXMAN_RAM_END          = SFXMAN_RAM_START + .SFXMAN_RAM_SIZE
 
 BCD_RAM_START           = SFXMAN_RAM_END
 BCD_RAM_END             = BCD_RAM_START + 3
@@ -91,30 +94,28 @@ NES_RAM_START            = KB_RAM_END
 NES_RAM_END              = NES_RAM_START + 3
 
 
-LAST_MODULE_RAM_END = NES_RAM_END
+LAST_MODULE_RAM_END     = NES_RAM_END
 
-HBC56_TICKS         = LAST_MODULE_RAM_END
-HBC56_SECONDS_L     = LAST_MODULE_RAM_END + 1
-HBC56_SECONDS_H     = LAST_MODULE_RAM_END + 2
-HBC56_TMP           = LAST_MODULE_RAM_END + 3
+HBC56_TICKS             = LAST_MODULE_RAM_END
+HBC56_SECONDS_L         = LAST_MODULE_RAM_END + 1
+HBC56_SECONDS_H         = LAST_MODULE_RAM_END + 2
+HBC56_TMP               = LAST_MODULE_RAM_END + 3
 
-HBC56_CONSOLE_FLAGS = LAST_MODULE_RAM_END + 4
+HBC56_CONSOLE_FLAGS     = LAST_MODULE_RAM_END + 4
 HBC56_CONSOLE_FLAG_CURSOR = $80
-HBC56_CONSOLE_FLAG_NES    = $40
-HBC56_CONSOLE_FLAG_LCD    = $20
+HBC56_CONSOLE_FLAG_NES  = $40
+HBC56_CONSOLE_FLAG_LCD  = $20
 
-HBC56_TMP_X     = LAST_MODULE_RAM_END + 5
-HBC56_TMP_Y     = LAST_MODULE_RAM_END + 6
+HBC56_TMP_X             = LAST_MODULE_RAM_END + 5
+HBC56_TMP_Y             = LAST_MODULE_RAM_END + 6
 
 HBC56_META_TITLE_MAX_LEN = 16
-HBC56_META_TITLE         = LAST_MODULE_RAM_END + 7
-HBC56_META_TITLE_END     = HBC56_META_TITLE + HBC56_META_TITLE_MAX_LEN + 1
-HBC56_META_TITLE_LEN     = HBC56_META_TITLE_END + 1
+HBC56_META_TITLE        = LAST_MODULE_RAM_END + 7
+HBC56_META_TITLE_END    = HBC56_META_TITLE + HBC56_META_TITLE_MAX_LEN + 1
+HBC56_META_TITLE_LEN    = HBC56_META_TITLE_END + 1
 
 ; callback function on vsync
 HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
-
-
 
 ;!warn "Total RAM used: ",NES_RAM_END-HBC56_KERNEL_RAM_START
 
@@ -125,15 +126,26 @@ HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
 
 !src "ut/bcd.asm"
 !src "ut/memory.asm"
-!src "ut/memory.inc"
 
+!ifndef HBC56_DISABLE_AY3891X {
+        !src "sfx/ay3891x.asm"
+}
 
-!src "gfx/tms9918.asm"
-!src "sfx/ay3891x.asm"
-!src "sfx/sfxman.asm"
-!src "gfx/bitmap.asm"
-!src "lcd/lcd.asm"
-!src "gfx/tilemap.asm"
+!ifndef HBC56_DISABLE_TMS9918 {
+        !ifndef TMS_MODEL { TMS_MODEL = 9918 }
+        !src "gfx/tms9918.asm"
+}
+
+!ifndef HBC56_DISABLE_SFXMAN {
+        !src "sfx/sfxman.asm"
+}
+
+!ifndef HBC56_DISABLE_LCD {
+        !ifndef LCD_MODEL { LCD_MODEL = 12864 }
+        !src "gfx/bitmap.asm"
+        !src "lcd/lcd.asm"
+        !src "gfx/tilemap.asm"
+}
 
 !src "inp/nes.asm"
 !src "inp/keyboard.asm"
@@ -142,6 +154,7 @@ HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
 
 !src "kernel.inc"
 
+!ifdef HAVE_TMS9918 {
 .vsyncCallback:
         bit HBC56_CONSOLE_FLAGS
         bpl ++
@@ -167,7 +180,9 @@ HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
         lda #$7f
         +tmsPut
 ++
-        jsr sfxManTick
+        !ifdef HAVE_SFX_MAN {
+                jsr sfxManTick
+        }
 
         jmp (HBC56_VSYNC_CALLBACK)
 
@@ -198,29 +213,40 @@ consoleEnableCursor:
 consoleDisableCursor:
         +consoleDisableCursor
         rts
+}
+
 
 hbc56HighBell:
-        +ayToneEnable AY_PSG0, AY_CHC
-        +aySetVolume AY_PSG0, AY_CHC, $ff
-        +ayPlayNote AY_PSG0, AY_CHC, NOTE_F5
+        !ifdef HAVE_AY3891X {
+                +ayToneEnable AY_PSG0, AY_CHC
+                +aySetVolume AY_PSG0, AY_CHC, $ff
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_F5
+        }
         jmp .noteTimeout
 
 hbc56Bell:
-        +ayToneEnable AY_PSG0, AY_CHC
-        +aySetVolume AY_PSG0, AY_CHC, $ff
-        +ayPlayNote AY_PSG0, AY_CHC, NOTE_E3
+        !ifdef HAVE_AY3891X {
+                +ayToneEnable AY_PSG0, AY_CHC
+                +aySetVolume AY_PSG0, AY_CHC, $ff
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_E3
+        }
         jmp .noteTimeout
 
 .noteTimeout
-        lda HBC56_CONSOLE_FLAGS
-        and #HBC56_CONSOLE_FLAG_LCD
-        bne .skipSfxMan
-        +sfxManSetChannelTimeout  AY_PSG0, AY_CHC, 0.16
-        rts
+        !ifdef HAVE_SFXMAN {
+                lda HBC56_CONSOLE_FLAGS
+                and #HBC56_CONSOLE_FLAG_LCD
+                bne .skipSfxMan
+                +sfxManSetChannelTimeout  AY_PSG0, AY_CHC, 0.16
+                rts
+        }
 .skipSfxMan
-        jsr hbc56Delay
-        jsr hbc56Delay
-        +ayStop AY_PSG0, AY_CHC
+        !ifdef HAVE_AY3891X {
+                jsr hbc56Delay
+                jsr hbc56Delay
+                +ayStop AY_PSG0, AY_CHC
+        }
+
         rts
 
 
@@ -245,23 +271,39 @@ kernelMain:
 
         sta HBC56_META_TITLE + HBC56_META_TITLE_MAX_LEN
 
-        ; dummy callback
-        +hbc56SetVsyncCallback .nullCallbackFunction
 
         jsr HBC56_META_VECTOR   ; user program metadata
 
         jsr kbInit
-        jsr ayInit
-        jsr sfxManInit
 
-        !ifdef tmsInit { jsr tmsInit }
-        !ifdef lcdInit { jsr lcdInit }
+        !ifdef HAVE_AY3891X {
+                jsr ayInit
+        }
 
-        jsr lcdDisplayOn
+        !ifdef HAVE_SFXMAN {
+                jsr sfxManInit  ; requires TMS interrupts
+        }
+
+        !ifdef HAVE_TMS9918 {
+                jsr tmsInit
+
+                ; dummy callback
+                +hbc56SetVsyncCallback .nullCallbackFunction
+        }
+        !ifdef HAVE_LCD {
+                jsr lcdInit
+                jsr hbc56Delay
+                jsr lcdDisplayOn
+                jsr hbc56Delay
+        }
+
         jsr hbc56BootScreen
 
-        +tmsEnableOutput
-        +tmsDisableInterrupts
+        !ifdef HAVE_TMS9918 {
+                +tmsEnableOutput
+                +tmsDisableInterrupts
+                +setIntHandler onVSync
+        }
 
         lda #20
         sta HBC56_TMP
@@ -269,11 +311,11 @@ kernelMain:
         jsr hbc56Delay
         dec HBC56_TMP
         bne -
-
-        +setIntHandler onVSync
        
         jsr hbc56HighBell
-        +tmsEnableInterrupts
+        !ifdef HAVE_TMS9918 {
+                +tmsEnableInterrupts
+        }
         cli
 
         lda #4
@@ -290,10 +332,23 @@ kernelMain:
 
         ; NES input
         sei
-        +tmsPrintZ HBC56_PRESS_ANY_NES_TEXT, (32 - HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 15
-        +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, HBC56_PRESS_ANY_NES_TEXT, 16
-        ldy #6
-        jsr tilemapRenderRow
+        !ifdef HAVE_TMS9918 {
+                +tmsPrintZ .HBC56_PRESS_ANY_NES_TEXT, (32 - .HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 15
+        }
+
+        !ifdef HAVE_LCD {
+                !ifdef HAVE_GRAPHICS_LCD {
+                        +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_NES_TEXT, 16
+                        ldy #6
+                        jsr tilemapRenderRow
+                } else {
+                        lda #<.HBC56_PRESS_ANY_NES_TEXT
+                        sta STR_ADDR_L
+                        lda #>.HBC56_PRESS_ANY_NES_TEXT
+                        sta STR_ADDR_H
+                        jsr lcdPrint        
+                }
+        }
         cli
         jsr nesWaitForPress
         jmp .afterInput
@@ -301,23 +356,42 @@ kernelMain:
 .keyboardInput
         ; Keyboard  input
         sei
-        +tmsPrintZ HBC56_PRESS_ANY_KEY_TEXT, (32 - HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 15
-        +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, HBC56_PRESS_ANY_KEY_TEXT, 16
-        ldy #6
-        jsr tilemapRenderRow
+        !ifdef HAVE_TMS9918 {
+                +tmsPrintZ .HBC56_PRESS_ANY_KEY_TEXT, (32 - .HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 15
+        }
+
+        !ifdef HAVE_LCD {
+                !ifdef HAVE_GRAPHICS_LCD {
+                        +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_KEY_TEXT, 16
+                        ldy #6
+                        jsr tilemapRenderRow
+                } else {
+                        lda #<.HBC56_PRESS_ANY_KEY_TEXT
+                        sta STR_ADDR_L
+                        lda #>.HBC56_PRESS_ANY_KEY_TEXT
+                        sta STR_ADDR_H
+                        jsr lcdPrint        
+                }
+        }
         cli
         jsr kbWaitForKey
 
 .afterInput
 
-        jsr lcdTextMode
-        jsr lcdInit
-        jsr lcdClear
-        jsr lcdHome
-        jsr tmsInitTextTable ; clear output
-        +tmsDisableOutput
-        +tmsDisableInterrupts
+        !ifdef HAVE_LCD {
+                !ifdef HAVE_GRAPHICS_LCD {
+                        jsr lcdTextMode
+                }
+                jsr lcdInit
+                jsr lcdClear
+                jsr lcdHome
+        }
 
+        !ifdef HAVE_TMS9918 {
+                jsr tmsInitTextTable ; clear output
+                +tmsDisableOutput
+                +tmsDisableInterrupts
+        }
         ; no interrupts until the user code says so
         sei
 
