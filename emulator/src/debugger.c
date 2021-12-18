@@ -235,6 +235,66 @@ static char *opcodes[256] = {
   /* E */      "cpx", "sbc", "nop", "isb", "cpx", "sbc", "inc", "isb", "inx", "sbc", "nop", "sbc", "cpx", "sbc", "inc", "isb", /* E */
   /* F */      "beq", "sbc", "nop", "isb", "nop", "sbc", "inc", "isb", "sed", "sbc", "nop", "isb", "nop", "sbc", "inc", "-"  /* F */ };
 
+
+static const int disassemblyVpos = 6;
+
+int debuggerOutputAddress8(uint16_t *pc, int x, int i)
+{
+  uint8_t addr = mem_read((*pc)++);
+  if (labelMap[addr])
+  {
+    int oldFgColor = fgColor;
+    if (i != 0) fgColor = blue;
+    debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
+    fgColor = oldFgColor;
+    return (int)SDL_strlen(labelMap[addr]);
+  }
+  else
+  {
+    debuggerOutput("$", x, i + disassemblyVpos);
+    debuggerOutputHex(addr, x + 1, i + disassemblyVpos);
+    return 3;
+  }
+}
+
+int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel)
+{
+  uint16_t addr = mem_read((*pc)++);
+
+  if (rel) 
+  {
+    addr += *pc;
+  }
+  else
+  {
+    addr |= mem_read((*pc)++) << 8;
+  }
+
+  int len = 0;
+
+  if (labelMap[addr])
+  {
+    int oldFgColor = fgColor;
+    if (i != 0) fgColor = blue;
+    debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
+    fgColor = oldFgColor;
+    len += (int)SDL_strlen(labelMap[addr]);
+    debuggerOutput(" [", x + len, i + disassemblyVpos);
+    len += 2;
+  }
+
+  debuggerOutput("$", x + len, i + disassemblyVpos);
+  debuggerOutputHex16(addr, x+len+1, i + disassemblyVpos);
+  len += 5;
+  if (len > 5)
+  {
+    debuggerOutput("]", x + len, i + disassemblyVpos); ++len;
+  }
+
+  return len;
+}
+
+
 void debuggerUpdate(SDL_Texture* tex)
 {
   char buffer[10];
@@ -317,11 +377,10 @@ void debuggerUpdate(SDL_Texture* tex)
     lastPC = cpuStatus->pc;
   }
 
-  int offset = 6;
   uint16_t pc = cpuStatus->pc;
   fgColor = white;
 
-  debuggerOutput("Disassembly", 0, offset - 1);
+  debuggerOutput("Disassembly", 0, disassemblyVpos - 1);
 
   fgColor = red;
 
@@ -331,16 +390,18 @@ void debuggerUpdate(SDL_Texture* tex)
     {
       int oldFgColor = fgColor;
       if (i != 0) fgColor = blue;
-      debuggerOutput(labelMap[pc], 0, i + offset);
+      debuggerOutput(labelMap[pc], 0, i + disassemblyVpos);
       fgColor = oldFgColor;
       ++i;
     }
 
+    int xPos = 1;
+
     uint8_t opcode = mem_read(pc);
-    debuggerOutput("$", 2, i + offset);
-    debuggerOutputHex16(pc, 3, i + offset);
-    debuggerOutput(opcodes[opcode], 8, i + offset);
-    //debuggerOutputHex(opcode, 16, i + offset);
+    debuggerOutput("$", xPos, i + disassemblyVpos); xPos += 1;
+    debuggerOutputHex16(pc, xPos, i + disassemblyVpos); xPos += 5;
+    debuggerOutput(opcodes[opcode], xPos, i + disassemblyVpos);
+    xPos += (int)SDL_strlen(opcodes[opcode]) + 1;
 
     ++pc;
 
@@ -349,88 +410,50 @@ void debuggerUpdate(SDL_Texture* tex)
       case imp:
         break;
       case indx:
-        debuggerOutput("($", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 14, i + offset);
-        debuggerOutput(",X)", 18, i + offset);
+        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
+        xPos += debuggerOutputAddress8(&pc, xPos, i);
+        debuggerOutput(",X)", xPos, i + disassemblyVpos);
         break;
       case zp:
-        debuggerOutput("$", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 13, i + offset);
+        debuggerOutputAddress8(&pc, xPos, i);
         break;
       case acc:
         break;
       case abso:
-        {
-          uint16_t addr = mem_read(pc++);
-          addr |= mem_read(pc++) << 8;
-          if (labelMap[addr])
-          {
-            int oldFgColor = fgColor;
-            if (i != 0) fgColor = blue;
-            debuggerOutput(labelMap[addr], 12, i + offset);
-            fgColor = oldFgColor;
-          }
-          else
-          {
-            debuggerOutput("$", 12, i + offset);
-            debuggerOutputHex16(addr, 13, i + offset);
-          }
-        }
+        debuggerOutputAddress16(&pc, xPos, i, 0);
         break;
       case absx:
-        debuggerOutput("$", 12,i + offset);
-        debuggerOutputHex(mem_read(pc++), 15, i + offset);
-        debuggerOutputHex(mem_read(pc++), 13, i + offset);
-        debuggerOutput(",X", 17, i + offset);
+        xPos += debuggerOutputAddress16(&pc, xPos, i, 0);
+        debuggerOutput(",X", xPos, i + disassemblyVpos);
         break;
       case rel:
-        {
-          int8_t rel = (int8_t)mem_read(pc++);
-          uint16_t addr = pc + rel;
-          if (labelMap[addr])
-          {
-            int oldFgColor = fgColor;
-            if (i != 0) fgColor = blue;
-            debuggerOutput(labelMap[addr], 12, i + offset);
-            fgColor = oldFgColor;
-          }
-          else
-          {
-            debuggerOutput("$", 12, i + offset);
-            debuggerOutputHex16(addr, 13, i + offset);
-          }
-        }
+        debuggerOutputAddress16(&pc, xPos, i, 1);
         break;
       case indy:
-        debuggerOutput("($", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 14, i + offset);
-        debuggerOutput("),Y", 16, i + offset);
+        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
+        xPos += debuggerOutputAddress8(&pc, xPos, i); 
+        debuggerOutput("),Y", xPos, i + disassemblyVpos);
         break;
       case imm:
-        debuggerOutput("#$", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 14, i + offset);
+        debuggerOutput("#$", xPos, i + disassemblyVpos); xPos += 2;
+        debuggerOutputHex(mem_read(pc++), xPos, i + disassemblyVpos); xPos += 2;
         break;
       case zpx:
-        debuggerOutput("$", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 13, i + offset);
-        debuggerOutput(",X", 15, i + offset);
+        xPos += debuggerOutputAddress8(&pc, xPos, i);
+        debuggerOutput(",X", xPos, i + disassemblyVpos);
         break;
       case zpy:
-        debuggerOutput("$", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 13, i + offset);
-        debuggerOutput(",Y", 15, i + offset);
+        xPos += debuggerOutputAddress8(&pc, xPos, i);
+        debuggerOutput(",Y", xPos, i + disassemblyVpos);
         break;
       case absy:
-        debuggerOutput("$", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 15, i + offset);
-        debuggerOutputHex(mem_read(pc++), 13, i + offset);
-        debuggerOutput(",Y", 17, i + offset);
+        xPos += debuggerOutputAddress16(&pc, xPos, i, 0);
+        debuggerOutput(",Y", 17, i + disassemblyVpos);
         break;
       case ind:
-        debuggerOutput("($", 12, i + offset);
-        debuggerOutputHex(mem_read(pc++), 16, i + offset);
-        debuggerOutputHex(mem_read(pc++), 14, i + offset);
-        debuggerOutput(")", 16, i + offset);
+        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
+        xPos += debuggerOutputAddress16(&pc, xPos, i, 0);
+        debuggerOutput(")", xPos, i + disassemblyVpos);
         break;
     }
 
@@ -440,69 +463,69 @@ void debuggerUpdate(SDL_Texture* tex)
 
   /* stack */
   fgColor = white;
-  debuggerOutput("Stack", 40, offset - 1);
+  debuggerOutput("Stack", 40, disassemblyVpos - 1);
   fgColor = green;
   uint8_t sp = cpuStatus->s + 1;
   int y = 0;
   while (sp != 0)
   {
     uint8_t d = mem_read(0x100 + sp);
-    debuggerOutput("$1   $", 40, y + offset);
-    debuggerOutputHex(sp, 42, y + offset);
-    debuggerOutputHex(d, 46, y + offset);
-    debuggerOutput(SDL_itoa(d, buffer, 10), 49, y + offset);
+    debuggerOutput("$1   $", 40, y + disassemblyVpos);
+    debuggerOutputHex(sp, 42, y + disassemblyVpos);
+    debuggerOutputHex(d, 46, y + disassemblyVpos);
+    debuggerOutput(SDL_itoa(d, buffer, 10), 49, y + disassemblyVpos);
     ++sp;
     ++y;
   }
 
-  offset += 33;
+  int memoryVpos = disassemblyVpos + 33;
   fgColor = white;
-  debuggerOutput("Memory", 0, offset - 1);
+  debuggerOutput("Memory", 0, memoryVpos - 1);
   fgColor = green;
 
   uint16_t addr = debugMemoryAddr;
   for (uint8_t y = 0; y < 32; ++y)
   {
-    debuggerOutput("$", 0, y + offset);
-    debuggerOutputHex16(addr, 1, y + offset);
+    debuggerOutput("$", 0, y + memoryVpos);
+    debuggerOutputHex16(addr, 1, y + memoryVpos);
 
     for (uint8_t x = 0; x< 8; ++x)
     {
       uint8_t d = mem_read(addr);
-      debuggerOutputHex(d, 7 + x * 3, y + offset);
-      debuggerOutputChar(d, 32 + x, y + offset);
+      debuggerOutputHex(d, 7 + x * 3, y + memoryVpos);
+      debuggerOutputChar(d, 32 + x, y + memoryVpos);
       ++addr;
     } 
   }
 
   if (tms9918)
   {
-    offset += 34;
+    memoryVpos += 34;
     fgColor = white;
-    debuggerOutput("TMS9918 VRAM", 0, offset - 1);
-    debuggerOutput("Reg", 42, offset - 1);
+    debuggerOutput("TMS9918 VRAM", 0, memoryVpos - 1);
+    debuggerOutput("Reg", 42, memoryVpos - 1);
     fgColor = green;
     addr = debugTmsMemoryAddr & 0x3fff;
     for (uint8_t y = 0; y < 16; ++y)
     {
-      debuggerOutput("$", 0, y + offset);
-      debuggerOutputHex16(addr, 1, y + offset);
+      debuggerOutput("$", 0, y + memoryVpos);
+      debuggerOutputHex16(addr, 1, y + memoryVpos);
 
       for (uint8_t x = 0; x < 8; ++x)
       {
         uint8_t d = vrEmuTms9918aVramValue(tms9918, addr);
-        debuggerOutputHex(d, 7 + x * 3, y + offset);
-        debuggerOutputChar(d, 32 + x, y + offset);
+        debuggerOutputHex(d, 7 + x * 3, y + memoryVpos);
+        debuggerOutputChar(d, 32 + x, y + memoryVpos);
         ++addr;
       }
     }
 
     for (uint8_t y = 0; y < 8; ++y)
     {
-      debuggerOutput("R  $", 42, y + offset);
-      debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + offset);
-      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 46, y + offset);
-      debuggerOutput(SDL_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 49, y + offset);
+      debuggerOutput("R  $", 42, y + memoryVpos);
+      debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + memoryVpos);
+      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 46, y + memoryVpos);
+      debuggerOutput(SDL_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 49, y + memoryVpos);
     }
 
   }

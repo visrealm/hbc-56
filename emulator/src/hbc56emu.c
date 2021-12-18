@@ -420,6 +420,14 @@ int SDLCALL cpuThread(void* unused)
         int isJsr = (opcode == 0x20);
         int isRts = (opcode == 0x60);
 
+        if (debugStepOver && !breakPc)
+        {
+          if (isJsr)
+          {
+            breakPc = cpu6502_get_regs()->pc + 3;
+          }
+          debugStepOver = 0;
+        }
 
         if (!debugPaused || debugStep || breakPc)
         {
@@ -433,15 +441,6 @@ int SDLCALL cpuThread(void* unused)
           {
             debugPaused = debugWindowShown = 1;
           }
-        }
-
-        if (debugStepOver && !breakPc)
-        {
-          if (isJsr)
-          {
-            breakPc = cpu6502_get_regs()->pc + 3;
-          }
-          debugStepOver = 0;
         }
 
         SDL_UnlockMutex(debugMutex);
