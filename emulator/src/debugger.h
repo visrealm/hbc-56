@@ -26,4 +26,4 @@
 
 void debuggerInit(CPU6502Regs *regs, const char *labelMap, VrEmuTms9918a *tms9918);
 
-void debuggerUpdate(SDL_Texture *tex);
+void debuggerUpdate(SDL_Texture *tex, int mouseX, int mouseY);

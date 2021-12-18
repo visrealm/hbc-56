@@ -93,7 +93,7 @@ byte psg1Addr = 0;
 byte kbReadCount = 0;
 int keyboardMode = 0;
 
-uint8_t io_read(uint8_t addr)
+uint8_t io_read(uint8_t addr, int dbg)
 {
   uint8_t val = 0;
   switch (addr)
@@ -101,7 +101,14 @@ uint8_t io_read(uint8_t addr)
     case TMS9918_DAT_ADDR:
       if (SDL_LockMutex(tmsMutex) == 0)
       {
-        val = vrEmuTms9918aReadData(tms9918);
+        if (dbg)
+        {
+          val = vrEmuTms9918aReadDataNoInc(tms9918);
+        }
+        else
+        {
+          val = vrEmuTms9918aReadData(tms9918);
+        }
         SDL_UnlockMutex(tmsMutex);
       }
       break;
@@ -256,11 +263,11 @@ void io_write(uint8_t addr, uint8_t val)
 
 }
 
-uint8_t mem_read(uint16_t addr)
+uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
   if ((addr & 0xff00) == ioPage)
   {
-    return io_read(addr & 0xff);
+    return io_read(addr & 0xff, dbg);
   }
 
   else if (addr < 0x8000)
@@ -274,6 +281,13 @@ uint8_t mem_read(uint16_t addr)
 
   return 0;
 }
+uint8_t mem_read(uint16_t addr) {
+  return mem_read_impl(addr, 0);
+}
+uint8_t mem_read_dbg(uint16_t addr) {
+  return mem_read_impl(addr, 1);
+}
+
 
 void mem_write(uint16_t addr, uint8_t val)
 {
@@ -287,7 +301,6 @@ void mem_write(uint16_t addr, uint8_t val)
     ram[addr & 0x7fff] = val;
   }
 }
-
 
 
 static SDLCommonState* state;
@@ -550,8 +563,21 @@ loop()
       {
         debugFrameBuffer[i] = i & 0xff;
       }
+      
+      int mouseX, mouseY;
+      SDL_GetMouseState(&mouseX, &mouseY);
 
-      debuggerUpdate(debugWindowTex);//, NULL, debugFrameBuffer, DEBUGGER_WIDTH_PX * LOGICAL_DISPLAY_BPP);
+      int winSizeX, winSizeY;
+      SDL_GetWindowSize(state->windows[i], &winSizeX, &winSizeY);
+
+      double factorX = winSizeX / (double)DEFAULT_WINDOW_WIDTH;
+      double factorY = winSizeY / (double)DEFAULT_WINDOW_HEIGHT;
+
+      mouseX = (int)(mouseX / factorX);
+      mouseY = (int)(mouseY / factorY);
+      mouseX -= dest.w * 2;
+
+      debuggerUpdate(debugWindowTex, mouseX, mouseY);
       dest.x = dest.w;
       dest.w = (int)(DEBUGGER_WIDTH_PX * .5);
       dest.h = (int)(DEBUGGER_HEIGHT_PX * .5);
@@ -777,6 +803,7 @@ main(int argc, char* argv[])
     SDL_SetTextureScaleMode(screenTex, SDL_ScaleModeBest); // remove this for sharp scaling
 
     debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
+    SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
     memset(frameBuffer, 0, sizeof(frameBuffer));
   }
 

@@ -60,7 +60,7 @@ SDLCommonCreateState(char** argv, Uint32 flags)
   state->argv = argv;
   state->flags = flags;
   state->window_title = argv[0];
-  state->window_flags = 0;
+  state->window_flags = SDL_WINDOW_RESIZABLE;
   state->window_x = SDL_WINDOWPOS_UNDEFINED;
   state->window_y = SDL_WINDOWPOS_UNDEFINED;
   state->window_w = DEFAULT_WINDOW_WIDTH;
