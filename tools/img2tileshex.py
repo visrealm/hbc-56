@@ -14,7 +14,7 @@ import os, sys, csv
 from PIL import Image
 
 TILE_SIZE_X  = 8
-TILE_SIZE_Y  = 16
+TILE_SIZE_Y  = 8
 
 for infile in sys.argv[1:]:
     f, e = os.path.splitext(infile)
@@ -28,8 +28,8 @@ for infile in sys.argv[1:]:
         inTilesY = int(src.height / TILE_SIZE_Y)
         numInTiles = inTilesX * inTilesY
 
-        for y in range(inTilesY):
-          for x in range(inTilesX):
+        for x in range(inTilesX):
+          for y in range(inTilesY):
             xOff = x * TILE_SIZE_X
             yOff = y * TILE_SIZE_Y
             for sy in range(TILE_SIZE_Y):
@@ -39,7 +39,7 @@ for infile in sys.argv[1:]:
                 pixelY = yOff + sy
                 col = pix[pixelX,pixelY]
                 bv = (bv << 1)
-                if col[0] + col[1] + col[2] > 600:
+                if col[0] + col[1] + col[2] < 400:
                     bv = bv | 1
               dst.write((hex(bv & 0xff)+",").encode('ascii'))
             dst.write("\n".encode('ascii'))
