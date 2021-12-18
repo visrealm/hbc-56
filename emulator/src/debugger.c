@@ -60,9 +60,6 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a
 
     while (fgets(lineBuffer, sizeof(lineBuffer), ptr))
     {
-      if (SDL_strstr(lineBuffer, "; unused"))
-        continue;
-
       size_t labelStart = -1, labelEnd = -1, valueStart = -1, valueEnd = -1;
 
       int i = 0;
@@ -113,7 +110,9 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a
 
       uint16_t addr = (uint16_t)value;
 
-      if (!labelMap[addr] || isProbablyConstant(labelMap[addr]))
+      SDL_bool isUnused = SDL_strstr(lineBuffer, "; unused") != NULL;
+
+      if (!labelMap[addr] || (isProbablyConstant(labelMap[addr]) && !isUnused))
       {
         char* label = malloc((labelEnd - labelStart) + 1);
         SDL_strlcpy(label, lineBuffer + labelStart, labelEnd - labelStart + 1);
