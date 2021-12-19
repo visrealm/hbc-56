@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #define DEBUGGER_STRIDE (DEBUGGER_WIDTH_PX * DEBUGGER_BPP)
 
@@ -55,7 +56,11 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a
   bgColor = 0x00000000;
 
   FILE* ptr = NULL;
+#ifdef _EMSCRIPTEN
+  ptr = fopen(labelMapFilename, "r");
+#else
   fopen_s(&ptr, labelMapFilename, "r");
+#endif
   if (ptr)
   {
     char lineBuffer[FILENAME_MAX];

@@ -21,6 +21,9 @@ typedef struct
   SDL_Texture *tex;
   byte *frameBuffer;
   VrEmuLcd *lcd;
+  int ownWindow;
+  size_t pixelsWidth;
+  size_t pixelsHeight;
 } LCDWindow;
 
 typedef enum
@@ -31,7 +34,7 @@ typedef enum
   LCD_GRAPHICS
 } LCDType;
 
-LCDWindow *lcdWindowCreate(LCDType type);
+LCDWindow *lcdWindowCreate(LCDType type, SDL_Window *window, SDL_Renderer* renderer);
 
 void lcdWindowDestroy(LCDWindow *lcdw);
 

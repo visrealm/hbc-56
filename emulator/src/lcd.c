@@ -10,20 +10,21 @@
  */
  
 #include "lcd.h"
-#include <memory.h>
+#include <stdlib.h>
 
-static const size_t scale = 8;
+
+static const size_t scale = 7;
 
 static const size_t borderX = 10;
 static const size_t borderY = 5;
 static const size_t TEX_BPP = 3;
 
 
-static const lcdColors[3][3] = { {0x7d, 0xbe, 0x00},  /* no pixel */
-                                {0x5f, 0xa9, 0x00},  /* off */
-                                {0x1c, 0x14, 0x00} }; /* on */
+static const byte lcdColors[3][3] = { {0x7d, 0xbe, 0x00},  /* no pixel */
+                                      {0x5f, 0xa9, 0x00},  /* off */
+                                      {0x1c, 0x14, 0x00} }; /* on */
 
-LCDWindow* lcdWindowCreate(LCDType lcdType) {
+LCDWindow* lcdWindowCreate(LCDType lcdType, SDL_Window* window, SDL_Renderer* renderer) {
 
   LCDWindow* lcdw = (LCDWindow*)malloc(sizeof(LCDWindow));
   if (lcdw != NULL)
@@ -50,28 +51,39 @@ LCDWindow* lcdWindowCreate(LCDType lcdType) {
     size_t nativeWidth = vrEmuLcdNumPixelsX(lcdw->lcd);
     size_t nativeHeight = vrEmuLcdNumPixelsY(lcdw->lcd);
 
-    size_t pixelsWidth = (nativeWidth + (borderX * 2)) * scale;
-    size_t pixelsHeight = (nativeHeight + (borderY * 2)) * scale;
+    lcdw->pixelsWidth = (nativeWidth + (borderX * 2)) * scale;
+    lcdw->pixelsHeight = (nativeHeight + (borderY * 2)) * scale;
 
 
     Uint32 windowFlags = 0;
-    lcdw->window = SDL_CreateWindow("HBC-56 LCD Display", (1580 - ((int)pixelsWidth / 2))/2, (1080 - ((int)pixelsHeight/ 2)) / 2,
-                              (int)pixelsWidth / 2,
-                              (int)pixelsHeight / 2,
-                              windowFlags);
-
-    lcdw->renderer = SDL_CreateRenderer(lcdw->window, -1, SDL_RENDERER_SOFTWARE);
-    SDL_RenderSetLogicalSize(lcdw->renderer, (int)pixelsWidth, (int)pixelsHeight);
-    lcdw->tex = SDL_CreateTexture(lcdw->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, (int)pixelsWidth, (int)pixelsHeight);
+    if (window)
+    {
+      lcdw->window = window;
+      lcdw->renderer = renderer;
+      lcdw->ownWindow = 0;
+    }
+    else
+    {
+      lcdw->window = SDL_CreateWindow("HBC-56 LCD Display", (1580 - ((int)lcdw->pixelsWidth / 2))/2, (1080 - ((int)lcdw->pixelsHeight/ 2)) / 2,
+                                (int)lcdw->pixelsWidth / 2,
+                                (int)lcdw->pixelsHeight / 2,
+                                windowFlags);
+      lcdw->renderer = SDL_CreateRenderer(lcdw->window, -1, SDL_RENDERER_SOFTWARE);
+      SDL_RenderSetLogicalSize(lcdw->renderer, (int)lcdw->pixelsWidth, (int)lcdw->pixelsHeight);
+      lcdw->ownWindow = 1;
+    }
+    lcdw->tex = SDL_CreateTexture(lcdw->renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, (int)lcdw->pixelsWidth, (int)lcdw->pixelsHeight);
+#ifndef _EMSCRIPTEN
     SDL_SetTextureScaleMode(lcdw->tex, SDL_ScaleModeBest);
-    lcdw->frameBuffer = malloc(pixelsWidth * pixelsHeight * TEX_BPP);
+#endif 
+    lcdw->frameBuffer = malloc(lcdw->pixelsWidth * lcdw->pixelsHeight * TEX_BPP);
     if (lcdw->frameBuffer)
     {
 
-      char* ptr = lcdw->frameBuffer - 1;
-      for (size_t y = 0; y < pixelsHeight; ++y)
+      byte* ptr = lcdw->frameBuffer - 1;
+      for (size_t y = 0; y < lcdw->pixelsHeight; ++y)
       {
-        for (size_t x = 0; x < pixelsWidth; ++x)
+        for (size_t x = 0; x < lcdw->pixelsWidth; ++x)
         {
           *(++ptr) = lcdColors[0][0];
           *(++ptr) = lcdColors[0][1];
@@ -96,7 +108,7 @@ void lcdWindowDestroy(LCDWindow* lcdw)
     vrEmuLcdDestroy(tmpLcd);
     SDL_DestroyRenderer(lcdw->renderer);
     SDL_DestroyTexture(lcdw->tex);
-    SDL_DestroyWindow(lcdw->window);
+    if (lcdw->ownWindow) SDL_DestroyWindow(lcdw->window);
     free(lcdw->frameBuffer);
     free(lcdw);
   }
@@ -127,7 +139,7 @@ void lcdWindowUpdate(LCDWindow* lcdw) {
 
         for (int iy = 0; iy < scale - 1; ++iy)
         {
-          char* ptr = lcdw->frameBuffer + (yOffset + y * scale + iy) * stride + (xOffset + x * scale) * TEX_BPP;
+          byte* ptr = lcdw->frameBuffer + (yOffset + y * scale + iy) * stride + (xOffset + x * scale) * TEX_BPP;
           --ptr;
 
           for (int ix = 0; ix < scale - 1; ++ix)
@@ -141,9 +153,13 @@ void lcdWindowUpdate(LCDWindow* lcdw) {
     }
 
     SDL_UpdateTexture(lcdw->tex, NULL, lcdw->frameBuffer, (int)stride);
-    SDL_RenderCopyF(lcdw->renderer, lcdw->tex, NULL, NULL);
 
-    SDL_RenderPresent(lcdw->renderer);
+    if (lcdw->ownWindow)
+    {
+      SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, NULL);
+
+      SDL_RenderPresent(lcdw->renderer);
+    }
 
   }
 

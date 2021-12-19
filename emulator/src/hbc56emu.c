@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -25,6 +26,12 @@
 #include "debugger.h"
 #include "keyboard.h"
 #include "lcd.h"
+
+#define NO_THREADS 1
+
+#ifndef _MAX_PATH 
+  #define _MAX_PATH 256
+#endif
 
 char winTitleBuffer[_MAX_PATH];
 
@@ -166,11 +173,11 @@ uint8_t io_read(uint8_t addr, int dbg)
       {
         val |= NES_DOWN;
       }
-      if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL])
+      if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL] || keystate[SDL_SCANCODE_B])
       {
         val |= NES_B;
       }
-      if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT])
+      if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] || keystate[SDL_SCANCODE_A])
       {
         val |= NES_A;
       }
@@ -178,7 +185,7 @@ uint8_t io_read(uint8_t addr, int dbg)
       {
         val |= NES_SELECT;
       }
-      if (keystate[SDL_SCANCODE_SPACE])
+      if (keystate[SDL_SCANCODE_SPACE] || keystate[SDL_SCANCODE_RETURN])
       {
         val |= NES_START;
       }
@@ -404,18 +411,32 @@ int callStackPtr = 0;
 
 #define CLOCK_FREQ 4000000
 
+#if !NO_THREADS
+
 int SDLCALL cpuThread(void* unused)
 {
-  double perfFreq = (double)SDL_GetPerformanceFrequency();
+#endif
+  double perfFreq = 0.0;
   double ticksPerClock = 1.0 / (double)CLOCK_FREQ;
 
-  double lastTime = (double)SDL_GetPerformanceCounter() / perfFreq;
+  double lastTime = 0.0;
   double thisLoopStartTime = 0;
   double initialLastTime = 0;
   uint16_t breakPc = 0;
 
+#if NO_THREADS
+void cpuTick()
+{
+#else
   while (1)
   {
+#endif
+    if (perfFreq == 0.0)
+    {
+      perfFreq = (double)SDL_GetPerformanceFrequency();
+      lastTime = (double)SDL_GetPerformanceCounter() / perfFreq;
+    }
+
     double currentTime = (double)SDL_GetPerformanceCounter() / perfFreq;
     Uint64 thisLoopTicks = 0;
     initialLastTime = lastTime;
@@ -459,7 +480,9 @@ int SDLCALL cpuThread(void* unused)
         SDL_UnlockMutex(debugMutex);
       }
       lastTime = initialLastTime + (thisLoopTicks * ticksPerClock);
-
+#if NO_THREADS
+      if (debugPaused) break;
+#endif
     }
 
     SDL_Delay(1);
@@ -467,14 +490,16 @@ int SDLCALL cpuThread(void* unused)
     double tmpFreq = (double)SDL_GetPerformanceCounter() / perfFreq - currentTime;
     currentFreq = currentFreq * 0.9 + (((double)thisLoopTicks / tmpFreq) / 1000000.0) * 0.1;
   }
+#if !NO_THREADS
   return 0;
 }
-
+#endif
 
 void hbc56Reset()
 {
   kbStart = 0;
   kbEnd = 0;
+  debugPaused = 0;
 
   cpu6502_rst();
   PSG_reset(psg0);
@@ -487,6 +512,10 @@ loop()
 {
   int i;
   SDL_Event event;
+
+#if NO_THREADS
+  cpuTick();
+#endif
 
   Uint32 currentTicks = SDL_GetTicks();
   if ((currentTicks - lastRenderTicks) < 15)//(1000 / TMS9918_FPS))
@@ -555,7 +584,26 @@ loop()
     }
 
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, screenTex, NULL, &dest);
+
+    if (!lcdw)
+    {
+      SDL_RenderCopy(renderer, screenTex, NULL, &dest);
+    }
+    else
+    {
+      lcdWindowUpdate(lcdw);
+
+      int newWidth = lcdw->pixelsWidth / 2;
+      int newHeight = lcdw->pixelsHeight / 2;
+
+      SDL_Rect dest2 = dest;
+      dest2.y = (dest.h - newHeight) / 2;
+      dest2.h = newHeight;
+      dest2.x = dest.x + (dest.w - newWidth) / 2;
+      dest2.w = newWidth;
+
+      SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, &dest2);
+    }
 
     if (debugWindowShown)
     {
@@ -584,10 +632,11 @@ loop()
       SDL_RenderCopy(renderer, debugWindowTex, NULL, &dest);
     }
 
+
     SDL_RenderPresent(renderer);
   }
 
-  lcdWindowUpdate(lcdw);
+ 
 
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
@@ -599,6 +648,7 @@ loop()
           if (event.key.keysym.sym == SDLK_F10) break;
           if (event.key.keysym.sym == SDLK_F11) break;
           if (event.key.keysym.sym == SDLK_F12) break;
+          if (event.key.keysym.sym == SDLK_ESCAPE) break;
           if (withControl && event.key.keysym.sym == SDLK_r)
           {
             break;
@@ -624,6 +674,7 @@ loop()
           if (event.key.keysym.sym == SDLK_F10) break;
           if (event.key.keysym.sym == SDLK_F11) break;
           if (event.key.keysym.sym == SDLK_F12) break;
+          if (event.key.keysym.sym == SDLK_ESCAPE) break;
           if (withControl && event.key.keysym.sym == SDLK_r)
           {
             hbc56Reset();
@@ -668,6 +719,54 @@ loop()
 #endif
 }
 
+char labelMapFile[FILENAME_MAX] = { 0 };
+
+
+int loadRom(const char* filename)
+{
+  FILE* ptr = NULL;
+  int romLoaded = 0;
+
+#ifdef _EMSCRIPTEN
+  ptr = fopen(filename, "rb");
+#else
+  fopen_s(&ptr, filename, "rb");
+#endif
+
+  SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Troy's HBC-56 Emulator - %s", filename);
+
+  if (ptr)
+  {
+    size_t romBytesRead = fread(rom, 1, sizeof(rom), ptr);
+    fclose(ptr);
+
+    if (romBytesRead != sizeof(rom))
+    {
+#ifndef _EMSCRIPTEN
+      SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' must be %d bytes.", filename, (int)sizeof(rom));
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#endif
+    }
+    else
+    {
+      romLoaded = 1;
+      SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
+      size_t ln = SDL_strlen(labelMapFile);
+      SDL_strlcpy(labelMapFile + ln, ".lmap", FILENAME_MAX - ln);
+    }
+  }
+  else
+  {
+#ifndef _EMSCRIPTEN
+    SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' does not exist.", filename);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#endif
+    return 2;
+  }
+
+  return romLoaded;
+}
+
 
 int
 main(int argc, char* argv[])
@@ -680,8 +779,6 @@ main(int argc, char* argv[])
 
   SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Troy's HBC-56 Emulator");
 
-  char labelMapFile[FILENAME_MAX] = {0};
-
   memset(ram, 0xcd, sizeof(ram));
   memset(rom, 0xff, sizeof(rom));
 
@@ -692,6 +789,13 @@ main(int argc, char* argv[])
   }
   int romLoaded = 0;
   LCDType lcdType = LCD_NONE;
+
+#if _EMSCRIPTEN
+  romLoaded = loadRom("rom.bin");
+  keyboardMode = 1;
+  lcdType= LCD_GRAPHICS;
+#endif
+
   for (i = 1; i < argc;) {
     int consumed;
 
@@ -701,37 +805,7 @@ main(int argc, char* argv[])
       if (SDL_strcasecmp(argv[i], "--rom") == 0) {
         if (argv[i + 1]) {
           consumed = 1;
-          FILE* ptr = NULL;
-
-          fopen_s(&ptr, argv[i + 1], "rb");  // r for read, b for binary
-          SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Troy's HBC-56 Emulator - %s", argv[i + 1]);
-
-          if (ptr)
-          {
-            size_t romBytesRead = fread(rom, 1, sizeof(rom), ptr);
-            fclose(ptr);
-
-            if (romBytesRead != sizeof(rom))
-            {
-              SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' must be %d bytes.", argv[i + 1], (int)sizeof(rom));
-              SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
-            }
-            else
-            {
-              romLoaded = 1;
-              SDL_strlcpy(labelMapFile, argv[i + 1], FILENAME_MAX);
-              size_t ln = SDL_strlen(labelMapFile);
-              SDL_strlcpy(labelMapFile + ln - 2, ".o.lmap", FILENAME_MAX - ln);
-            }
-          }
-          else
-          {
-            SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' does not exist.", argv[i + 1]);
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
-            return 2;
-          }
-
-          ++i;
+          romLoaded = loadRom(argv[++i]);
         }
       }
       /* start paused? */
@@ -780,8 +854,10 @@ main(int argc, char* argv[])
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL};
     SDLCommonLogUsage(state, argv[0], options);
 
+#ifndef _EMSCRIPTEN
     SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#endif
 
     return 2;
   }
@@ -800,11 +876,15 @@ main(int argc, char* argv[])
     SDL_RenderClear(renderer);
     screenTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, LOGICAL_DISPLAY_SIZE_X, LOGICAL_DISPLAY_SIZE_Y);
     
-    SDL_SetTextureScaleMode(screenTex, SDL_ScaleModeBest); // remove this for sharp scaling
 
     debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
-    SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
     memset(frameBuffer, 0, sizeof(frameBuffer));
+
+#ifndef _EMSCRIPTEN
+    SDL_SetTextureScaleMode(screenTex, SDL_ScaleModeBest); // remove this for sharp scaling
+    SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
+#endif
+
   }
 
 
@@ -820,7 +900,7 @@ main(int argc, char* argv[])
   want.channels = 2;
   want.samples = want.freq / TMS9918_FPS;
   want.callback = hbc56AudioCallback;
-  audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+  audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_ANY_CHANGE);
 
   srand((unsigned int)time(NULL));
 
@@ -830,7 +910,9 @@ main(int argc, char* argv[])
   psg0 = PSG_new(2000000, have.freq);
   psg1 = PSG_new(2000000, have.freq);
 
+#if !NO_THREADS
   SDL_CreateThread(cpuThread, "CPU", NULL);
+#endif
 
   /* Main render loop */
   frames = 0;
@@ -843,18 +925,17 @@ main(int argc, char* argv[])
 
   SDL_PauseAudioDevice(audioDevice, 0);
 
-  lcdw = lcdWindowCreate(lcdType);
+  lcdw = lcdWindowCreate(lcdType, state->windows[0], state->renderers[0]);
 
 //  SDL_CreateWindow("Debugger", 50, 50, 320, 200, 0);
 
 
-#ifdef __EMSCRIPTEN__
+#ifdef _EMSCRIPTEN
   emscripten_set_main_loop(loop, 0, 1);
 #else
   while (!done) {
     ++frames;
     loop();
-    SDL_Delay(1);
 }
 #endif
 
