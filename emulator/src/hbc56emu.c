@@ -26,40 +26,47 @@
 #include "keyboard.h"
 #include "lcd.h"
 
-char winTitleBuffer[_MAX_PATH];
+#define RAM_START       0x0000
+#define RAM_END         0x7eff
 
+#define ROM_START       0x8000
+#define ROM_END         0xffff
+#define ROM_MASK        (ROM_START - 1)
 
-byte ram[0x8000];
-byte rom[0x8000];
+#define IO_PAGE          0x7f00
+#define IO_PAGE_MASK     0x00ff
 
-uint16_t ioPage = 0x7f00;
-
-#define TMS9918_FPS 60
+#define TMS9918_FPS      60
 #define TMS9918_DAT_ADDR 0x10
 #define TMS9918_REG_ADDR 0x11
 
 // currently keyboard and NES use the same port (I haven't built separate hardware... yet)
 // NES controller is the default.  Use the --keyboard command-line to enable the keyboard instead
-#define NES_IO_PORT 0x81  
-#define KB_IO_PORT 0x81
+#define NES_IO_PORT      0x81  
+#define KB_IO_PORT       0x81
 
-#define LCD_IO_PORT 0x02
+#define LCD_IO_PORT      0x02
 
-#define LCD_IO_CMD   LCD_IO_PORT
-#define LCD_IO_DATA  (LCD_IO_CMD | 0x01)
+#define LCD_IO_CMD       LCD_IO_PORT
+#define LCD_IO_DATA     (LCD_IO_CMD | 0x01)
 
+#define NES_RIGHT       0b10000000
+#define NES_LEFT        0b01000000
+#define NES_DOWN        0b00100000
+#define NES_UP          0b00010000
+#define NES_START       0b00001000
+#define NES_SELECT      0b00000100
+#define NES_B           0b00000010
+#define NES_A           0b00000001
+
+
+
+char winTitleBuffer[_MAX_PATH];
+
+byte ram[RAM_END - RAM_START + 1];
+byte rom[ROM_END - ROM_START + 1];
 
 SDL_AudioDeviceID audioDevice;
-
-
-#define NES_RIGHT  0b10000000
-#define NES_LEFT   0b01000000
-#define NES_DOWN   0b00100000
-#define NES_UP     0b00010000
-#define NES_START  0b00001000
-#define NES_SELECT 0b00000100
-#define NES_B      0b00000010
-#define NES_A      0b00000001
 
 VrEmuTms9918a *tms9918 = NULL;
 PSG* psg0 = NULL;
@@ -93,10 +100,10 @@ byte psg1Addr = 0;
 byte kbReadCount = 0;
 int keyboardMode = 0;
 
-uint8_t io_read(uint8_t addr, int dbg)
+uint8_t io_read(uint16_t addr, int dbg)
 {
   uint8_t val = 0;
-  switch (addr)
+  switch (addr & IO_PAGE_MASK)
   {
     case TMS9918_DAT_ADDR:
       if (SDL_LockMutex(tmsMutex) == 0)
@@ -207,9 +214,9 @@ uint8_t io_read(uint8_t addr, int dbg)
   return val;
 }
 
-void io_write(uint8_t addr, uint8_t val)
+void io_write(uint16_t addr, uint8_t val)
 {
-  switch (addr)
+  switch (addr & IO_PAGE_MASK)
   {
   case TMS9918_DAT_ADDR:
     if (SDL_LockMutex(tmsMutex) == 0)
@@ -265,18 +272,18 @@ void io_write(uint8_t addr, uint8_t val)
 
 uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
-  if ((addr & 0xff00) == ioPage)
+  if ((addr & ~IO_PAGE_MASK) == IO_PAGE)
   {
-    return io_read(addr & 0xff, dbg);
+    return io_read(addr, dbg);
   }
 
-  else if (addr < 0x8000)
+  else if (addr <= RAM_END)
   {
     return ram[addr];
   }
   else
   {
-    return rom[addr & 0x7fff];
+    return rom[addr & ROM_MASK];
   }
 
   return 0;
@@ -291,14 +298,14 @@ uint8_t mem_read_dbg(uint16_t addr) {
 
 void mem_write(uint16_t addr, uint8_t val)
 {
-  if ((addr & 0xff00) == ioPage)
+  if ((addr & ~IO_PAGE_MASK) == IO_PAGE)
   {
-    io_write(addr & 0xff, val);
+    io_write(addr, val);
   }
 
-  else if (addr < 0x8000)
+  else if (addr <= RAM_END)
   {
-    ram[addr & 0x7fff] = val;
+    ram[addr] = val;
   }
 }
 
