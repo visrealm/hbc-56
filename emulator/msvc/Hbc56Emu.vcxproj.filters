@@ -61,6 +61,15 @@
     <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h">
       <Filter>modules\LCD</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\device.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ram_device.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\tms9918_device.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Hbc56Emu.rc">
@@ -105,6 +114,15 @@
     </ClCompile>
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c">
       <Filter>modules\LCD</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ram_device.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\device.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tms9918_device.c">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

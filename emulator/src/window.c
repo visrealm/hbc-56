@@ -75,6 +75,8 @@ SDLCommonCreateState(char** argv, Uint32 flags)
   state->audiospec.channels = 2;
   state->audiospec.samples = 2048;
 
+  //state->render_flags = SDL_RENDERER_PRESENTVSYNC;
+
   /* Set some very sane GL defaults */
   state->gl_red_size = 3;
   state->gl_green_size = 3;

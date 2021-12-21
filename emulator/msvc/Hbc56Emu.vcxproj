@@ -95,9 +95,12 @@
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h" />
     <ClInclude Include="..\src\clock.h" />
     <ClInclude Include="..\src\debugger.h" />
+    <ClInclude Include="..\src\device.h" />
     <ClInclude Include="..\src\hbc56emu.h" />
     <ClInclude Include="..\src\keyboard.h" />
     <ClInclude Include="..\src\lcd.h" />
+    <ClInclude Include="..\src\ram_device.h" />
+    <ClInclude Include="..\src\tms9918_device.h" />
     <ClInclude Include="..\src\window.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
@@ -115,9 +118,12 @@
     <ClCompile Include="..\modules\tms9918\src\tms9918_core.c" />
     <ClCompile Include="..\src\clock.c" />
     <ClCompile Include="..\src\debugger.c" />
+    <ClCompile Include="..\src\device.c" />
     <ClCompile Include="..\src\font.c" />
     <ClCompile Include="..\src\hbc56emu.c" />
     <ClCompile Include="..\src\lcd.c" />
+    <ClCompile Include="..\src\ram_device.c" />
+    <ClCompile Include="..\src\tms9918_device.c" />
     <ClCompile Include="..\src\window.c" />
   </ItemGroup>
   <ItemGroup>

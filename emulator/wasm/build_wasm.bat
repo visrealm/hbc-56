@@ -27,6 +27,9 @@ emcc -o ..\bin\hbc56.html ^
   ..\src\font.c ^
   ..\src\lcd.c ^
   ..\src\window.c ^
+  ..\src\device.c ^
+  ..\src\ram_device.c ^
+  ..\src\tms9918_device.c ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\cpu6502\addrmodes.c ^
   ..\modules\cpu6502\cpu6502.c ^
