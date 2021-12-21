@@ -17,6 +17,7 @@ emcc -o ..\bin\hbc56.html ^
   -D VR_TMS9918_EMU_STATIC=1 ^
   -s USE_SDL=2 ^
   -s USE_SDL_MIXER=2 ^
+  -s INITIAL_MEMORY=33554432 ^
   -I ..\modules\ay38910 ^
   -I ..\modules\cpu6502 ^
   -I ..\modules\lcd\src ^

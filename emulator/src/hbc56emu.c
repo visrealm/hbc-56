@@ -98,6 +98,8 @@ int kbStart = 0, kbEnd = 0;
 #define AY3891X_WRITE    0x01
 #define AY3891X_ADDR     0x00
 
+float audioBuffer[500000];
+
 byte psg0Addr = 0;
 byte psg1Addr = 0;
 
@@ -110,29 +112,6 @@ uint8_t io_read(uint8_t addr, int dbg)
 
   switch (addr)
   {
-    /*    case TMS9918_DAT_ADDR:
-          if (SDL_LockMutex(tmsMutex) == 0)
-          {
-            if (dbg)
-            {
-              val = vrEmuTms9918aReadDataNoInc(tms9918);
-            }
-            else
-            {
-              val = vrEmuTms9918aReadData(tms9918);
-            }
-            SDL_UnlockMutex(tmsMutex);
-          }
-          break;
-
-        case TMS9918_REG_ADDR:
-          if (SDL_LockMutex(tmsMutex) == 0)
-          {
-            val = vrEmuTms9918aReadStatus(tms9918);
-            SDL_UnlockMutex(tmsMutex);
-          }
-          break;
-          */
   case LCD_IO_CMD:
     if (lcdw && lcdw->lcd) val = vrEmuLcdReadAddress(lcdw->lcd);
     break;
@@ -223,24 +202,6 @@ void io_write(uint8_t addr, uint8_t val)
 {
   switch (addr)
   {
-    /*
-    case TMS9918_DAT_ADDR:
-      if (SDL_LockMutex(tmsMutex) == 0)
-      {
-        vrEmuTms9918aWriteData(tms9918, val);
-        SDL_UnlockMutex(tmsMutex);
-      }
-      break;
-
-    case TMS9918_REG_ADDR:
-      if (SDL_LockMutex(tmsMutex) == 0)
-      {
-        vrEmuTms9918aWriteAddr(tms9918, val);
-        SDL_UnlockMutex(tmsMutex);
-      }
-      break;
-      */
-
   case LCD_IO_CMD:
     if (lcdw && lcdw->lcd) vrEmuLcdSendCommand(lcdw->lcd, val);
     break;
@@ -322,7 +283,7 @@ void mem_write(uint16_t addr, uint8_t val)
     }
   }
 
-  if (status)
+  if (!status)
   {
     if ((addr & 0xff00) == ioPage)
     {
@@ -585,7 +546,10 @@ loop()
       }
     }
 
-    SDL_RenderPresent(state->renderers[0]);
+    hbc56AudioCallback(NULL, audioBuffer, 44100 * sizeof(float) * 2);
+    SDL_QueueAudio(audioDevice, audioBuffer, 44100 * sizeof(float) * 2);
+
+//    SDL_RenderPresent(state->renderers[0]);
   }
   else
   {
@@ -593,74 +557,52 @@ loop()
     return;
   }
 
-#if 0
+  if (lcdw)
+  {
+    lcdWindowUpdate(lcdw);
 
+    int newWidth = lcdw->pixelsWidth / 2;
+    int newHeight = lcdw->pixelsHeight / 2;
 
-    SDL_Rect dest;
-    dest.x = (int)(LOGICAL_DISPLAY_SIZE_X * 1.5 - LOGICAL_DISPLAY_SIZE_X) / 2;
-    dest.y = 0;
-    dest.w = (int)(LOGICAL_DISPLAY_SIZE_X * 1.5);
-    dest.h = (int)(LOGICAL_WINDOW_SIZE_Y);
+    SDL_Rect dest2 = dest;
+    dest2.y = (dest.h - newHeight) / 2;
+    dest2.h = newHeight;
+    dest2.x = dest.x + (dest.w - newWidth) / 2;
+    dest2.w = newWidth;
 
-    if (debugWindowShown)
-    {
-      dest.x = 0;
-    }
-
-    SDL_RenderClear(renderer);
-
-    if (!lcdw)
-    {
-      SDL_RenderCopy(renderer, screenTex, NULL, &dest);
-    }
-    else
-    {
-      lcdWindowUpdate(lcdw);
-
-      int newWidth = lcdw->pixelsWidth / 2;
-      int newHeight = lcdw->pixelsHeight / 2;
-
-      SDL_Rect dest2 = dest;
-      dest2.y = (dest.h - newHeight) / 2;
-      dest2.h = newHeight;
-      dest2.x = dest.x + (dest.w - newWidth) / 2;
-      dest2.w = newWidth;
-
-      SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, &dest2);
-    }
-
-    if (debugWindowShown)
-    {
-      for (int i = 0; i < sizeof(debugFrameBuffer); ++i)
-      {
-        debugFrameBuffer[i] = i & 0xff;
-      }
-
-      int mouseX, mouseY;
-      SDL_GetMouseState(&mouseX, &mouseY);
-
-      int winSizeX, winSizeY;
-      SDL_GetWindowSize(state->windows[i], &winSizeX, &winSizeY);
-
-      double factorX = winSizeX / (double)DEFAULT_WINDOW_WIDTH;
-      double factorY = winSizeY / (double)DEFAULT_WINDOW_HEIGHT;
-
-      mouseX = (int)(mouseX / factorX);
-      mouseY = (int)(mouseY / factorY);
-      mouseX -= dest.w * 2;
-
-      debuggerUpdate(debugWindowTex, mouseX, mouseY);
-      dest.x = dest.w;
-      dest.w = (int)(DEBUGGER_WIDTH_PX * .5);
-      dest.h = (int)(DEBUGGER_HEIGHT_PX * .5);
-      SDL_RenderCopy(renderer, debugWindowTex, NULL, &dest);
-    }
-
-
-    SDL_RenderPresent(renderer);
+    SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, &dest2);
   }
-#endif
 
+  if (debugWindowShown)
+  {
+    for (int i = 0; i < sizeof(debugFrameBuffer); ++i)
+    {
+      debugFrameBuffer[i] = i & 0xff;
+    }
+
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+
+    int winSizeX, winSizeY;
+    SDL_GetWindowSize(state->windows[0], &winSizeX, &winSizeY);
+
+    double factorX = winSizeX / (double)DEFAULT_WINDOW_WIDTH;
+    double factorY = winSizeY / (double)DEFAULT_WINDOW_HEIGHT;
+
+    mouseX = (int)(mouseX / factorX);
+    mouseY = (int)(mouseY / factorY);
+    mouseX -= dest.w * 2;
+
+    debuggerUpdate(debugWindowTex, mouseX, mouseY);
+    dest.x = dest.w;
+    dest.w = (int)(DEBUGGER_WIDTH_PX);
+    dest.h = (int)(DEBUGGER_HEIGHT_PX);
+    SDL_RenderCopy(state->renderers[0], debugWindowTex, NULL, &dest);
+  }
+
+
+  SDL_RenderPresent(state->renderers[0]);
+  
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
     case SDL_KEYDOWN:
@@ -929,7 +871,7 @@ main(int argc, char* argv[])
   want.format = AUDIO_F32SYS;
   want.channels = 2;
   want.samples = want.freq / 60;
-  want.callback = hbc56AudioCallback;
+  ;;want.callback = hbc56AudioCallback;
   audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_ANY_CHANGE);
 
   srand((unsigned int)time(NULL));

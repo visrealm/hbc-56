@@ -16,8 +16,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "windows.h"
-
 #include "SDL.h"
 
 extern void cpu6502_irq(void);
@@ -202,7 +200,7 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
                                 ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
                                 : TMS_BLACK) & 0x0f;
 
-    ++color;
+    //++color;
     bgColor = (bgColor + color) & 0x0f;
 
     for (int y = currentRow; y < endRow; ++y)
