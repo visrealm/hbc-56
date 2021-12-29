@@ -114,6 +114,15 @@ hbc56Main:
         sbc #$30
         bvs FAIL
 
+        sed
+        clc
+        lda #$08
+        adc #$08
+        cld
+        cmp #$16
+        bne FAIL
+
+
         jmp success
 
 FAIL:
