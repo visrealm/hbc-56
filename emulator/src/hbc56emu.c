@@ -52,7 +52,6 @@ int keyboardMode = 0;
 uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
   uint8_t val = 0xff;
-
   for (size_t i = 0; i < deviceCount; ++i)
   {
     if (readDevice(&devices[i], addr, &val, dbg))
@@ -61,6 +60,7 @@ uint8_t mem_read_impl(uint16_t addr, int dbg)
 
   return val;
 }
+
 
 uint8_t mem_read(uint16_t addr) {
   return mem_read_impl(addr, 0);
