@@ -18,6 +18,7 @@ emcc -o ..\bin\hbc56.html ^
   -s USE_SDL=2 ^
   -s USE_SDL_MIXER=2 ^
   -s INITIAL_MEMORY=33554432 ^
+  -lopenal ^
   -I ..\modules\ay38910 ^
   -I ..\modules\cpu6502 ^
   -I ..\modules\lcd\src ^
@@ -26,11 +27,13 @@ emcc -o ..\bin\hbc56.html ^
   ..\src\debugger.c ^
   ..\src\hbc56emu.c ^
   ..\src\font.c ^
-  ..\src\lcd.c ^
   ..\src\window.c ^
-  ..\src\device.c ^
-  ..\src\ram_device.c ^
-  ..\src\tms9918_device.c ^
+  ..\src\devices\device.c ^
+  ..\src\devices\memory_device.c ^
+  ..\src\devices\tms9918_device.c ^
+  ..\src\devices\nes_device.c ^
+  ..\src\devices\keyboard_device.c ^
+  ..\src\devices\lcd_device.c ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\cpu6502\addrmodes.c ^
   ..\modules\cpu6502\cpu6502.c ^
@@ -38,6 +41,9 @@ emcc -o ..\bin\hbc56.html ^
   ..\modules\lcd\src\vrEmuLcd.c ^
   ..\modules\tms9918\src\tms9918_core.c ^
   --preload-file "rom.bin" ^
-  --preload-file "rom.bin.lmap" 
-  -s EXPORT_NAME="'hbc56'" ^
-  -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']" 
+  --preload-file "rom.bin.lmap" ^
+  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_main']" ^
+  -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']"
+
+
+#  -s EXPORT_NAME="'hbc56'" ^

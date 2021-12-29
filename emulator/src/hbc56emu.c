@@ -10,28 +10,30 @@
  */
 
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
+#include "config.h"
+#include "window.h"
+#include "cpu6502.h"
+#include "emu2149.h"
+#include "debugger.h"
+
+#include "devices/memory_device.h"
+#include "devices/tms9918_device.h"
+#include "devices/lcd_device.h"
+#include "devices/keyboard_device.h"
+#include "devices/nes_device.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#endif
+extern uint16_t debugMemoryAddr;
+extern uint16_t debugTmsMemoryAddr;
 
-#include "window.h"
-#include "cpu6502.h"
- //#include "tms9918_core.h"
-#include "emu2149.h"
-#include "debugger.h"
-#include "keyboard.h"
-#include "lcd.h"
-#include "ram_device.h"
-#include "tms9918_device.h"
-
-#define HAVE_THREADS 0
-
-//#define NO_THREADS 1
 
 #ifndef _MAX_PATH 
 #define _MAX_PATH 256
@@ -39,51 +41,18 @@
 
 char winTitleBuffer[_MAX_PATH];
 
-#define NUM_DEVICES 12
-HBC56Device* devices[NUM_DEVICES];
+#define MAX_DEVICES 16
+HBC56Device devices[MAX_DEVICES];
+int deviceCount = 0;
 
-
-uint16_t ioPage = 0x7f00;
-
-//#define TMS9918_FPS 60
-#define TMS9918_DAT_ADDR 0x10
-#define TMS9918_REG_ADDR 0x11
-
-// currently keyboard and NES use the same port (I haven't built separate hardware... yet)
-// NES controller is the default.  Use the --keyboard command-line to enable the keyboard instead
-#define NES_IO_PORT 0x81  
-#define KB_IO_PORT 0x81
-
-#define LCD_IO_PORT 0x02
-
-#define LCD_IO_CMD   LCD_IO_PORT
-#define LCD_IO_DATA  (LCD_IO_CMD | 0x01)
-
-
-SDL_AudioDeviceID audioDevice;
-
-
-#define NES_RIGHT  0b10000000
-#define NES_LEFT   0b01000000
-#define NES_DOWN   0b00100000
-#define NES_UP     0b00010000
-#define NES_START  0b00001000
-#define NES_SELECT 0b00000100
-#define NES_B      0b00000010
-#define NES_A      0b00000001
+SDL_AudioDeviceID audioDevice = 0;
 
 //VrEmuTms9918a *tms9918 = NULL;
 PSG* psg0 = NULL;
 PSG* psg1 = NULL;
-LCDWindow* lcdw = NULL;
 
-SDL_mutex* tmsMutex = NULL;
 SDL_mutex* ayMutex = NULL;
 SDL_mutex* debugMutex = NULL;
-
-char kbQueue[16] = { 0 };
-int kbStart = 0, kbEnd = 0;
-
 
 #define AY3891X_IO_ADDR 0x40
 
@@ -103,7 +72,6 @@ float audioBuffer[500000];
 byte psg0Addr = 0;
 byte psg1Addr = 0;
 
-byte kbReadCount = 0;
 int keyboardMode = 0;
 
 uint8_t io_read(uint8_t addr, int dbg)
@@ -112,85 +80,19 @@ uint8_t io_read(uint8_t addr, int dbg)
 
   switch (addr)
   {
-  case LCD_IO_CMD:
-    if (lcdw && lcdw->lcd) val = vrEmuLcdReadAddress(lcdw->lcd);
-    break;
-
-  case LCD_IO_DATA:
-    if (lcdw && lcdw->lcd) val = vrEmuLcdReadByte(lcdw->lcd);
-    break;
-
-  case NES_IO_PORT:  /* same as KB_IO_PORT */
-    if (keyboardMode)
-    {
-      if (kbEnd != kbStart)
-      {
-        val = kbQueue[kbStart];
-
-        if (++kbReadCount & 0x01)
-        {
-          ++kbStart;
-          kbStart &= 0x0f;
-        }
-
-      }
-    }
-    else
-    {
-      const Uint8* keystate = SDL_GetKeyboardState(NULL);
-      int isNumLockOff = (SDL_GetModState() & KMOD_NUM) == 0;
-
-      //continuous-response keys
-      if (keystate[SDL_SCANCODE_LEFT] || (keystate[SDL_SCANCODE_KP_4] && isNumLockOff))
-      {
-        val |= NES_LEFT;
-      }
-      if (keystate[SDL_SCANCODE_RIGHT] || (keystate[SDL_SCANCODE_KP_6] && isNumLockOff))
-      {
-        val |= NES_RIGHT;
-      }
-      if (keystate[SDL_SCANCODE_UP] || (keystate[SDL_SCANCODE_KP_8] && isNumLockOff))
-      {
-        val |= NES_UP;
-      }
-      if (keystate[SDL_SCANCODE_DOWN] || (keystate[SDL_SCANCODE_KP_2] && isNumLockOff))
-      {
-        val |= NES_DOWN;
-      }
-      if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL] || keystate[SDL_SCANCODE_B])
-      {
-        val |= NES_B;
-      }
-      if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] || keystate[SDL_SCANCODE_A])
-      {
-        val |= NES_A;
-      }
-      if (keystate[SDL_SCANCODE_TAB])
-      {
-        val |= NES_SELECT;
-      }
-      if (keystate[SDL_SCANCODE_SPACE] || keystate[SDL_SCANCODE_RETURN])
-      {
-        val |= NES_START;
-      }
-
-      val = ~val;
-    }
-    break;
-
-  case (AY3891X_S0 | AY3891X_READ):
-    if (SDL_LockMutex(ayMutex) == 0)
+  case (HBC56_AY38910_A_PORT | AY3891X_READ):
+    //if (SDL_LockMutex(ayMutex) == 0)
     {
       val = PSG_readReg(psg0, psg0Addr);
-      SDL_UnlockMutex(ayMutex);
+      //SDL_UnlockMutex(ayMutex);
     }
     break;
 
-  case (AY3891X_S1 | AY3891X_READ):
-    if (SDL_LockMutex(ayMutex) == 0)
+  case (HBC56_AY38910_B_PORT | AY3891X_READ):
+    //if (SDL_LockMutex(ayMutex) == 0)
     {
       val = PSG_readReg(psg1, psg1Addr);
-      SDL_UnlockMutex(ayMutex);
+      //SDL_UnlockMutex(ayMutex);
     }
     break;
   }
@@ -202,35 +104,27 @@ void io_write(uint8_t addr, uint8_t val)
 {
   switch (addr)
   {
-  case LCD_IO_CMD:
-    if (lcdw && lcdw->lcd) vrEmuLcdSendCommand(lcdw->lcd, val);
-    break;
-
-  case LCD_IO_DATA:
-    if (lcdw && lcdw->lcd) vrEmuLcdWriteByte(lcdw->lcd, val);
-    break;
-
-  case (AY3891X_S0 | AY3891X_ADDR):
+  case (HBC56_AY38910_A_PORT | AY3891X_ADDR):
     psg0Addr = val;
     break;
 
-  case (AY3891X_S0 | AY3891X_WRITE):
-    if (SDL_LockMutex(ayMutex) == 0)
+  case (HBC56_AY38910_A_PORT | AY3891X_WRITE):
+    //if (SDL_LockMutex(ayMutex) == 0)
     {
       PSG_writeReg(psg0, psg0Addr, val);
-      SDL_UnlockMutex(ayMutex);
+      //SDL_UnlockMutex(ayMutex);
     }
     break;
 
-  case (AY3891X_S1 | AY3891X_ADDR):
+  case (HBC56_AY38910_B_PORT | AY3891X_ADDR):
     psg1Addr = val;
     break;
 
-  case (AY3891X_S1 | AY3891X_WRITE):
-    if (SDL_LockMutex(ayMutex) == 0)
+  case (HBC56_AY38910_B_PORT | AY3891X_WRITE):
+    //if (SDL_LockMutex(ayMutex) == 0)
     {
       PSG_writeReg(psg1, psg1Addr, val);
-      SDL_UnlockMutex(ayMutex);
+      //SDL_UnlockMutex(ayMutex);
     }
     break;
 
@@ -244,20 +138,16 @@ uint8_t mem_read_impl(uint16_t addr, int dbg)
 
   int status = 0;
 
-  for (size_t i = 0; i < NUM_DEVICES; ++i)
+  for (size_t i = 0; i < deviceCount; ++i)
   {
-    if (!devices[i]) break;
-    if (devices[i]->readFn)
-    {
-      if (status = devices[i]->readFn(devices[i], addr, &val, dbg)) break;
-    }
+    if (status = readDevice(&devices[i], addr, &val, dbg)) break;
   }
 
   if (!status)
   {
-    if ((addr & 0xff00) == ioPage)
+    if ((addr & ~HBC56_IO_PORT_MASK) == HBC56_IO_START)
     {
-      val = io_read(addr & 0xff, dbg);
+      val = io_read(addr & HBC56_IO_PORT_MASK, dbg);
     }
   }
 
@@ -274,20 +164,16 @@ uint8_t mem_read_dbg(uint16_t addr) {
 void mem_write(uint16_t addr, uint8_t val)
 {
   int status = 0;
-  for (size_t i = 0; i < NUM_DEVICES; ++i)
+  for (size_t i = 0; i < deviceCount; ++i)
   {
-    if (!devices[i]) break;
-    if (devices[i]->writeFn)
-    {
-      if (status = devices[i]->writeFn(devices[i], addr, val)) break;
-    }
+    if (status = writeDevice(&devices[i], addr, val)) break;
   }
 
   if (!status)
   {
-    if ((addr & 0xff00) == ioPage)
+    if ((addr & ~HBC56_IO_PORT_MASK) == HBC56_IO_START)
     {
-      io_write(addr & 0xff, val);
+      io_write(addr & HBC56_IO_PORT_MASK, val);
     }
   }
 }
@@ -311,7 +197,7 @@ void hbc56AudioCallback(
   static float lastSample0 = 0.0f;
   static float lastSample1 = 0.0f;
 
-  if (SDL_LockMutex(ayMutex) == 0)
+  //if (SDL_LockMutex(ayMutex) == 0)
   {
     for (int i = 0; i < samples; ++i)
     {
@@ -352,18 +238,42 @@ void hbc56AudioCallback(
       lastSample0 = str[i * 2];
       lastSample1 = str[i * 2 + 1];
     }
-    SDL_UnlockMutex(ayMutex);
+    //SDL_UnlockMutex(ayMutex);
   }
 }
 
-Uint32 lastRenderTicks = 0;
-/*
-byte lineBuffer[TMS9918A_PIXELS_X];
 
-Uint8 tms9918Reds[]   = {0x00, 0x00, 0x21, 0x5E, 0x54, 0x7D, 0xD3, 0x43, 0xFd, 0xFF, 0xD3, 0xE5, 0x21, 0xC9, 0xCC, 0xFF};
-Uint8 tms9918Greens[] = {0x00, 0x00, 0xC9, 0xDC, 0x55, 0x75, 0x52, 0xEB, 0x55, 0x79, 0xC1, 0xCE, 0xB0, 0x5B, 0xCC, 0xFF};
-Uint8 tms9918Blues[]  = {0x00, 0x00, 0x42, 0x78, 0xED, 0xFC, 0x4D, 0xF6, 0x54, 0x78, 0x53, 0x80, 0x3C, 0xBA, 0xCC, 0xFF};
-*/
+
+
+void hbc56Audio(int start)
+{
+  if (start)
+  {
+    SDL_InitSubSystem(SDL_INIT_AUDIO);
+
+    SDL_AudioSpec want, have;
+
+    SDL_memset(&want, 0, sizeof(want));
+    want.freq = 48000;
+    want.format = AUDIO_F32SYS;
+    want.channels = 2;
+    want.samples = want.freq / 60;
+    want.callback = hbc56AudioCallback;
+    audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    SDL_PauseAudioDevice(audioDevice, 0);
+  }
+  else
+  {
+    SDL_PauseAudioDevice(audioDevice, 1);
+    SDL_CloseAudioDevice(audioDevice);
+  }
+}
+
+
+
+
+Uint32 lastRenderTicks = 0;
+
 int callCount = 0;
 double perfFreq = 0.0;
 double currentFreq = 0.0;
@@ -382,7 +292,6 @@ Uint32 lastSecond = 0;
 #define TMS_OFFSET_X ((LOGICAL_DISPLAY_SIZE_X - TMS9918A_PIXELS_X) / 2)
 #define TMS_OFFSET_Y ((LOGICAL_DISPLAY_SIZE_Y - TMS9918A_PIXELS_Y) / 2)
 
-byte frameBuffer[LOGICAL_DISPLAY_SIZE_X * LOGICAL_DISPLAY_SIZE_Y * LOGICAL_DISPLAY_BPP];
 byte debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
 SDL_Texture* debugWindowTex = NULL;
 int debugWindowShown = 1;
@@ -395,7 +304,7 @@ int callStackPtr = 0;
 
 #define CLOCK_FREQ 4000000
 
-#if HAVE_THREADS
+#if HBC56_HAVE_THREADS
 
 int SDLCALL cpuThread(void* unused)
 {
@@ -407,7 +316,7 @@ int SDLCALL cpuThread(void* unused)
   double initialLastTime = 0;
   uint16_t breakPc = 0;
 
-#if !HAVE_THREADS
+#if !HBC56_HAVE_THREADS
   void cpuTick()
   {
 #else
@@ -430,7 +339,7 @@ int SDLCALL cpuThread(void* unused)
         triggerIrq = 0;
       }
 
-      if (SDL_LockMutex(debugMutex) == 0)
+      //if (SDL_LockMutex(debugMutex) == 0)
       {
         uint8_t opcode = mem_read(cpu6502_get_regs()->pc);
         int isJsr = (opcode == 0x20);
@@ -459,10 +368,10 @@ int SDLCALL cpuThread(void* unused)
           }
         }
 
-        SDL_UnlockMutex(debugMutex);
+        //SDL_UnlockMutex(debugMutex);
       }
       lastTime = initialLastTime + (thisLoopTicks * ticksPerClock);
-#if !HAVE_THREADS
+#if !HBC56_HAVE_THREADS
       if (debugPaused) break;
 #endif
     }
@@ -472,16 +381,19 @@ int SDLCALL cpuThread(void* unused)
     double tmpFreq = (double)SDL_GetPerformanceCounter() / perfFreq - currentTime;
     currentFreq = currentFreq * 0.9 + (((double)thisLoopTicks / tmpFreq) / 1000000.0) * 0.1;
   }
-#if HAVE_THREADS
+#if HBC56_HAVE_THREADS
   return 0;
   }
 #endif
 
 void hbc56Reset()
 {
-  kbStart = 0;
-  kbEnd = 0;
   debugPaused = 0;
+
+  for (size_t i = 0; i < deviceCount; ++i)
+  {
+    resetDevice(&devices[i]);
+  }
 
   cpu6502_rst();
   PSG_reset(psg0);
@@ -497,29 +409,17 @@ void doTick()
   double thisTime = (double)SDL_GetPerformanceCounter() / perfFreq;
 
 
-  for (size_t i = 0; i < NUM_DEVICES; ++i)
+  for (size_t i = 0; i < deviceCount; ++i)
   {
-    if (!devices[i]) break;
-    if (devices[i]->tickFn)
-    {
-      devices[i]->tickFn(devices[i], 100, thisTime - mainLoopLastTime);
-    }
+    tickDevice(&devices[i], 100, thisTime - mainLoopLastTime);
   }
 
   mainLoopLastTime = thisTime;
 }
 
-void
-loop()
+void doRender()
 {
-  int i;
-  SDL_Event event;
-
-#if !HAVE_THREADS
-  cpuTick();
-#endif
-
-  doTick();
+  SDL_RenderClear(state->renderers[0]);
 
   SDL_Rect dest;
   dest.x = 0;
@@ -527,50 +427,34 @@ loop()
   dest.w = (int)(LOGICAL_DISPLAY_SIZE_X * 3);
   dest.h = (int)(LOGICAL_WINDOW_SIZE_Y * 2);
 
-
-  Uint32 currentTicks = SDL_GetTicks();
-  if ((currentTicks - lastRenderTicks) > 16)
+  if (!debugWindowShown)
   {
-    lastRenderTicks = currentTicks;
+    dest.x = DEBUGGER_WIDTH_PX / 2;
+  }
 
-    for (size_t i = 0; i < NUM_DEVICES; ++i)
+  for (size_t i = 0; i < deviceCount; ++i)
+  {
+    renderDevice(&devices[i]);
+    if (devices[i].output)
     {
-      if (!devices[i]) break;
-      if (devices[i]->renderFn)
-      {
-        devices[i]->renderFn(devices[i]);
-      }
-      if (devices[i]->output)
-      {
-        SDL_RenderCopy(state->renderers[0], devices[i]->output, NULL, &dest);
-      }
+      SDL_Rect devRect = dest;
+
+      int texW, texH;
+      SDL_QueryTexture(devices[i].output, NULL, NULL, &texW, &texH);
+
+      double scaleX = dest.w / (double)texW;
+      double scaleY = dest.h / (double)texH;
+
+      double scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+      devRect.w = texW * scale;
+      devRect.h = texH * scale;
+
+      devRect.x = dest.x + (dest.w - devRect.w) / 2;
+      devRect.y = dest.y + (dest.h - devRect.h) / 2;
+
+      SDL_RenderCopy(state->renderers[0], devices[i].output, NULL, &devRect);
     }
-
-    hbc56AudioCallback(NULL, audioBuffer, 44100 * sizeof(float) * 2);
-    SDL_QueueAudio(audioDevice, audioBuffer, 44100 * sizeof(float) * 2);
-
-//    SDL_RenderPresent(state->renderers[0]);
-  }
-  else
-  {
-    SDL_Delay(1);
-    return;
-  }
-
-  if (lcdw)
-  {
-    lcdWindowUpdate(lcdw);
-
-    int newWidth = lcdw->pixelsWidth / 2;
-    int newHeight = lcdw->pixelsHeight / 2;
-
-    SDL_Rect dest2 = dest;
-    dest2.y = (dest.h - newHeight) / 2;
-    dest2.h = newHeight;
-    dest2.x = dest.x + (dest.w - newWidth) / 2;
-    dest2.w = newWidth;
-
-    SDL_RenderCopy(lcdw->renderer, lcdw->tex, NULL, &dest2);
   }
 
   if (debugWindowShown)
@@ -591,7 +475,7 @@ loop()
 
     mouseX = (int)(mouseX / factorX);
     mouseY = (int)(mouseY / factorY);
-    mouseX -= dest.w * 2;
+    mouseX -= dest.w;// * 2;
 
     debuggerUpdate(debugWindowTex, mouseX, mouseY);
     dest.x = dest.w;
@@ -600,69 +484,196 @@ loop()
     SDL_RenderCopy(state->renderers[0], debugWindowTex, NULL, &dest);
   }
 
-
   SDL_RenderPresent(state->renderers[0]);
+}
+int tickCount = 0;
+void
+loop()
+{
+#if !HBC56_HAVE_THREADS
+  cpuTick();
+#endif
+
+  doTick();
+
+  ++tickCount;
+
+  Uint32 currentTicks = SDL_GetTicks();
+  if ((currentTicks - lastRenderTicks) > 16)
+  {
+    doRender();
+
+    char tempTitleBuffer[_MAX_PATH];
+    SDL_snprintf(tempTitleBuffer, sizeof(tempTitleBuffer), "%s %d", winTitleBuffer, tickCount);
+    SDL_SetWindowTitle(state->windows[0], tempTitleBuffer);
+
+
+    lastRenderTicks = currentTicks;
+    tickCount = 0;
+  }
+  else
+  {
+    //SDL_Delay(1);
+    return;
+  }
   
-  while (SDL_PollEvent(&event)) {
-    switch (event.type) {
-    case SDL_KEYDOWN:
+  SDL_Event event;
+  while (SDL_PollEvent(&event))
+  {
+    int skipProcessing = 0;
+    switch (event.type)
     {
-      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-
-      if (event.key.keysym.sym == SDLK_F5) break;
-      if (event.key.keysym.sym == SDLK_F10) break;
-      if (event.key.keysym.sym == SDLK_F11) break;
-      if (event.key.keysym.sym == SDLK_F12) break;
-      if (event.key.keysym.sym == SDLK_ESCAPE) break;
-      if (withControl && event.key.keysym.sym == SDLK_r)
+      case SDL_KEYDOWN:
       {
+        skipProcessing = 1;
+        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+
+        switch (event.key.keysym.sym)
+        {
+          case SDLK_r:
+            if (withControl)
+            {
+              hbc56Reset();
+            }
+            else
+            {
+              skipProcessing = 0;
+            }
+            break;
+
+          case SDLK_d:
+            if (withControl)
+            {
+              debugWindowShown = !debugWindowShown;
+              debugPaused = debugWindowShown;
+              debugStep = 0;
+            }
+            break;
+          case SDLK_F2:
+            hbc56Audio(withControl == 0);
+            break;
+          case SDLK_F12:
+            debugWindowShown = 1;
+            debugPaused = 1;
+            debugStep = 0;
+            break;
+          case SDLK_F5:
+            debugPaused = 0;
+            debugStep = 0;
+            break;
+          case SDLK_PAGEUP:
+          case SDLK_KP_9:
+            if (withControl)
+            {
+              debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
+            }
+            else
+            {
+              debugMemoryAddr -= withShift ? 0x1000 : 64;
+            }
+            break;
+          case SDLK_PAGEDOWN:
+          case SDLK_KP_3:
+            if (withControl)
+            {
+              debugTmsMemoryAddr += withShift ? 0x1000 : 64;
+            }
+            else
+            {
+              debugMemoryAddr += withShift ? 0x1000 : 64;
+            }
+            break;
+
+          case SDLK_F11:
+            if (SDL_LockMutex(debugMutex) == 0)
+            {
+              if (debugPaused)
+              {
+                if (withShift)
+                {
+                  debugStepOver = 0;
+                  debugStepOut = 1;
+                }
+                else
+                {
+                  debugStepOver = 0;
+                  debugStep = 1;
+                }
+              }
+              SDL_UnlockMutex(debugMutex);
+            }
+            break;
+          case SDLK_F10:
+            if (SDL_LockMutex(debugMutex) == 0)
+            {
+              if (debugPaused)
+              {
+                debugStepOver = 1;
+                debugStep = 1;
+              }
+              SDL_UnlockMutex(debugMutex);
+            }
+            break;
+          case SDLK_ESCAPE:
+#ifdef _EMSCRIPTEN
+            hbc56Reset();
+#else
+            done = 1;
+#endif
+            break;
+
+         default:
+           skipProcessing = 0;
+        }
+      }
+
+      case SDL_KEYUP:
+      {
+        skipProcessing = 1;
+        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+
+        switch (event.key.keysym.sym)
+        {
+          case SDLK_r:
+            if (!withControl) skipProcessing = 0;
+            break;
+
+          case SDLK_d:
+            if (!withControl) skipProcessing = 0;
+            break;
+
+          case SDLK_F2:
+          case SDLK_F12:
+          case SDLK_F5:
+          case SDLK_PAGEUP:
+          case SDLK_KP_9:
+          case SDLK_PAGEDOWN:
+          case SDLK_KP_3:
+          case SDLK_F11:
+          case SDLK_F10:
+          case SDLK_ESCAPE:
+            skipProcessing = 1;
+            break;
+
+          default:
+            skipProcessing = 0;
+            break;
+        }
         break;
       }
-
-      uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][0];
-      for (int i = 0; i < 8; ++i)
-      {
-        uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
-        if (scanCodeByte)
-        {
-          kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
-        }
-        ps2ScanCode <<= 8;
-      }
     }
-    break;
 
-    case SDL_KEYUP:
+    if (!skipProcessing)
     {
-      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-      if (event.key.keysym.sym == SDLK_F5) break;
-      if (event.key.keysym.sym == SDLK_F10) break;
-      if (event.key.keysym.sym == SDLK_F11) break;
-      if (event.key.keysym.sym == SDLK_F12) break;
-      if (event.key.keysym.sym == SDLK_ESCAPE) break;
-      if (withControl && event.key.keysym.sym == SDLK_r)
+      for (size_t i = 0; i < deviceCount; ++i)
       {
-        hbc56Reset();
-        break;
-      }
-      if (event.key.keysym.sym == SDLK_LCTRL) break;
-      if (event.key.keysym.sym == SDLK_RCTRL) break;
-
-      uint64_t ps2ScanCode = sdl2ps2map[event.key.keysym.scancode][1];
-      for (int i = 0; i < 8; ++i)
-      {
-        uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
-        if (scanCodeByte)
-        {
-          kbQueue[kbEnd++] = scanCodeByte; kbEnd &= 0x0f;
-        }
-        ps2ScanCode <<= 8;
+        eventDevice(&devices[i], &event);
       }
     }
-    break;
-    }
-
-
     SDLCommonEvent(state, &event, &done);
   }
 
@@ -703,7 +714,7 @@ int loadRom(const char* filename)
 
   if (ptr)
   {
-    byte rom[0x8000];
+    byte rom[HBC56_ROM_SIZE];
     size_t romBytesRead = fread(rom, 1, sizeof(rom), ptr);
     fclose(ptr);
 
@@ -718,7 +729,7 @@ int loadRom(const char* filename)
     {
       romLoaded = 1;
 
-      devices[0] = createRomDevice(0x8000, 0xffff, rom);
+      devices[deviceCount++] = createRomDevice(HBC56_ROM_START, HBC56_ROM_END, rom);
 
       SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
       size_t ln = SDL_strlen(labelMapFile);
@@ -743,11 +754,6 @@ main(int argc, char* argv[])
 {
   int i;
   Uint32 then, now, frames;
-
-  for (size_t i = 0; i < NUM_DEVICES; ++i)
-  {
-    devices[i] = NULL;
-  }
 
   perfFreq = (double)SDL_GetPerformanceFrequency();
 
@@ -842,8 +848,24 @@ main(int argc, char* argv[])
     return 2;
   }
 
-  devices[1] = createRamDevice(0x0000, 0x7eff);
-  devices[2] = createTms9918Device(ioPage | TMS9918_DAT_ADDR, ioPage | TMS9918_REG_ADDR, state->renderers[0]);
+  devices[deviceCount++] = createRamDevice(HBC56_RAM_START, HBC56_RAM_END);
+
+#if HBC56_HAVE_TMS9918
+  devices[deviceCount++] = createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), state->renderers[0]);
+#endif
+
+#if HBC56_HAVE_KB
+  if (keyboardMode) devices[deviceCount++] = createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT));
+#endif
+
+#if HBC56_HAVE_NES
+  if (!keyboardMode) devices[deviceCount++] = createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT));
+#endif
+
+#if HBC56_HAVE_LCD
+  devices[deviceCount++] = createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]);
+#endif
+
 
 
   /* Create the windows and initialize the renderers */
@@ -851,7 +873,6 @@ main(int argc, char* argv[])
     SDL_Renderer* renderer = state->renderers[i];
     SDL_RenderClear(renderer);
     debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
-    memset(frameBuffer, 0, sizeof(frameBuffer));
 
 #ifndef _EMSCRIPTEN
     SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
@@ -860,29 +881,27 @@ main(int argc, char* argv[])
   }
 
 
-  tmsMutex = SDL_CreateMutex();
-  ayMutex = SDL_CreateMutex();
+  //ayMutex = SDL_CreateMutex();
   debugMutex = SDL_CreateMutex();
 
   SDL_AudioSpec want, have;
 
   SDL_memset(&want, 0, sizeof(want));
-  want.freq = 44100;
+  want.freq = 48000;
   want.format = AUDIO_F32SYS;
   want.channels = 2;
   want.samples = want.freq / 60;
-  ;;want.callback = hbc56AudioCallback;
-  audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_ANY_CHANGE);
+
+  have = want;
+  //want.callback = hbc56AudioCallback;
+  //audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);//SDL_AUDIO_ALLOW_ANY_CHANGE);
 
   srand((unsigned int)time(NULL));
-
-  //tms9918 = vrEmuTms9918aNew();
-
 
   psg0 = PSG_new(2000000, have.freq);
   psg1 = PSG_new(2000000, have.freq);
 
-#if HAVE_THREADS
+#if HBC56_HAVE_THREADS
   SDL_CreateThread(cpuThread, "CPU", NULL);
 #endif
 
@@ -895,11 +914,7 @@ main(int argc, char* argv[])
 
   debuggerInit(cpu6502_get_regs(), labelMapFile, NULL);//tms9918);
 
-  SDL_PauseAudioDevice(audioDevice, 0);
-
-  lcdw = lcdWindowCreate(lcdType, state->windows[0], state->renderers[0]);
-
-  //  SDL_CreateWindow("Debugger", 50, 50, 320, 200, 0);
+  hbc56Audio(1);
 
 
 #ifdef _EMSCRIPTEN
@@ -911,21 +926,19 @@ main(int argc, char* argv[])
   }
 #endif
 
+
+  for (size_t i = 0; i < deviceCount; ++i)
+  {
+    destroyDevice(&devices[i]);
+  }
+
+
   // cool down audio
   SDL_Delay(250);
 
-  SDL_PauseAudio(1);
-  SDL_CloseAudio();
-  SDL_AudioQuit();
-
-  //vrEmuTms9918aDestroy(tms9918);
-  //tms9918 = NULL;
-
-  SDL_DestroyMutex(tmsMutex);
-  tmsMutex = NULL;
-
-  lcdWindowDestroy(lcdw);
-  lcdw = NULL;
+  //SDL_PauseAudio(1);
+  //SDL_CloseAudio();
+  //SDL_AudioQuit();
 
   SDLCommonQuit(state);
 

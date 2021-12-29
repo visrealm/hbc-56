@@ -1,5 +1,5 @@
 /*
- * Troy's HBC-56 Emulator - RAM/ROM device
+ * Troy's HBC-56 Emulator - memory device
  *
  * Copyright (c) 2021 Troy Schrapel
  *
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef _HBC56_RAM_DEVICE_H_
-#define _HBC56_RAM_DEVICE_H_
+#ifndef _HBC56_MEMORY_DEVICE_H_
+#define _HBC56_MEMORY_DEVICE_H_
 
 #include "device.h"
 
@@ -19,14 +19,14 @@
  * --------------------
  * create a ram device for the given address range
  */
-HBC56Device *createRamDevice(uint16_t startAddr, uint16_t endAddr);
+HBC56Device createRamDevice(uint32_t startAddr, uint32_t endAddr);
 
 /* Function:  createRomDevice
  * --------------------
  * create a rom device for the given address range
  * contents must be of equal size
  */
-HBC56Device* createRomDevice(uint16_t startAddr, uint16_t endAddr, uint8_t *contents);
+HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, uint8_t *contents);
 
 
 #endif

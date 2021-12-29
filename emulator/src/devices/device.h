@@ -21,6 +21,8 @@ typedef struct HBC56Device HBC56Device;
 struct SDL_Texture;
 typedef struct SDL_Texture SDL_Texture;
 
+typedef union SDL_Event SDL_Event;
+
 /* tick function pointer */
 /*   uint32_t deltaTicks: change in clock ticks since last call */
 /*   double   deltaTime:  change in elapsed time in seconds since last call */
@@ -28,6 +30,9 @@ typedef void (*DeviceTickFn)(HBC56Device*,uint32_t, double);
 
 /* render function pointer */
 typedef void (*DeviceRenderFn)(HBC56Device*);
+
+/* event function pointer */
+typedef void (*DeviceEventFn)(HBC56Device*, SDL_Event*);
 
 /* reset function pointer */
 typedef void (*DeviceResetFn)(HBC56Device*);
@@ -48,6 +53,8 @@ typedef uint8_t (*DeviceReadFn)(HBC56Device*,uint16_t,uint8_t*,uint8_t);
      returns 1 if ok, 0 if not */
 typedef uint8_t (*DeviceWriteFn)(HBC56Device*,uint16_t,uint8_t);
 
+
+/* device struct */
 struct HBC56Device
 {
   const char       *name;
@@ -58,8 +65,9 @@ struct HBC56Device
   DeviceReadFn      readFn;
   DeviceWriteFn     writeFn;
   DeviceRenderFn    renderFn;
+  DeviceEventFn     eventFn;
 
-  void             *data;
+  void             *data;         /* private data */
 
   SDL_Texture      *output;
 }; 
@@ -69,7 +77,7 @@ struct HBC56Device
  * --------------------
  * create an empty device. the starting point for all devices
  */
-HBC56Device* createDevice(const char *name);
+HBC56Device createDevice(const char *name);
 
 /* Function:  destroyDevice
  * --------------------
@@ -77,11 +85,40 @@ HBC56Device* createDevice(const char *name);
  */
 void destroyDevice(HBC56Device *device);
 
-/* Function:  destroyDevice
+/* Function:  resetDevice
  * --------------------
- * destroy a device
+ * reset a device
  */
-void destroyDevice(HBC56Device* device);
+void resetDevice(HBC56Device* device);
 
+/* Function:  tickDevice
+ * --------------------
+ * tick a device (for devices which require regular attention)
+ */
+void tickDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime);
+
+/* Function:  readDevice
+ * --------------------
+ * read from a device
+ */
+uint8_t readDevice(HBC56Device* device, uint16_t addr, uint8_t *val, uint8_t dbg);
+
+/* Function:  writeDevice
+ * --------------------
+ * write to a device
+ */
+uint8_t writeDevice(HBC56Device* device, uint16_t addr, uint8_t val);
+
+/* Function:  renderDevice
+ * --------------------
+ * render a device (if it has some form of display output)
+ */
+void renderDevice(HBC56Device* device);
+
+/* Function:  eventDevice
+ * --------------------
+ * handle events
+ */
+void eventDevice(HBC56Device* device, SDL_Event *evt);
 
 #endif

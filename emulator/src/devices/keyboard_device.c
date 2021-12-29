@@ -9,12 +9,163 @@
  *
  */
 
-#ifndef _HBC56_KEYBOARD_SCANCODES_H_
-#define _HBC56_KEYBOARD_SCANCODES_H_
+#include "keyboard_device.h"
 
 #include "SDL.h"
 
-uint64_t sdl2ps2map[][2] = {
+static void resetKeyboardDevice(HBC56Device*);
+static uint8_t readKeyboardDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
+static void eventKeyboardDevice(HBC56Device*, SDL_Event*);
+
+/* map sdl scancodes to ps/2 scancodes */
+static uint64_t sdl2ps2map[232][2];
+
+/* keyboard device data */
+struct KeyboardDevice
+{
+  uint16_t  addr;
+  char      kbQueue[16];
+  int       kbStart;
+  int       kbEnd;
+  int       kbReadCount;
+};
+typedef struct KeyboardDevice KeyboardDevice;
+
+
+/* Function:  createRamKeyboardDevice
+ * --------------------
+ * create a ram or rom device for the given address range
+ */
+HBC56Device createKeyboardDevice(
+  uint16_t addr)
+{
+  HBC56Device device = createDevice("Keyboard");
+  KeyboardDevice* keyboardDevice = (KeyboardDevice*)malloc(sizeof(KeyboardDevice));
+  if (keyboardDevice)
+  {
+    memset(keyboardDevice, 0, sizeof(KeyboardDevice));
+    keyboardDevice->addr = addr;
+    device.data = keyboardDevice;
+
+    device.resetFn = &resetKeyboardDevice;
+    device.readFn = &readKeyboardDevice;
+    device.eventFn = &eventKeyboardDevice;
+  }
+  else
+  {
+    destroyDevice(&device);
+  }
+
+  return device;
+}
+
+
+/* Function:  getKeyboardDevice
+ * --------------------
+ * helper funtion to get private structure
+ */
+inline static KeyboardDevice* getKeyboardDevice(HBC56Device* device)
+{
+  if (!device) return NULL;
+  return (KeyboardDevice*)device->data;
+}
+
+static uint8_t readKeyboardDevice(HBC56Device* device, uint16_t addr, uint8_t *val, uint8_t dbg)
+{
+  KeyboardDevice* kbDevice = getKeyboardDevice(device);
+  if (kbDevice && val)
+  {
+    if (addr == kbDevice->addr)
+    {
+      *val = 0;
+
+      if (kbDevice->kbEnd != kbDevice->kbStart)
+      {
+        *val = kbDevice->kbQueue[kbDevice->kbStart];
+
+        if (++kbDevice->kbReadCount & 0x01)
+        {
+          ++kbDevice->kbStart;
+          kbDevice->kbStart &= 0x0f;
+        }
+
+      }
+      return 1;
+    }
+  }
+  return 0;
+}
+
+
+static void resetKeyboardDevice(HBC56Device* device)
+{
+  KeyboardDevice* kbDevice = getKeyboardDevice(device);
+  if (kbDevice)
+  {
+    kbDevice->kbStart = 0;
+    kbDevice->kbEnd = 0;
+    kbDevice->kbReadCount = 0;
+  }
+}
+
+static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
+{
+  KeyboardDevice* kbDevice = getKeyboardDevice(device);
+  if (kbDevice && event)
+  {
+    switch (event->type) {
+      case SDL_KEYDOWN:
+      {
+        SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+
+        if (event->key.keysym.sym == SDLK_F5) break;
+        if (event->key.keysym.sym == SDLK_F10) break;
+        if (event->key.keysym.sym == SDLK_F11) break;
+        if (event->key.keysym.sym == SDLK_F12) break;
+        if (event->key.keysym.sym == SDLK_ESCAPE) break;
+
+        uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][0];
+        for (int i = 0; i < 8; ++i)
+        {
+          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+          if (scanCodeByte)
+          {
+            
+            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+          }
+          ps2ScanCode <<= 8;
+        }
+      }
+      break;
+
+      case SDL_KEYUP:
+      {
+        SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        if (event->key.keysym.sym == SDLK_F5) break;
+        if (event->key.keysym.sym == SDLK_F10) break;
+        if (event->key.keysym.sym == SDLK_F11) break;
+        if (event->key.keysym.sym == SDLK_F12) break;
+        if (event->key.keysym.sym == SDLK_ESCAPE) break;
+        if (event->key.keysym.sym == SDLK_LCTRL) break;
+        if (event->key.keysym.sym == SDLK_RCTRL) break;
+
+        uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][1];
+        for (int i = 0; i < 8; ++i)
+        {
+          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+          if (scanCodeByte)
+          {
+            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+          }
+          ps2ScanCode <<= 8;
+        }
+      }
+      break;
+    }
+  }
+}
+
+static uint64_t sdl2ps2map[232][2] = {
   {0x00, 0x00},
   {0x00, 0x00},
   {0x00, 0x00},
@@ -246,4 +397,4 @@ uint64_t sdl2ps2map[][2] = {
   {0xE014, 0xE0F014},
   {0x59, 0xF059},
   {0xE011, 0xE0F011},
-  {0xE02F, 0xE0F02F}};
+  {0xE02F, 0xE0F02F} };

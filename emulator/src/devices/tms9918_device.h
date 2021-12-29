@@ -22,7 +22,7 @@ typedef struct SDL_Renderer SDL_Renderer;
  * --------------------
  * create a TMS9918 device
  */
-HBC56Device *createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Renderer *renderer);
+HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Renderer *renderer);
 
 
 #endif

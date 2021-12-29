@@ -23,15 +23,6 @@ static const char* audio_usage[] = {
     "[--channels N]", "[--samples N]"
 };
 
-extern int debugWindowShown;
-extern int debugStep;
-extern int debugStepOver;
-extern int debugStepOut;
-extern int debugPaused;
-extern SDL_mutex* debugMutex;
-extern uint16_t debugMemoryAddr;
-extern uint16_t debugTmsMemoryAddr;
-extern void hbc56Reset();
 
 #define SDL_OUT_Z_CAP(x)
 #define SDL_PRINTF_FORMAT_STRING
@@ -1959,83 +1950,7 @@ break;
       }
 
       break;
-    case SDLK_d:
-      if (withControl)
-      {
-        debugWindowShown = !debugWindowShown;
-        debugPaused = debugWindowShown;
-        debugStep = 0;
-      }
-      break;
-    case SDLK_F12:
-      debugWindowShown = 1;
-      debugPaused = 1;
-      debugStep = 0;
-      break;
-    case SDLK_F5:
-      debugPaused = 0;
-      debugStep = 0;
-      break;
-    case SDLK_PAGEUP:
-    case SDLK_KP_9:
-      if (withControl)
-      {
-        debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
-      }
-      else
-      {
-        debugMemoryAddr -= withShift ? 0x1000 : 64;
-      }
-      break;
-    case SDLK_PAGEDOWN:
-    case SDLK_KP_3:
-      if (withControl)
-      {
-        debugTmsMemoryAddr += withShift ? 0x1000 : 64;
-      }
-      else
-      {
-        debugMemoryAddr += withShift ? 0x1000 : 64;
-      }
-      break;
 
-    case SDLK_F11:
-      if (SDL_LockMutex(debugMutex) == 0)
-      {
-        if (debugPaused)
-        {
-          if (withShift)
-          {
-            debugStepOver = 0;
-            debugStepOut = 1;
-          }
-          else
-          {
-            debugStepOver = 0;
-            debugStep = 1;
-          }
-        }
-        SDL_UnlockMutex(debugMutex);
-      }
-      break;
-    case SDLK_F10:
-      if (SDL_LockMutex(debugMutex) == 0)
-      {
-        if (debugPaused)
-        {
-          debugStepOver = 1;
-          debugStep = 1;
-        }
-        SDL_UnlockMutex(debugMutex);
-      }
-      break;
-    case SDLK_ESCAPE:
-#ifdef _EMSCRIPTEN
-      hbc56Reset();
-#else
-      *done = 1;
-#endif
-      break;
     default:
       break;
     }
