@@ -28,12 +28,6 @@ typedef union SDL_Event SDL_Event;
 /*   double   deltaTime:  change in elapsed time in seconds since last call */
 typedef void (*DeviceTickFn)(HBC56Device*,uint32_t, double);
 
-/* render function pointer */
-typedef void (*DeviceRenderFn)(HBC56Device*);
-
-/* event function pointer */
-typedef void (*DeviceEventFn)(HBC56Device*, SDL_Event*);
-
 /* reset function pointer */
 typedef void (*DeviceResetFn)(HBC56Device*);
 
@@ -53,6 +47,15 @@ typedef uint8_t (*DeviceReadFn)(HBC56Device*,uint16_t,uint8_t*,uint8_t);
      returns 1 if ok, 0 if not */
 typedef uint8_t (*DeviceWriteFn)(HBC56Device*,uint16_t,uint8_t);
 
+/* render function pointer */
+typedef void (*DeviceRenderFn)(HBC56Device*);
+
+/* audio render function pointer */
+typedef void (*DeviceAudioFn)(HBC56Device*, float*, int);
+
+/* event function pointer */
+typedef void (*DeviceEventFn)(HBC56Device*, SDL_Event*);
+
 
 /* device struct */
 struct HBC56Device
@@ -65,6 +68,7 @@ struct HBC56Device
   DeviceReadFn      readFn;
   DeviceWriteFn     writeFn;
   DeviceRenderFn    renderFn;
+  DeviceAudioFn     audioFn;
   DeviceEventFn     eventFn;
 
   void             *data;         /* private data */
@@ -114,6 +118,12 @@ uint8_t writeDevice(HBC56Device* device, uint16_t addr, uint8_t val);
  * render a device (if it has some form of display output)
  */
 void renderDevice(HBC56Device* device);
+
+/* Function:  renderAudioDevice
+ * --------------------
+ * render an audio device
+ */
+void renderAudioDevice(HBC56Device* device, float *buffer, int numSamples);
 
 /* Function:  eventDevice
  * --------------------

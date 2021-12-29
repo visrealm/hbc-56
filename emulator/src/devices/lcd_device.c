@@ -29,7 +29,7 @@ static uint8_t writeLcdDevice(HBC56Device*, uint16_t, uint8_t);
 
 /* lcd constants */
 #define LCD_PIXEL_SCALE     7
-#define LCD_BORDER_X        10
+#define LCD_BORDER_X        5
 #define LCD_BORDER_Y        5
 
 typedef enum
@@ -204,8 +204,11 @@ static void renderLcdDevice(HBC56Device* device)
       fbPtr += LCD_PIXEL_SCALE * lcdDevice->pixelsX - w * LCD_PIXEL_SCALE;
     }
 
-
-    SDL_UpdateTexture(device->output, NULL, lcdDevice->frameBuffer, lcdDevice->pixelsX * sizeof(uint32_t));
+    void* pixels = NULL;
+    int pitch = 0;
+    SDL_LockTexture(device->output, NULL, &pixels, &pitch);
+    memcpy(pixels, lcdDevice->frameBuffer, lcdDevice->pixelsX * lcdDevice->pixelsY * sizeof(uint32_t));
+    SDL_UnlockTexture(device->output);
   }
 }
 

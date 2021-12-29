@@ -24,9 +24,10 @@ static const char* audio_usage[] = {
 };
 
 
+#ifdef _EMSCRIPTEN
 #define SDL_OUT_Z_CAP(x)
 #define SDL_PRINTF_FORMAT_STRING
-//#define SDL1
+#endif
 
 static void SDL_snprintfcat(SDL_OUT_Z_CAP(maxlen) char* text, size_t maxlen, SDL_PRINTF_FORMAT_STRING const char* fmt, ...)
 {

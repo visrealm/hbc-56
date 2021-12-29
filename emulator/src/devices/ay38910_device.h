@@ -18,7 +18,7 @@
  * --------------------
  * create an AY-3-8910 PSG device
  */
-HBC56Device *createAY38910Device(uint16_t baseAddr, int clockFreq);
+HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate);
 
 
 #endif

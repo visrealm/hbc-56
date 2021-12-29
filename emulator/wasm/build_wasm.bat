@@ -23,10 +23,7 @@ emcc -o ..\bin\hbc56.html ^
   -I ..\modules\cpu6502 ^
   -I ..\modules\lcd\src ^
   -I ..\modules\tms9918\src ^
-  ..\src\clock.c ^
-  ..\src\debugger.c ^
   ..\src\hbc56emu.c ^
-  ..\src\font.c ^
   ..\src\window.c ^
   ..\src\devices\device.c ^
   ..\src\devices\memory_device.c ^
@@ -34,6 +31,9 @@ emcc -o ..\bin\hbc56.html ^
   ..\src\devices\nes_device.c ^
   ..\src\devices\keyboard_device.c ^
   ..\src\devices\lcd_device.c ^
+  ..\src\devices\ay38910_device.c ^
+  ..\src\debugger\debugger.c ^
+  ..\src\debugger\font.c ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\cpu6502\addrmodes.c ^
   ..\modules\cpu6502\cpu6502.c ^

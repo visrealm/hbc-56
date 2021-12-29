@@ -10,6 +10,7 @@
  */
 
 #include "debugger.h"
+#include "../devices/tms9918_device.h"
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -38,7 +39,8 @@ uint16_t debugTmsMemoryAddr = 0;
 CPU6502Regs *cpuStatus = NULL;
 
 static const char *labelMap[0x10000] = {0};
-static VrEmuTms9918a* tms9918 = NULL;
+static HBC56Device* tms9918 = NULL;
+
 char tmpBuffer[256] = {0};
 
 int isProbablyConstant(const char* str)
@@ -48,9 +50,8 @@ int isProbablyConstant(const char* str)
   return SDL_strcmp(str, tmpBuffer) == 0;
 }
 
-void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a* tms)
+void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename)
 {
-  tms9918 = tms;
   cpuStatus = regs;
   fgColor = green;
   bgColor = 0x00000000;
@@ -129,9 +130,13 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename, VrEmuTms9918a
 
     fclose(ptr);
   }
-
-
 }
+
+void debuggerInitTms(HBC56Device* tms)
+{
+  tms9918 = tms;
+}
+
 
 char hexDigit(char val)
 {
@@ -616,7 +621,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
       for (uint8_t x = 0; x < 8; ++x)
       {
-        uint8_t d = vrEmuTms9918aVramValue(tms9918, addr);
+        uint8_t d = readTms9918Vram(tms9918, addr);
         debuggerOutputHex(d, 7 + x * 3, y + memoryVpos);
         debuggerOutputChar(d, 32 + x, y + memoryVpos);
         ++addr;
@@ -625,10 +630,11 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
     for (uint8_t y = 0; y < 8; ++y)
     {
+      uint8_t r = readTms9918Reg(tms9918, y);
       debuggerOutput("R  $", 42, y + memoryVpos);
       debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + memoryVpos);
-      debuggerOutputHex(vrEmuTms9918aRegValue(tms9918, y), 46, y + memoryVpos);
-      debuggerOutput(SDL_itoa(vrEmuTms9918aRegValue(tms9918, y), buffer, 10), 49, y + memoryVpos);
+      debuggerOutputHex(r, 46, y + memoryVpos);
+      debuggerOutput(SDL_itoa(r, buffer, 10), 49, y + memoryVpos);
     }
 
   }

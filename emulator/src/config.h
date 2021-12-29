@@ -16,7 +16,10 @@
 
 /* emulator configuration values 
   -------------------------------------------------------------------------- */
-#define HBC56_HAVE_THREADS        0
+#define HBC56_HAVE_THREADS      0
+
+#define HBC56_CLOCK_FREQ        4000000
+#define HBC56_AUDIO_FREQ        48000
 
 /* memory map configuration values 
   -------------------------------------------------------------------------- */
@@ -53,6 +56,7 @@
 #define HBC56_AY_3_8910_COUNT   2
 #define HBC56_AY38910_A_PORT    0x40
 #define HBC56_AY38910_B_PORT    0x44
+#define HBC56_AY38910_CLOCK     2000000
 
 
 /* computed configuration values (shouldn't need to touch these) 

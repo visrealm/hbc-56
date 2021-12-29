@@ -31,11 +31,15 @@ static uint8_t writeTms9918Device(HBC56Device*, uint16_t, uint8_t);
 #define TMS9918_DISPLAY_WIDTH   320
 #define TMS9918_DISPLAY_HEIGHT  240
 #define TMS9918_FPS             60.0
+#define TMS9918_TICK_MIN_PIXELS 26
+
+/* tms9918 computed constants */
 #define TMS9918_FRAME_TIME      (1.0 / TMS9918_FPS)
 #define TMS9918_ROW_TIME        (TMS9918_FRAME_TIME / (double)TMS9918_DISPLAY_HEIGHT)
 #define TMS9918_PIXEL_TIME      (TMS9918_ROW_TIME / (double)TMS9918_DISPLAY_WIDTH)
 #define TMS9918_BORDER_X        ((TMS9918_DISPLAY_WIDTH - TMS9918A_PIXELS_X) / 2)
 #define TMS9918_BORDER_Y        ((TMS9918_DISPLAY_HEIGHT - TMS9918A_PIXELS_Y) / 2)
+#define TMS9918_DISPLAY_PIXELS  (TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT)
 
 /* tms9918 palette */
 static const uint32_t tms9918Pal[] = {
@@ -63,7 +67,7 @@ struct TMS9918Device
   uint16_t       dataAddr;
   uint16_t       regAddr;
   VrEmuTms9918a *tms9918;
-  uint32_t       frameBuffer[TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT];
+  uint32_t       frameBuffer[TMS9918_DISPLAY_PIXELS];
   double         unusedTime;
   int            currentFramePixels;
   uint8_t        scanlineBuffer[TMS9918_DISPLAY_WIDTH];
@@ -87,7 +91,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Rendere
     tmsDevice->unusedTime = 0.0f;
     tmsDevice->currentFramePixels = 0;
     memset(tmsDevice->frameBuffer, 0, sizeof(tmsDevice->frameBuffer));
-    memset(tmsDevice->scanlineBuffer, 0, sizeof(tmsDevice->scanlineBuffer));
+    memset(tmsDevice->scanlineBuffer, 6, sizeof(tmsDevice->scanlineBuffer));
 
     device.data = tmsDevice;
     device.resetFn = &resetTms9918Device;
@@ -163,7 +167,11 @@ static void renderTms9918Device(HBC56Device* device)
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
-      SDL_UpdateTexture(device->output, NULL, tmsDevice->frameBuffer, TMS9918_DISPLAY_WIDTH * 4);
+    void *pixels = NULL;
+    int pitch = 0;
+    SDL_LockTexture(device->output, NULL, &pixels, &pitch);
+    memcpy(pixels, tmsDevice->frameBuffer, sizeof(tmsDevice->frameBuffer));
+    SDL_UnlockTexture(device->output);
   }
 }
 
@@ -182,88 +190,64 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
     /* determine portion of frame to render */
     deltaTime += tmsDevice->unusedTime;
 
-    if (deltaTime > TMS9918_FRAME_TIME) deltaTime = TMS9918_FRAME_TIME;
+    double thisStepTotalPixelsDbl = 0.0;
+    tmsDevice->unusedTime = modf(deltaTime / (double)TMS9918_PIXEL_TIME, &thisStepTotalPixelsDbl) * TMS9918_PIXEL_TIME;
+    int thisStepTotalPixels = (uint32_t)thisStepTotalPixelsDbl;
+    if (thisStepTotalPixels < TMS9918_TICK_MIN_PIXELS)
+    {
+      tmsDevice->unusedTime += thisStepTotalPixels * TMS9918_PIXEL_TIME;
+      return;
+    }
 
-    //tmsDevice->unusedTime = 0.0;
+    if (tmsDevice->currentFramePixels + thisStepTotalPixels >= TMS9918_DISPLAY_PIXELS)
+    {
+      tmsDevice->unusedTime += ((tmsDevice->currentFramePixels + thisStepTotalPixels) - TMS9918_DISPLAY_PIXELS) * TMS9918_PIXEL_TIME;
+      thisStepTotalPixels = TMS9918_DISPLAY_PIXELS - tmsDevice->currentFramePixels;
+    }
 
     div_t currentPos = div((int)tmsDevice->currentFramePixels, (int)TMS9918_DISPLAY_WIDTH);
 
     int currentRow = currentPos.quot;
     int currentCol = currentPos.rem;
 
-    double thisStepTotalPixelsDbl = 0.0;
-    tmsDevice->unusedTime = modf(deltaTime / (double)TMS9918_PIXEL_TIME, &thisStepTotalPixelsDbl) * TMS9918_PIXEL_TIME;
-    int thisStepTotalPixels = (uint32_t)thisStepTotalPixelsDbl;
-    if (thisStepTotalPixels < 600)
-    {
-      tmsDevice->unusedTime = deltaTime;
-      return;
-    }
+    uint8_t bgColor = (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918)
+      ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
+      : TMS_BLACK) & 0x0f;
 
-    div_t endPos = div((int)tmsDevice->currentFramePixels + thisStepTotalPixels, (int)TMS9918_DISPLAY_WIDTH);
-
-    int endRow = endPos.quot;
-    int endCol = endPos.rem;
-
+    //bgColor = (++c) & 0x0f;
+    int firstPix = 1;
     uint32_t* fbPtr = tmsDevice->frameBuffer + tmsDevice->currentFramePixels;
 
-    /* if past end of frame, stop at end of frame and add time for the next frame tick */
-    if (endRow > TMS9918_DISPLAY_HEIGHT)
+    int tmsRow = 0;
+
+    for (int p = 0; p < thisStepTotalPixels; ++p)
     {
-      int extraPixels = endCol;
-      extraPixels += TMS9918_DISPLAY_WIDTH * (endRow - TMS9918_DISPLAY_HEIGHT);
+      currentPos = div((int)tmsDevice->currentFramePixels, (int)TMS9918_DISPLAY_WIDTH);
 
-      endRow = TMS9918_DISPLAY_HEIGHT;
-      endCol = TMS9918_DISPLAY_WIDTH;
+      currentRow = currentPos.quot;
+      currentCol = currentPos.rem;
 
-      tmsDevice->unusedTime += extraPixels * TMS9918_PIXEL_TIME;
-
-      thisStepTotalPixels = (TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT) - tmsDevice->currentFramePixels;
-    }
-
-    /* default background color for borders */
-    uint8_t bgColor = (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918)
-                                ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
-                                : TMS_BLACK) & 0x0f;
-
-    bgColor = (bgColor + (++c)) & 0x0f;
-
-    for (int y = currentRow; y < endRow; ++y)
-    {
-      /* set scanline buffer to bg color */
-      memset(tmsDevice->scanlineBuffer, bgColor, sizeof(tmsDevice->scanlineBuffer));
-
-      int tmsRow = y - TMS9918_BORDER_Y;
-
-      if (tmsRow >= 0 && tmsRow < TMS9918A_PIXELS_Y)
+      if (firstPix || currentCol == 0)
       {
-        /* retrieve scanline pixels */
-        vrEmuTms9918aScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X);
+        tmsRow = currentRow - TMS9918_BORDER_Y;
+        memset(tmsDevice->scanlineBuffer, bgColor, sizeof(tmsDevice->scanlineBuffer));
+        if (tmsRow >=0 && tmsRow < TMS9918A_PIXELS_Y)
+          vrEmuTms9918aScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X);
+        firstPix = 0;
       }
 
-      /* update frame buffer with scanline pixels */
-      int xPixels = (y == (endRow - 1)) ? endCol : TMS9918_DISPLAY_WIDTH;
-      for (int x = currentCol; x < xPixels; ++x)
+      *(fbPtr++) = tms9918Pal[tmsDevice->scanlineBuffer[currentCol]];
+      ++tmsDevice->currentFramePixels;
+
+      if (tmsDevice->currentFramePixels == (TMS9918_DISPLAY_WIDTH * (TMS9918_DISPLAY_HEIGHT - TMS9918_BORDER_Y)))
       {
-        *fbPtr++ = tms9918Pal[tmsDevice->scanlineBuffer[x]];
-        ++tmsDevice->currentFramePixels;
-      }
-      currentCol = 0;
-        
-      if (tmsRow == TMS9918A_PIXELS_Y)
-      {
-        /* irq here instead? */
-      }
-    }
-    
-    if (tmsDevice->currentFramePixels >= (TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT))
-    {
-      tmsDevice->currentFramePixels = 0;
-      if (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918) && 
+        if (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918) &&
           (vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
-      {
-        cpu6502_irq(); /* TODO: abstract this away */
+        {
+          cpu6502_irq(); /* TODO: abstract this away */
+        }
       }
+      tmsDevice->currentFramePixels = tmsDevice->currentFramePixels % TMS9918_DISPLAY_PIXELS;
     }
   }
 }
@@ -318,6 +302,27 @@ static uint8_t writeTms9918Device(HBC56Device* device, uint16_t addr, uint8_t va
       vrEmuTms9918aWriteData(tmsDevice->tms9918, val);
       return 1;
     }
+  }
+  return 0;
+}
+
+
+uint8_t readTms9918Vram(HBC56Device* device, uint16_t vramAddr)
+{
+  TMS9918Device* tmsDevice = getTms9918Device(device);
+  if (tmsDevice)
+  {
+    return vrEmuTms9918aVramValue(tmsDevice->tms9918, vramAddr);
+  }
+  return 0;
+}
+
+uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg)
+{
+  TMS9918Device* tmsDevice = getTms9918Device(device);
+  if (tmsDevice)
+  {
+    return vrEmuTms9918aRegValue(tmsDevice->tms9918, reg);
   }
   return 0;
 }

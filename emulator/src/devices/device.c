@@ -28,6 +28,7 @@ HBC56Device createDevice(const char* name)
   device.readFn = NULL;
   device.writeFn = NULL;
   device.renderFn = NULL;
+  device.audioFn = NULL;
   device.eventFn = NULL;
   device.output = NULL;
   device.data = NULL;
@@ -108,6 +109,18 @@ void renderDevice(HBC56Device* device)
   if (device && device->renderFn)
   {
     device->renderFn(device);
+  }
+}
+
+/* Function:  renderAudioDevice
+ * --------------------
+ * render an audio device
+ */
+void renderAudioDevice(HBC56Device* device, float* buffer, int numSamples)
+{
+  if (device && device->audioFn)
+  {
+    device->audioFn(device, buffer, numSamples);
   }
 }
 
