@@ -9,7 +9,7 @@
  *
  */
 
-#include "tms9918_core.h"
+#include "../devices/device.h"
 #include "cpu6502.h"
 #include "SDL.h"
 
@@ -18,12 +18,14 @@
 #define DEBUGGER_BPP       3
 
 #define DEBUGGER_CHAR_W 6
-#define DEBUGGER_CHAR_H 8
+#define DEBUGGER_CHAR_H 8 
 
 #define DEBUGGER_CHARS_X (DEBUGGER_WIDTH_PX / DEBUGGER_CHAR_W)
 #define DEBUGGER_CHARS_Y (DEBUGGER_HEIGHT_PX / DEBUGGER_CHAR_H)
 
 
-void debuggerInit(CPU6502Regs *regs, const char *labelMap, VrEmuTms9918a *tms9918);
+void debuggerInit(CPU6502Regs *regs, const char *labelMap);
+
+void debuggerInitTms(HBC56Device *tms9918);
 
 void debuggerUpdate(SDL_Texture *tex, int mouseX, int mouseY);

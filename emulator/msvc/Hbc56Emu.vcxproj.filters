@@ -26,6 +26,12 @@
     <Filter Include="modules\LCD">
       <UniqueIdentifier>{e232384f-63ad-4558-a0ed-9aef54caaa69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\devices">
+      <UniqueIdentifier>{427cfc69-cdaf-46d6-889e-533e34722205}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\debugger">
+      <UniqueIdentifier>{eba57e8f-ecee-4fcb-a921-30d2074e4048}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h">
@@ -43,23 +49,38 @@
     <ClInclude Include="Resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\clock.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\hbc56emu.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\debugger.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\keyboard.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\lcd.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h">
       <Filter>modules\LCD</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\config.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\ay38910_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\keyboard_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\lcd_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\memory_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\nes_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\tms9918_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\debugger\debugger.h">
+      <Filter>src\debugger</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -88,23 +109,38 @@
     <ClCompile Include="..\src\window.c">
       <Filter>ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\clock.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\hbc56emu.c">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\font.c">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\debugger.c">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\lcd.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c">
       <Filter>modules\LCD</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ay38910_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\keyboard_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\lcd_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\memory_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\nes_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\tms9918_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\debugger\font.c">
+      <Filter>src\debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\debugger\debugger.c">
+      <Filter>src\debugger</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

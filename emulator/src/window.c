@@ -23,15 +23,11 @@ static const char* audio_usage[] = {
     "[--channels N]", "[--samples N]"
 };
 
-extern int debugWindowShown;
-extern int debugStep;
-extern int debugStepOver;
-extern int debugStepOut;
-extern int debugPaused;
-extern SDL_mutex* debugMutex;
-extern uint16_t debugMemoryAddr;
-extern uint16_t debugTmsMemoryAddr;
 
+#ifdef _EMSCRIPTEN
+#define SDL_OUT_Z_CAP(x)
+#define SDL_PRINTF_FORMAT_STRING
+#endif
 
 static void SDL_snprintfcat(SDL_OUT_Z_CAP(maxlen) char* text, size_t maxlen, SDL_PRINTF_FORMAT_STRING const char* fmt, ...)
 {
@@ -70,6 +66,8 @@ SDLCommonCreateState(char** argv, Uint32 flags)
   state->audiospec.format = AUDIO_S16;
   state->audiospec.channels = 2;
   state->audiospec.samples = 2048;
+
+  //state->render_flags = SDL_RENDERER_PRESENTVSYNC;
 
   /* Set some very sane GL defaults */
   state->gl_red_size = 3;
@@ -199,23 +197,28 @@ SDLCommonArg(SDLCommonState* state, int index)
     }
     return 2;
   }
+#ifndef _EMSCRIPTEN
   if (SDL_strcasecmp(argv[index], "--metal-window") == 0) {
     state->window_flags |= SDL_WINDOW_METAL;
     return 1;
   }
+#endif
   if (SDL_strcasecmp(argv[index], "--opengl-window") == 0) {
     state->window_flags |= SDL_WINDOW_OPENGL;
     return 1;
   }
+#ifndef SDL1
   if (SDL_strcasecmp(argv[index], "--vulkan-window") == 0) {
     state->window_flags |= SDL_WINDOW_VULKAN;
     return 1;
   }
+#endif
   if (SDL_strcasecmp(argv[index], "--fullscreen") == 0) {
     state->window_flags |= SDL_WINDOW_FULLSCREEN;
     state->num_windows = 1;
     return 1;
   }
+#ifndef SDL1
   if (SDL_strcasecmp(argv[index], "--fullscreen-desktop") == 0) {
     state->window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     state->num_windows = 1;
@@ -225,6 +228,7 @@ SDLCommonArg(SDLCommonState* state, int index)
     state->window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
     return 1;
   }
+#endif
   if (SDL_strcasecmp(argv[index], "--windows") == 0) {
     ++index;
     if (!argv[index] || !SDL_isdigit(*argv[index])) {
@@ -424,6 +428,7 @@ SDLCommonArg(SDLCommonState* state, int index)
     state->flash_on_focus_loss = SDL_TRUE;
     return 1;
   }
+#ifndef _EMSCRIPTEN
   if (SDL_strcasecmp(argv[index], "--grab") == 0) {
     state->window_flags |= SDL_WINDOW_MOUSE_GRABBED;
     return 1;
@@ -432,6 +437,7 @@ SDLCommonArg(SDLCommonState* state, int index)
     state->window_flags |= SDL_WINDOW_KEYBOARD_GRABBED;
     return 1;
   }
+#endif
   if (SDL_strcasecmp(argv[index], "--rate") == 0) {
     ++index;
     if (!argv[index]) {
@@ -610,7 +616,7 @@ SDLCommonDefaultArgs(SDLCommonState* state, const int argc, char** argv)
   }
   return SDL_TRUE;
 }
-
+#ifndef SDL1
 static void
 SDLPrintDisplayOrientation(char* text, size_t maxlen, SDL_DisplayOrientation orientation)
 {
@@ -635,6 +641,7 @@ SDLPrintDisplayOrientation(char* text, size_t maxlen, SDL_DisplayOrientation ori
     break;
   }
 }
+#endif
 
 static void
 SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
@@ -664,21 +671,26 @@ SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
   case SDL_WINDOW_MAXIMIZED:
     SDL_snprintfcat(text, maxlen, "MAXIMIZED");
     break;
+#ifndef _EMSCRIPTEN
   case SDL_WINDOW_MOUSE_GRABBED:
     SDL_snprintfcat(text, maxlen, "MOUSE_GRABBED");
     break;
+#endif
   case SDL_WINDOW_INPUT_FOCUS:
     SDL_snprintfcat(text, maxlen, "INPUT_FOCUS");
     break;
   case SDL_WINDOW_MOUSE_FOCUS:
     SDL_snprintfcat(text, maxlen, "MOUSE_FOCUS");
     break;
+#ifndef SDL1
   case SDL_WINDOW_FULLSCREEN_DESKTOP:
     SDL_snprintfcat(text, maxlen, "FULLSCREEN_DESKTOP");
     break;
+#endif
   case SDL_WINDOW_FOREIGN:
     SDL_snprintfcat(text, maxlen, "FOREIGN");
     break;
+#ifndef SDL1
   case SDL_WINDOW_ALLOW_HIGHDPI:
     SDL_snprintfcat(text, maxlen, "ALLOW_HIGHDPI");
     break;
@@ -700,15 +712,17 @@ SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
   case SDL_WINDOW_POPUP_MENU:
     SDL_snprintfcat(text, maxlen, "POPUP_MENU");
     break;
+#endif
+#ifndef _EMSCRIPTEN
   case SDL_WINDOW_KEYBOARD_GRABBED:
     SDL_snprintfcat(text, maxlen, "KEYBOARD_GRABBED");
     break;
   case SDL_WINDOW_VULKAN:
     SDL_snprintfcat(text, maxlen, "VULKAN");
     break;
-  case SDL_WINDOW_METAL:
     SDL_snprintfcat(text, maxlen, "METAL");
     break;
+#endif
   default:
     SDL_snprintfcat(text, maxlen, "0x%8.8x", flag);
     break;
@@ -727,11 +741,16 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
       SDL_WINDOW_RESIZABLE,
       SDL_WINDOW_MINIMIZED,
       SDL_WINDOW_MAXIMIZED,
+#ifndef _EMSCRIPTEN
       SDL_WINDOW_MOUSE_GRABBED,
+#endif
       SDL_WINDOW_INPUT_FOCUS,
       SDL_WINDOW_MOUSE_FOCUS,
+#ifndef SDL1
       SDL_WINDOW_FULLSCREEN_DESKTOP,
+#endif
       SDL_WINDOW_FOREIGN,
+#ifndef SDL1
       SDL_WINDOW_ALLOW_HIGHDPI,
       SDL_WINDOW_MOUSE_CAPTURE,
       SDL_WINDOW_ALWAYS_ON_TOP,
@@ -739,9 +758,12 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
       SDL_WINDOW_UTILITY,
       SDL_WINDOW_TOOLTIP,
       SDL_WINDOW_POPUP_MENU,
+#endif
+#ifndef _EMSCRIPTEN
       SDL_WINDOW_KEYBOARD_GRABBED,
       SDL_WINDOW_VULKAN,
       SDL_WINDOW_METAL
+#endif
   };
 
   int i;
@@ -788,9 +810,11 @@ SDLPrintRendererFlag(char* text, size_t maxlen, Uint32 flag)
   case SDL_RENDERER_PRESENTVSYNC:
     SDL_snprintfcat(text, maxlen, "PresentVSync");
     break;
+#ifndef SDL1
   case SDL_RENDERER_TARGETTEXTURE:
     SDL_snprintfcat(text, maxlen, "TargetTexturesSupported");
     break;
+#endif
   default:
     SDL_snprintfcat(text, maxlen, "0x%8.8x", flag);
     break;
@@ -824,9 +848,6 @@ SDLPrintPixelFormat(char* text, size_t maxlen, Uint32 format)
     break;
   case SDL_PIXELFORMAT_RGB444:
     SDL_snprintfcat(text, maxlen, "RGB444");
-    break;
-  case SDL_PIXELFORMAT_BGR444:
-    SDL_snprintfcat(text, maxlen, "BGR444");
     break;
   case SDL_PIXELFORMAT_RGB555:
     SDL_snprintfcat(text, maxlen, "RGB555");
@@ -894,12 +915,14 @@ SDLPrintPixelFormat(char* text, size_t maxlen, Uint32 format)
   case SDL_PIXELFORMAT_YVYU:
     SDL_snprintfcat(text, maxlen, "YVYU");
     break;
+#ifndef SDL1
   case SDL_PIXELFORMAT_NV12:
     SDL_snprintfcat(text, maxlen, "NV12");
     break;
   case SDL_PIXELFORMAT_NV21:
     SDL_snprintfcat(text, maxlen, "NV21");
     break;
+#endif
   default:
     SDL_snprintfcat(text, maxlen, "0x%8.8x", format);
     break;
@@ -914,7 +937,7 @@ SDLPrintRenderer(SDL_RendererInfo* info)
 
   SDL_Log("  Renderer %s:\n", info->name);
 
-  SDL_snprintf(text, sizeof(text), "    Flags: 0x%8.8" SDL_PRIX32, info->flags);
+//  SDL_snprintf(text, sizeof(text), "    Flags: 0x%8.8" SDL_PRIX32, info->flags);
   SDL_snprintfcat(text, sizeof(text), " (");
   count = 0;
   for (i = 0; i < sizeof(info->flags) * 8; ++i) {
@@ -930,7 +953,7 @@ SDLPrintRenderer(SDL_RendererInfo* info)
   SDL_snprintfcat(text, sizeof(text), ")");
   SDL_Log("%s\n", text);
 
-  SDL_snprintf(text, sizeof(text), "    Texture formats (%" SDL_PRIu32 "): ", info->num_texture_formats);
+//  SDL_snprintf(text, sizeof(text), "    Texture formats (%" SDL_PRIu32 "): ", info->num_texture_formats);
   for (i = 0; i < (int)info->num_texture_formats; ++i) {
     if (i > 0) {
       SDL_snprintfcat(text, sizeof(text), ", ");
@@ -965,6 +988,7 @@ SDLLoadIcon(const char* file)
   return (icon);
 }
 
+#ifndef SDL1
 static SDL_HitTestResult SDLCALL
 SDLExampleHitTestCallback(SDL_Window* win, const SDL_Point* area, void* data)
 {
@@ -1018,6 +1042,7 @@ SDLExampleHitTestCallback(SDL_Window* win, const SDL_Point* area, void* data)
   }
   return SDL_HITTEST_NORMAL;
 }
+#endif
 
 SDL_bool
 SDLCommonInit(SDLCommonState* state)
@@ -1078,12 +1103,14 @@ SDLCommonInit(SDLCommonState* state)
       SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, state->gl_major_version);
       SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, state->gl_minor_version);
     }
+#ifndef SDL1
     if (state->gl_debug) {
       SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
     }
     if (state->gl_profile_mask) {
       SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, state->gl_profile_mask);
     }
+#endif
 
     if (state->verbose & VERBOSE_MODES) {
       SDL_Rect bounds, usablebounds;
@@ -1099,16 +1126,17 @@ SDLCommonInit(SDLCommonState* state)
       n = SDL_GetNumVideoDisplays();
       SDL_Log("Number of displays: %d\n", n);
       for (i = 0; i < n; ++i) {
+#ifndef SDL1
         SDL_Log("Display %d: %s\n", i, SDL_GetDisplayName(i));
-
+#endif
         SDL_zero(bounds);
         SDL_GetDisplayBounds(i, &bounds);
 
+#ifndef SDL1
         SDL_zero(usablebounds);
         SDL_GetDisplayUsableBounds(i, &usablebounds);
-
         SDL_GetDisplayDPI(i, NULL, &hdpi, &vdpi);
-
+#endif
         SDL_Log("Bounds: %dx%d at %d,%d\n", bounds.w, bounds.h, bounds.x, bounds.y);
         SDL_Log("Usable bounds: %dx%d at %d,%d\n", usablebounds.w, usablebounds.h, usablebounds.x, usablebounds.y);
         SDL_Log("DPI: %fx%f\n", hdpi, vdpi);
@@ -1120,11 +1148,11 @@ SDLCommonInit(SDLCommonState* state)
           mode.w, mode.h, mode.refresh_rate, bpp,
           SDL_GetPixelFormatName(mode.format));
         if (Rmask || Gmask || Bmask) {
-          SDL_Log("      Red Mask   = 0x%.8" SDL_PRIx32 "\n", Rmask);
-          SDL_Log("      Green Mask = 0x%.8" SDL_PRIx32 "\n", Gmask);
-          SDL_Log("      Blue Mask  = 0x%.8" SDL_PRIx32 "\n", Bmask);
-          if (Amask)
-            SDL_Log("      Alpha Mask = 0x%.8" SDL_PRIx32 "\n", Amask);
+          //SDL_Log("      Red Mask   = 0x%.8" SDL_PRIx32 "\n", Rmask);
+          //SDL_Log("      Green Mask = 0x%.8" SDL_PRIx32 "\n", Gmask);
+          //SDL_Log("      Blue Mask  = 0x%.8" SDL_PRIx32 "\n", Bmask);
+          //if (Amask)
+//            SDL_Log("      Alpha Mask = 0x%.8" SDL_PRIx32 "\n", Amask);
         }
 
         /* Print available fullscreen video modes */
@@ -1141,6 +1169,7 @@ SDLCommonInit(SDLCommonState* state)
             SDL_Log("    Mode %d: %dx%d@%dHz, %d bits-per-pixel (%s)\n",
               j, mode.w, mode.h, mode.refresh_rate, bpp,
               SDL_GetPixelFormatName(mode.format));
+#ifndef _EMSCRIPTEN
             if (Rmask || Gmask || Bmask) {
               SDL_Log("        Red Mask   = 0x%.8" SDL_PRIx32 "\n",
                 Rmask);
@@ -1152,6 +1181,7 @@ SDLCommonInit(SDLCommonState* state)
                 SDL_Log("        Alpha Mask = 0x%.8" SDL_PRIx32 "\n",
                   Amask);
             }
+#endif
           }
         }
 
@@ -1225,10 +1255,13 @@ SDLCommonInit(SDLCommonState* state)
       r.w = state->window_w;
       r.h = state->window_h;
 
+#ifndef SDL1
+
       /* !!! FIXME: hack to make --usable-bounds work for now. */
       if ((r.x == -1) && (r.y == -1) && (r.w == -1) && (r.h == -1)) {
         SDL_GetDisplayUsableBounds(state->display, &r);
       }
+#endif
 
       if (state->num_windows > 1) {
         SDL_snprintf(title, SDL_arraysize(title), "%s %d",
@@ -1244,12 +1277,15 @@ SDLCommonInit(SDLCommonState* state)
           SDL_GetError());
         return SDL_FALSE;
       }
+#ifndef SDL1
+
       if (state->window_minW || state->window_minH) {
         SDL_SetWindowMinimumSize(state->windows[i], state->window_minW, state->window_minH);
       }
       if (state->window_maxW || state->window_maxH) {
         SDL_SetWindowMaximumSize(state->windows[i], state->window_maxW, state->window_maxH);
       }
+#endif
       SDL_GetWindowSize(state->windows[i], &w, &h);
       if (!(state->window_flags & SDL_WINDOW_RESIZABLE) &&
         (w != state->window_w || h != state->window_h)) {
@@ -1266,7 +1302,9 @@ SDLCommonInit(SDLCommonState* state)
       /* Add resize/drag areas for windows that are borderless and resizable */
       if ((state->window_flags & (SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS)) ==
         (SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS)) {
+#ifndef SDL1
         SDL_SetWindowHitTest(state->windows[i], SDLExampleHitTestCallback, NULL);
+#endif
       }
 
       if (state->window_icon) {
@@ -1281,7 +1319,7 @@ SDLCommonInit(SDLCommonState* state)
 
       if (!state->skip_renderer
         && (state->renderdriver
-          || !(state->window_flags & (SDL_WINDOW_OPENGL | SDL_WINDOW_VULKAN | SDL_WINDOW_METAL)))) {
+          || !(state->window_flags & (SDL_WINDOW_OPENGL/* | SDL_WINDOW_VULKAN /* | SDL_WINDOW_METAL*/)))) {
         m = -1;
         if (state->renderdriver) {
           SDL_RendererInfo info;
@@ -1310,9 +1348,12 @@ SDLCommonInit(SDLCommonState* state)
         if (state->logical_w && state->logical_h) {
           SDL_RenderSetLogicalSize(state->renderers[i], state->logical_w, state->logical_h);
         }
+        
+#ifndef SDL1
         else if (state->scale != 0.) {
           SDL_RenderSetScale(state->renderers[i], state->scale, state->scale);
         }
+#endif
         if (state->verbose & VERBOSE_RENDER) {
           SDL_RendererInfo info;
 
@@ -1359,6 +1400,7 @@ SDLCommonInit(SDLCommonState* state)
 
   return SDL_TRUE;
 }
+#ifndef SDL1
 
 static const char*
 DisplayOrientationName(int orientation)
@@ -1420,6 +1462,13 @@ ControllerButtonName(const SDL_GameControllerButton button)
   default: return "???";
   }
 }
+#endif
+
+#ifndef SDL_PRIu32
+#define SDL_PRIu32 "u"
+#define SDL_PRIs32 "d"
+#define SDL_PRIX32 "X"
+#endif
 
 static void
 SDLPrintEvent(SDL_Event* event)
@@ -1430,6 +1479,7 @@ SDLPrintEvent(SDL_Event* event)
   }
 
   switch (event->type) {
+#ifndef SDL1
   case SDL_DISPLAYEVENT:
     switch (event->display.event) {
     case SDL_DISPLAYEVENT_ORIENTATION:
@@ -1441,6 +1491,7 @@ SDLPrintEvent(SDL_Event* event)
         event->display.display, event->display.event);
       break;
     }
+#endif
     break;
   case SDL_WINDOWEVENT:
     switch (event->window.event) {
@@ -1492,12 +1543,14 @@ SDLPrintEvent(SDL_Event* event)
     case SDL_WINDOWEVENT_CLOSE:
       SDL_Log("SDL EVENT: Window %" SDL_PRIu32 " closed", event->window.windowID);
       break;
+#ifndef SDL1
     case SDL_WINDOWEVENT_TAKE_FOCUS:
       SDL_Log("SDL EVENT: Window %" SDL_PRIu32 " take focus", event->window.windowID);
       break;
     case SDL_WINDOWEVENT_HIT_TEST:
       SDL_Log("SDL EVENT: Window %" SDL_PRIu32 " hit test", event->window.windowID);
       break;
+#endif
     default:
       SDL_Log("SDL EVENT: Window %" SDL_PRIu32 " got unknown event 0x%4.4x",
         event->window.windowID, event->window.event);
@@ -1526,9 +1579,11 @@ SDLPrintEvent(SDL_Event* event)
     SDL_Log("SDL EVENT: Keyboard: text input \"%s\" in window %" SDL_PRIu32,
       event->text.text, event->text.windowID);
     break;
+#ifndef SDL1
   case SDL_KEYMAPCHANGED:
     SDL_Log("SDL EVENT: Keymap changed");
     break;
+
   case SDL_MOUSEMOTION:
     SDL_Log("SDL EVENT: Mouse: moved to %" SDL_PRIs32 ",%" SDL_PRIs32 " (%" SDL_PRIs32 ",%" SDL_PRIs32 ") in window %" SDL_PRIu32,
       event->motion.x, event->motion.y,
@@ -1631,6 +1686,7 @@ SDLPrintEvent(SDL_Event* event)
       event->cbutton.which, event->cbutton.button,
       ControllerButtonName((SDL_GameControllerButton)event->cbutton.button));
     break;
+#endif
   case SDL_CLIPBOARDUPDATE:
     SDL_Log("SDL EVENT: Clipboard updated");
     break;
@@ -1661,6 +1717,7 @@ SDLPrintEvent(SDL_Event* event)
     SDL_Log("SDL_EVENT: Multi gesture fingers: %d", event->mgesture.numFingers);
     break;
 
+#ifndef SDL1
   case SDL_RENDER_DEVICE_RESET:
     SDL_Log("SDL EVENT: render device reset");
     break;
@@ -1704,6 +1761,7 @@ SDLPrintEvent(SDL_Event* event)
   case SDL_USEREVENT:
     SDL_Log("SDL EVENT: User event %" SDL_PRIs32, event->user.code);
     break;
+#endif
   default:
     SDL_Log("Unknown event 0x%4.4" SDL_PRIu32, event->type);
     break;
@@ -1808,9 +1866,11 @@ break;
     case SDL_WINDOWEVENT_FOCUS_LOST:
       if (state->flash_on_focus_loss) {
         SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
+#ifndef _EMSCRIPTEN
         if (window) {
           SDL_FlashWindow(window, SDL_FLASH_UNTIL_FOCUSED);
         }
+#endif
       }
       break;
     default:
@@ -1849,6 +1909,7 @@ break;
     case SDLK_DOWN:
     case SDLK_LEFT:
     case SDLK_RIGHT:
+#ifndef SDL1
       if (withAlt) {
         /* Alt-Up/Down/Left/Right switches between displays */
         SDL_Window* window = SDL_GetWindowFromID(event->key.windowID);
@@ -1871,6 +1932,7 @@ break;
           }
         }
       }
+#endif
     case SDLK_RETURN:
       if (withAlt) {
         /* Ctrl-Enter toggle fullscreen */
@@ -1881,85 +1943,15 @@ break;
             SDL_SetWindowFullscreen(window, SDL_FALSE);
           }
           else {
+#ifndef SDL1
             SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#endif
           }
         }
       }
 
       break;
-    case SDLK_d:
-      if (withControl)
-      {
-        debugWindowShown = !debugWindowShown;
-        debugPaused = debugWindowShown;
-        debugStep = 0;
-      }
-      break;
-    case SDLK_F12:
-      debugWindowShown = 1;
-      debugPaused = 1;
-      debugStep = 0;
-      break;
-    case SDLK_F5:
-      debugPaused = 0;
-      debugStep = 0;
-      break;
-    case SDLK_PAGEUP:
-    case SDLK_KP_9:
-      if (withControl)
-      {
-        debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
-      }
-      else
-      {
-        debugMemoryAddr -= withShift ? 0x1000 : 64;
-      }
-      break;
-    case SDLK_PAGEDOWN:
-    case SDLK_KP_3:
-      if (withControl)
-      {
-        debugTmsMemoryAddr += withShift ? 0x1000 : 64;
-      }
-      else
-      {
-        debugMemoryAddr += withShift ? 0x1000 : 64;
-      }
-      break;
 
-    case SDLK_F11:
-      if (SDL_LockMutex(debugMutex) == 0)
-      {
-        if (debugPaused)
-        {
-          if (withShift)
-          {
-            debugStepOver = 0;
-            debugStepOut = 1;
-          }
-          else
-          {
-            debugStepOver = 0;
-            debugStep = 1;
-          }
-        }
-        SDL_UnlockMutex(debugMutex);
-      }
-      break;
-    case SDLK_F10:
-      if (SDL_LockMutex(debugMutex) == 0)
-      {
-        if (debugPaused)
-        {
-          debugStepOver = 1;
-          debugStep = 1;
-        }
-        SDL_UnlockMutex(debugMutex);
-      }
-      break;
-    case SDLK_ESCAPE:
-      *done = 1;
-      break;
     default:
       break;
     }
@@ -1971,12 +1963,14 @@ break;
   case SDL_MOUSEMOTION:
     lastEvent = event->motion;
     break;
-
+#ifndef SDL1
   case SDL_DROPFILE:
   case SDL_DROPTEXT:
     SDL_free(event->drop.file);
     break;
-  }
+#endif
+}
+
 }
 
 void
