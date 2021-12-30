@@ -70,12 +70,11 @@ typedef void (*DeviceAudioFn)(HBC56Device*, float*, int);
 /* event function pointer */
 typedef void (*DeviceEventFn)(HBC56Device*, SDL_Event*);
 
-
 /* device struct */
 struct HBC56Device
 {
   const char       *name;
-
+  
   DeviceResetFn     resetFn;
   DeviceDestroyFn   destroyFn;
   DeviceTickFn      tickFn;

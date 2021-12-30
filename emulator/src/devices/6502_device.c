@@ -18,11 +18,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-
-#include "SDL.h"
-
-extern void cpu6502_irq(void);
 
 static void reset6502CpuDevice(HBC56Device*);
 static void destroy6502CpuDevice(HBC56Device*);
@@ -116,7 +111,7 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
   {
     while (deltaTicks--)
     {
-      /* currently, we disable interrupts whiule debugging since the tms9918
+      /* currently, we disable interrupts while debugging since the tms9918
          will constantly trigger interrupts which don't allow debugging user code. 
          this will become an option */
       if (cpuDevice->currentState == CPU_RUNNING)
@@ -184,7 +179,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
       case CPU_STEP_OUT:
       {
         if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
-        if (cpuDevice->callStackPtr)
+        if (cpuDevice->callStackPtr > 1)
         {
           cpuDevice->breakMode = 0;
           cpuDevice->breakAddr = cpuDevice->callStack[cpuDevice->callStackPtr - 1] + 3;
@@ -217,6 +212,9 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
         cpuDevice->breakAddr = 0;
         break;
       }
+
+      case CPU_BREAK:
+        break;
     }
     cpuDevice->currentState = state;
   }

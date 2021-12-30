@@ -16,7 +16,6 @@
 
 #include "hbc56emu.h"
 #include "window.h"
-#include "cpu6502.h"
 
 #include "audio.h"
 
@@ -35,17 +34,10 @@
 #include <time.h>
 #include <string.h>
 
-extern uint16_t debugMemoryAddr;
-extern uint16_t debugTmsMemoryAddr;
-
-static char tempBuffer[256];
-
 static HBC56Device devices[HBC56_MAX_DEVICES];
 static int deviceCount = 0;
 
-HBC56Device *cpuDevice = NULL;
-
-int debugWindowShown = 1;
+static HBC56Device *cpuDevice = NULL;
 
 
 /* Function:  hbc56Reset
@@ -109,7 +101,12 @@ void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal)
   }
 }
 
-uint8_t mem_read_impl(uint16_t addr, int dbg)
+
+/* Function:  mem_read_impl
+ * --------------------
+ * read a value from a device
+ */
+static uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
   uint8_t val = 0xff;
   for (size_t i = 0; i < deviceCount; ++i)
@@ -122,14 +119,26 @@ uint8_t mem_read_impl(uint16_t addr, int dbg)
 }
 
 
+/* Function:  mem_read
+ * --------------------
+ * read a value from a device (regular mode)
+ */
 uint8_t mem_read(uint16_t addr) {
   return mem_read_impl(addr, 0);
 }
 
+/* Function:  mem_read_dbg
+ * --------------------
+ * read a value from a device (debugger mode)
+ */
 uint8_t mem_read_dbg(uint16_t addr) {
   return mem_read_impl(addr, 1);
 }
 
+/* Function:  mem_write
+ * --------------------
+ * write a valude to a device
+ */
 void mem_write(uint16_t addr, uint8_t val)
 {
   for (size_t i = 0; i < deviceCount; ++i)
@@ -140,29 +149,28 @@ void mem_write(uint16_t addr, uint8_t val)
 }
 
 
-static SDLCommonState* state;
-
-int done;
-
-static double perfFreq = 0.0;
-
+/* emulator constants */
 #define LOGICAL_DISPLAY_SIZE_X 320
 #define LOGICAL_DISPLAY_SIZE_Y 240
 #define LOGICAL_DISPLAY_BPP    3
 
-#define LOGICAL_WINDOW_SIZE_X (LOGICAL_DISPLAY_SIZE_X * 2)
-#define LOGICAL_WINDOW_SIZE_Y (LOGICAL_DISPLAY_SIZE_Y * 1.5)
+/* emulator state */
+static SDLCommonState* state;
+static int done;
+static double perfFreq = 0.0;
+static int debugWindowShown = 1;
+static int tickCount = 0;
+
+static uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
+static SDL_Texture* debugWindowTex = NULL;
 
 
-#define TMS_OFFSET_X ((LOGICAL_DISPLAY_SIZE_X - TMS9918A_PIXELS_X) / 2)
-#define TMS_OFFSET_Y ((LOGICAL_DISPLAY_SIZE_Y - TMS9918A_PIXELS_Y) / 2)
-
-uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
-SDL_Texture* debugWindowTex = NULL;
-
-
-
-void doTick()
+/* Function:  doTick
+ * --------------------
+ * regular "tick" for devices. devices can use either real time or clock ticks
+ * to update their state
+ */
+static void doTick()
 {
   static double lastTime = 0.0;
   static double unusedClockTicksTime = 0.0;
@@ -185,7 +193,11 @@ void doTick()
   lastTime = thisTime;
 }
 
-void doRender()
+/* Function:  doRender
+ * --------------------
+ * render the various displays to the window
+ */
+static void doRender()
 {
   SDL_RenderClear(state->renderers[0]);
 
@@ -193,7 +205,7 @@ void doRender()
   dest.x = 0;
   dest.y = 0;
   dest.w = (int)(LOGICAL_DISPLAY_SIZE_X * 3);
-  dest.h = (int)(LOGICAL_WINDOW_SIZE_Y * 2);
+  dest.h = (int)(LOGICAL_DISPLAY_SIZE_Y * 3);
 
   if (!debugWindowShown)
   {
@@ -251,8 +263,161 @@ void doRender()
 }
 
 
-static int tickCount = 0;
-void loop()
+/* Function:  doEvents
+ * --------------------
+ * handle events which control emulator / debugger
+ */
+static void doEvents()
+{
+  extern uint16_t debugMemoryAddr;
+  extern uint16_t debugTmsMemoryAddr;
+
+  SDL_Event event;
+  while (SDL_PollEvent(&event))
+  {
+    int skipProcessing = 0;
+    switch (event.type)
+    {
+    case SDL_KEYDOWN:
+    {
+      skipProcessing = 1;
+      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+      SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+      SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+
+      switch (event.key.keysym.sym)
+      {
+      case SDLK_r:
+        if (withControl)
+        {
+          hbc56Reset();
+        }
+        else
+        {
+          skipProcessing = 0;
+        }
+        break;
+
+      case SDLK_d:
+        if (withControl)
+        {
+          debugWindowShown = !debugWindowShown;
+          debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
+        }
+        break;
+      case SDLK_F2:
+        hbc56Audio(withControl == 0);
+        break;
+      case SDLK_F12:
+        debugWindowShown = 1;
+        debug6502State(cpuDevice, CPU_BREAK);
+        break;
+      case SDLK_F5:
+        debug6502State(cpuDevice, CPU_RUNNING);
+        break;
+      case SDLK_PAGEUP:
+      case SDLK_KP_9:
+        if (withControl)
+        {
+          debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
+        }
+        else
+        {
+          debugMemoryAddr -= withShift ? 0x1000 : 64;
+        }
+        break;
+      case SDLK_PAGEDOWN:
+      case SDLK_KP_3:
+        if (withControl)
+        {
+          debugTmsMemoryAddr += withShift ? 0x1000 : 64;
+        }
+        else
+        {
+          debugMemoryAddr += withShift ? 0x1000 : 64;
+        }
+        break;
+
+      case SDLK_F11:
+        if (withShift)
+        {
+          debug6502State(cpuDevice, CPU_STEP_OUT);
+        }
+        else
+        {
+          debug6502State(cpuDevice, CPU_STEP_INTO);
+        }
+        break;
+      case SDLK_F10:
+        debug6502State(cpuDevice, CPU_STEP_OVER);
+        break;
+      case SDLK_ESCAPE:
+#ifdef __EMSCRIPTEN__
+        hbc56Reset();
+#else
+        done = 1;
+#endif
+        break;
+
+      default:
+        skipProcessing = 0;
+      }
+    }
+
+    case SDL_KEYUP:
+    {
+      skipProcessing = 1;
+      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+      SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+      SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+
+      switch (event.key.keysym.sym)
+      {
+      case SDLK_r:
+        if (!withControl) skipProcessing = 0;
+        break;
+
+      case SDLK_d:
+        if (!withControl) skipProcessing = 0;
+        break;
+
+      case SDLK_F2:
+      case SDLK_F12:
+      case SDLK_F5:
+      case SDLK_PAGEUP:
+      case SDLK_KP_9:
+      case SDLK_PAGEDOWN:
+      case SDLK_KP_3:
+      case SDLK_F11:
+      case SDLK_F10:
+      case SDLK_ESCAPE:
+        skipProcessing = 1;
+        break;
+
+      default:
+        skipProcessing = 0;
+        break;
+      }
+      break;
+    }
+    }
+
+    if (!skipProcessing)
+    {
+      for (size_t i = 0; i < deviceCount; ++i)
+      {
+        eventDevice(&devices[i], &event);
+      }
+    }
+    SDLCommonEvent(state, &event, &done);
+  }
+}
+
+/* Function:  loop
+ * --------------------
+ * the main loop. will be called many times per frame
+ */
+static void loop()
 {
   static uint32_t lastRenderTicks = 0;
 
@@ -267,147 +432,10 @@ void loop()
 
     lastRenderTicks = currentTicks;
     tickCount = 0;
+
+    doEvents();
   }
-  
-  SDL_Event event;
-  while (SDL_PollEvent(&event))
-  {
-    int skipProcessing = 0;
-    switch (event.type)
-    {
-      case SDL_KEYDOWN:
-      {
-        skipProcessing = 1;
-        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
 
-        switch (event.key.keysym.sym)
-        {
-          case SDLK_r:
-            if (withControl)
-            {
-              hbc56Reset();
-            }
-            else
-            {
-              skipProcessing = 0;
-            }
-            break;
-
-          case SDLK_d:
-            if (withControl)
-            {
-              debugWindowShown = !debugWindowShown;
-              debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
-            }
-            break;
-          case SDLK_F2:
-            hbc56Audio(withControl == 0);
-            break;
-          case SDLK_F12:
-            debugWindowShown = 1;
-            debug6502State(cpuDevice, CPU_BREAK);
-            break;
-          case SDLK_F5:
-            debug6502State(cpuDevice, CPU_RUNNING);
-            break;
-          case SDLK_PAGEUP:
-          case SDLK_KP_9:
-            if (withControl)
-            {
-              debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
-            }
-            else
-            {
-              debugMemoryAddr -= withShift ? 0x1000 : 64;
-            }
-            break;
-          case SDLK_PAGEDOWN:
-          case SDLK_KP_3:
-            if (withControl)
-            {
-              debugTmsMemoryAddr += withShift ? 0x1000 : 64;
-            }
-            else
-            {
-              debugMemoryAddr += withShift ? 0x1000 : 64;
-            }
-            break;
-
-          case SDLK_F11:
-            if (withShift)
-            {
-              debug6502State(cpuDevice, CPU_STEP_OUT);
-            }
-            else
-            {
-              debug6502State(cpuDevice, CPU_STEP_INTO);
-            }
-            break;
-          case SDLK_F10:
-            debug6502State(cpuDevice, CPU_STEP_OVER);
-            break;
-          case SDLK_ESCAPE:
-#ifdef __EMSCRIPTEN__
-            hbc56Reset();
-#else
-            done = 1;
-#endif
-            break;
-
-         default:
-           skipProcessing = 0;
-        }
-      }
-
-      case SDL_KEYUP:
-      {
-        skipProcessing = 1;
-        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
-
-        switch (event.key.keysym.sym)
-        {
-          case SDLK_r:
-            if (!withControl) skipProcessing = 0;
-            break;
-
-          case SDLK_d:
-            if (!withControl) skipProcessing = 0;
-            break;
-
-          case SDLK_F2:
-          case SDLK_F12:
-          case SDLK_F5:
-          case SDLK_PAGEUP:
-          case SDLK_KP_9:
-          case SDLK_PAGEDOWN:
-          case SDLK_KP_3:
-          case SDLK_F11:
-          case SDLK_F10:
-          case SDLK_ESCAPE:
-            skipProcessing = 1;
-            break;
-
-          default:
-            skipProcessing = 0;
-            break;
-        }
-        break;
-      }
-    }
-
-    if (!skipProcessing)
-    {
-      for (size_t i = 0; i < deviceCount; ++i)
-      {
-        eventDevice(&devices[i], &event);
-      }
-    }
-    SDLCommonEvent(state, &event, &done);
-  }
 
 #ifdef __EMSCRIPTEN__
   if (done) {
@@ -416,7 +444,12 @@ void loop()
 #endif
 }
 
-void wasmLoop()
+#ifdef __EMSCRIPTEN__
+/* Function:  wasmLoop
+ * --------------------
+ * calls loop() as many times as it can per frame
+ */
+static void wasmLoop()
 {
   while (1)
   {
@@ -424,12 +457,18 @@ void wasmLoop()
     if (tickCount == 0) break;
   }
 }
+#endif
 
 
-char labelMapFile[FILENAME_MAX] = { 0 };
+static char labelMapFile[FILENAME_MAX] = { 0 };
+static char tempBuffer[256];
 
 
-int loadRom(const char* filename)
+/* Function:  loadRom
+ * --------------------
+ * loads a rom from disk and creates the rom device
+ */
+static int loadRom(const char* filename)
 {
   FILE* ptr = NULL;
   int romLoaded = 0;
@@ -479,43 +518,54 @@ int loadRom(const char* filename)
   return romLoaded;
 }
 
-
+/* Function:  main
+ * --------------------
+ * the program entry point
+ */
 int main(int argc, char* argv[])
 {
   perfFreq = (double)SDL_GetPerformanceFrequency();
 
-  /* Enable standard application logging */
+  /* enable standard application logging */
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
 
-  /* Initialize test framework */
+  /* initialize test framework */
   state = SDLCommonCreateState(argv, SDL_INIT_VIDEO | SDL_INIT_AUDIO);
   if (!state) {
     return 1;
   }
 
+  /* window title */
   SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator");
   state->window_title = tempBuffer;
+
+  /* add the cpu device */
+  cpuDevice = hbc56AddDevice(create6502CpuDevice());
 
   int romLoaded = 0;
   LCDType lcdType = LCD_NONE;
   int keyboardMode = 0;
 
 #if __EMSCRIPTEN__
+  /* load the hard-coded rom */
   romLoaded = loadRom("rom.bin");
   keyboardMode = 1;
   lcdType = LCD_GRAPHICS;
 #endif
 
-  cpuDevice = hbc56AddDevice(create6502CpuDevice());
-
-  for (int i = 1; i < argc;) {
+  /* parse arguments */
+  for (int i = 1; i < argc;)
+  {
     int consumed;
 
     consumed = SDLCommonArg(state, i);
-    if (consumed <= 0) {
+    if (consumed <= 0)
+    {
       consumed = -1;
-      if (SDL_strcasecmp(argv[i], "--rom") == 0) {
-        if (argv[i + 1]) {
+      if (SDL_strcasecmp(argv[i], "--rom") == 0)
+      {
+        if (argv[i + 1])
+        {
           consumed = 1;
           romLoaded = loadRom(argv[++i]);
         }
@@ -554,7 +604,8 @@ int main(int argc, char* argv[])
         }
       }
     }
-    if (consumed < 0) {
+    if (consumed < 0)
+    {
       static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]", NULL };
       SDLCommonLogUsage(state, argv[0], options);
       return 2;
@@ -562,7 +613,8 @@ int main(int argc, char* argv[])
     i += consumed;
   }
 
-  if (romLoaded == 0) {
+  if (romLoaded == 0)
+  {
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL };
     SDLCommonLogUsage(state, argv[0], options);
 
@@ -578,6 +630,8 @@ int main(int argc, char* argv[])
     return 2;
   }
 
+
+  /* add the various devices */
   hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
 
 #if HBC56_HAVE_TMS9918
@@ -600,10 +654,12 @@ int main(int argc, char* argv[])
 #if HBC56_HAVE_AY_3_8910
   hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
   #if HBC56_AY_3_8910_COUNT > 1
-  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
-#endif
+    hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
+  #endif
 #endif
 
+
+  /* set up the display */
   SDL_Renderer* renderer = state->renderers[0];
   SDL_RenderClear(renderer);
   debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
@@ -612,22 +668,23 @@ int main(int argc, char* argv[])
   SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
 #endif
 
+  /* randomise */
   srand((unsigned int)time(NULL));
 
-#if HBC56_HAVE_THREADS
-  SDL_CreateThread(cpuThread, "CPU", NULL);
-#endif
-
-  /* Main render loop */
   done = 0;
 
+  /* initialise audio */
+  hbc56Audio(1);
+
+  /* reset the machine */
   hbc56Reset();
 
+  /* initialise the debugger */
   debuggerInit(cpu6502_get_regs(), labelMapFile);
-  hbc56Audio(1);
 
   SDL_Delay(100);
 
+  /* loop until done */
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(wasmLoop, 0, 1);
 #else
@@ -637,13 +694,11 @@ int main(int argc, char* argv[])
   }
 #endif
 
+  /* clean up  */
   for (size_t i = 0; i < deviceCount; ++i)
   {
     destroyDevice(&devices[i]);
   }
-
-  // cool down audio
-  SDL_Delay(250);
 
   hbc56Audio(0);
 

@@ -36,14 +36,14 @@ extern uint8_t mem_read_dbg(uint16_t addr);
 uint16_t debugMemoryAddr = 0;
 uint16_t debugTmsMemoryAddr = 0;
 
-CPU6502Regs *cpuStatus = NULL;
+static CPU6502Regs *cpuStatus = NULL;
 
 static const char *labelMap[0x10000] = {0};
 static HBC56Device* tms9918 = NULL;
 
-char tmpBuffer[256] = {0};
+static char tmpBuffer[256] = {0};
 
-int isProbablyConstant(const char* str)
+static int isProbablyConstant(const char* str)
 {
   SDL_strlcpy(tmpBuffer, str, sizeof(tmpBuffer) - 1);
   SDL_strupr(tmpBuffer);
@@ -138,14 +138,14 @@ void debuggerInitTms(HBC56Device* tms)
 }
 
 
-char hexDigit(char val)
+static char hexDigit(char val)
 {
   if (val < 10)
     return val + '0';
   return (val - 10) + 'A';
 }
 
-void debuggerOutputChar(char c,int x,int y)
+static void debuggerOutputChar(char c,int x,int y)
 {
   if (x >= DEBUGGER_CHARS_X || y >= DEBUGGER_CHARS_Y || x < 0 || y < 0)
     return;
@@ -171,7 +171,7 @@ void debuggerOutputChar(char c,int x,int y)
   }
 }
 
-void debuggerOutputRect(int x, int y, int w, int h) {
+static void debuggerOutputRect(int x, int y, int w, int h) {
   char* rp = debuggerFrameBuffer + y * DEBUGGER_STRIDE + x * DEBUGGER_BPP;
   for (int r = 0; r < h; ++r)
   {
@@ -187,19 +187,19 @@ void debuggerOutputRect(int x, int y, int w, int h) {
 }
 
 
-void debuggerOutputHex(char c,int x,int y)
+static void debuggerOutputHex(char c,int x,int y)
 {
   debuggerOutputChar(hexDigit((c & 0xf0) >> 4),x,y);
   debuggerOutputChar(hexDigit(c & 0x0f),x + 1,y);
 }
 
-void debuggerOutputHex16(unsigned short w,int x,int y)
+static void debuggerOutputHex16(unsigned short w,int x,int y)
 {
   debuggerOutputHex((w & 0xff00) >> 8,x,y);
   debuggerOutputHex(w & 0x00ff,x + 2,y);
 }
 
-void debuggerOutput(const char* str,int x,int y)
+static void debuggerOutput(const char* str,int x,int y)
 {
   const char *p = str;
 
@@ -270,7 +270,7 @@ static const int disassemblyVpos = 6;
 
 
 
-int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
+static int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
 {
   uint8_t addr = mem_read_dbg((*pc)++);
 
@@ -308,7 +308,7 @@ int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
   return len;
 }
 
-int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value)
+static int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value)
 {
   uint16_t addr = mem_read_dbg((*pc)++);
 
