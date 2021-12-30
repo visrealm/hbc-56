@@ -23,15 +23,15 @@ typedef struct
 {
   /* SDL init flags */
   char** argv;
-  Uint32 flags;
-  Uint32 verbose;
+  uint32_t flags;
+  uint32_t verbose;
 
   /* Video info */
   const char* videodriver;
   int display;
   const char* window_title;
   const char* window_icon;
-  Uint32 window_flags;
+  uint32_t window_flags;
   SDL_bool flash_on_focus_loss;
   int window_x;
   int window_y;
@@ -51,7 +51,7 @@ typedef struct
 
   /* Renderer info */
   const char* renderdriver;
-  Uint32 render_flags;
+  uint32_t render_flags;
   SDL_bool skip_renderer;
   SDL_Renderer** renderers;
   SDL_Texture** targets;
@@ -100,7 +100,7 @@ extern "C" {
    *
    * \returns a newly allocated common state object.
    */
-  SDLCommonState* SDLCommonCreateState(char** argv, Uint32 flags);
+  SDLCommonState* SDLCommonCreateState(char** argv, uint32_t flags);
 
   /**
    * \brief Process one common argument.

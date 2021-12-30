@@ -14,13 +14,16 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include "config.h"
+#include "hbc56emu.h"
 #include "window.h"
 #include "cpu6502.h"
+
+#include "audio.h"
 
 #include "debugger/debugger.h"
 
 #include "devices/memory_device.h"
+#include "devices/6502_device.h"
 #include "devices/tms9918_device.h"
 #include "devices/lcd_device.h"
 #include "devices/keyboard_device.h"
@@ -35,19 +38,76 @@
 extern uint16_t debugMemoryAddr;
 extern uint16_t debugTmsMemoryAddr;
 
-#ifndef _MAX_PATH 
-#define _MAX_PATH 256
-#endif
+static char tempBuffer[256];
 
-char winTitleBuffer[_MAX_PATH];
+static HBC56Device devices[HBC56_MAX_DEVICES];
+static int deviceCount = 0;
 
-#define MAX_DEVICES 16
-HBC56Device devices[MAX_DEVICES];
-int deviceCount = 0;
+HBC56Device *cpuDevice = NULL;
 
-SDL_AudioDeviceID audioDevice = 0;
+int debugWindowShown = 1;
 
-int keyboardMode = 0;
+
+/* Function:  hbc56Reset
+ * --------------------
+ * hardware reset the hbc-56
+ */
+void hbc56Reset()
+{
+  for (size_t i = 0; i < deviceCount; ++i)
+  {
+    resetDevice(&devices[i]);
+  }
+
+  debug6502State(cpuDevice, CPU_RUNNING);
+}
+
+/* Function:  hbc56NumDevices
+ * --------------------
+ * return the number of devices present
+ */
+int hbc56NumDevices()
+{
+  return deviceCount;
+}
+
+/* Function:  hbc56Device
+ * --------------------
+ * return a pointer to the given device
+ */
+HBC56Device* hbc56Device(size_t deviceNum)
+{
+  if (deviceNum < deviceCount)
+    return &devices[deviceNum];
+  return NULL;
+}
+
+/* Function:  hbc56AddDevice
+ * --------------------
+ * add a new device
+ * returns a pointer to the added device
+ */
+HBC56Device* hbc56AddDevice(HBC56Device device)
+{
+  if (deviceCount < (HBC56_MAX_DEVICES - 1))
+  {
+    devices[deviceCount] = device;
+    return &devices[deviceCount++];
+  }
+  return NULL;
+}
+
+/* Function:  hbc56Interrupt
+ * --------------------
+ * raise or release an interrupt
+ */
+void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal)
+{
+  if (cpuDevice)
+  {
+    interrupt6502(cpuDevice, type, signal);
+  }
+}
 
 uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
@@ -83,59 +143,8 @@ void mem_write(uint16_t addr, uint8_t val)
 static SDLCommonState* state;
 
 int done;
-int completedWarmUpSamples = 0;
 
-void hbc56AudioCallback(
-  void* userdata,
-  Uint8* stream,
-  int    len)
-{
-  int samples = len / (sizeof(float) * 2);
-  float* str = (float*)stream;
-
-  memset(str, 0, len);
-
-  for (size_t i = 0; i < deviceCount; ++i)
-  {
-    renderAudioDevice(&devices[i], str, samples);
-  }
-}
-
-
-void hbc56Audio(int start)
-{
-  if (start)
-  {
-    SDL_InitSubSystem(SDL_INIT_AUDIO);
-
-    SDL_AudioSpec want, have;
-
-    SDL_memset(&want, 0, sizeof(want));
-    want.freq = HBC56_AUDIO_FREQ;
-    want.format = AUDIO_F32SYS;
-    want.channels = 2;
-    want.samples = want.freq / 60;
-    want.callback = hbc56AudioCallback;
-    audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-    SDL_PauseAudioDevice(audioDevice, 0);
-  }
-  else
-  {
-    SDL_PauseAudioDevice(audioDevice, 1);
-    SDL_CloseAudioDevice(audioDevice);
-  }
-}
-
-
-uint64_t totalCpuTicks = 0;
-Uint32 lastRenderTicks = 0;
-
-int callCount = 0;
-double perfFreq = 0.0;
-double currentFreq = 0.0;
-int triggerIrq = 0;
-
-Uint32 lastSecond = 0;
+static double perfFreq = 0.0;
 
 #define LOGICAL_DISPLAY_SIZE_X 320
 #define LOGICAL_DISPLAY_SIZE_Y 240
@@ -150,124 +159,30 @@ Uint32 lastSecond = 0;
 
 uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
 SDL_Texture* debugWindowTex = NULL;
-int debugWindowShown = 1;
-int debugStep = 0;
-int debugStepOver = 0;
-int debugPaused = 0;
-int debugStepOut = 0;
-uint16_t callStack[128] = { 0 };
-int callStackPtr = 0;
-
-#if HBC56_HAVE_THREADS
-
-int SDLCALL cpuThread(void* unused)
-{
-#endif
-  double ticksPerClock = 1.0 / (double)HBC56_CLOCK_FREQ;
-
-  double lastTime = 0.0;
-  double thisLoopStartTime = 0;
-  double initialLastTime = 0;
-  uint16_t breakPc = 0;
-
-#if !HBC56_HAVE_THREADS
-  void cpuTick()
-  {
-#else
-  while (1)
-  {
-#endif
-    if (lastTime == 0.0)
-    {
-      lastTime = (double)SDL_GetPerformanceCounter() / perfFreq;
-    }
-
-    double currentTime = (double)SDL_GetPerformanceCounter() / perfFreq;
-    Uint64 thisLoopTicks = 0;
-    initialLastTime = lastTime;
-    while (lastTime < currentTime)
-    {
-      if (triggerIrq && !debugPaused)
-      {
-        cpu6502_irq();
-        triggerIrq = 0;
-      }
-
-      uint8_t opcode = mem_read(cpu6502_get_regs()->pc);
-      int isJsr = (opcode == 0x20);
-      int isRts = (opcode == 0x60);
-
-      if (debugStepOver && !breakPc)
-      {
-        if (isJsr)
-        {
-          breakPc = cpu6502_get_regs()->pc + 3;
-        }
-        debugStepOver = 0;
-      }
-
-      if (!debugPaused || debugStep || breakPc)
-      {
-        thisLoopTicks += cpu6502_single_step();
-        debugStep = 0;
-        if (cpu6502_get_regs()->pc == breakPc)
-        {
-          breakPc = 0;
-        }
-        else if (cpu6502_get_regs()->lastOpcode == 0xDB)
-        {
-          debugPaused = debugWindowShown = 1;
-        }
-      }
-      lastTime = initialLastTime + (thisLoopTicks * ticksPerClock);
-#if !HBC56_HAVE_THREADS
-      if (debugPaused) break;
-#endif
-    }
-
-    totalCpuTicks += thisLoopTicks;
-
-    //SDL_Delay(1);
-
-    double tmpFreq = (double)SDL_GetPerformanceCounter() / perfFreq - currentTime;
-    currentFreq = currentFreq * 0.9 + (((double)thisLoopTicks / tmpFreq) / 1000000.0) * 0.1;
-  }
-#if HBC56_HAVE_THREADS
-  return 0;
-  }
-#endif
-
-void hbc56Reset()
-{
-  debugPaused = 0;
-
-  for (size_t i = 0; i < deviceCount; ++i)
-  {
-    resetDevice(&devices[i]);
-  }
-
-  cpu6502_rst();
-}
 
 
-double mainLoopLastTime = 0.0;
-uint64_t mainLoopLastTicks = 0;
 
 void doTick()
 {
+  static double lastTime = 0.0;
+  static double unusedClockTicksTime = 0.0;
+
   double thisTime = (double)SDL_GetPerformanceCounter() / perfFreq;
 
-  if (mainLoopLastTime != 0)
+  double deltaClockTicksDbl = HBC56_CLOCK_FREQ * (thisTime - lastTime) + unusedClockTicksTime;
+
+  uint32_t deltaClockTicks = (uint32_t)deltaClockTicksDbl;
+  unusedClockTicksTime = deltaClockTicksDbl - (double)deltaClockTicks;
+
+  if (lastTime != 0)
   {
     for (size_t i = 0; i < deviceCount; ++i)
     {
-      tickDevice(&devices[i], (uint32_t)(totalCpuTicks - mainLoopLastTicks), thisTime - mainLoopLastTime);
+      tickDevice(&devices[i], deltaClockTicks, thisTime - lastTime);
     }
   }
 
-  mainLoopLastTime = thisTime;
-  mainLoopLastTicks = totalCpuTicks;
-
+  lastTime = thisTime;
 }
 
 void doRender()
@@ -336,20 +251,16 @@ void doRender()
 }
 
 
-
-int tickCount = 0;
-void
-loop()
+static int tickCount = 0;
+void loop()
 {
-#if !HBC56_HAVE_THREADS
-  cpuTick();
-#endif
+  static uint32_t lastRenderTicks = 0;
 
   doTick();
 
   ++tickCount;
 
-  Uint32 currentTicks = SDL_GetTicks();
+  uint32_t currentTicks = SDL_GetTicks();
   if ((currentTicks - lastRenderTicks) > 17)
   {
     doRender();
@@ -388,8 +299,7 @@ loop()
             if (withControl)
             {
               debugWindowShown = !debugWindowShown;
-              debugPaused = debugWindowShown;
-              debugStep = 0;
+              debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
             }
             break;
           case SDLK_F2:
@@ -397,12 +307,10 @@ loop()
             break;
           case SDLK_F12:
             debugWindowShown = 1;
-            debugPaused = 1;
-            debugStep = 0;
+            debug6502State(cpuDevice, CPU_BREAK);
             break;
           case SDLK_F5:
-            debugPaused = 0;
-            debugStep = 0;
+            debug6502State(cpuDevice, CPU_RUNNING);
             break;
           case SDLK_PAGEUP:
           case SDLK_KP_9:
@@ -428,29 +336,20 @@ loop()
             break;
 
           case SDLK_F11:
-            if (debugPaused)
+            if (withShift)
             {
-              if (withShift)
-              {
-                debugStepOver = 0;
-                debugStepOut = 1;
-              }
-              else
-              {
-                debugStepOver = 0;
-                debugStep = 1;
-              }
+              debug6502State(cpuDevice, CPU_STEP_OUT);
+            }
+            else
+            {
+              debug6502State(cpuDevice, CPU_STEP_INTO);
             }
             break;
           case SDLK_F10:
-            if (debugPaused)
-            {
-              debugStepOver = 1;
-              debugStep = 1;
-            }
+            debug6502State(cpuDevice, CPU_STEP_OVER);
             break;
           case SDLK_ESCAPE:
-#ifdef _EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
             hbc56Reset();
 #else
             done = 1;
@@ -517,6 +416,16 @@ loop()
 #endif
 }
 
+void wasmLoop()
+{
+  while (1)
+  {
+    loop();
+    if (tickCount == 0) break;
+  }
+}
+
+
 char labelMapFile[FILENAME_MAX] = { 0 };
 
 
@@ -525,13 +434,14 @@ int loadRom(const char* filename)
   FILE* ptr = NULL;
   int romLoaded = 0;
 
-#ifdef _EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
   ptr = fopen(filename, "rb");
 #else
   fopen_s(&ptr, filename, "rb");
 #endif
 
-  SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Troy's HBC-56 Emulator - %s", filename);
+  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %s", filename);
+  state->window_title = tempBuffer;
 
   if (ptr)
   {
@@ -541,16 +451,16 @@ int loadRom(const char* filename)
 
     if (romBytesRead != sizeof(rom))
     {
-#ifndef _EMSCRIPTEN
-      SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' must be %d bytes.", filename, (int)sizeof(rom));
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#ifndef __EMSCRIPTEN__
+      SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file '%s' must be %d bytes.", filename, (int)sizeof(rom));
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
 #endif
     }
     else
     {
       romLoaded = 1;
 
-      devices[deviceCount++] = createRomDevice(HBC56_ROM_START, HBC56_ROM_END, rom);
+      hbc56AddDevice(createRomDevice(HBC56_ROM_START, HBC56_ROM_END, rom));
 
       SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
       size_t ln = SDL_strlen(labelMapFile);
@@ -559,9 +469,9 @@ int loadRom(const char* filename)
   }
   else
   {
-#ifndef _EMSCRIPTEN
-    SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Error. ROM file '%s' does not exist.", filename);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#ifndef __EMSCRIPTEN__
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file '%s' does not exist.", filename);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
 #endif
     return 2;
   }
@@ -570,34 +480,35 @@ int loadRom(const char* filename)
 }
 
 
-int
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-  int i;
-  Uint32 then, frames;
-
   perfFreq = (double)SDL_GetPerformanceFrequency();
 
   /* Enable standard application logging */
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
-
-  SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "Troy's HBC-56 Emulator");
 
   /* Initialize test framework */
   state = SDLCommonCreateState(argv, SDL_INIT_VIDEO | SDL_INIT_AUDIO);
   if (!state) {
     return 1;
   }
+
+  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator");
+  state->window_title = tempBuffer;
+
   int romLoaded = 0;
   LCDType lcdType = LCD_NONE;
+  int keyboardMode = 0;
 
-#if _EMSCRIPTEN
+#if __EMSCRIPTEN__
   romLoaded = loadRom("rom.bin");
   keyboardMode = 1;
   lcdType = LCD_GRAPHICS;
 #endif
 
-  for (i = 1; i < argc;) {
+  cpuDevice = hbc56AddDevice(create6502CpuDevice());
+
+  for (int i = 1; i < argc;) {
     int consumed;
 
     consumed = SDLCommonArg(state, i);
@@ -613,7 +524,7 @@ main(int argc, char* argv[])
       else if (SDL_strcasecmp(argv[i], "--brk") == 0)
       {
         consumed = 1;
-        debugPaused = 1;
+        debug6502State(cpuDevice, CPU_BREAK);
       }
       /* use keyboard instead of NES controller */
       else if (SDL_strcasecmp(argv[i], "--keyboard") == 0)
@@ -655,43 +566,41 @@ main(int argc, char* argv[])
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL };
     SDLCommonLogUsage(state, argv[0], options);
 
-#ifndef _EMSCRIPTEN
-    SDL_snprintf(winTitleBuffer, sizeof(winTitleBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", winTitleBuffer, NULL);
+#ifndef __EMSCRIPTEN__
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
 #endif
 
     return 2;
   }
-
-  state->window_title = winTitleBuffer;
 
   if (!SDLCommonInit(state)) {
     return 2;
   }
 
-  devices[deviceCount++] = createRamDevice(HBC56_RAM_START, HBC56_RAM_END);
+  hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
 
 #if HBC56_HAVE_TMS9918
-  devices[deviceCount++] = createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), state->renderers[0]);
-  debuggerInitTms(&devices[deviceCount - 1]);
+  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), state->renderers[0]));
+  debuggerInitTms(tms9918Device);
 #endif
 
 #if HBC56_HAVE_KB
-  if (keyboardMode) devices[deviceCount++] = createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT));
+  if (keyboardMode) hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT)));
 #endif
 
 #if HBC56_HAVE_NES
-  if (!keyboardMode) devices[deviceCount++] = createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT));
+  if (!keyboardMode) hbc56AddDevice(createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT)));
 #endif
 
 #if HBC56_HAVE_LCD
-  devices[deviceCount++] = createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]);
+  hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]));
 #endif
 
 #if HBC56_HAVE_AY_3_8910
-  devices[deviceCount++] = createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ);
+  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
   #if HBC56_AY_3_8910_COUNT > 1
-    devices[deviceCount++] = createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ);
+  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
 #endif
 #endif
 
@@ -699,7 +608,7 @@ main(int argc, char* argv[])
   SDL_RenderClear(renderer);
   debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
 
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
   SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
 #endif
 
@@ -710,8 +619,6 @@ main(int argc, char* argv[])
 #endif
 
   /* Main render loop */
-  frames = 0;
-  then = SDL_GetTicks();
   done = 0;
 
   hbc56Reset();
@@ -721,21 +628,19 @@ main(int argc, char* argv[])
 
   SDL_Delay(100);
 
-#ifdef _EMSCRIPTEN
-  emscripten_set_main_loop(loop, 0, 1);
+#ifdef __EMSCRIPTEN__
+  emscripten_set_main_loop(wasmLoop, 0, 1);
 #else
-  while (!done) {
-    ++frames;
+  while (!done)
+  {
     loop();
   }
 #endif
-
 
   for (size_t i = 0; i < deviceCount; ++i)
   {
     destroyDevice(&devices[i]);
   }
-
 
   // cool down audio
   SDL_Delay(250);

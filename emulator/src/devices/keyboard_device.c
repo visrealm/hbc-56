@@ -43,7 +43,7 @@ HBC56Device createKeyboardDevice(
   KeyboardDevice* keyboardDevice = (KeyboardDevice*)malloc(sizeof(KeyboardDevice));
   if (keyboardDevice)
   {
-    memset(keyboardDevice, 0, sizeof(KeyboardDevice));
+    SDL_memset(keyboardDevice, 0, sizeof(KeyboardDevice));
     keyboardDevice->addr = addr;
     device.data = keyboardDevice;
 

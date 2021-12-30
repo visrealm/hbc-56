@@ -20,6 +20,7 @@
 
 #define HBC56_CLOCK_FREQ        4000000
 #define HBC56_AUDIO_FREQ        48000
+#define HBC56_MAX_DEVICES       16
 
 /* memory map configuration values 
   -------------------------------------------------------------------------- */

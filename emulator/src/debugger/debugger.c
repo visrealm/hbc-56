@@ -57,7 +57,7 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename)
   bgColor = 0x00000000;
 
   FILE* ptr = NULL;
-#ifdef _EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
   ptr = fopen(labelMapFilename, "r");
 #else
   fopen_s(&ptr, labelMapFilename, "r");

@@ -12,13 +12,16 @@
 #include "tms9918_device.h"
 
 #include "tms9918_core.h"
+
+#include "../hbc56emu.h"
+
 #include "SDL.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-extern void cpu6502_irq(void);
+extern int triggerIrq;
 
 static void resetTms9918Device(HBC56Device*);
 static void destroyTms9918Device(HBC56Device*);
@@ -103,7 +106,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Rendere
 
     device.output = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                       TMS9918_DISPLAY_WIDTH, TMS9918_DISPLAY_HEIGHT);
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
     SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
 #endif
 
@@ -179,9 +182,9 @@ static void renderTms9918Device(HBC56Device* device)
  * --------------------
  * renders the portion of the screen since the last call. relies on deltaTime to determine
  * how much of the screen to render. this style of rendering allows mid-frame changes to be
- * shown in the display if called frequently enough
+ * shown in the display if called frequently enough. you can achieve beam racing effects.
  */
- int c = 0;
+int c = 0;
 static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double deltaTime)
 {
   TMS9918Device* tmsDevice = getTms9918Device(device);
@@ -190,65 +193,73 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
     /* determine portion of frame to render */
     deltaTime += tmsDevice->unusedTime;
 
+    /* how many pixels are we rendering? */
     double thisStepTotalPixelsDbl = 0.0;
     tmsDevice->unusedTime = modf(deltaTime / (double)TMS9918_PIXEL_TIME, &thisStepTotalPixelsDbl) * TMS9918_PIXEL_TIME;
     int thisStepTotalPixels = (uint32_t)thisStepTotalPixelsDbl;
+
+    /* if we haven't reached the minimum, accumulate time for the next call and return */
     if (thisStepTotalPixels < TMS9918_TICK_MIN_PIXELS)
     {
       tmsDevice->unusedTime += thisStepTotalPixels * TMS9918_PIXEL_TIME;
       return;
     }
 
+    /* we only render the end end of a frame. if we need to go further, accumulate the time for the next call */
     if (tmsDevice->currentFramePixels + thisStepTotalPixels >= TMS9918_DISPLAY_PIXELS)
     {
       tmsDevice->unusedTime += ((tmsDevice->currentFramePixels + thisStepTotalPixels) - TMS9918_DISPLAY_PIXELS) * TMS9918_PIXEL_TIME;
       thisStepTotalPixels = TMS9918_DISPLAY_PIXELS - tmsDevice->currentFramePixels;
     }
 
-    div_t currentPos = div((int)tmsDevice->currentFramePixels, (int)TMS9918_DISPLAY_WIDTH);
-
-    int currentRow = currentPos.quot;
-    int currentCol = currentPos.rem;
-
+    /* get the background color for this run of pixels */
     uint8_t bgColor = (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918)
-      ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
-      : TMS_BLACK) & 0x0f;
+                        ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
+                        : TMS_BLACK) & 0x0f;
 
-    //bgColor = (++c) & 0x0f;
+    //bgColor = (++c) & 0x0f;  /* for testing */
     int firstPix = 1;
     uint32_t* fbPtr = tmsDevice->frameBuffer + tmsDevice->currentFramePixels;
 
     int tmsRow = 0;
 
+    /* iterate over the pixels we need to update in this call */
     for (int p = 0; p < thisStepTotalPixels; ++p)
     {
-      currentPos = div((int)tmsDevice->currentFramePixels, (int)TMS9918_DISPLAY_WIDTH);
+      div_t currentPos = div((int)tmsDevice->currentFramePixels, (int)TMS9918_DISPLAY_WIDTH);
 
-      currentRow = currentPos.quot;
-      currentCol = currentPos.rem;
+      int currentRow = currentPos.quot;
+      int currentCol = currentPos.rem;
 
+      /* if this is the first pixel or the first pixel of a new row, update the scanline buffer */
       if (firstPix || currentCol == 0)
       {
         tmsRow = currentRow - TMS9918_BORDER_Y;
         memset(tmsDevice->scanlineBuffer, bgColor, sizeof(tmsDevice->scanlineBuffer));
         if (tmsRow >=0 && tmsRow < TMS9918A_PIXELS_Y)
-          vrEmuTms9918aScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X);
+        {
+          vrEmuTms9918aScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X); 
+        }
+
         firstPix = 0;
       }
 
+      /* update the frame buffer pixel from the scanline pixel */
       *(fbPtr++) = tms9918Pal[tmsDevice->scanlineBuffer[currentCol]];
-      ++tmsDevice->currentFramePixels;
 
-      if (tmsDevice->currentFramePixels == (TMS9918_DISPLAY_WIDTH * (TMS9918_DISPLAY_HEIGHT - TMS9918_BORDER_Y)))
+      /* if we're at the end of the main tms9918 frame, trigger an interrupt */
+      if (++tmsDevice->currentFramePixels == (TMS9918_DISPLAY_WIDTH * (TMS9918_DISPLAY_HEIGHT - TMS9918_BORDER_Y)))
       {
         if (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918) &&
-          (vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
+            (vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
         {
-          cpu6502_irq(); /* TODO: abstract this away */
+          hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RAISE);
         }
       }
-      tmsDevice->currentFramePixels = tmsDevice->currentFramePixels % TMS9918_DISPLAY_PIXELS;
     }
+
+    /* reset pixel count if frame finished */
+    if (tmsDevice->currentFramePixels >= TMS9918_DISPLAY_PIXELS) tmsDevice->currentFramePixels= 0;
   }
 }
 
@@ -265,6 +276,7 @@ static uint8_t readTms9918Device(HBC56Device* device, uint16_t addr, uint8_t *va
     if (addr == tmsDevice->regAddr)
     {
       *val = vrEmuTms9918aReadStatus(tmsDevice->tms9918);
+      hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RELEASE);
       return 1;
     }
     else if (addr == tmsDevice->dataAddr)

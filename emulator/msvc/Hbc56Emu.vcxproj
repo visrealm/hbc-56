@@ -93,8 +93,10 @@
     <ClInclude Include="..\modules\cpu6502\cpu6502.h" />
     <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h" />
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h" />
+    <ClInclude Include="..\src\audio.h" />
     <ClInclude Include="..\src\config.h" />
     <ClInclude Include="..\src\debugger\debugger.h" />
+    <ClInclude Include="..\src\devices\6502_device.h" />
     <ClInclude Include="..\src\devices\ay38910_device.h" />
     <ClInclude Include="..\src\devices\device.h" />
     <ClInclude Include="..\src\devices\keyboard_device.h" />
@@ -111,15 +113,16 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Hbc56Emu.ico" />
-    <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\modules\ay38910\emu2149.c" />
     <ClCompile Include="..\modules\cpu6502\cpu6502.c" />
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c" />
     <ClCompile Include="..\modules\tms9918\src\tms9918_core.c" />
+    <ClCompile Include="..\src\audio.c" />
     <ClCompile Include="..\src\debugger\debugger.c" />
     <ClCompile Include="..\src\debugger\font.c" />
+    <ClCompile Include="..\src\devices\6502_device.c" />
     <ClCompile Include="..\src\devices\ay38910_device.c" />
     <ClCompile Include="..\src\devices\device.c" />
     <ClCompile Include="..\src\devices\keyboard_device.c" />

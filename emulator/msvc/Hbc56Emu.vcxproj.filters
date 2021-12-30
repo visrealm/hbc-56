@@ -82,6 +82,12 @@
     <ClInclude Include="..\src\debugger\debugger.h">
       <Filter>src\debugger</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\audio.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\6502_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Hbc56Emu.rc">
@@ -89,9 +95,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="Hbc56Emu.ico">
       <Filter>Resource Files</Filter>
     </Image>
@@ -141,6 +144,12 @@
     </ClCompile>
     <ClCompile Include="..\src\debugger\debugger.c">
       <Filter>src\debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\audio.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\6502_device.c">
+      <Filter>src\devices</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

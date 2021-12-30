@@ -24,7 +24,7 @@ static const char* audio_usage[] = {
 };
 
 
-#ifdef _EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #define SDL_OUT_Z_CAP(x)
 #define SDL_PRINTF_FORMAT_STRING
 #endif
@@ -42,7 +42,7 @@ static void SDL_snprintfcat(SDL_OUT_Z_CAP(maxlen) char* text, size_t maxlen, SDL
 }
 
 SDLCommonState*
-SDLCommonCreateState(char** argv, Uint32 flags)
+SDLCommonCreateState(char** argv, uint32_t flags)
 {
   SDLCommonState* state;
 
@@ -197,7 +197,7 @@ SDLCommonArg(SDLCommonState* state, int index)
     }
     return 2;
   }
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
   if (SDL_strcasecmp(argv[index], "--metal-window") == 0) {
     state->window_flags |= SDL_WINDOW_METAL;
     return 1;
@@ -428,7 +428,7 @@ SDLCommonArg(SDLCommonState* state, int index)
     state->flash_on_focus_loss = SDL_TRUE;
     return 1;
   }
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
   if (SDL_strcasecmp(argv[index], "--grab") == 0) {
     state->window_flags |= SDL_WINDOW_MOUSE_GRABBED;
     return 1;
@@ -644,7 +644,7 @@ SDLPrintDisplayOrientation(char* text, size_t maxlen, SDL_DisplayOrientation ori
 #endif
 
 static void
-SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
+SDLPrintWindowFlag(char* text, size_t maxlen, uint32_t flag)
 {
   switch (flag) {
   case SDL_WINDOW_FULLSCREEN:
@@ -671,7 +671,7 @@ SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
   case SDL_WINDOW_MAXIMIZED:
     SDL_snprintfcat(text, maxlen, "MAXIMIZED");
     break;
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
   case SDL_WINDOW_MOUSE_GRABBED:
     SDL_snprintfcat(text, maxlen, "MOUSE_GRABBED");
     break;
@@ -713,7 +713,7 @@ SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
     SDL_snprintfcat(text, maxlen, "POPUP_MENU");
     break;
 #endif
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
   case SDL_WINDOW_KEYBOARD_GRABBED:
     SDL_snprintfcat(text, maxlen, "KEYBOARD_GRABBED");
     break;
@@ -730,9 +730,9 @@ SDLPrintWindowFlag(char* text, size_t maxlen, Uint32 flag)
 }
 
 static void
-SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
+SDLPrintWindowFlags(char* text, size_t maxlen, uint32_t flags)
 {
-  const Uint32 window_flags[] = {
+  const uint32_t window_flags[] = {
       SDL_WINDOW_FULLSCREEN,
       SDL_WINDOW_OPENGL,
       SDL_WINDOW_SHOWN,
@@ -741,7 +741,7 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
       SDL_WINDOW_RESIZABLE,
       SDL_WINDOW_MINIMIZED,
       SDL_WINDOW_MAXIMIZED,
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
       SDL_WINDOW_MOUSE_GRABBED,
 #endif
       SDL_WINDOW_INPUT_FOCUS,
@@ -759,7 +759,7 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
       SDL_WINDOW_TOOLTIP,
       SDL_WINDOW_POPUP_MENU,
 #endif
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
       SDL_WINDOW_KEYBOARD_GRABBED,
       SDL_WINDOW_VULKAN,
       SDL_WINDOW_METAL
@@ -769,7 +769,7 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
   int i;
   int count = 0;
   for (i = 0; i < (sizeof(window_flags) / sizeof(window_flags[0])); ++i) {
-    const Uint32 flag = window_flags[i];
+    const uint32_t flag = window_flags[i];
     if ((flags & flag) == flag) {
       if (count > 0) {
         SDL_snprintfcat(text, maxlen, " | ");
@@ -781,12 +781,12 @@ SDLPrintWindowFlags(char* text, size_t maxlen, Uint32 flags)
 }
 
 static void
-SDLPrintButtonMask(char* text, size_t maxlen, Uint32 flags)
+SDLPrintButtonMask(char* text, size_t maxlen, uint32_t flags)
 {
   int i;
   int count = 0;
   for (i = 1; i <= 32; ++i) {
-    const Uint32 flag = SDL_BUTTON(i);
+    const uint32_t flag = SDL_BUTTON(i);
     if ((flags & flag) == flag) {
       if (count > 0) {
         SDL_snprintfcat(text, maxlen, " | ");
@@ -798,7 +798,7 @@ SDLPrintButtonMask(char* text, size_t maxlen, Uint32 flags)
 }
 
 static void
-SDLPrintRendererFlag(char* text, size_t maxlen, Uint32 flag)
+SDLPrintRendererFlag(char* text, size_t maxlen, uint32_t flag)
 {
   switch (flag) {
   case SDL_RENDERER_SOFTWARE:
@@ -822,7 +822,7 @@ SDLPrintRendererFlag(char* text, size_t maxlen, Uint32 flag)
 }
 
 static void
-SDLPrintPixelFormat(char* text, size_t maxlen, Uint32 format)
+SDLPrintPixelFormat(char* text, size_t maxlen, uint32_t format)
 {
   switch (format) {
   case SDL_PIXELFORMAT_UNKNOWN:
@@ -941,7 +941,7 @@ SDLPrintRenderer(SDL_RendererInfo* info)
   SDL_snprintfcat(text, sizeof(text), " (");
   count = 0;
   for (i = 0; i < sizeof(info->flags) * 8; ++i) {
-    Uint32 flag = (1 << i);
+    uint32_t flag = (1 << i);
     if (info->flags & flag) {
       if (count > 0) {
         SDL_snprintfcat(text, sizeof(text), " | ");
@@ -1118,7 +1118,7 @@ SDLCommonInit(SDLCommonState* state)
       float vdpi = 0;
       SDL_DisplayMode mode;
       int bpp;
-      Uint32 Rmask, Gmask, Bmask, Amask;
+      uint32_t Rmask, Gmask, Bmask, Amask;
 #if SDL_VIDEO_DRIVER_WINDOWS
       int adapterIndex = 0;
       int outputIndex = 0;
@@ -1169,7 +1169,7 @@ SDLCommonInit(SDLCommonState* state)
             SDL_Log("    Mode %d: %dx%d@%dHz, %d bits-per-pixel (%s)\n",
               j, mode.w, mode.h, mode.refresh_rate, bpp,
               SDL_GetPixelFormatName(mode.format));
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
             if (Rmask || Gmask || Bmask) {
               SDL_Log("        Red Mask   = 0x%.8" SDL_PRIx32 "\n",
                 Rmask);
@@ -1808,7 +1808,7 @@ SDLScreenShot(SDL_Renderer* renderer)
 static void
 FullscreenTo(int index, int windowId)
 {
-  Uint32 flags;
+  uint32_t flags;
   struct SDL_Rect rect = { 0, 0, 0, 0 };
   SDL_Window* window = SDL_GetWindowFromID(windowId);
   if (!window) {
@@ -1866,7 +1866,7 @@ break;
     case SDL_WINDOWEVENT_FOCUS_LOST:
       if (state->flash_on_focus_loss) {
         SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
         if (window) {
           SDL_FlashWindow(window, SDL_FLASH_UNTIL_FOCUSED);
         }
@@ -1938,7 +1938,7 @@ break;
         /* Ctrl-Enter toggle fullscreen */
         SDL_Window* window = SDL_GetWindowFromID(event->key.windowID);
         if (window) {
-          Uint32 flags = SDL_GetWindowFlags(window);
+          uint32_t flags = SDL_GetWindowFlags(window);
           if (flags & SDL_WINDOW_FULLSCREEN) {
             SDL_SetWindowFullscreen(window, SDL_FALSE);
           }

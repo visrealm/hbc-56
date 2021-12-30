@@ -14,7 +14,6 @@
 
 #include <stdint.h>
 
-
 struct HBC56Device;
 typedef struct HBC56Device HBC56Device;
 
@@ -22,6 +21,21 @@ struct SDL_Texture;
 typedef struct SDL_Texture SDL_Texture;
 
 typedef union SDL_Event SDL_Event;
+
+
+typedef enum
+{
+  INTERRUPT_INT,
+  INTERRUPT_NMI
+} HBC56InterruptType;
+
+typedef enum
+{
+  INTERRUPT_RELEASE,
+  INTERRUPT_RAISE,
+  INTERRUPT_TRIGGER
+} HBC56InterruptSignal;
+
 
 /* tick function pointer */
 /*   uint32_t deltaTicks: change in clock ticks since last call */

@@ -116,7 +116,7 @@ HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, S
 
       device.output = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                           lcdDevice->pixelsX, lcdDevice->pixelsY);
-#ifndef _EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
       SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
 #endif
     }

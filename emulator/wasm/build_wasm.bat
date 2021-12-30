@@ -12,21 +12,21 @@
 
 emcc -o ..\bin\hbc56.html ^
   -O0 ^
-  -D _EMSCRIPTEN ^
+  -D __EMSCRIPTEN__ ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
   -s USE_SDL=2 ^
-  -s USE_SDL_MIXER=2 ^
   -s INITIAL_MEMORY=33554432 ^
-  -lopenal ^
   -I ..\modules\ay38910 ^
   -I ..\modules\cpu6502 ^
   -I ..\modules\lcd\src ^
   -I ..\modules\tms9918\src ^
   ..\src\hbc56emu.c ^
+  ..\src\audio.c ^
   ..\src\window.c ^
   ..\src\devices\device.c ^
   ..\src\devices\memory_device.c ^
+  ..\src\devices\6502_device.c ^
   ..\src\devices\tms9918_device.c ^
   ..\src\devices\nes_device.c ^
   ..\src\devices\keyboard_device.c ^
