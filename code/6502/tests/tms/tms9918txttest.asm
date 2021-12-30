@@ -42,7 +42,7 @@ loop:
         ldx #7
         jsr tmsSetRegister
 
-        ;jsr medDelay
+        jsr medDelay
 
         jmp loop
 

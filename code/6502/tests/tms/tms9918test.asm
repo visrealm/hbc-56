@@ -14,7 +14,7 @@ YPOS = $45
 
 
 hbc56Meta:
-        +setHbcMetaTitle "TMS9918 GRAPHICS I TEST"
+        +setHbcMetaTitle "TMS9918 GFX I"
         rts
 
 sprite1:
@@ -75,31 +75,31 @@ hbc56Main:
 
 loop:
 
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 42, 40
         +tmsSpritePos 1, 58, 40
         +tmsSpritePos 2, 82, 60
         +tmsSpritePos 3, 98, 60
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 44, 40
         +tmsSpritePos 1, 60, 40
         +tmsSpritePos 2, 84, 60
         +tmsSpritePos 3, 100, 60
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 46, 40
         +tmsSpritePos 1, 62, 40
         +tmsSpritePos 2, 86, 60
         +tmsSpritePos 3, 102, 60
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 48, 40
         +tmsSpritePos 1, 64, 40
         +tmsSpritePos 2, 88, 60
         +tmsSpritePos 3, 104, 60
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 50, 40
         +tmsSpritePos 1, 66, 40
         +tmsSpritePos 2, 88, 70
@@ -108,31 +108,31 @@ loop:
         +tmsPrint ' ', 1, 23
 
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 48, 40
         +tmsSpritePos 1, 64, 40
         +tmsSpritePos 2, 86, 70
         +tmsSpritePos 3, 102, 70
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 46, 40
         +tmsSpritePos 1, 62, 40
         +tmsSpritePos 2, 84, 70
         +tmsSpritePos 3, 100, 70
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 44, 40
         +tmsSpritePos 1, 60, 40
         +tmsSpritePos 2, 82, 70
         +tmsSpritePos 3, 98, 70
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 42, 40
         +tmsSpritePos 1, 58, 40
         +tmsSpritePos 2, 80, 70
         +tmsSpritePos 3, 96, 70
         jsr outputSeconds
-	jsr delay
+	;jsr delay
         +tmsSpritePos 0, 40, 40
         +tmsSpritePos 1, 56, 40
         +tmsSpritePos 2, 80, 60
@@ -146,16 +146,16 @@ loop:
 COLOR = $89
 
 outputSeconds:
-        sei
-        +tmsSetPosWrite 1, 1
-        lda HBC56_SECONDS_L
-        jsr tmsHex8
+        ;sei
+        ;+tmsSetPosWrite 1, 1
+        ;lda HBC56_SECONDS_L
+        ;jsr tmsHex8
 
         inc COLOR
         lda COLOR
         jsr tmsSetBackground
 
-        cli
+        ;cli
         rts
 
 fillRam:

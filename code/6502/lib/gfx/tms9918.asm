@@ -12,7 +12,7 @@
 !src "gfx/tms9918.inc"
 
 TMS_FONT_DATA:
-!src "gfx/fonts/petsciisubset.asm"
+!src "gfx/fonts/tms9918font2subset.asm"
 
 HAVE_TMS9918 = 1
 
