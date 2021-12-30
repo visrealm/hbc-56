@@ -295,10 +295,13 @@ kernelMain:
                 +hbc56SetVsyncCallback .nullCallbackFunction
         }
         !ifdef HAVE_LCD {
-                jsr lcdInit
-                jsr hbc56Delay
-                jsr lcdDisplayOn
-                jsr hbc56Delay
+                jsr lcdDetect
+                bcc @noLcd1
+                        jsr lcdInit
+                        jsr hbc56Delay
+                        jsr lcdDisplayOn
+                        jsr hbc56Delay
+@noLcd1:
         }
 
         jsr hbc56BootScreen
@@ -341,6 +344,8 @@ kernelMain:
         }
 
         !ifdef HAVE_LCD {
+                jsr lcdDetect
+                bcc @noLcd2
                 !ifdef HAVE_GRAPHICS_LCD {
                         +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_NES_TEXT, 16
                         ldy #6
@@ -350,8 +355,9 @@ kernelMain:
                         sta STR_ADDR_L
                         lda #>.HBC56_PRESS_ANY_NES_TEXT
                         sta STR_ADDR_H
-                        jsr lcdPrint        
+                        jsr lcdPrint
                 }
+@noLcd2:
         }
         cli
         jsr nesWaitForPress
@@ -365,6 +371,8 @@ kernelMain:
         }
 
         !ifdef HAVE_LCD {
+                jsr lcdDetect
+                bcc @noLcd3
                 !ifdef HAVE_GRAPHICS_LCD {
                         +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, .HBC56_PRESS_ANY_KEY_TEXT, 16
                         ldy #6
@@ -376,6 +384,7 @@ kernelMain:
                         sta STR_ADDR_H
                         jsr lcdPrint        
                 }
+@noLcd3:
         }
         cli
         jsr kbWaitForKey
@@ -383,12 +392,15 @@ kernelMain:
 .afterInput
 
         !ifdef HAVE_LCD {
+                jsr lcdDetect
+                bcc @noLcd4
                 !ifdef HAVE_GRAPHICS_LCD {
                         jsr lcdTextMode
                 }
                 jsr lcdInit
                 jsr lcdClear
                 jsr lcdHome
+@noLcd4:
         }
 
         !ifdef HAVE_TMS9918 {

@@ -78,6 +78,8 @@ hbc56BootScreen:
 }
 
 !ifdef HAVE_LCD {
+        jsr lcdDetect
+        bcc @noLcd
         !ifdef HAVE_GRAPHICS_LCD {
                 jsr lcdGraphicsMode
                 +memset LOGO_BUFFER, $00, 1024
@@ -115,5 +117,6 @@ hbc56BootScreen:
                 }                
                 !if LCD_COLUMNS > 16 { +lcdConsolePrint "  " }
         }
+@noLcd:
 }
         rts

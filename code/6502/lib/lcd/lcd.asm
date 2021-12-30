@@ -205,13 +205,14 @@ lcdCursorBlinkOn:
 ; lcdDetect: Do we have an LCD plugged in?
 ; -----------------------------------------------------------------------------
 ; Outputs:
-;  A: 1 if exists. 0 if not
+;  C: 1 if exists. 0 if not
 ; -----------------------------------------------------------------------------
 lcdDetect:
+	clc
 	lda LCD_CMD
 	eor #$ff
 	beq +
-	lda #1
+	sec
 +
 	rts
 
