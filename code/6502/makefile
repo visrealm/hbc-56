@@ -19,6 +19,8 @@ ACME=acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
 
 LCD_MODEL?=12864
 
+RM = del /Q
+
 export LCD_MODEL
 export DISABLE_KERNEL_MODULES
 

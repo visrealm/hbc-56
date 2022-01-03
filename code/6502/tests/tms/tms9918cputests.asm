@@ -26,6 +26,46 @@ hbc56Main:
 
         +tmsEnableInterrupts
 
+        jsr overflowTests
+
+        jsr decimalTests
+
+        jmp success
+
+decimalTests:
+        sed
+        clc
+        lda #$08
+        adc #$08
+        cld
+        cmp #$16
+        bne FAIL
+
+        sed
+        sec
+        sbc #$08
+        cld
+        cmp #$08
+        bne FAIL
+
+        sed
+        clc
+        sbc #$16
+        ;bcc FAIL
+        cld
+        cmp #$91
+        bne FAIL
+
+
+        rts
+
+FAIL:
+        +tmsPrint "FAILED",2,0
+-
+        jmp -
+
+overflowTests:
+
         clc
         lda #$30
         adc #$10
@@ -94,41 +134,33 @@ hbc56Main:
         sec
         lda #$D0
         sbc #$F0
-        bvs FAIL
+        bvs FAIL2
 
 
         sec
         lda #$D0
         sbc #$B0
-        bvs FAIL
+        bvs FAIL2
 
 
         sec
         lda #$D0
         sbc #$70
-        bvc FAIL
+        bvc FAIL2
 
 
         sec
         lda #$D0
         sbc #$30
-        bvs FAIL
+        bvs FAIL2
 
-        sed
-        clc
-        lda #$08
-        adc #$08
-        cld
-        cmp #$16
-        bne FAIL
+        rts
 
-
-        jmp success
-
-FAIL:
+FAIL2:
         +tmsPrint "FAILED",2,0
 -
         jmp -
+
 
 success:
         +tmsPrint "PASSED",2,0

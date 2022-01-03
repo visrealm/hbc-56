@@ -226,6 +226,13 @@
         +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind) + .row
 }
 
+; -----------------------------------------------------------------------------
+; tmsUpdateFont: Update the pattern table with a given font
+; -----------------------------------------------------------------------------
+!macro tmsUpdateFont .fontAddr {
+        +tmsSetAddrPattTableInd 32
+        +tmsSendData .fontAddr, $300
+}
 
 ; -----------------------------------------------------------------------------
 ; tmsSetAddrNameTable: Initialise address for base (text) table

@@ -20,4 +20,4 @@ include $(ROOT_PATH)makefile
 	$(HBC56EMU) --rom $<
 
 clean:
-	rm -f *.o *.lmap
+	$(RM) *.o *.lmap

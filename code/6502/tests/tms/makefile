@@ -17,7 +17,7 @@ DISABLE_KERNEL_MODULES = LCD
 include $(ROOT_PATH)makefile
 
 %: %.o
-	$(HBC56EMU) --keyboard --rom $<
+	$(HBC56EMU) --rom $<
 
 # override for NES controller
 tms9918nes: tms9918nes.o
@@ -26,4 +26,4 @@ tms9918nes: tms9918nes.o
 all: tms9918type tms9918txttest tms9918nes tms9918mctest tms9918gfx2test
 
 clean:
-	rm -f *.o *.lmap
+	$(RM) *.o *.lmap

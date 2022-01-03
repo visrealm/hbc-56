@@ -81,3 +81,18 @@
         ldy #.delay
         jsr hbc56CustomDelay
 }
+
+!macro hbc56DelayUs .us {
+!if .us = 1 {
+        nop
+        nop
+}
+}
+!macro hbc56DelayMs .ms {
+        lda #<.ms
+        sta DELAY_L
+        lda #>.ms
+        sta DELAY_H
+
+        jsr hbc56CustomDelayMs
+}

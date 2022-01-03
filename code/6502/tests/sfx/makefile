@@ -17,7 +17,7 @@ DISABLE_KERNEL_MODULES = LCD
 include $(ROOT_PATH)makefile
 
 %: %.o
-	$(HBC56EMU) --keyboard --rom $<
+	$(HBC56EMU) --rom $<
 
 clean:
-	rm -f *.o *.lmap
+	$(RM) *.o *.lmap

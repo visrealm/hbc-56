@@ -12,7 +12,7 @@
 !src "gfx/tms9918.inc"
 
 TMS_FONT_DATA:
-!src "gfx/fonts/tms9918font2subset.asm"
+!src "gfx/fonts/petsciisubset.asm"
 
 HAVE_TMS9918 = 1
 
@@ -650,7 +650,14 @@ tmsConsoleScrollLine:
 
         ldy .TMS9918_TMP_READ_ROW
         ldx #0
+        lda #40
+        cmp .TMS9918_CONSOLE_SIZE_X
+        beq +
+        jsr tmsSetPosTmpAddress
+        jmp ++
++
         jsr tmsSetPosTmpAddressText
+++
         jsr tmsSetAddressRead
 
         jsr .tmsBufferIn
@@ -658,7 +665,14 @@ tmsConsoleScrollLine:
         ldx #0
         ldy .TMS9918_TMP_WRITE_ROW
         ldx #0
+        lda #40
+        cmp .TMS9918_CONSOLE_SIZE_X
+        beq +
+        jsr tmsSetPosTmpAddress
+        jmp ++
++
         jsr tmsSetPosTmpAddressText
+++
         jsr tmsSetAddressWrite
 
         jsr .tmsBufferOut
@@ -920,8 +934,9 @@ tmsConsolePrint:
 ; -----------------------------------------------------------------------------
 tmsConsoleNewline:
         +tmsConsoleOut ' '
-        lda #39
+        lda .TMS9918_CONSOLE_SIZE_X
         sta .TMS9918_CONSOLE_X
+        dec .TMS9918_CONSOLE_X
         jmp tmsIncPosConsole
 
 

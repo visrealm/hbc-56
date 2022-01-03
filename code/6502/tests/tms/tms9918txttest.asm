@@ -20,6 +20,8 @@ hbc56Meta:
 hbc56Main:
         sei
 
+	+tmsUpdateFont TMS_TEXT_MODE_FONT
+
         jsr tmsModeText
         +tmsColorFgBg TMS_BLACK, TMS_CYAN
 
@@ -99,3 +101,6 @@ TEXT:
 !text "                                        "
 !text "                                        "
 !text "https://github.com/visrealm/vrEmuTms9918"
+
+TMS_TEXT_MODE_FONT:
+!src "gfx/fonts/tms9918font2subset.asm"

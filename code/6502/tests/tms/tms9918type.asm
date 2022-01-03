@@ -18,6 +18,7 @@ hbc56Main:
         jsr kbInit
 
         jsr tmsModeText
+	+tmsUpdateFont TMS_TEXT_MODE_FONT
 
         +tmsSetColorFgBg TMS_LT_GREEN, TMS_BLACK
         +tmsEnableOutput
@@ -36,3 +37,6 @@ hbc56Main:
         jsr tmsConsoleOut
 
         jmp .consoleLoop
+
+TMS_TEXT_MODE_FONT:
+!src "gfx/fonts/tms9918font2subset.asm"

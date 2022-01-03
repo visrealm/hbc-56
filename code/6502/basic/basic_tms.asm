@@ -18,5 +18,5 @@
 ; metadata for the HBC-56 kernel
 ; -----------------------------------------------------------------------------
 hbc56Meta:
-        +setHbcMetaTitle "BASIC (TMS9918)"
+        +setHbcMetaTitle "HBC-56 BASIC"
         rts

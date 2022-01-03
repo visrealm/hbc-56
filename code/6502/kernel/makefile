@@ -20,7 +20,7 @@ space:= $(null) #
 CONFID:= $(subst $(space),_,$(strip $(CONF))).conf
 
 $(CONFID):
-	rm -f *.conf
+	$(RM) *.conf
 	echo $(CONF) > $(CONFID)
 
 kernel.o: kernel.asm  \
@@ -39,4 +39,4 @@ default: kernel.o
 .PHONY: clean default
 
 clean:
-	rm -f *.o *.lmap
+	$(RM) *.o *.lmap

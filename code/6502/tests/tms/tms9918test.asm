@@ -74,6 +74,7 @@ hbc56Main:
 
 
 loop:
+        sei
 
 	;jsr delay
         +tmsSpritePos 0, 42, 40

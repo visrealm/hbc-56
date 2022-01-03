@@ -40,5 +40,5 @@ cd invaders
 Example: basic
 ```
 cd basic
-..\..\..\emulator\bin\Hbc56Emu.exe --keyboard --rom hbc56_mon.o
+..\..\..\emulator\bin\Hbc56Emu.exe --rom hbc56_mon.o
 ```

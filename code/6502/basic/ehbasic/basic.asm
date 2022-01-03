@@ -7814,7 +7814,7 @@ LAB_MSZM
 	!text	$0D,$0A,"Memory size ",$00
 
 LAB_SMSG
-	!text	"HBC-56 BASIC",$00
+	!text	"\n     **** HBC-56 BASIC ****",$00
 
 ; numeric constants and series
 

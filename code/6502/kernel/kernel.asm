@@ -25,7 +25,7 @@ LCD_IO_PORT             = $02
 TMS9918_IO_PORT         = $10
 AY_IO_PORT              = $40
 KB_IO_PORT              = $81
-NES_IO_PORT             = $81
+NES_IO_PORT             = $80
 
 ; -------------------------
 ; Kernel Zero Page
@@ -53,7 +53,10 @@ STR_ADDR                = MEMORY_ZP_END
 STR_ADDR_L              = MEMORY_ZP_END
 STR_ADDR_H              = MEMORY_ZP_END + 1
 
-HBC56_KERNEL_ZP_END     = STR_ADDR_H + 1
+DELAY_L                 = STR_ADDR_H + 1
+DELAY_H                 = DELAY_L + 1
+
+HBC56_KERNEL_ZP_END     = DELAY_H + 1
 HBC56_USER_ZP_START     = HBC56_KERNEL_ZP_END
 
 ;!warn "Total ZP used: ",STR_ADDR_H-HBC56_KERNEL_ZP_START
@@ -412,6 +415,20 @@ kernelMain:
         sei
 
         jsr DEFAULT_HBC56_RST_VECTOR
+
+hbc56CustomDelayMs:
+        inc DELAY_H
+-
+        ldy #3
+        jsr hbc56CustomDelay
+	dec DELAY_L
+	bne -
+	lda #0
+        sta DELAY_L
+	dec DELAY_H
+	bne -
+	rts
+
 
 hbc56Stop:
         jmp hbc56Stop

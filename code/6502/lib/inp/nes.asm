@@ -8,7 +8,7 @@
 ;
 
 
-!ifndef NES_IO_PORT { NES_IO_PORT = $81
+!ifndef NES_IO_PORT { NES_IO_PORT = $80
         !warn "NES_IO_PORT not provided. Defaulting to ", NES_IO_PORT
 }
 
