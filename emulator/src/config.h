@@ -48,7 +48,7 @@
 
 
 #define HBC56_HAVE_NES          1
-#define HBC56_NES_PORT          0x81  
+#define HBC56_NES_PORT          0x80
 
 #define HBC56_HAVE_KB           1
 #define HBC56_KB_PORT           0x81

@@ -37,7 +37,10 @@
 static HBC56Device devices[HBC56_MAX_DEVICES];
 static int deviceCount = 0;
 
-static HBC56Device *cpuDevice = NULL;
+static HBC56Device* cpuDevice = NULL;
+static HBC56Device* romDevice = NULL;
+
+static char tempBuffer[256];
 
 
 /* Function:  hbc56Reset
@@ -99,6 +102,49 @@ void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal)
   {
     interrupt6502(cpuDevice, type, signal);
   }
+}
+
+/* Function:  hbc56LoadRom
+ * --------------------
+ * load rom data. rom data bust be HBC56_ROM_SIZE bytes
+ */
+int hbc56LoadRom(const uint8_t* romData, int romDataSize)
+{
+  int status = 1;
+
+  if (romDataSize != HBC56_ROM_SIZE)
+  {
+#ifndef __EMSCRIPTEN__
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file must be %d bytes.", HBC56_ROM_SIZE);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
+#endif
+    status = 0;
+  }
+
+  if (status)
+  {
+    debug6502State(cpuDevice, CPU_BREAK);
+    SDL_Delay(1);
+    if (!romDevice)
+    {
+      romDevice = hbc56AddDevice(createRomDevice(HBC56_ROM_START, HBC56_ROM_END, romData));
+    }
+    else
+    {
+      status = setMemoryDeviceContents(romDevice, romData, romDataSize);
+    }
+    hbc56Reset();
+  }
+  return status;
+}
+
+/* Function:  hbc56LoadLabels
+ * --------------------
+ * load labels. labelFileContents is a null terminated string (lmap file contents)
+ */
+void hbc56LoadLabels(const char* labelFileContents)
+{
+  debuggerLoadLabels(labelFileContents);
 }
 
 
@@ -461,7 +507,6 @@ static void wasmLoop()
 
 
 static char labelMapFile[FILENAME_MAX] = { 0 };
-static char tempBuffer[256];
 
 
 /* Function:  loadRom
@@ -488,22 +533,32 @@ static int loadRom(const char* filename)
     size_t romBytesRead = fread(rom, 1, sizeof(rom), ptr);
     fclose(ptr);
 
-    if (romBytesRead != sizeof(rom))
-    {
-#ifndef __EMSCRIPTEN__
-      SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file '%s' must be %d bytes.", filename, (int)sizeof(rom));
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
-#endif
-    }
-    else
-    {
-      romLoaded = 1;
+    romLoaded = hbc56LoadRom(rom, (int)romBytesRead);
 
-      hbc56AddDevice(createRomDevice(HBC56_ROM_START, HBC56_ROM_END, rom));
-
+    if (romLoaded)
+    {
       SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
       size_t ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".lmap", FILENAME_MAX - ln);
+
+#ifdef __EMSCRIPTEN__
+      ptr = fopen(labelMapFile, "rb");
+#else
+      fopen_s(&ptr, labelMapFile, "rb");
+#endif
+      if (ptr)
+      {
+        fseek(ptr, 0, SEEK_END);
+        long fsize = ftell(ptr);
+        fseek(ptr, 0, SEEK_SET);  /* same as rewind(f); */
+
+        char *lblFileContent = malloc(fsize + 1);
+        fread(lblFileContent, fsize, 1, ptr);
+        fclose(ptr);
+
+        hbc56LoadLabels(lblFileContent);
+        free(lblFileContent);
+      }
     }
   }
   else
@@ -544,12 +599,10 @@ int main(int argc, char* argv[])
 
   int romLoaded = 0;
   LCDType lcdType = LCD_NONE;
-  int keyboardMode = 0;
 
 #if __EMSCRIPTEN__
   /* load the hard-coded rom */
   romLoaded = loadRom("rom.bin");
-  keyboardMode = 1;
   lcdType = LCD_GRAPHICS;
 #endif
 
@@ -575,12 +628,6 @@ int main(int argc, char* argv[])
       {
         consumed = 1;
         debug6502State(cpuDevice, CPU_BREAK);
-      }
-      /* use keyboard instead of NES controller */
-      else if (SDL_strcasecmp(argv[i], "--keyboard") == 0)
-      {
-        consumed = 1;
-        keyboardMode = 1;
       }
       /* enable the lcd? */
       else if (SDL_strcasecmp(argv[i], "--lcd") == 0)
@@ -640,11 +687,11 @@ int main(int argc, char* argv[])
 #endif
 
 #if HBC56_HAVE_KB
-  if (keyboardMode) hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT)));
+  hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT)));
 #endif
 
 #if HBC56_HAVE_NES
-  if (!keyboardMode) hbc56AddDevice(createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT)));
+  hbc56AddDevice(createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT)));
 #endif
 
 #if HBC56_HAVE_LCD
@@ -661,6 +708,7 @@ int main(int argc, char* argv[])
 
   /* set up the display */
   SDL_Renderer* renderer = state->renderers[0];
+  SDL_SetTextureBlendMode(state->targets[0], SDL_BLENDMODE_ADD);
   SDL_RenderClear(renderer);
   debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
 
@@ -680,7 +728,7 @@ int main(int argc, char* argv[])
   hbc56Reset();
 
   /* initialise the debugger */
-  debuggerInit(cpu6502_get_regs(), labelMapFile);
+  debuggerInit(cpu6502_get_regs());
 
   SDL_Delay(100);
 

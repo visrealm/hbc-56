@@ -38,7 +38,7 @@ uint16_t debugTmsMemoryAddr = 0;
 
 static CPU6502Regs *cpuStatus = NULL;
 
-static const char *labelMap[0x10000] = {0};
+static char *labelMap[0x10000] = {NULL};
 static HBC56Device* tms9918 = NULL;
 
 static char tmpBuffer[256] = {0};
@@ -50,24 +50,33 @@ static int isProbablyConstant(const char* str)
   return SDL_strcmp(str, tmpBuffer) == 0;
 }
 
-void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename)
+void debuggerLoadLabels(const char* labelFileContents)
 {
-  cpuStatus = regs;
-  fgColor = green;
-  bgColor = 0x00000000;
-
-  FILE* ptr = NULL;
-#ifdef __EMSCRIPTEN__
-  ptr = fopen(labelMapFilename, "r");
-#else
-  fopen_s(&ptr, labelMapFilename, "r");
-#endif
-  if (ptr)
+  for (int i = 0; i < sizeof(labelMap) / sizeof(const char*); ++i)
   {
+    if (labelMap[i])
+    {
+      free(labelMap[i]);
+      labelMap[i] = NULL;
+    }
+  }
+
+  if (labelFileContents)
+  {
+    size_t currentPos = 0;
     char lineBuffer[FILENAME_MAX];
 
-    while (fgets(lineBuffer, sizeof(lineBuffer), ptr))
+    char *p = (char*)labelFileContents;
+
+    for (;;)
     {
+      char* end = SDL_strchr(p, '\n');
+      if (end == NULL)
+        break;
+
+      SDL_strlcpy(lineBuffer, p, end - p);
+      p = end + 1;
+
       size_t labelStart = -1, labelEnd = -1, valueStart = -1, valueEnd = -1;
 
       int i = 0;
@@ -127,9 +136,14 @@ void debuggerInit(CPU6502Regs* regs, const char* labelMapFilename)
         labelMap[addr] = label;
       }
     }
-
-    fclose(ptr);
   }
+}
+
+void debuggerInit(CPU6502Regs* regs)
+{
+  cpuStatus = regs;
+  fgColor = green;
+  bgColor = 0x00000000;
 }
 
 void debuggerInitTms(HBC56Device* tms)

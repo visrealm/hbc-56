@@ -24,8 +24,10 @@
 #define DEBUGGER_CHARS_Y (DEBUGGER_HEIGHT_PX / DEBUGGER_CHAR_H)
 
 
-void debuggerInit(CPU6502Regs *regs, const char *labelMap);
+void debuggerInit(CPU6502Regs *regs);
 
 void debuggerInitTms(HBC56Device *tms9918);
+
+void debuggerLoadLabels(const char * labelFileContents);
 
 void debuggerUpdate(SDL_Texture *tex, int mouseX, int mouseY);

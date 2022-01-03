@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-us">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <title>HBC-56 Emulator (BETA)</title>
+      <link rel="stylesheet" href="hbc56.css">
+   </head>
+   <body>
+      <a href="https://github.com/visrealm/hbc-56"><img src="hbc56logo.png" alt="HBC-56 Logo" height="60"/></a> <span style="font-size:36px;margin-top:-5px;">Emulator</span><span style="font-size:18px;margin-top:-5px;">(BETA)</span>
+      <!--button onclick="toggleAudio()">Audio</button-->
+      <button onclick="resetHbc56()">Reset</button>
+      <div class="spinner" id='spinner'></div>
+      <div class="emscripten" id="status">Downloading...</div>
+      <div class="emscripten">
+         <progress value="0" max="100" id="progress" hidden></progress>
+      </div>
+      <div style="float:left;" class="emscripten_border">
+         <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1></canvas>
+      </div>
+      <table style="padding:5px;" class="tg">
+         <thead>
+            <tr>
+               <th style="text-align:left;">key</th>
+               <th style="text-align:left;">function</th>
+            </tr>
+         </thead>
+         <tbody>
+            <tr><td>ESC</td><td>reboot</td></tr>
+            <tr><td>F12</td><td>break</td></tr>
+            <tr><td>F11</td><td>step in</td></tr>
+            <tr><td>F10</td><td>step over</td></tr>
+            <tr><td>F5</td><td>run</td></tr>
+            <tr><td>&lt;Ctrl&gt;+D</td><td>toggle debugger</td></tr>
+         </tbody>
+      </table>
+      <br/>
+      <table style="padding:5px;" class="tg">
+         <thead>
+            <tr>
+               <th style="text-align:left;">key</th>
+               <th style="text-align:left;">nes btn</th>
+            </tr>
+         </thead>
+         <tbody>
+            <tr><td>Ctrl</td><td>B</td></tr>
+            <tr><td>Shift</td><td>A</td></tr>
+            <tr><td>Tab</td><td>Select</td></tr>
+            <tr><td>Space</td><td>Start</td></tr>
+            <tr><td>Arrows</td><td>D Pad</td></tr>
+         </tbody>
+      </table>
+      <script src="hbc56-frontend.js"></script>
+      <script async src="hbc56.js"></script>	
+   </body>
+</html>

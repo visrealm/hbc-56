@@ -49,5 +49,16 @@ HBC56Device *hbc56AddDevice(HBC56Device device);
  */
 void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal);
 
+/* Function:  hbc56LoadRom
+ * --------------------
+ * load rom data. rom data bust be HBC56_ROM_SIZE bytes
+ */
+int hbc56LoadRom(const uint8_t *romData, int romDataSize);
+
+/* Function:  hbc56LoadLabels
+ * --------------------
+ * load labels. labelFileContents is a null terminated string (lmap file contents)
+ */
+void hbc56LoadLabels(const char *labelFileContents);
 
 #endif

@@ -26,7 +26,13 @@ HBC56Device createRamDevice(uint32_t startAddr, uint32_t endAddr);
  * create a rom device for the given address range
  * contents must be of equal size
  */
-HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, uint8_t *contents);
+HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, const uint8_t *contents);
+
+/* Function:  setMemoryDeviceContents
+ * --------------------
+ * update a ram/rom device contents. contents size must be equal to device size
+ */
+int setMemoryDeviceContents(HBC56Device *device, const uint8_t* contents, uint32_t contentSize);
 
 
 #endif

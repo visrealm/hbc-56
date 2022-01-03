@@ -56,6 +56,7 @@ struct LCDDevice
   int            pixelsX;
   int            pixelsY;
   uint32_t      *frameBuffer;
+  SDL_Texture   *hiddenOutput;
 };
 typedef struct LCDDevice LCDDevice;
 
@@ -110,14 +111,15 @@ HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, S
 
       device.data = lcdDevice;
       device.destroyFn = &destroyLcdDevice;
+      device.resetFn = &resetLcdDevice;
       device.readFn = &readLcdDevice;
       device.writeFn = &writeLcdDevice;
       device.renderFn = &renderLcdDevice;
 
-      device.output = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+      lcdDevice->hiddenOutput = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                           lcdDevice->pixelsX, lcdDevice->pixelsY);
 #ifndef __EMSCRIPTEN__
-      SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
+      SDL_SetTextureScaleMode(lcdDevice->hiddenOutput, SDL_ScaleModeBest);
 #endif
     }
   }
@@ -140,6 +142,19 @@ inline static LCDDevice* getLcdDevice(HBC56Device* device)
   return (LCDDevice*)device->data;
 }
 
+/* Function:  resetLcdDevice
+ * --------------------
+ * reset the lcd data structure
+ */
+static void resetLcdDevice(HBC56Device* device)
+{
+  LCDDevice* lcdDevice = getLcdDevice(device);
+  if (lcdDevice)
+  {
+    device->output = NULL;
+  }
+}
+
 /* Function:  destroyLcdDevice
  * --------------------
  * destroy/clean up the lcd data structure
@@ -154,11 +169,13 @@ static void destroyLcdDevice(HBC56Device *device)
 
     free(lcdDevice->frameBuffer);
     lcdDevice->frameBuffer = NULL;
+
+    SDL_DestroyTexture(lcdDevice->hiddenOutput);
+    lcdDevice->hiddenOutput = NULL;
   }
   free(lcdDevice);
   device->data = NULL;
 
-  SDL_DestroyTexture(device->output);
   device->output = NULL;
 }
 
@@ -171,44 +188,47 @@ static void renderLcdDevice(HBC56Device* device)
   LCDDevice* lcdDevice = getLcdDevice(device);
   if (lcdDevice)
   {
-    vrEmuLcdUpdatePixels(lcdDevice->lcd);
-
-    int w = vrEmuLcdNumPixelsX(lcdDevice->lcd);
-    int h = vrEmuLcdNumPixelsY(lcdDevice->lcd);
-
-    size_t stride = lcdDevice->pixelsX * sizeof(uint32_t);
-
-    uint32_t* fbPtr = (lcdDevice->frameBuffer - 1)
-                          + (LCD_BORDER_X * LCD_PIXEL_SCALE) 
-                          + (LCD_BORDER_Y * LCD_PIXEL_SCALE * lcdDevice->pixelsX);
-
-    for (int y = 0; y < h; ++y)
+    if (device->output)
     {
-      for (int x = 0; x < w; ++x)
+      vrEmuLcdUpdatePixels(lcdDevice->lcd);
+
+      int w = vrEmuLcdNumPixelsX(lcdDevice->lcd);
+      int h = vrEmuLcdNumPixelsY(lcdDevice->lcd);
+
+      size_t stride = lcdDevice->pixelsX * sizeof(uint32_t);
+
+      uint32_t* fbPtr = (lcdDevice->frameBuffer - 1)
+                            + (LCD_BORDER_X * LCD_PIXEL_SCALE) 
+                            + (LCD_BORDER_Y * LCD_PIXEL_SCALE * lcdDevice->pixelsX);
+
+      for (int y = 0; y < h; ++y)
       {
-        uint32_t  currentColor = lcdPal[vrEmuLcdPixelState(lcdDevice->lcd, x, y) + 1];
-
-        for (int iy = 0; iy < LCD_PIXEL_SCALE - 1; ++iy)
+        for (int x = 0; x < w; ++x)
         {
-          uint32_t* ptr = fbPtr + iy * lcdDevice->pixelsX;
+          uint32_t  currentColor = lcdPal[vrEmuLcdPixelState(lcdDevice->lcd, x, y) + 1];
 
-          for (int ix = 0; ix < LCD_PIXEL_SCALE - 1; ++ix)
+          for (int iy = 0; iy < LCD_PIXEL_SCALE - 1; ++iy)
           {
-            *(++ptr) = currentColor;
+            uint32_t* ptr = fbPtr + iy * lcdDevice->pixelsX;
+
+            for (int ix = 0; ix < LCD_PIXEL_SCALE - 1; ++ix)
+            {
+              *(++ptr) = currentColor;
+            }
           }
+
+          fbPtr += LCD_PIXEL_SCALE;
         }
-
-        fbPtr += LCD_PIXEL_SCALE;
-      }
       
-      fbPtr += LCD_PIXEL_SCALE * lcdDevice->pixelsX - w * LCD_PIXEL_SCALE;
-    }
+        fbPtr += LCD_PIXEL_SCALE * lcdDevice->pixelsX - w * LCD_PIXEL_SCALE;
+      }
 
-    void* pixels = NULL;
-    int pitch = 0;
-    SDL_LockTexture(device->output, NULL, &pixels, &pitch);
-    memcpy(pixels, lcdDevice->frameBuffer, lcdDevice->pixelsX * lcdDevice->pixelsY * sizeof(uint32_t));
-    SDL_UnlockTexture(device->output);
+      void* pixels = NULL;
+      int pitch = 0;
+      SDL_LockTexture(device->output, NULL, &pixels, &pitch);
+      memcpy(pixels, lcdDevice->frameBuffer, lcdDevice->pixelsX * lcdDevice->pixelsY * sizeof(uint32_t));
+      SDL_UnlockTexture(device->output);
+    }
   }
 }
 
@@ -253,6 +273,7 @@ static uint8_t writeLcdDevice(HBC56Device* device, uint16_t addr, uint8_t val)
   {
     if (addr == lcdDevice->cmdAddr)
     {
+      device->output = lcdDevice->hiddenOutput;
       vrEmuLcdSendCommand(lcdDevice->lcd, val);
       return 1;
     }

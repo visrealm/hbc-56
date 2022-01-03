@@ -10,7 +10,7 @@
 :: This batch file must be run in an emscripten environment
 :: eg. emsdk activate
 
-emcc -o ..\bin\hbc56.html ^
+emcc -o hbc56.html ^
   -O0 ^
   -D __EMSCRIPTEN__ ^
   -D VR_LCD_EMU_STATIC=1 ^
@@ -42,7 +42,7 @@ emcc -o ..\bin\hbc56.html ^
   ..\modules\tms9918\src\tms9918_core.c ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
-  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_main']" ^
+  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_main']" ^
   -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']"
 
 

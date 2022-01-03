@@ -83,7 +83,7 @@ HBC56Device createRamDevice(uint32_t startAddr, uint32_t endAddr)
  * create a rom device for the given address range
  * contents must be of equal size
  */
-HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, uint8_t* contents)
+HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, const uint8_t* contents)
 {
   HBC56Device device = createMemoryDevice("ROM", startAddr, endAddr);
   device.writeFn = NULL;
@@ -144,6 +144,24 @@ static uint8_t writeMemoryDevice(HBC56Device* device, uint16_t addr, uint8_t val
       memoryDevice->data[addr - memoryDevice->startAddr] = val;
       return 1;
     }
+  }
+  return 0;
+}
+
+/* Function:  setMemoryDeviceContents
+ * --------------------
+ * update a ram/rom device contents. contents size must be equal to device size
+ */
+int setMemoryDeviceContents(HBC56Device* device, const uint8_t* contents, uint32_t contentSize)
+{
+  MemoryDevice* memoryDevice = getMemoryDevice(device);
+  if (memoryDevice)
+  {
+    if (memoryDevice->endAddr - memoryDevice->startAddr != contentSize)
+      return 0;
+
+    memcpy(memoryDevice->data, contents, contentSize);
+    return 1;
   }
   return 0;
 }
