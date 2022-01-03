@@ -11,7 +11,7 @@
 :: eg. emsdk activate
 
 emcc -o hbc56.html ^
-  -O0 ^
+  -O3 ^
   -D __EMSCRIPTEN__ ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
@@ -42,8 +42,5 @@ emcc -o hbc56.html ^
   ..\modules\tms9918\src\tms9918_core.c ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
-  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_main']" ^
+  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_hbc56ToggleDebugger','_hbc56DebugBreak','_hbc56DebugRun','_hbc56DebugStepInto','_hbc56DebugStepOver','_hbc56DebugStepOut','_main']" ^
   -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']"
-
-
-#  -s EXPORT_NAME="'hbc56'" ^

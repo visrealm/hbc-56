@@ -145,6 +145,11 @@ function resetHbc56()
     Module.ccall("hbc56Reset", "void", ["void"], []);
 }
 
+function loadRomFile()
+{
+	
+}
+
 function romDropHandler(event)
 {
     event.preventDefault();
@@ -213,4 +218,29 @@ function romDropHandler(event)
 function romDragEnter(event)
 {
     event.preventDefault();
+}
+function toggleDebugger()
+{
+    Module.ccall("hbc56ToggleDebugger", "void", ["void"], []);
+}
+
+function debugBreak()
+{
+    Module.ccall("hbc56DebugBreak", "void", ["void"], []);
+}
+function debugContinue()
+{
+    Module.ccall("hbc56DebugRun", "void", ["void"], []);
+}
+function debugStepInto()
+{
+    Module.ccall("hbc56DebugStepInto", "void", ["void"], []);
+}
+function debugStepOver()
+{
+    Module.ccall("hbc56DebugStepOver", "void", ["void"], []);
+}
+function debugStepOut()
+{
+    Module.ccall("hbc56DebugStepOut", "void", ["void"], []);
 }

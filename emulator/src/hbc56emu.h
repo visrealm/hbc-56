@@ -61,4 +61,41 @@ int hbc56LoadRom(const uint8_t *romData, int romDataSize);
  */
 void hbc56LoadLabels(const char *labelFileContents);
 
+/* Function:  hbc56ToggleDebugger
+ * --------------------
+ * toggle the debugger
+ */
+void hbc56ToggleDebugger();
+
+/* Function:  hbc56DebugBreak
+ * --------------------
+ * break
+ */
+void hbc56DebugBreak();
+
+/* Function:  hbc56DebugRun
+ * --------------------
+ * run / continue
+ */
+void hbc56DebugRun();
+
+/* Function:  hbc56DebugStepInto
+ * --------------------
+ * step in
+ */
+void hbc56DebugStepInto();
+
+/* Function:  hbc56DebugStepOver
+ * --------------------
+ * step over
+ */
+void hbc56DebugStepOver();
+
+/* Function:  hbc56DebugStepOut
+ * --------------------
+ * step out
+ */
+void hbc56DebugStepOut();
+
+
 #endif

@@ -41,6 +41,7 @@ static HBC56Device* cpuDevice = NULL;
 static HBC56Device* romDevice = NULL;
 
 static char tempBuffer[256];
+static int debugWindowShown = 1;
 
 
 /* Function:  hbc56Reset
@@ -147,6 +148,63 @@ void hbc56LoadLabels(const char* labelFileContents)
   debuggerLoadLabels(labelFileContents);
 }
 
+/* Function:  hbc56ToggleDebugger
+ * --------------------
+ * toggle the debugger
+ */
+void hbc56ToggleDebugger()
+{
+  debugWindowShown = !debugWindowShown;
+  debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
+}
+
+/* Function:  hbc56DebugBreak
+ * --------------------
+ * break
+ */
+void hbc56DebugBreak()
+{
+  debugWindowShown = 1;
+  debug6502State(cpuDevice, CPU_BREAK);
+}
+
+/* Function:  hbc56DebugRun
+ * --------------------
+ * run / continue
+ */
+void hbc56DebugRun()
+{
+  debug6502State(cpuDevice, CPU_RUNNING);
+}
+
+/* Function:  hbc56DebugStepInto
+ * --------------------
+ * step in
+ */
+void hbc56DebugStepInto()
+{
+  debug6502State(cpuDevice, CPU_STEP_INTO);
+}
+
+/* Function:  hbc56DebugStepOver
+ * --------------------
+ * step over
+ */
+void hbc56DebugStepOver()
+{
+  debug6502State(cpuDevice, CPU_STEP_OVER);
+}
+
+/* Function:  hbc56DebugStepOut
+ * --------------------
+ * step out
+ */
+void hbc56DebugStepOut()
+{
+  debug6502State(cpuDevice, CPU_STEP_OUT);
+}
+
+
 
 /* Function:  mem_read_impl
  * --------------------
@@ -204,7 +262,6 @@ void mem_write(uint16_t addr, uint8_t val)
 static SDLCommonState* state;
 static int done;
 static double perfFreq = 0.0;
-static int debugWindowShown = 1;
 static int tickCount = 0;
 
 static uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
@@ -347,19 +404,17 @@ static void doEvents()
       case SDLK_d:
         if (withControl)
         {
-          debugWindowShown = !debugWindowShown;
-          debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
+          hbc56ToggleDebugger();
         }
         break;
       case SDLK_F2:
         hbc56Audio(withControl == 0);
         break;
       case SDLK_F12:
-        debugWindowShown = 1;
-        debug6502State(cpuDevice, CPU_BREAK);
+        hbc56DebugBreak();
         break;
       case SDLK_F5:
-        debug6502State(cpuDevice, CPU_RUNNING);
+        hbc56DebugRun();
         break;
       case SDLK_PAGEUP:
       case SDLK_KP_9:
@@ -387,15 +442,15 @@ static void doEvents()
       case SDLK_F11:
         if (withShift)
         {
-          debug6502State(cpuDevice, CPU_STEP_OUT);
+          hbc56DebugStepOut();
         }
         else
         {
-          debug6502State(cpuDevice, CPU_STEP_INTO);
+          hbc56DebugStepInto();
         }
         break;
       case SDLK_F10:
-        debug6502State(cpuDevice, CPU_STEP_OVER);
+        hbc56DebugStepOver();
         break;
       case SDLK_ESCAPE:
 #ifdef __EMSCRIPTEN__

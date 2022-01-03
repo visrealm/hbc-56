@@ -3,53 +3,75 @@
    <head>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
       <title>HBC-56 Emulator (BETA)</title>
+	  <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet" crossorigin="anonymous">
+	  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
       <link rel="stylesheet" href="hbc56.css">
+	  <link rel="icon" type="image/x-icon" href="favicon.ico">
    </head>
    <body>
-      <a href="https://github.com/visrealm/hbc-56"><img src="hbc56logo.png" alt="HBC-56 Logo" height="60"/></a> <span style="font-size:36px;margin-top:-5px;">Emulator</span><span style="font-size:18px;margin-top:-5px;">(BETA)</span>
-      <!--button onclick="toggleAudio()">Audio</button-->
-      <button onclick="resetHbc56()">Reset</button>
-      <div class="spinner" id='spinner'></div>
-      <div class="emscripten" id="status">Downloading...</div>
-      <div class="emscripten">
-         <progress value="0" max="100" id="progress" hidden></progress>
-      </div>
-      <div style="float:left;" class="emscripten_border">
-         <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1></canvas>
-      </div>
-      <table style="padding:5px;" class="tg">
-         <thead>
-            <tr>
-               <th style="text-align:left;">key</th>
-               <th style="text-align:left;">function</th>
-            </tr>
-         </thead>
-         <tbody>
-            <tr><td>ESC</td><td>reboot</td></tr>
-            <tr><td>F12</td><td>break</td></tr>
-            <tr><td>F11</td><td>step in</td></tr>
-            <tr><td>F10</td><td>step over</td></tr>
-            <tr><td>F5</td><td>run</td></tr>
-            <tr><td>&lt;Ctrl&gt;+D</td><td>toggle debugger</td></tr>
-         </tbody>
-      </table>
-      <br/>
-      <table style="padding:5px;" class="tg">
-         <thead>
-            <tr>
-               <th style="text-align:left;">key</th>
-               <th style="text-align:left;">nes btn</th>
-            </tr>
-         </thead>
-         <tbody>
-            <tr><td>Ctrl</td><td>B</td></tr>
-            <tr><td>Shift</td><td>A</td></tr>
-            <tr><td>Tab</td><td>Select</td></tr>
-            <tr><td>Space</td><td>Start</td></tr>
-            <tr><td>Arrows</td><td>D Pad</td></tr>
-         </tbody>
-      </table>
+	  <div class="content">
+		  <span class="title"><a href="https://github.com/visrealm/hbc-56"><img src="hbc56logo.png" alt="HBC-56 Logo" height="60"/></a>
+			<span style="font-size:36px;margin-top:15px;" class="retro title">Emulator</span><span style="font-size:18px;margin-top:5px;"  class="retro title">(BETA)</span>
+		  <!--button onclick="toggleAudio()">Audio</button-->
+		  <div class="spinner" id='spinner'></div>
+		  <div class="emscripten" id="status">Downloading...</div>
+		  <div class="emscripten">
+			 <progress value="0" max="100" id="progress" hidden></progress>
+		  </div>
+		  </span>
+		  <div class="toolbar">
+			<hr>
+			<button type="button" class="btn btn-danger" onclick="resetHbc56()" title="Reset the HBC-56"><i class="icon-power-off"></i> Reset</button> |			
+			<button type="button" class="btn btn-info" onclick="toggleDebugger()" title="Toggle the debugger"><i class="icon-bug"></i> Debugger</button>
+			<button type="button" class="btn btn-warning" onclick="debugBreak()" title="Break"><i class="icon-pause"></i> Break</button>
+			<button type="button" class="btn btn-warning" onclick="debugStepInto()" title="Step into subroutine"><i class="icon-arrow-down"></i> Step In</button>
+			<button type="button" class="btn btn-warning" onclick="debugStepOver()" title="Step over subroutine"><i class="icon-arrow-right"></i> Step Over</button>
+			<button type="button" class="btn btn-warning" onclick="debugStepOut()" title="Step out of subroutine"><i class="icon-arrow-up"></i> Step Out</button>
+			<button type="button" class="btn btn-success" onclick="debugContinue()" title="Continue / run"><i class="icon-play"></i> Continue</button> | Drag ROM/Label map file into emulator
+		  </div>
+		  <div style="float:left;border:5px solid #2E75B5;border-radius:5px;" class="emscripten_border">
+			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1></canvas>
+		  </div>
+		  <div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;" class="emscripten_border retro">
+			  <table class="tg" style="padding:5px;">
+				 <thead>
+					<tr>
+					   <th style="text-align:left;width:100px;">key</th>
+					   <th style="text-align:left;width:140px;">function</th>
+					</tr>
+				 </thead>
+				 <tbody>
+					<tr><td>ESC</td><td>reboot</td></tr>
+					<tr><td>F12</td><td>break</td></tr>
+					<tr><td>F11</td><td>step in</td></tr>
+					<tr><td>F10</td><td>step over</td></tr>
+					<tr><td>F5</td><td>run</td></tr>
+					<tr><td>&lt;Ctrl&gt;+D</td><td>toggle debugger</td></tr>
+				 </tbody>
+			  </table>
+			  </br>
+			  <table style="padding:5px;" class="tg">
+				 <thead>
+					<tr>
+					   <th style="text-align:left;width:100px;">key</th>
+					   <th style="text-align:left;width:140px;">nes btn</th>
+					</tr>
+				 </thead>
+				 <tbody>
+					<tr><td>Ctrl</td><td>B</td></tr>
+					<tr><td>Shift</td><td>A</td></tr>
+					<tr><td>Tab</td><td>Select</td></tr>
+					<tr><td>Space</td><td>Start</td></tr>
+					<tr><td>Arrows</td><td>D Pad</td></tr>
+				 </tbody>
+			  </table>
+			</div>
+		</div>
+	</div>
       <script src="hbc56-frontend.js"></script>
       <script async src="hbc56.js"></script>	
+	  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
    </body>
 </html>

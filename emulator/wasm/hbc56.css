@@ -1,5 +1,5 @@
       body {
-        font-family: monospace;
+        /*font-family: monospace;*/
         margin: 10px
         padding: none;
       }
@@ -93,3 +93,25 @@
 		width:150px;
 		height:150px;
 	  }
+	  
+	  .content {
+        margin: auto;
+        width: 1550px;
+        padding: 5px;
+	  }
+	  
+	  .retro {
+	          font-family: monospace;
+		}
+		
+		.tg thead {
+			border-bottom: 1px solid black;
+		}
+		
+		.toolbar {
+			margin:5px;
+		}
+		
+		.title {
+			margin-bottom:5px;
+		}
