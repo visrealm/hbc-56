@@ -11,7 +11,7 @@
                                 "owner": "acme",
                                 "fileLocation": [
                                     "relative",
-                                    "${workspaceFolder}/lib"
+                                    "${fileDirname}"
                                 ],
                                 "pattern": {
                                     "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
@@ -33,7 +33,7 @@
                                 "owner": "acme",
                                 "fileLocation": [
                                     "relative",
-                                    "${fileDirname}"
+                                    "${workspaceFolder}/lib"
                                 ],
                                 "pattern": {
                                     "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
