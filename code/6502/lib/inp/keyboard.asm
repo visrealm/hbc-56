@@ -74,8 +74,7 @@ kbInit:
 ; -----------------------------------------------------------------------------
 kbWaitForKey:
         jsr kbReadAscii
-        cmp #$ff
-        beq kbWaitForKey
+        bcc kbWaitForKey
         rts
 
 .kbReadByte:        
