@@ -27,6 +27,9 @@ static void tick6502CpuDevice(HBC56Device*,uint32_t,double);
 #define CPU_6502_JSR              0x20
 #define CPU_6502_RTS              0x60
 
+#define CPU_6502_MAX_TIMESTEP_SEC   0.001
+#define CPU_6502_MAX_TIMESTEP_STEPS 4000
+
 struct CPU6502Device
 {
   HBC56CpuState        currentState;
@@ -109,6 +112,13 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
   CPU6502Device* cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
   {
+    /* introduce a limit to the amount of time we can process in a single step
+       to prevent a runaway condition for slow processors */
+    if (deltaTime > CPU_6502_MAX_TIMESTEP_SEC)
+    {
+      deltaTicks = CPU_6502_MAX_TIMESTEP_STEPS;
+    }
+
     while (deltaTicks--)
     {
       /* currently, we disable interrupts while debugging since the tms9918

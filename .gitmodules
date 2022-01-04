@@ -13,3 +13,6 @@
 [submodule "emulator/modules/lcd"]
 	path = emulator/modules/lcd
 	url = https://github.com/visrealm/vrEmuLcd.git
+[submodule "tools/emsdk"]
+	path = tools/emsdk
+	url = https://github.com/emscripten-core/emsdk.git

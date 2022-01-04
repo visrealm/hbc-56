@@ -15,7 +15,7 @@
 HBC56EMU=$(ROOT_PATH)../../emulator/bin/Hbc56Emu.exe
 
 # Comile command
-ACME=acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
+ACME=$(ROOT_PATH)../../Tools/acme/acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
 
 LCD_MODEL?=12864
 

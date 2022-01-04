@@ -660,6 +660,7 @@ int main(int argc, char* argv[])
   romLoaded = loadRom("rom.bin");
   lcdType = LCD_GRAPHICS;
 #endif
+  int doBreak = 0;
 
   /* parse arguments */
   for (int i = 1; i < argc;)
@@ -682,7 +683,7 @@ int main(int argc, char* argv[])
       else if (SDL_strcasecmp(argv[i], "--brk") == 0)
       {
         consumed = 1;
-        debug6502State(cpuDevice, CPU_BREAK);
+        doBreak = 1;
       }
       /* enable the lcd? */
       else if (SDL_strcasecmp(argv[i], "--lcd") == 0)
@@ -784,6 +785,8 @@ int main(int argc, char* argv[])
 
   /* initialise the debugger */
   debuggerInit(cpu6502_get_regs());
+
+  if (doBreak)hbc56DebugBreak();
 
   SDL_Delay(100);
 

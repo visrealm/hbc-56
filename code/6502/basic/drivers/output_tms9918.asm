@@ -22,7 +22,7 @@ BORDER = TMS_LT_BLUE
         +tmsColorFgBg FG, BG
         jsr tmsInitEntireColorTable
 
-        +tmsEnableInterrupts    ; gives us the console cursor, etc.
+        ;+tmsEnableInterrupts    ; gives us the console cursor, etc.
         +tmsEnableOutput
 
         +consoleEnableCursor

@@ -1,0 +1,45 @@
+ACME - the ACME Crossassembler for Multiple Environments
+  Copyright (C) 1998-2020 Marco Baye
+This is ACME, release 0.97 ("Zem"), 4 Jul 2020
+  DOS/OS2/Win32 version. Compiled by Dirk Hoepfner
+ACME comes with ABSOLUTELY NO WARRANTY; for details read the help file.
+  This is free software, and you are welcome to redistribute it under
+  certain conditions; as outlined in the GNU General Public License.
+Dedicated to the wisest being I ever had the pleasure of reading
+  books of (currently spending some time dead for tax reasons).
+The newest version can be found at the ACME homepage:
+  http://sourceforge.net/p/acme-crossass/
+
+Usage:
+acme [OPTION...] [FILE]...
+
+Options:
+  -h, --help             show this help and exit
+  -f, --format FORMAT    set output file format
+  -o, --outfile FILE     set output file name
+  -r, --report FILE      set report file name
+  -l, --symbollist FILE  set symbol list file name
+      --labeldump        (old name for --symbollist)
+      --vicelabels FILE  set file name for label dump in VICE format
+      --setpc NUMBER     set program counter
+      --cpu CPU          set target processor
+      --initmem NUMBER   define 'empty' memory
+      --maxerrors NUMBER set number of errors before exiting
+      --maxdepth NUMBER  set recursion depth for macro calls and !src
+      --ignore-zeroes    do not determine number size by leading zeroes
+      --strict-segments  turn segment overlap warnings into errors
+  -vDIGIT                set verbosity level
+  -DSYMBOL=VALUE         define global symbol
+  -I PATH/TO/DIR         add search path for input files
+  -Wno-label-indent      suppress warnings about indented labels
+  -Wno-old-for           (old, use "--dialect 0.94.8" instead)
+  -Wno-bin-len           suppress warnings about lengths of binary literals
+  -Wtype-mismatch        enable type checking (warn about type mismatch)
+      --use-stdout       fix for 'Relaunch64' IDE (see docs)
+      --msvc             output errors in MS VS format
+      --color            uses ANSI color codes for error output
+      --fullstop         use '.' as pseudo opcode prefix
+      --dialect VERSION  behave like different version
+      --test             enable experimental features
+  -V, --version          show version and exit
+

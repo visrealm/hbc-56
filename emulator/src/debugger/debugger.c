@@ -448,7 +448,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
   for (int i = 0; i < 30; ++i)
   {
-    if (pc < 0x200)
+    if (pc < 0x20)
     {
       continue;
     }
