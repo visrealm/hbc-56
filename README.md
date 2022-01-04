@@ -28,6 +28,9 @@ I have also included an emulator for this system. The emulator supports:
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: https://github.com/visrealm/vrEmuTms9918
 * Support for the dual AY-3-8910 audio.
 
+The emulator is also available for Web (Beta). You can try a live instance here: https://visrealm.github.io/hbc-56/emulator/wasm You can load a new ROM by dragging the rom file on to the emulator.
+
+
 Full details on the Emulator here: [github.com/visrealm/hbc-56/emulator](emulator)
 
 ## Running the demos
