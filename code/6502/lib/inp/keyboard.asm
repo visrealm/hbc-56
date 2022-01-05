@@ -67,6 +67,14 @@ kbWaitData:
 kbInit:
         lda #$00
         sta KB_FLAGS
+
+        ldx #16 ;buffer size
+        
+        ; ensure the keyboard buffer is clear
+-
+        jsr kbReadAscii
+        dex
+        bne -
         rts
 
 ; -----------------------------------------------------------------------------
@@ -116,10 +124,11 @@ isAlpha:
         rts
 
 ; -----------------------------------------------------------------------------
-; kbRead: Read keyboard buffer
+; kbReadAscii: Read keyboard buffer
 ; -----------------------------------------------------------------------------
 ; Outputs:
 ;   A: Value of the buffer
+;   C: Set if a key is read
 ; -----------------------------------------------------------------------------
 kbReadAscii:
         stx KB_TMP_X

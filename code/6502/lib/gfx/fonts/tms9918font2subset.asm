@@ -1,4 +1,4 @@
-; 6502 - TMS9918 Font 2 Subset
+; 6502 - TMS9918 Font 2 Subset 6x8 Text mode
 ;
 ; Copyright (c) 2021 Troy Schrapel
 ;

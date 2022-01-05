@@ -7,22 +7,20 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-; -----------------------------------------------------------------------------
-; hbc56SetupDisplay - Setup the display (TMS9918)
-; -----------------------------------------------------------------------------
-hbc56SetupDisplay:
-        ;jsr tmsModeText         ; set display to text mode
-
 FG     = TMS_WHITE
 BG     = TMS_DK_BLUE
 BORDER = TMS_LT_BLUE
 
+; -----------------------------------------------------------------------------
+; hbc56SetupDisplay - Setup the display (TMS9918)
+; -----------------------------------------------------------------------------
+hbc56SetupDisplay:
         +tmsColorFgBg FG, BORDER
         jsr tmsSetBackground
         +tmsColorFgBg FG, BG
         jsr tmsInitEntireColorTable
 
-        ;+tmsEnableInterrupts    ; gives us the console cursor, etc.
+        +tmsEnableInterrupts    ; gives us the console cursor, etc.
         +tmsEnableOutput
 
         +consoleEnableCursor
