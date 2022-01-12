@@ -12,7 +12,7 @@ PROCESSOR 16F627A
 
 #include <xc.inc>
 
-CONFIG  FOSC = INTOSCIO       ; Oscillator Selection bits (INTOSC oscillator: I/O function on RA6/OSC2/CLKOUT pin, I/O function on RA7/OSC1/CLKIN)
+CONFIG  FOSC = HS             ; Oscillator Selection bits (HS oscillator: High-speed crystal/resonator on RA6/OSC2/CLKOUT and RA7/OSC1/CLKIN)
 CONFIG  WDTE = OFF            ; Watchdog Timer Enable bit (WDT disabled)
 CONFIG  PWRTE = OFF           ; Power-up Timer Enable bit (PWRT disabled)
 CONFIG  MCLRE = OFF           ; RA5/MCLR/VPP Pin Function Select bit (RA5/MCLR/VPP pin function is digital input, MCLR internally tied to VDD)
@@ -22,7 +22,7 @@ CONFIG  CPD = OFF             ; Data EE Memory Code Protection bit (Data memory 
 CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code protection off)
 
 CPUFREQ		equ	20000000	    ; CPU frequency (20MHz)
-DELAY_US_COUNT	equ	(CPUFREQ / 5000000)
+DELAY_US_COUNT	equ	(CPUFREQ / 10000000)
 BYTE_BITS	equ	8
 BUFFER_BITS	equ	4		    ; 2^4 bytes in buffer
 BUFFER_SIZE	equ	(1 << BUFFER_BITS)  ; (16)
@@ -34,8 +34,8 @@ PS2_TEST_PASS	equ	0xAA
 #define CLOCK_IO	TRISA0
 #define DATA_PIN	RA1
 #define DATA_IO		TRISA1
-#define RCV_LED_PIN	RA2
-#define RCV_LED_IO	TRISA2
+#define DAT_RDY_PIN	RA2
+#define DAT_RDY_IO	TRISA2
 #define _INT_PIN	RA3
 #define _INT_IO		TRISA3
 #define _OE_PIN		RA5
@@ -50,6 +50,7 @@ bufferTail:	    ds 1		; circular buffer tail pointer
 rxByteTmp:	    ds 1		; temporary storage for received byte
 txByteTmp:	    ds 1		; temporary storage for sent byte
 loopVar:	    ds 1		; looping variable
+nextScancode:	    ds 1		; ask for the next scancode
     
 ; ------------------------------------------------------------------------------
 ; bank0 - Switch to bank0 
@@ -110,22 +111,13 @@ PSECT intVec,class=CODE,delta=2
 ; ------------------------------------------------------------------------------
 intVec:
     bank0
-
+    bcf DAT_RDY_PIN
     clearOutput 		    ; clear output
-    btfsc   _INT_PIN		    ; check if INT is low (is there data ready?)
-    goto    skipOutput		    ; if it's not, skip the OE
-
-    call    qPopFront		    ; get the received scancode
-    writeOutput 		    ; output it
-
-    skipIfQueueNotEmpty
-    bsf	    _INT_PIN		    ; clear interrupt
     
-skipOutput:
     ; set up timer again
     bcf	    T0IF	  ; Clear Timer0 interrupt flag
-    movlw   0xff
-    movwf   TMR0
+    clrf    TMR0
+    decf    TMR0
     retfie
   
 PSECT code
@@ -134,8 +126,11 @@ PSECT code
 ; ------------------------------------------------------------------------------
 main:
     call init		    ; initialise the registers
-    call longDelay
     call waitForKbSelfTest  ; wait for the keyboard
+
+    clrf    TMR0
+    decf    TMR0
+    bsf	    GIE		    ; Global interrupt enable
     call loop		    ; enter the main loop
     
 ; ------------------------------------------------------------------------------
@@ -147,30 +142,33 @@ init:
     bank0
     clrf    PORTA	  ; Initialize GPIO by clearing output
     clrf    PORTB	  ; Initialize GPIO by clearing output
-    bsf	    _INT_PIN	  ; Turn off interrupt out
+    bcf	    _INT_PIN	  ; Turn off interrupt out
     movlw   CMCON_CM_MASK ; Turn comparators off
     movwf   CMCON
 
     bank1
+    bcf	    GIE		  ; Global interrupt disable    
     clrf    TRISA	  ; Initialize GPIO by setting all pins as output
     clrf    TRISB         ; Initialize GPIO by setting all pins as output
+    ;bsf     TRISA,6
+    ;bsf     TRISA,7
     bsf	    CLOCK_IO      ; set Clock as floating (input)
     bsf	    DATA_IO       ; set Data as floating (input)
     bsf	    _OE_IO        ; set OE as floating (input)
     bsf	    RA4		  ; Timer0 clock pin (input)
+    bsf	    RA5		  ; Timer0 clock pin (input)
     
     bsf	    T0CS	  ; Timer0 external clock mode (counter mode)
     bcf	    T0SE	  ; Timer0 increment on rising edge
     bsf	    T0IE	  ; Enable Timer0 interrupts
     bcf	    T0IF	  ; Clear Timer0 interrupt flag
-    bsf	    GIE		  ; Set global interrupt enable    
-    
     bank0
 
     clrf    bufferHead	  ; clear variables
     clrf    bufferTail
     clrf    rxByteTmp
-    clrf    txByteTmp  
+    clrf    txByteTmp
+    clrf    nextScancode
     
     return
 
@@ -181,25 +179,35 @@ init:
 ; from the host. This subroutine waits for 0xAA and sends a response.
 ; ------------------------------------------------------------------------------
 waitForKbSelfTest:
-    
+    bsf _INT_PIN
     call    readByte		    ; read a byte into rxByteTmp
     movf    rxByteTmp,w
     xorlw   PS2_TEST_PASS	    ; Self-test pass?
+    bcf _INT_PIN
     btfss   ZERO		    ; loop again if not zero
     goto waitForKbSelfTest
+    
 
-    movlw   5
+    movlw   200
     call    delayUs
     
+    bsf _INT_PIN
     call    pullClockUp		    ; initiate a send
+    bcf _INT_PIN
+    bsf _INT_PIN
     call    pullDataUp
-    movlw   1
+    bcf _INT_PIN
+    movlw   40
     call    delayUs
+    bsf _INT_PIN
     call    pullClockDown
-    movlw   5
+    bcf _INT_PIN
+    movlw   200
     call    delayUs
+    bsf _INT_PIN
     call    pullDataDown
     call    releaseClock  
+    bcf _INT_PIN
     
     ; Note: due to my keyboard not sending clock signals??? we just wait
     ;       and return
@@ -209,10 +217,13 @@ waitForKbSelfTest:
     call    pullDataUp
     movlw   180
     call    delayUs
+    bsf _INT_PIN
     call    releaseData
+    bcf _INT_PIN
 
     call    longDelay
     call    longDelay
+    
     return
 
 
@@ -220,28 +231,33 @@ waitForKbSelfTest:
 ; loop - main program loop
 ; ------------------------------------------------------------------------------
 loop:
+    btfsc DAT_RDY_PIN		; skip if data is ready... already
+    goto checkForKeyboardInput
+    
+    skipIfQueueNotEmpty
+    goto checkForKeyboardInput
+
+    call    qPopFront		    ; get the received scancode
+    writeOutput 		    ; output it
+    
+    bsf DAT_RDY_PIN
+
+    skipIfQueueNotEmpty
+    bsf	    _INT_PIN		    ; clear interrupt
     
 checkForKeyboardInput:
     btfsc   CLOCK_PIN		    ; check if clock is low
-    goto    checkForKeyboardInput   ; if it's not, skip the read
-
-    bsf	    RCV_LED_PIN		    ; turn on receive LED
+    goto    loop		    ; if it's not, skip the read
 
     call    readByte
     call    qPushBack
-
-    skipIfOutputEmpty
-    goto dataIsReady
-    call    qPopFront		    ; get the received scancode
-    writeOutput                     ; output it
   
 dataIsReady:  
     bcf	    _INT_PIN		    ; Interrupt
 
-    movlw   20
+    movlw   100
     call    delayUs
 
-    bcf	    RCV_LED_PIN		    ; turn off receive LED
     goto loop
     
   
@@ -251,6 +267,7 @@ dataIsReady:
 ; Inputs: rxByteTmp - value to push
 ; ------------------------------------------------------------------------------
 qPushBack:
+    bcf	    T0IE		    ; disable interrupt
     movlw   buffer		    ; set up FSR to buffer tail
     bcf	    CARRY
     addwf   bufferTail,w
@@ -262,6 +279,7 @@ qPushBack:
     incf    bufferTail		    ; increment bufferTail pointer
     movlw   BUFFER_MASK		    ; roll around if pointer
     andwf   bufferTail,f            ; past end
+    bsf	    T0IE		    ; enable interrupt
     return
     
 ; ------------------------------------------------------------------------------
@@ -334,7 +352,6 @@ readByte:
     movwf   loopVar
     
     call    waitForClockHigh
-
 readBitLoop:		    ; read a bit
     bcf	    CARRY           ; clear carry
     call    waitForClockLow 
@@ -379,6 +396,7 @@ pullClockDown:
     bank1
     bcf	    CLOCK_IO
     bank0
+    bcf	    CLOCK_PIN
     return
   
 ; ------------------------------------------------------------------------------
@@ -398,6 +416,7 @@ pullDataDown:
     bank1
     bcf	    DATA_IO
     bank0
+    bcf	    DATA_PIN
     return
 
 ; ------------------------------------------------------------------------------
@@ -414,16 +433,6 @@ releaseData:
 ; longDelay - a long delay...
 ; ------------------------------------------------------------------------------
 longDelay:
-    movlw   255
-    call    delayUs
-    movlw   255
-    call    delayUs
-    movlw   255
-    call    delayUs
-    movlw   255
-    call    delayUs
-    movlw   255
-    call    delayUs
     movlw   255
     call    delayUs
     movlw   255
