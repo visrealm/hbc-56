@@ -24,8 +24,8 @@ JMP_OPCODE = $4c
 LCD_IO_PORT             = $02
 TMS9918_IO_PORT         = $10
 AY_IO_PORT              = $40
-KB_IO_PORT              = $81
-NES_IO_PORT             = $80
+KB_IO_PORT              = $80
+NES_IO_PORT             = $82
 
 ; -------------------------
 ; Kernel Zero Page
@@ -119,11 +119,6 @@ HBC56_META_TITLE_LEN    = HBC56_META_TITLE_END + 1
 
 ; callback function on vsync
 HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
-
-;!warn "Total RAM used: ",NES_RAM_END-HBC56_KERNEL_RAM_START
-sync
-HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
-
 ;!warn "Total RAM used: ",.NES_RAM_END-HBC56_KERNEL_RAM_START
 
 !src "hbc56.asm"
@@ -258,11 +253,10 @@ hbc56Bell:
 
 
 kernelMain:
+        sei
         cld     ; make sure we're not in decimal mode
         ldx #$ff
         txs
-        
-        sei
         
         lda #RTI_OPCODE
         sta HBC56_INT_VECTOR
@@ -322,18 +316,18 @@ kernelMain:
         dec HBC56_TMP
         bne -
        
-        jsr hbc56HighBell
         !ifdef HAVE_TMS9918 {
                 +tmsEnableInterrupts
+
+                ;+tmsSetAddrColorTable 16
+                ;+tmsColorFgBg TMS_WHITE, HBC56_BACKGROUND
+                ;ldx #2
+                ;jsr _tmsSendX8
+
         }
         cli
 
-        lda #4
-        sta HBC56_TMP
--
-        jsr hbc56Delay
-        dec HBC56_TMP
-        bne -
+        jsr hbc56HighBell
 
         lda #HBC56_CONSOLE_FLAG_NES
         and HBC56_CONSOLE_FLAGS
@@ -343,7 +337,7 @@ kernelMain:
         ; NES input
         sei
         !ifdef HAVE_TMS9918 {
-                +tmsPrintZ .HBC56_PRESS_ANY_NES_TEXT, (32 - .HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 15
+                +tmsPrintZ .HBC56_PRESS_ANY_NES_TEXT, (32 - .HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 17
         }
 
         !ifdef HAVE_LCD {
@@ -370,7 +364,7 @@ kernelMain:
         ; Keyboard  input
         sei
         !ifdef HAVE_TMS9918 {
-                +tmsPrintZ .HBC56_PRESS_ANY_KEY_TEXT, (32 - .HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 15
+                +tmsPrintZ .HBC56_PRESS_ANY_KEY_TEXT, (32 - .HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 17
         }
 
         !ifdef HAVE_LCD {
@@ -416,6 +410,12 @@ kernelMain:
 
         jsr DEFAULT_HBC56_RST_VECTOR
 
+hbc56Reset:
+        jmp kernelMain
+
+hbc56Stop:
+        jmp hbc56Stop
+
 hbc56CustomDelayMs:
         inc DELAY_H
 -
@@ -429,9 +429,6 @@ hbc56CustomDelayMs:
 	bne -
 	rts
 
-
-hbc56Stop:
-        jmp hbc56Stop
 
 ;!warn "Kernel size: ", *-$f000
 ;!warn "Bytes remaining: ", DEFAULT_HBC56_INT_VECTOR-*

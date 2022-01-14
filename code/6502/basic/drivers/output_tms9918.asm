@@ -8,8 +8,8 @@
 ;
 
 FG     = TMS_WHITE
-BG     = TMS_DK_BLUE
-BORDER = TMS_LT_BLUE
+BG     = TMS_BLACK
+BORDER = TMS_DK_BLUE
 
 ; -----------------------------------------------------------------------------
 ; hbc56SetupDisplay - Setup the display (TMS9918)

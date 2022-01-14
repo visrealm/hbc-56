@@ -8,7 +8,7 @@
 ;
 
 
-!ifndef NES_IO_PORT { NES_IO_PORT = $80
+!ifndef NES_IO_PORT { NES_IO_PORT = $82
         !warn "NES_IO_PORT not provided. Defaulting to ", NES_IO_PORT
 }
 
@@ -29,37 +29,61 @@ NES_RAM_SIZE   = 1
 
 
 ; IO Ports
-NES_IO_ADDR     = IO_PORT_BASE_ADDRESS | NES_IO_PORT
+NES1_IO_ADDR     = IO_PORT_BASE_ADDRESS | NES_IO_PORT
+NES2_IO_ADDR     = IO_PORT_BASE_ADDRESS | NES_IO_PORT | $01
 
 
-NES_RIGHT       = %10000000
-NES_LEFT        = %01000000
-NES_DOWN        = %00100000
-NES_UP          = %00010000
-NES_START       = %00001000
-NES_SELECT      = %00000100
-NES_B           = %00000010
-NES_A           = %00000001
+NES_RIGHT       = %00000001
+NES_LEFT        = %00000010
+NES_DOWN        = %00000100
+NES_UP          = %00001000
+NES_START       = %00010000
+NES_SELECT      = %00100000
+NES_B           = %01000000
+NES_A           = %10000000
 
 ; -----------------------------------------------------------------------------
-; nesWaitForPress: Wait for a NES button press
+; nesWaitForPress: Wait for a NES button press (either port)
 ; -----------------------------------------------------------------------------
 nesWaitForPress:
-        lda NES_IO_ADDR
+        lda NES1_IO_ADDR
         cmp #$ff
-        beq nesWaitForPress
+        bne @pressed
+        lda NES2_IO_ADDR
+        cmp #$ff
+        beq nesWaitForPress        
+@pressed
         rts
 
 ; -----------------------------------------------------------------------------
-; nesPressed: Is a button pressed?
+; nes1Pressed: Is a button pressed?
 ; -----------------------------------------------------------------------------
 ; Inputs:
 ;   A: Button to test
 ; Outputs:
 ;   Carry set if pressed, Carry clear if not
-nesPressed:
+nes1Pressed:
         sta NES_TMP
-        lda NES_IO_ADDR
+        lda NES1_IO_ADDR
+        eor #$ff
+        and NES_TMP
+        clc
+        beq +
+        sec
++
+        lda NES_TMP
+        rts
+
+; -----------------------------------------------------------------------------
+; nes2Pressed: Is a button pressed?
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: Button to test
+; Outputs:
+;   Carry set if pressed, Carry clear if not
+nes2Pressed:
+        sta NES_TMP
+        lda NES2_IO_ADDR
         eor #$ff
         and NES_TMP
         clc

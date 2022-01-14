@@ -171,7 +171,22 @@ TMS_REGISTER_DATA:
 !byte TMS_BLACK << 4 | TMS_BLACK
 
 
+; -----------------------------------------------------------------------------
+; Delay subroutines required for TMS9918 CPU access windows
+; -----------------------------------------------------------------------------
+;      CONDITION          MODE    VDP DELAY       WAIT TIME          TOTAL TIME
+; -----------------------------------------------------------------------------
+;  Active Display Area   Text        2uS          0 - 1.1uS           2 - 3.1uS      
+;  Active Display Area   GFX I, II   2uS          0 - 5.95uS          2 - 8uS      
+;  4300uS after VSYNC    All         2uS             0uS                2uS      
+;  Reg 1 Blank Bit 0     All         2uS             0uS                2uS      
+;  Active Display Area   Multicolor  2uS          0 - 1.5uS           2 - 3.5uS      
+; -----------------------------------------------------------------------------
 _tmsWaitData:
+        nop
+        nop
+        nop
+        nop
         nop
         nop
         nop

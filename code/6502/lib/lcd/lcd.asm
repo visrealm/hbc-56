@@ -210,7 +210,6 @@ lcdCursorBlinkOn:
 lcdDetect:
 	clc
 	lda LCD_CMD
-	eor #$ff
 	beq +
 	sec
 +

@@ -119,37 +119,37 @@ LAST_SECONDS_L = $8b
 
 outputSeconds:
         +tmsSetPosWrite 8, 1
-        +nesBranchIfNotPressed NES_LEFT, +
+        +nes1BranchIfNotPressed NES_LEFT, +
         +tmsPut 'L'
         dec XPOS
 +
-        +nesBranchIfNotPressed NES_RIGHT, +
+        +nes1BranchIfNotPressed NES_RIGHT, +
         +tmsPut 'R'
         inc XPOS
 +
-        +nesBranchIfNotPressed NES_UP, +
+        +nes1BranchIfNotPressed NES_UP, +
         +tmsPut 'U'
         dec YPOS
 +
-        +nesBranchIfNotPressed NES_DOWN, +
+        +nes1BranchIfNotPressed NES_DOWN, +
         +tmsPut 'D'
         inc YPOS
 +
-        +nesBranchIfNotPressed NES_SELECT, +
+        +nes1BranchIfNotPressed NES_SELECT, +
         +tmsPut 'S'
         +tmsPut 'e'
         dec YPOS1
 +
-        +nesBranchIfNotPressed NES_START, +
+        +nes1BranchIfNotPressed NES_START, +
         +tmsPut 'S'
         +tmsPut 't'
         inc YPOS1
 +
-        +nesBranchIfNotPressed NES_B, +
+        +nes1BranchIfNotPressed NES_B, +
         +tmsPut 'B'
         dec XPOS1
 +
-        +nesBranchIfNotPressed NES_A, +
+        +nes1BranchIfNotPressed NES_A, +
         +tmsPut 'A'
         inc XPOS1
 +

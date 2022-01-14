@@ -131,30 +131,23 @@ restartGame:
 
         jsr renderGameField
 
-        lda HBC56_TICKS
-        sta V_SYNC
-
         +tmsEnableOutput
+
+        +hbc56SetVsyncCallback gameLoop
+
         +tmsEnableInterrupts
         cli
+
+        jmp hbc56Stop
 
 nextFrame:
-        cli
         +tmsEnableInterrupts
-
+        rts
 
 gameLoop:
-        
-        jsr testjumpOut
-        jsr testjumpOut
-        jsr testjumpOut
-        lda V_SYNC
-        cmp HBC56_TICKS
-        beq gameLoop
-        sei
         +tmsDisableInterrupts
 
-        +nesBranchIfNotPressed NES_B, skipFire
+        +nes1BranchIfNotPressed NES_B, skipFire
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
         bne skipFire
@@ -171,11 +164,11 @@ gameLoop:
         +tmsSpritePosXYReg SPRITE_BULLET
 skipFire
 
-        +nesBranchIfNotPressed NES_LEFT, skipMoveLeft
+        +nes1BranchIfNotPressed NES_LEFT, skipMoveLeft
         dec PLAYER_X
         dec PLAYER_X
 skipMoveLeft
-        +nesBranchIfNotPressed NES_RIGHT, skipMoveRight
+        +nes1BranchIfNotPressed NES_RIGHT, skipMoveRight
         inc PLAYER_X
         inc PLAYER_X
 skipMoveRight
@@ -305,9 +298,6 @@ shieldNotBombed
         ldy #PLAYER_POS_Y
         +tmsSpritePosXYReg SPRITE_PLAYER
 
-        lda HBC56_TICKS
-        sta V_SYNC
-
         jsr audioBulletIncreasePitch
 
         inc FRAMES_COUNTER
@@ -393,7 +383,8 @@ shieldNotBombed
 +
         jsr renderGameField
 
-jmp nextFrame
+        jmp nextFrame
+
 
 .moveLeft
         dec GAMEFIELD_OFFSET_X

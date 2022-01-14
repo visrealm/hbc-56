@@ -13,9 +13,9 @@ LOGO_BUFFER = $3000
 
 !ifdef HAVE_TMS9918 {
         HBC56_BORDER     = TMS_DK_BLUE 
-        HBC56_BACKGROUND = TMS_DK_BLUE
-        HBC56_LOGO       = TMS_WHITE 
-        HBC56_TEXT       = TMS_WHITE
+        HBC56_BACKGROUND = TMS_WHITE
+        HBC56_LOGO       = TMS_DK_BLUE 
+        HBC56_TEXT       = TMS_DK_BLUE
 }
 
 !ifdef HBC56_TITLE_TEXT {
@@ -50,8 +50,10 @@ hbc56LogoPattEnd:
 hbc56BootScreen:
 
 !ifdef HAVE_TMS9918 {
+        +tmsSetAddrColorTable 16
         +tmsColorFgBg HBC56_LOGO, HBC56_BACKGROUND
-        jsr tmsInitEntireColorTable
+        ldx #2
+        jsr _tmsSendX8
         +tmsColorFgBg HBC56_TEXT, HBC56_BACKGROUND
         ldx #16
         jsr tmsInitColorTable
@@ -66,11 +68,11 @@ hbc56BootScreen:
         +tmsSetAddrPattTableInd 200
         +tmsSendData hbc56LogoPatt, $178
 
-        +tmsPrintZ HBC56_META_TITLE, 8, 15
+        +tmsPrintZ HBC56_META_TITLE, 8, 14
 
 
         !ifdef HBC56_TITLE_TEXT {
-                +tmsPrintZ HBC56_TITLE, (32 - HBC56_TITLE_LEN) / 2, 23
+                +tmsPrintZ HBC56_TITLE, (32 - HBC56_TITLE_LEN) / 2, 22
         }
 
         +tmsColorFgBg TMS_GREY, HBC56_BORDER
@@ -92,9 +94,9 @@ hbc56BootScreen:
                 +tilemapCreateDefault (TILEMAP_SIZE_X_16 | TILEMAP_SIZE_Y_8), hbc56FontLcd-(32*8)
                 +memset TILEMAP_DEFAULT_BUFFER_ADDRESS, ' ', 128
 
-                +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*6, HBC56_META_TITLE, 16
+                +memcpy TILEMAP_DEFAULT_BUFFER_ADDRESS + 16*4, HBC56_META_TITLE, 16
 
-                ldy #6
+                ldy #4
                 jsr tilemapRenderRowToLcd
 
         } else {

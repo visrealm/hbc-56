@@ -9,18 +9,16 @@
 
 !src "hbc56kernel.inc"
 
+hbc56Meta:
+        +setHbcMetaTitle "CPU UNIT TESTS"
+        rts
+
 hbc56Main:
         sei
         jsr kbInit
 
-        jsr tmsModeText
-
-        +tmsSetAddrNameTable
-        lda #' '
-        ldx #(40 * 25 / 8)
-        jsr _tmsSendX8
-
         +tmsSetColorFgBg TMS_LT_GREEN, TMS_BLACK
+        jsr tmsInitEntireColorTable
         +tmsEnableOutput
         cli
 

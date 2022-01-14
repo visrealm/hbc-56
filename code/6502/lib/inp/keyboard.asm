@@ -7,7 +7,7 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-!ifndef KB_IO_PORT { KB_IO_PORT = $81
+!ifndef KB_IO_PORT { KB_IO_PORT = $80
         !warn "KB_IO_PORT not provided. Defaulting to ", KB_IO_PORT
 }
 
@@ -44,7 +44,8 @@ KB_SCANCODE_RIGHT_SHIFT  = $59
 KB_SCANCODE_CAPS_LOCK    = $58
 
 ; IO Ports
-KB_IO_ADDR     = IO_PORT_BASE_ADDRESS | KB_IO_PORT
+KB_IO_ADDR         = IO_PORT_BASE_ADDRESS | KB_IO_PORT
+KB_STATUS_ADDR     = IO_PORT_BASE_ADDRESS | KB_IO_PORT | $01
 
 ; -----------------------------------------------------------------------------
 ; kbWaitData: Not sure how much delay we need so make a macro for now
@@ -87,14 +88,18 @@ kbWaitForKey:
 
 .kbReadByte:        
         +kbWaitData
-        ldx KB_IO_ADDR
+        ldx #0
+        lda #$04
+        bit KB_STATUS_ADDR
+        beq @end
 
         ldy #32
 -
 	dey
 	bne -
 
-        lda KB_IO_ADDR
+        ldx KB_IO_ADDR
+@end
         rts
 
 ; -----------------------------------------------------------------------------
@@ -134,6 +139,7 @@ kbReadAscii:
         stx KB_TMP_X
         sty KB_TMP_Y
         jsr .kbReadByte
+        beq .noCharacterRead
         cpx #KB_RELEASE
         bne .keyPressed
 
