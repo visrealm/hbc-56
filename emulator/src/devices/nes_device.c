@@ -25,14 +25,14 @@ struct NESDevice
 typedef struct NESDevice NESDevice;
 
 /* nes constants */
-#define NES_RIGHT  0b10000000
-#define NES_LEFT   0b01000000
-#define NES_DOWN   0b00100000
-#define NES_UP     0b00010000
-#define NES_START  0b00001000
-#define NES_SELECT 0b00000100
-#define NES_B      0b00000010
-#define NES_A      0b00000001
+#define NES_RIGHT  0b00000001
+#define NES_LEFT   0b00000010
+#define NES_DOWN   0b00000100
+#define NES_UP     0b00001000
+#define NES_START  0b00010000
+#define NES_SELECT 0b00100000
+#define NES_B      0b01000000
+#define NES_A      0b10000000
 
 /* Function:  createRamNESDevice
  * --------------------

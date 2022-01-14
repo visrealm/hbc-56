@@ -20,6 +20,9 @@ static void eventKeyboardDevice(HBC56Device*, SDL_Event*);
 /* map sdl scancodes to ps/2 scancodes */
 static uint64_t sdl2ps2map[232][2];
 
+#define KB_INT_FLAG 0x02
+#define KB_RDY_FLAG 0x04
+
 /* keyboard device data */
 struct KeyboardDevice
 {
@@ -27,7 +30,6 @@ struct KeyboardDevice
   char      kbQueue[16];
   int       kbStart;
   int       kbEnd;
-  int       kbReadCount;
 };
 typedef struct KeyboardDevice KeyboardDevice;
 
@@ -83,13 +85,17 @@ static uint8_t readKeyboardDevice(HBC56Device* device, uint16_t addr, uint8_t *v
       {
         *val = kbDevice->kbQueue[kbDevice->kbStart];
 
-        if (++kbDevice->kbReadCount & 0x01)
-        {
-          ++kbDevice->kbStart;
-          kbDevice->kbStart &= 0x0f;
-        }
-
+        ++kbDevice->kbStart;
+        kbDevice->kbStart &= 0x0f;
       }
+      return 1;
+    }
+    else if (addr == kbDevice->addr + 1)
+    {
+      /* status */
+      *val = (kbDevice->kbStart != kbDevice->kbEnd) 
+                  ? (KB_INT_FLAG | KB_RDY_FLAG)
+                  : 0;
       return 1;
     }
   }
@@ -104,7 +110,6 @@ static void resetKeyboardDevice(HBC56Device* device)
   {
     kbDevice->kbStart = 0;
     kbDevice->kbEnd = 0;
-    kbDevice->kbReadCount = 0;
   }
 }
 

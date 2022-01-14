@@ -107,7 +107,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Rendere
     device.output = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                       TMS9918_DISPLAY_WIDTH, TMS9918_DISPLAY_HEIGHT);
 #ifndef __EMSCRIPTEN__
-    SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
+    //SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
 #endif
 
   }

@@ -18,7 +18,7 @@
   -------------------------------------------------------------------------- */
 #define HBC56_HAVE_THREADS      0
 
-#define HBC56_CLOCK_FREQ        4000000
+#define HBC56_CLOCK_FREQ        3686400   /* half of 7.3728*/
 #define HBC56_AUDIO_FREQ        48000
 #define HBC56_MAX_DEVICES       16
 
@@ -48,10 +48,10 @@
 
 
 #define HBC56_HAVE_NES          1
-#define HBC56_NES_PORT          0x80
+#define HBC56_NES_PORT          0x82
 
 #define HBC56_HAVE_KB           1
-#define HBC56_KB_PORT           0x81
+#define HBC56_KB_PORT           0x80
 
 #define HBC56_HAVE_AY_3_8910    1
 #define HBC56_AY_3_8910_COUNT   2

@@ -212,7 +212,7 @@ void hbc56DebugStepOut()
  */
 static uint8_t mem_read_impl(uint16_t addr, int dbg)
 {
-  uint8_t val = 0xff;
+  uint8_t val = 0x00;
   for (size_t i = 0; i < deviceCount; ++i)
   {
     if (readDevice(&devices[i], addr, &val, dbg))
@@ -748,10 +748,14 @@ int main(int argc, char* argv[])
 
 #if HBC56_HAVE_NES
   hbc56AddDevice(createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT)));
+  hbc56AddDevice(createNESDevice(HBC56_IO_ADDRESS(HBC56_NES_PORT | 0x01)));
 #endif
 
 #if HBC56_HAVE_LCD
-  hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]));
+  if (lcdType != LCD_NONE)
+  {
+    hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]));
+  }
 #endif
 
 #if HBC56_HAVE_AY_3_8910
