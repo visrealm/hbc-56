@@ -15,20 +15,25 @@ PROCESSOR 16F627A
 CONFIG  FOSC = HS             ; Oscillator Selection bits (HS oscillator: High-speed crystal/resonator on RA6/OSC2/CLKOUT and RA7/OSC1/CLKIN)
 CONFIG  WDTE = OFF            ; Watchdog Timer Enable bit (WDT disabled)
 CONFIG  PWRTE = OFF           ; Power-up Timer Enable bit (PWRT disabled)
-CONFIG  MCLRE = OFF           ; RA5/MCLR/VPP Pin Function Select bit (RA5/MCLR/VPP pin function is digital input, MCLR internally tied to VDD)
+CONFIG  MCLRE = ON            ; RA5/MCLR/VPP Pin Function Select bit (RA5/MCLR/VPP pin function is MCLR)
 CONFIG  BOREN = OFF           ; Brown-out Detect Enable bit (BOD disabled)
 CONFIG  LVP = OFF             ; Low-Voltage Programming Enable bit (RB4/PGM pin has digital I/O function, HV on MCLR must be used for programming)
 CONFIG  CPD = OFF             ; Data EE Memory Code Protection bit (Data memory code protection off)
 CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code protection off)
 
-CPUFREQ		equ	20000000	    ; CPU frequency (20MHz)
-DELAY_US_COUNT	equ	(CPUFREQ / 10000000)
-BYTE_BITS	equ	8
-BUFFER_BITS	equ	4		    ; 2^4 bytes in buffer
-BUFFER_SIZE	equ	(1 << BUFFER_BITS)  ; (16)
-BUFFER_MASK     equ	(BUFFER_SIZE - 1)   ; 0x0F
-PS2_TEST_PASS	equ	0xAA
-
+;                          PIC16F627A
+;                            PINOUT
+;                         +----------+
+;     DAT_RDY (O) - RA2 ==| 1     18 |== RA1 - PS/2 DATA (I)
+;        _INT (O) - RA3 ==| 2     17 |== RA0 - PS/2 DATA (I)
+;              NC - RA4 ==| 3     16 |== RA7 - XTAL 1
+;      _RESET (I) - RA5 ==| 4     15 |== RA6 - XTAL 2
+;                   GND ==| 5     14 |== VCC
+;   SCANCODE0 (O) - RB0 ==| 6     13 |== RB7 - SCANCODE7 (O)
+;   SCANCODE1 (O) - RB1 ==| 7     12 |== RB6 - SCANCODE6 (O)
+;   SCANCODE2 (O) - RB2 ==| 8     11 |== RB5 - SCANCODE5 (O)
+;   SCANCODE3 (O) - RB3 ==| 9     10 |== RB4 - SCANCODE4 (O)
+;                         +----------+
      
 #define CLOCK_PIN	RA0
 #define CLOCK_IO	TRISA0
@@ -38,9 +43,18 @@ PS2_TEST_PASS	equ	0xAA
 #define DAT_RDY_IO	TRISA2
 #define _INT_PIN	RA3
 #define _INT_IO		TRISA3
-#define _OE_PIN		RA5
-#define _OE_IO		TRISA5
 
+CPUFREQ		equ	20000000	    ; CPU frequency (20MHz)
+DELAY_US_COUNT	equ	(CPUFREQ / 10000000)
+BYTE_BITS	equ	8
+BUFFER_BITS	equ	4		    ; 2^4 bytes in buffer
+BUFFER_SIZE	equ	(1 << BUFFER_BITS)  ; (16)
+BUFFER_MASK     equ	(BUFFER_SIZE - 1)   ; 0x0F
+PS2_TEST_PASS	equ	0xAA
+
+; ------------------------------------------------------------------------------
+; udata - variables
+; ------------------------------------------------------------------------------
 PSECT udata
 delay_us:	    ds 1
 delay_us_counter:   ds 1    
@@ -50,20 +64,21 @@ bufferTail:	    ds 1		; circular buffer tail pointer
 rxByteTmp:	    ds 1		; temporary storage for received byte
 txByteTmp:	    ds 1		; temporary storage for sent byte
 loopVar:	    ds 1		; looping variable
-nextScancode:	    ds 1		; ask for the next scancode
     
 ; ------------------------------------------------------------------------------
 ; bank0 - Switch to bank0 
 ; ------------------------------------------------------------------------------
 bank0 macro
-    bcf	    RP0 ; we don't use bank 1/2, so only need to clear RP0
+    bcf	    RP0	    ; we don't use bank 1/2, so only need to clear RP0
+    bsf	    T0IE    ; enable interrupt
 endm
 
 ; ------------------------------------------------------------------------------
 ; bank1 - Switch to bank1 
 ; ------------------------------------------------------------------------------
 bank1 macro
-    bsf	    RP0 ; we don't use bank 1/2, so only need to set RP0
+    bcf	    T0IE    ; disable interrupt
+    bsf	    RP0	    ; we don't use bank 1/2, so only need to set RP0
 endm
     
 ; ------------------------------------------------------------------------------
@@ -90,6 +105,15 @@ writeOutput macro
 endm
 
 ; ------------------------------------------------------------------------------
+; resetTimer
+; ------------------------------------------------------------------------------
+resetTimer macro
+    bcf	    T0IF    ; Clear Timer0 interrupt flag
+    clrf    TMR0    ; Set timer to 255 (one increment will trigger interrupt)
+    decf    TMR0
+endm
+
+; ------------------------------------------------------------------------------
 ; skipIfOutputEmpty - Skip the next instruction if the output is empty
 ; ------------------------------------------------------------------------------
 skipIfOutputEmpty macro
@@ -100,7 +124,7 @@ endm
     
 PSECT resetVec,class=CODE,delta=2
 ; ------------------------------------------------------------------------------
-; resetVec
+; resetVec - entry point
 ; ------------------------------------------------------------------------------
 resetVec:
     goto main
@@ -110,14 +134,11 @@ PSECT intVec,class=CODE,delta=2
 ; intVec - interrupt handler
 ; ------------------------------------------------------------------------------
 intVec:
-    bank0
-    bcf DAT_RDY_PIN
-    clearOutput 		    ; clear output
+    bcf DAT_RDY_PIN		; clear data ready
+    clearOutput 		; clear output
     
     ; set up timer again
-    bcf	    T0IF	  ; Clear Timer0 interrupt flag
-    clrf    TMR0
-    decf    TMR0
+    resetTimer
     retfie
   
 PSECT code
@@ -125,13 +146,12 @@ PSECT code
 ; main - program entry
 ; ------------------------------------------------------------------------------
 main:
-    call init		    ; initialise the registers
-    call waitForKbSelfTest  ; wait for the keyboard
+    call    init		; initialise the registers
+    call    waitForKbSelfTest	; wait for the keyboard
 
-    clrf    TMR0
-    decf    TMR0
-    bsf	    GIE		    ; Global interrupt enable
-    call loop		    ; enter the main loop
+    resetTimer
+    bsf	    GIE			; Global interrupt enable
+    call    loop		; enter the main loop
     
 ; ------------------------------------------------------------------------------
 ; init - initialise the MCU registers
@@ -150,17 +170,15 @@ init:
     bcf	    GIE		  ; Global interrupt disable    
     clrf    TRISA	  ; Initialize GPIO by setting all pins as output
     clrf    TRISB         ; Initialize GPIO by setting all pins as output
-    ;bsf     TRISA,6
-    ;bsf     TRISA,7
+
     bsf	    CLOCK_IO      ; set Clock as floating (input)
     bsf	    DATA_IO       ; set Data as floating (input)
-    bsf	    _OE_IO        ; set OE as floating (input)
+    
     bsf	    RA4		  ; Timer0 clock pin (input)
-    bsf	    RA5		  ; Timer0 clock pin (input)
+    bsf	    RA5		  ; Reset pin (input)
     
     bsf	    T0CS	  ; Timer0 external clock mode (counter mode)
     bcf	    T0SE	  ; Timer0 increment on rising edge
-    bsf	    T0IE	  ; Enable Timer0 interrupts
     bcf	    T0IF	  ; Clear Timer0 interrupt flag
     bank0
 
@@ -168,7 +186,6 @@ init:
     clrf    bufferTail
     clrf    rxByteTmp
     clrf    txByteTmp
-    clrf    nextScancode
     
     return
 
@@ -179,35 +196,25 @@ init:
 ; from the host. This subroutine waits for 0xAA and sends a response.
 ; ------------------------------------------------------------------------------
 waitForKbSelfTest:
-    bsf _INT_PIN
     call    readByte		    ; read a byte into rxByteTmp
     movf    rxByteTmp,w
     xorlw   PS2_TEST_PASS	    ; Self-test pass?
-    bcf _INT_PIN
     btfss   ZERO		    ; loop again if not zero
-    goto waitForKbSelfTest
+    goto    waitForKbSelfTest
     
 
     movlw   200
     call    delayUs
     
-    bsf _INT_PIN
     call    pullClockUp		    ; initiate a send
-    bcf _INT_PIN
-    bsf _INT_PIN
     call    pullDataUp
-    bcf _INT_PIN
     movlw   40
     call    delayUs
-    bsf _INT_PIN
     call    pullClockDown
-    bcf _INT_PIN
     movlw   200
     call    delayUs
-    bsf _INT_PIN
     call    pullDataDown
     call    releaseClock  
-    bcf _INT_PIN
     
     ; Note: due to my keyboard not sending clock signals??? we just wait
     ;       and return
@@ -217,11 +224,8 @@ waitForKbSelfTest:
     call    pullDataUp
     movlw   180
     call    delayUs
-    bsf _INT_PIN
     call    releaseData
-    bcf _INT_PIN
 
-    call    longDelay
     call    longDelay
     
     return
@@ -231,16 +235,16 @@ waitForKbSelfTest:
 ; loop - main program loop
 ; ------------------------------------------------------------------------------
 loop:
-    btfsc DAT_RDY_PIN		; skip if data is ready... already
-    goto checkForKeyboardInput
+    btfsc   DAT_RDY_PIN		    ; skip if data is ready... already
+    goto    checkForKeyboardInput
     
-    skipIfQueueNotEmpty
-    goto checkForKeyboardInput
-
     call    qPopFront		    ; get the received scancode
+    btfsc   ZERO		    ; was queue empty?
+    goto    checkForKeyboardInput
+    
     writeOutput 		    ; output it
     
-    bsf DAT_RDY_PIN
+    bsf	    DAT_RDY_PIN		    ; data is now ready to be read
 
     skipIfQueueNotEmpty
     bsf	    _INT_PIN		    ; clear interrupt
@@ -267,7 +271,6 @@ dataIsReady:
 ; Inputs: rxByteTmp - value to push
 ; ------------------------------------------------------------------------------
 qPushBack:
-    bcf	    T0IE		    ; disable interrupt
     movlw   buffer		    ; set up FSR to buffer tail
     bcf	    CARRY
     addwf   bufferTail,w
@@ -279,7 +282,6 @@ qPushBack:
     incf    bufferTail		    ; increment bufferTail pointer
     movlw   BUFFER_MASK		    ; roll around if pointer
     andwf   bufferTail,f            ; past end
-    bsf	    T0IE		    ; enable interrupt
     return
     
 ; ------------------------------------------------------------------------------
@@ -380,15 +382,7 @@ waitForClockLow:
     btfsc   CLOCK_PIN
     goto    waitForClockLow
     return
-
-; ------------------------------------------------------------------------------
-; waitForOEHigh - loops until the _OE input pin is high
-; ------------------------------------------------------------------------------
-waitForOEHigh:
-    btfss   _OE_PIN
-    goto    waitForOEHigh
-    return    
-    
+ 
 ; ------------------------------------------------------------------------------
 ; pullClockDown - set the CLOCK pin to an output (value 0)
 ; ------------------------------------------------------------------------------
