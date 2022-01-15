@@ -87,6 +87,11 @@ kbWaitForKey:
         bcc kbWaitForKey
         rts
 
+kbWaitForScancode:
+        jsr kbReadByte
+        beq kbWaitForScancode
+        rts
+
 kbReadByte:        
         +kbWaitData
         ldx #0
