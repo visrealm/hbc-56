@@ -38,6 +38,7 @@ KB_CAPS_LOCK    = %00001000
 KB_NUM_LOCK     = %00010000
 
 KB_RELEASE      = $f0
+KB_EXT_KEY      = $e0
 
 KB_SCANCODE_LEFT_SHIFT   = $12
 KB_SCANCODE_RIGHT_SHIFT  = $59
@@ -86,7 +87,7 @@ kbWaitForKey:
         bcc kbWaitForKey
         rts
 
-.kbReadByte:        
+kbReadByte:        
         +kbWaitData
         ldx #0
         lda #$04
@@ -138,12 +139,12 @@ isAlpha:
 kbReadAscii:
         stx KB_TMP_X
         sty KB_TMP_Y
-        jsr .kbReadByte
+        jsr kbReadByte
         beq .noCharacterRead
         cpx #KB_RELEASE
         bne .keyPressed
 
-        jsr .kbReadByte  ; read the released key
+        jsr kbReadByte  ; read the released key
 
         cpx #KB_SCANCODE_LEFT_SHIFT
         beq .shiftReleased

@@ -131,7 +131,7 @@
 	lda #>.dst
 	sta MEMCPY_DST + 1
 
-	!if .cnt <= 255 {
+	!if .cnt <= 256 {
 		ldy #<.cnt					
 		jsr memcpySinglePagePort
 	} else {
@@ -161,8 +161,8 @@
 	!for i, 0, .cnt - 1 {
 	sta .dst + i
 	}
-} else if .cnt <= 255 {
-	ldx #.cnt
+} else if .cnt <= 256 {
+	ldx #<.cnt
 	lda #.val
 -
 	dex

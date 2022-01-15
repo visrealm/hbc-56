@@ -594,6 +594,21 @@ tmsHex8:
 
 
 ; -----------------------------------------------------------------------------
+; tmsSetSpriteTmpAddress: Set TMS_TMP_ADDRESS for a given sprite attributes
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: sprite index (0-31)
+; -----------------------------------------------------------------------------
+tmsSetSpriteTmpAddress:
+        asl
+        asl
+        sta TMS_TMP_ADDRESS
+
+        lda #>TMS_VRAM_SPRITE_ATTR_ADDRESS
+        sta TMS_TMP_ADDRESS + 1
+        rts
+
+; -----------------------------------------------------------------------------
 ; tmsSetPosTmpAddress: Set TMS_TMP_ADDRESS for a given text position
 ; -----------------------------------------------------------------------------
 ; Inputs:
