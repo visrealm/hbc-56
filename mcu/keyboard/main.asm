@@ -26,7 +26,7 @@ CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code p
 ;                         +----------+
 ;     DAT_RDY (O) - RA2 ==| 1     18 |== RA1 - PS/2 DATA (I)
 ;        _INT (O) - RA3 ==| 2     17 |== RA0 - PS/2 DATA (I)
-;              NC - RA4 ==| 3     16 |== RA7 - XTAL 1
+;   NEXT_CODE (I) - RA4 ==| 3     16 |== RA7 - XTAL 1
 ;      _RESET (I) - RA5 ==| 4     15 |== RA6 - XTAL 2
 ;                   GND ==| 5     14 |== VCC
 ;   SCANCODE0 (O) - RB0 ==| 6     13 |== RB7 - SCANCODE7 (O)
@@ -34,6 +34,10 @@ CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code p
 ;   SCANCODE2 (O) - RB2 ==| 8     11 |== RB5 - SCANCODE5 (O)
 ;   SCANCODE3 (O) - RB3 ==| 9     10 |== RB4 - SCANCODE4 (O)
 ;                         +----------+
+;
+; NEXT_CODE - Positive edge-triggered input which triggers the controller
+;             to output the next scancode. DAT_RDY becomes low until that next
+;             scancode is ready on RB
      
 #define CLOCK_PIN	RA0
 #define CLOCK_IO	TRISA0
@@ -174,8 +178,8 @@ init:
     bsf	    CLOCK_IO      ; set Clock as floating (input)
     bsf	    DATA_IO       ; set Data as floating (input)
     
-    bsf	    RA4		  ; Timer0 clock pin (input)
-    bsf	    RA5		  ; Reset pin (input)
+    bsf	    TRISA4	  ; Timer0 clock pin (input)
+    bsf	    TRISA5	  ; Reset pin (input)
     
     bsf	    T0CS	  ; Timer0 external clock mode (counter mode)
     bcf	    T0SE	  ; Timer0 increment on rising edge
@@ -196,6 +200,9 @@ init:
 ; from the host. This subroutine waits for 0xAA and sends a response.
 ; ------------------------------------------------------------------------------
 waitForKbSelfTest:
+    movlw   255
+    call    delayUs
+    
     call    readByte		    ; read a byte into rxByteTmp
     movf    rxByteTmp,w
     xorlw   PS2_TEST_PASS	    ; Self-test pass?
