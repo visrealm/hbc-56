@@ -11,9 +11,6 @@
     <Filter Include="modules">
       <UniqueIdentifier>{698b00d0-dd8b-483f-b162-2e2aba5ffd80}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\6502">
-      <UniqueIdentifier>{d2cb503d-5fdb-4bf8-9bbe-831449f65d4d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\TMS9918">
       <UniqueIdentifier>{5dbdaa72-4ed9-4bb6-a88d-462c68d79f1a}</UniqueIdentifier>
     </Filter>
@@ -42,9 +39,6 @@
     </ClInclude>
     <ClInclude Include="..\modules\ay38910\emu2149.h">
       <Filter>modules\AY-3-8910</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\cpu6502\cpu6502.h">
-      <Filter>modules\6502</Filter>
     </ClInclude>
     <ClInclude Include="..\src\window.h">
       <Filter>ui</Filter>
@@ -114,9 +108,6 @@
     </ClCompile>
     <ClCompile Include="..\modules\ay38910\emu2149.c">
       <Filter>modules\AY-3-8910</Filter>
-    </ClCompile>
-    <ClCompile Include="..\modules\cpu6502\cpu6502.c">
-      <Filter>modules\6502</Filter>
     </ClCompile>
     <ClCompile Include="..\src\window.c">
       <Filter>ui</Filter>

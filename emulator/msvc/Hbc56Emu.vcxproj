@@ -91,7 +91,6 @@
   <ItemGroup>
     <ClInclude Include="..\modules\65c02\src\vrEmu6502.h" />
     <ClInclude Include="..\modules\ay38910\emu2149.h" />
-    <ClInclude Include="..\modules\cpu6502\cpu6502.h" />
     <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h" />
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h" />
     <ClInclude Include="..\src\audio.h" />
@@ -119,7 +118,6 @@
   <ItemGroup>
     <ClCompile Include="..\modules\65c02\src\vrEmu6502.c" />
     <ClCompile Include="..\modules\ay38910\emu2149.c" />
-    <ClCompile Include="..\modules\cpu6502\cpu6502.c" />
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c" />
     <ClCompile Include="..\modules\tms9918\src\tms9918_core.c" />
     <ClCompile Include="..\src\audio.c" />
