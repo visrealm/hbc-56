@@ -788,7 +788,7 @@ int main(int argc, char* argv[])
   hbc56Reset();
 
   /* initialise the debugger */
-  debuggerInit(cpu6502_get_regs());
+  debuggerInit(getCpuDevice(cpuDevice));
 
   if (doBreak)hbc56DebugBreak();
 

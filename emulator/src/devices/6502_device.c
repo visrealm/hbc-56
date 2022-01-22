@@ -14,7 +14,7 @@
 
 #include "6502_device.h"
 
-#include "cpu6502.h"
+#include "vrEmu6502.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,12 +26,14 @@ static void tick6502CpuDevice(HBC56Device*,uint32_t,double);
 #define CPU_6502_MAX_CALL_STACK   128
 #define CPU_6502_JSR              0x20
 #define CPU_6502_RTS              0x60
+#define CPU_6502_BRK              0xdb
 
 #define CPU_6502_MAX_TIMESTEP_SEC   0.001
 #define CPU_6502_MAX_TIMESTEP_STEPS 4000
 
 struct CPU6502Device
 {
+  VrEmu6502           *cpu6502;
   HBC56CpuState        currentState;
   HBC56InterruptSignal intSignal;
   HBC56InterruptSignal nmiSignal;
@@ -41,6 +43,10 @@ struct CPU6502Device
   uint16_t             breakAddr;
 };
 typedef struct CPU6502Device CPU6502Device;
+
+extern uint8_t mem_read(uint16_t addr);
+extern uint8_t mem_read_dbg(uint16_t addr);
+extern void mem_write(uint16_t addr, uint8_t val);
 
  /* Function:  create6502CpuDevice
   * --------------------
@@ -52,6 +58,7 @@ HBC56Device create6502CpuDevice()
   CPU6502Device* cpuDevice = (CPU6502Device*)malloc(sizeof(CPU6502Device));
   if (cpuDevice)
   {
+    cpuDevice->cpu6502 = vrEmu6502New(CPU_W65C02, mem_read, mem_write);
     cpuDevice->currentState = CPU_RUNNING;
     cpuDevice->intSignal = INTERRUPT_RELEASE;
     cpuDevice->nmiSignal = INTERRUPT_RELEASE;
@@ -85,7 +92,11 @@ inline static CPU6502Device* get6502CpuDevice(HBC56Device* device)
 
 static void reset6502CpuDevice(HBC56Device* device)
 {
-  cpu6502_rst();
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
+  if (cpuDevice)
+  {
+    vrEmu6502Reset(cpuDevice->cpu6502);
+  }
 }
 
 static void destroy6502CpuDevice(HBC56Device *device)
@@ -93,17 +104,33 @@ static void destroy6502CpuDevice(HBC56Device *device)
   CPU6502Device * cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
   {
+    vrEmu6502Destroy(cpuDevice->cpu6502);
   }
   free(cpuDevice);
   device->data = NULL;
 }
 
-static inline void checkInterrupt(HBC56InterruptSignal *status, void (*intCallback)(void))
+static inline void checkInterrupt(HBC56InterruptSignal *status, vrEmu6502Interrupt *interrupt)
 {
-  if (*status == INTERRUPT_RAISE || *status == INTERRUPT_TRIGGER)
+  if (*status == INTERRUPT_RAISE)
   {
-    intCallback();
-    if (*status == INTERRUPT_TRIGGER) *status = INTERRUPT_RELEASE;
+    *interrupt = IntRequested;
+  }
+  else if (*status == INTERRUPT_TRIGGER)
+  {
+    if (*interrupt == IntRequested)
+    {
+      *interrupt = IntCleared;
+      *status = INTERRUPT_RELEASE;
+    }
+    else
+    {
+      *interrupt = IntRequested;
+    }
+  }
+  else
+  {
+    *interrupt = IntCleared;
   }
 }
 
@@ -126,31 +153,37 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
          this will become an option */
       if (cpuDevice->currentState == CPU_RUNNING)
       {
-        checkInterrupt(&cpuDevice->nmiSignal, &cpu6502_nmi);
-        checkInterrupt(&cpuDevice->intSignal, &cpu6502_irq);
+        checkInterrupt(&cpuDevice->nmiSignal, vrEmu6502Nmi(cpuDevice->cpu6502));
+        checkInterrupt(&cpuDevice->intSignal, vrEmu6502Int(cpuDevice->cpu6502));
       }
 
       int doTick = 1;
 
-      if (cpuDevice->breakMode != (cpuDevice->breakAddr == cpu6502_get_regs()->pc)) doTick = 0;
+      if (cpuDevice->breakMode != (cpuDevice->breakAddr == vrEmu6502GetPC(cpuDevice->cpu6502))) doTick = 0;
       if (cpuDevice->currentState == CPU_BREAK) doTick = 0;
 
       if (doTick)
       {
-        cpu6502_clock_tick();
+        vrEmu6502Tick(cpuDevice->cpu6502);
 
-        if (cpu6502_get_regs()->ts == 0) /* end of the instruction */
+        if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
         {
-          uint8_t opcode = mem_read(cpu6502_get_regs()->pc);
+          uint8_t opcode = mem_read_dbg(vrEmu6502GetPC(cpuDevice->cpu6502));
           int isJsr = (opcode == CPU_6502_JSR);
           int isRts = (opcode == CPU_6502_RTS);
+          int isBrk = (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_BRK);
+
           if (isJsr)
           {
-            cpuDevice->callStack[cpuDevice->callStackPtr++] = cpu6502_get_regs()->pc;
+            cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502);
           }
           else if (isRts && cpuDevice->callStackPtr)
           {
             --cpuDevice->callStackPtr;
+          }
+          else if (isBrk)
+          {
+            cpuDevice->currentState = CPU_BREAK;
           }
         }
       }
@@ -181,7 +214,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
   CPU6502Device* cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
   {
-    uint8_t opcode = mem_read(cpu6502_get_regs()->pc);
+    uint8_t opcode = vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502);
     int isJsr = (opcode == CPU_6502_JSR);
 
     switch (state)
@@ -203,7 +236,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
         if (isJsr)
         {
           cpuDevice->breakMode = 0;
-          cpuDevice->breakAddr = cpu6502_get_regs()->pc + 3;
+          cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
           break;
         }
       }
@@ -212,7 +245,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
       {
         if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
         cpuDevice->breakMode = 1;
-        cpuDevice->breakAddr = cpu6502_get_regs()->pc;
+        cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502);
         break;
       }
 
@@ -238,6 +271,16 @@ HBC56CpuState getDebug6502State(HBC56Device* device)
     return cpuDevice->currentState;
   }
   return CPU_BREAK;
+}
+
+VrEmu6502* getCpuDevice(HBC56Device* device)
+{
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
+  if (cpuDevice)
+  {
+    return cpuDevice->cpu6502;
+  }
+  return NULL;
 }
 
 

@@ -276,7 +276,7 @@ static uint8_t readTms9918Device(HBC56Device* device, uint16_t addr, uint8_t *va
     if (addr == tmsDevice->regAddr)
     {
       *val = vrEmuTms9918aReadStatus(tmsDevice->tms9918);
-      hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RELEASE);
+      if (!dbg) hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RELEASE);
       return 1;
     }
     else if (addr == tmsDevice->dataAddr)

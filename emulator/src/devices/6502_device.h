@@ -14,6 +14,10 @@
 
 #include "device.h"
 
+struct vrEmu6502_s;
+typedef struct vrEmu6502_s VrEmu6502;
+
+
 typedef enum
 {
   CPU_RUNNING,
@@ -36,5 +40,6 @@ void debug6502State(HBC56Device* device, HBC56CpuState state);
 
 HBC56CpuState getDebug6502State(HBC56Device* device);
 
+VrEmu6502 *getCpuDevice(HBC56Device* device);
 
 #endif

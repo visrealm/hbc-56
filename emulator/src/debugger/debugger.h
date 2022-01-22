@@ -10,8 +10,11 @@
  */
 
 #include "../devices/device.h"
-#include "cpu6502.h"
 #include "SDL.h"
+
+struct vrEmu6502_s;
+typedef struct vrEmu6502_s VrEmu6502;
+
 
 #define DEBUGGER_WIDTH_PX  320
 #define DEBUGGER_HEIGHT_PX 720
@@ -24,7 +27,7 @@
 #define DEBUGGER_CHARS_Y (DEBUGGER_HEIGHT_PX / DEBUGGER_CHAR_H)
 
 
-void debuggerInit(CPU6502Regs *regs);
+void debuggerInit(VrEmu6502 *cpu6502);
 
 void debuggerInitTms(HBC56Device *tms9918);
 

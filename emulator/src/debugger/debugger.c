@@ -11,6 +11,7 @@
 
 #include "debugger.h"
 #include "../devices/tms9918_device.h"
+#include "vrEmu6502.h"
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -36,7 +37,7 @@ extern uint8_t mem_read_dbg(uint16_t addr);
 uint16_t debugMemoryAddr = 0;
 uint16_t debugTmsMemoryAddr = 0;
 
-static CPU6502Regs *cpuStatus = NULL;
+static VrEmu6502 *cpu6502 = NULL;
 
 static char *labelMap[0x10000] = {NULL};
 static HBC56Device* tms9918 = NULL;
@@ -64,7 +65,7 @@ void debuggerLoadLabels(const char* labelFileContents)
   if (labelFileContents)
   {
     size_t currentPos = 0;
-    char lineBuffer[FILENAME_MAX];
+    char lineBuffer[256];
 
     char *p = (char*)labelFileContents;
 
@@ -80,7 +81,7 @@ void debuggerLoadLabels(const char* labelFileContents)
       size_t labelStart = -1, labelEnd = -1, valueStart = -1, valueEnd = -1;
 
       int i = 0;
-      for (i = 0; i < FILENAME_MAX; ++i)
+      for (i = 0; i < sizeof(lineBuffer); ++i)
       {
         char c = lineBuffer[i];
         if (c == 0) break;
@@ -139,9 +140,9 @@ void debuggerLoadLabels(const char* labelFileContents)
   }
 }
 
-void debuggerInit(CPU6502Regs* regs)
+void debuggerInit(VrEmu6502* cpu6502_)
 {
-  cpuStatus = regs;
+  cpu6502 = cpu6502_;
   fgColor = green;
   bgColor = 0x00000000;
 }
@@ -328,7 +329,7 @@ static int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t
 
   if (rel) 
   {
-    addr += *pc;
+    addr = *pc + (int8_t)addr;
   }
   else
   {
@@ -379,67 +380,67 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
   memset(debuggerFrameBuffer, 0, sizeof(debuggerFrameBuffer));
 
-  static CPU6502Regs prevRegs;
-  static CPU6502Regs lastRegs;
+  //static CPU6502Regs prevRegs;
+  //static CPU6502Regs lastRegs;
   static uint16_t lastPc;
 
   static uint16_t highlightAddr = 0;
 
   fgColor = green;
-  if (lastRegs.a != cpuStatus->a) fgColor = red;
+//  if (lastRegs.a != cpu6502->a) fgColor = red;
   debuggerOutput("A:  $", 0, 1);
-  debuggerOutputHex(cpuStatus->a,5,1);
-  debuggerOutput(SDL_itoa(cpuStatus->a,buffer,10),10,1);
+  debuggerOutputHex(vrEmu6502GetAcc(cpu6502),5,1);
+  debuggerOutput(SDL_itoa(vrEmu6502GetAcc(cpu6502),buffer,10),10,1);
 
-  fgColor = green;
-  if (lastRegs.x != cpuStatus->x) fgColor = red;
+//  fgColor = green;
+//  if (lastRegs.x != cpu6502->x) fgColor = red;
   debuggerOutput("X:  $", 0, 2);
-  debuggerOutputHex(cpuStatus->x,5,2);
-  debuggerOutput(SDL_itoa(cpuStatus->x,buffer,10),10,2);
+  debuggerOutputHex(vrEmu6502GetX(cpu6502),5,2);
+  debuggerOutput(SDL_itoa(vrEmu6502GetX(cpu6502),buffer,10),10,2);
 
-  fgColor = green;
-  if (lastRegs.y != cpuStatus->y) fgColor = red;
+//  fgColor = green;
+//  if (lastRegs.y != cpu6502->y) fgColor = red;
   debuggerOutput("Y:  $", 0, 3);
-  debuggerOutputHex(cpuStatus->y,5,3);
-  debuggerOutput(SDL_itoa(cpuStatus->y,buffer,10),10,3);
+  debuggerOutputHex(vrEmu6502GetY(cpu6502),5,3);
+  debuggerOutput(SDL_itoa(vrEmu6502GetY(cpu6502),buffer,10),10,3);
 
   debuggerOutput("PC: $", 20, 1);
-  debuggerOutputHex16(cpuStatus->pc, 25, 1);
-  debuggerOutput(SDL_itoa(cpuStatus->pc, buffer, 10), 30, 1);
+  debuggerOutputHex16(vrEmu6502GetPC(cpu6502), 25, 1);
+  debuggerOutput(SDL_itoa(vrEmu6502GetPC(cpu6502), buffer, 10), 30, 1);
 
-  fgColor = green;
-  if (lastRegs.s != cpuStatus->s) fgColor = red;
+//  fgColor = green;
+//  if (lastRegs.s != cpu6502->s) fgColor = red;
   debuggerOutput("SP: $1", 20, 2);
-  debuggerOutputHex(cpuStatus->s, 26, 2);
-  debuggerOutput(SDL_itoa(cpuStatus->s, buffer, 10), 30, 2);
+  debuggerOutputHex(vrEmu6502GetStackPointer(cpu6502), 26, 2);
+  debuggerOutput(SDL_itoa(vrEmu6502GetStackPointer(cpu6502), buffer, 10), 30, 2);
 
-  fgColor = green;
+//  fgColor = green;
   debuggerOutput("F:", 20, 3);
 
-  fgColor = cpuStatus->p.n ? (lastRegs.p.n == cpuStatus->p.n ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.n ? 'N' : 'n', 24, 3);
-  fgColor = cpuStatus->p.v ? (lastRegs.p.v == cpuStatus->p.v ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.v ? 'V' : 'v', 25, 3);
-  fgColor = cpuStatus->p.d ? (lastRegs.p.d == cpuStatus->p.d ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.d ? 'D' : 'd', 26, 3);
-  fgColor = cpuStatus->p.i ? (lastRegs.p.i == cpuStatus->p.i ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.i ? 'I' : 'i', 27, 3);
-  fgColor = cpuStatus->p.z ? (lastRegs.p.z == cpuStatus->p.z ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.z ? 'Z' : 'z', 28, 3);
-  fgColor = cpuStatus->p.c ? (lastRegs.p.c == cpuStatus->p.c ? green : red) : dkgreen;
-  debuggerOutputChar(cpuStatus->p.c ? 'C' : 'c', 29, 3);
-
+  uint8_t flags = vrEmu6502GetStatus(cpu6502);
+//  fgColor = cpu6502->p.n ? (lastRegs.p.n == cpu6502->p.n ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x80) ? 'N' : 'n', 24, 3);
+//  fgColor = cpu6502->p.v ? (lastRegs.p.v == cpu6502->p.v ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x40) ? 'V' : 'v', 25, 3);
+//  fgColor = cpu6502->p.d ? (lastRegs.p.d == cpu6502->p.d ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x08) ? 'D' : 'd', 26, 3);
+//  fgColor = cpu6502->p.i ? (lastRegs.p.i == cpu6502->p.i ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x04) ? 'I' : 'i', 27, 3);
+//  fgColor = cpu6502->p.z ? (lastRegs.p.z == cpu6502->p.z ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x02) ? 'Z' : 'z', 28, 3);
+//  fgColor = cpu6502->p.c ? (lastRegs.p.c == cpu6502->p.c ? green : red) : dkgreen;
+  debuggerOutputChar((flags & 0x01) ? 'C' : 'c', 29, 3);
 
   fgColor = green;
 
-  if (lastPc != cpuStatus->pc)
+  if (lastPc != vrEmu6502GetPC(cpu6502))
   {
-    lastPc = cpuStatus->pc;
-    lastRegs = prevRegs;
-    prevRegs = *cpuStatus;
+    lastPc = vrEmu6502GetPC(cpu6502);
+    //lastRegs = prevRegs;
+    //prevRegs = *cpu6502;
   }
 
-  uint16_t pc = cpuStatus->pc;
+  uint16_t pc = vrEmu6502GetPC(cpu6502);
   fgColor = white;
 
   debuggerOutput("Disassembly", 0, disassemblyVpos - 1);
@@ -581,7 +582,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
   fgColor = white;
   debuggerOutput("Stack", 40, disassemblyVpos - 1);
   fgColor = green;
-  uint8_t sp = cpuStatus->s + 1;
+  uint8_t sp = vrEmu6502GetStackPointer(cpu6502) + 1;
   int y = 0;
   while (sp != 0)
   {

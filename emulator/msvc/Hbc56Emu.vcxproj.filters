@@ -32,6 +32,9 @@
     <Filter Include="src\debugger">
       <UniqueIdentifier>{eba57e8f-ecee-4fcb-a921-30d2074e4048}</UniqueIdentifier>
     </Filter>
+    <Filter Include="modules\65C02">
+      <UniqueIdentifier>{bb03c3ba-8d1c-4236-b142-750d9f314822}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\tms9918\src\tms9918_core.h">
@@ -87,6 +90,12 @@
     </ClInclude>
     <ClInclude Include="..\src\devices\6502_device.h">
       <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\devices\uart_device.h">
+      <Filter>src\devices</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\65c02\src\vrEmu6502.h">
+      <Filter>modules\65C02</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +159,12 @@
     </ClCompile>
     <ClCompile Include="..\src\devices\6502_device.c">
       <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\uart_device.c">
+      <Filter>src\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\65c02\src\vrEmu6502.c">
+      <Filter>modules\65C02</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
