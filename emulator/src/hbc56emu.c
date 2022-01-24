@@ -762,8 +762,10 @@ int main(int argc, char* argv[])
   #endif
 #endif
 
+#ifdef _WINDOWS
 #if HBC56_HAVE_UART
-  hbc56AddDevice(createUartDevice(HBC56_IO_ADDRESS(HBC56_UART_PORT), HBC56_UART_PORTNAME, HBC56_UART_BAUDRATE));
+  hbc56AddDevice(createUartDevice(HBC56_IO_ADDRESS(HBC56_UART_PORT), HBC56_UART_PORTNAME, HBC56_UART_CLOCK_FREQ));
+#endif
 #endif
 
 

@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <windows.h>
 
 static void destroyUartDevice(HBC56Device*);
@@ -28,6 +29,9 @@ struct UartDevice
   uint32_t addr;
   HANDLE   handle;
 
+  char     comPortDevice[100];
+  int      clockFreq;
+
   uint8_t readBufferBytes;
   uint8_t readBufferBytesRead;
 
@@ -35,10 +39,36 @@ struct UartDevice
 
   uint8_t statusRequested;
 
+  uint8_t controlReg;
+  uint8_t statusReg;
+
   double timeSinceIO;
   
 };
 typedef struct UartDevice UartDevice;
+
+#define UART_CTL_MASTER_RESET         0b00000011
+#define UART_CTL_CLOCK_DIV_16         0b00000001
+#define UART_CTL_CLOCK_DIV_64         0b00000011
+#define UART_CTL_WORD_7BIT_EPB_2SB    0b00000000
+#define UART_CTL_WORD_7BIT_OPB_2SB    0b00000100
+#define UART_CTL_WORD_7BIT_EPB_1SB    0b00001000
+#define UART_CTL_WORD_7BIT_OPB_1SB    0b00001100
+#define UART_CTL_WORD_8BIT_2SB        0b00010000
+#define UART_CTL_WORD_8BIT_1SB        0b00010100
+#define UART_CTL_WORD_8BIT_EPAR_1SB   0b00011000
+#define UART_CTL_WORD_8BIT_OPAR_1SB   0b00011100
+#define UART_CTL_RX_INT_ENABLE        0b10000000
+
+#define UART_STATUS_RX_REG_FULL       0b00000001
+#define UART_STATUS_TX_REG_EMPTY      0b00000010
+#define UART_STATUS_CARRIER_DETECT    0b00000100
+#define UART_STATUS_CLEAR_TO_SEND     0b00001000
+#define UART_STATUS_FRAMING_ERROR     0b00010000
+#define UART_STATUS_RCVR_OVERRUN      0b00100000
+#define UART_STATUS_PARITY_ERROR      0b01000000
+#define UART_STATUS_IRQ               0b10000000
+
 
 /* Function:  createUartDevice
  * --------------------
@@ -47,51 +77,27 @@ typedef struct UartDevice UartDevice;
 HBC56Device createUartDevice(
   uint32_t addr,
   const char* port,
-  int baudrate)
+  int clockRate)
 {
   HBC56Device device = createDevice("UART");
   UartDevice* uartDevice = (UartDevice*)malloc(sizeof(UartDevice));
   if (uartDevice)
   {
     uartDevice->addr = addr;
+    uartDevice->clockFreq = clockRate;
     uartDevice->readBufferBytes = 0;
     uartDevice->readBufferBytesRead = 0;
     uartDevice->statusRequested = 0;
-    uartDevice->handle = CreateFileA(port,
-                                     GENERIC_READ | GENERIC_WRITE,
-                                     0,
-                                     NULL,
-                                     OPEN_EXISTING,
-                                     0,
-                                     NULL);
+    uartDevice->statusReg = UART_STATUS_TX_REG_EMPTY;
+    uartDevice->handle = 0;
 
-    DCB dcb;
-    SecureZeroMemory(&dcb, sizeof(DCB));
-    dcb.DCBlength = sizeof(DCB);
-
-    GetCommState(uartDevice->handle, &dcb);
-    dcb.BaudRate = baudrate;
-    dcb.ByteSize = 8;
-    dcb.Parity = NOPARITY;
-    dcb.StopBits = ONESTOPBIT;
-
-    SetCommState(uartDevice->handle, &dcb);
+    snprintf(uartDevice->comPortDevice, sizeof(uartDevice->comPortDevice), "\\\\.\\%s", port);
 
     device.data = uartDevice;
     device.destroyFn = destroyUartDevice;
     device.tickFn = tickUartDevice;
     device.readFn = readUartDevice;
     device.writeFn = writeUartDevice;
-
-    COMMTIMEOUTS timeouts = { 0 };
-
-    //Setting Timeouts
-    timeouts.ReadIntervalTimeout = 0;
-    timeouts.ReadTotalTimeoutConstant = 1;
-    timeouts.ReadTotalTimeoutMultiplier = 0;
-    timeouts.WriteTotalTimeoutConstant = 1;
-    timeouts.WriteTotalTimeoutMultiplier = 0;
-    SetCommTimeouts(uartDevice->handle, &timeouts);
   }
   else
   {
@@ -136,7 +142,7 @@ static void destroyUartDevice(HBC56Device *device)
 static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
 {
   UartDevice* uartDevice = getUartDevice(device);
-  if (uartDevice)
+  if (uartDevice && uartDevice->handle)
   {
     uartDevice->timeSinceIO += deltaTime;
 
@@ -148,6 +154,8 @@ static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double delt
       {
         uartDevice->readBufferBytes = bytesRead & 0xff;
         uartDevice->readBufferBytesRead = 0;
+
+        uartDevice->statusReg |= UART_STATUS_RX_REG_FULL;
       }
 
       uartDevice->timeSinceIO = 0;
@@ -167,16 +175,8 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
   {
     if (addr == uartDevice->addr)   // status register
     {
-      *val = 0;
-
       uartDevice->statusRequested = 1;
-
-      if (uartDevice->readBufferBytes > uartDevice->readBufferBytesRead)
-      {
-        *val |= 0x01;
-      }
-
-      *val |= 0x02; // tx reg empty
+      *val = uartDevice->statusReg;
       
       return 1;
     }
@@ -185,6 +185,11 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
       if (uartDevice->readBufferBytes > uartDevice->readBufferBytesRead)
       {
         *val = uartDevice->readBuffer[uartDevice->readBufferBytesRead++];
+
+        if (uartDevice->readBufferBytes == uartDevice->readBufferBytesRead)
+        {
+          uartDevice->statusReg &= ~(UART_STATUS_RX_REG_FULL);
+        }
       }
       return 1;
     }
@@ -203,14 +208,122 @@ static uint8_t writeUartDevice(HBC56Device* device, uint16_t addr, uint8_t val)
   {
     if (addr == uartDevice->addr)
     {
+      uartDevice->controlReg = val;
+
+      if ((uartDevice->controlReg & UART_CTL_MASTER_RESET) == UART_CTL_MASTER_RESET)
+      {
+        if (uartDevice->handle)
+        {
+          CloseHandle(uartDevice->handle);
+          uartDevice->handle = NULL;
+        }
+
+        uartDevice->handle = CreateFileA(uartDevice->comPortDevice,
+                                     GENERIC_READ | GENERIC_WRITE,
+                                     0,
+                                     NULL,
+                                     OPEN_EXISTING,
+                                     0,
+                                     NULL);
+
+        COMMTIMEOUTS timeouts = { 0 };
+
+        //Setting Timeouts
+        timeouts.ReadIntervalTimeout = 0;
+        timeouts.ReadTotalTimeoutConstant = 1;
+        timeouts.ReadTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 1;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        SetCommTimeouts(uartDevice->handle, &timeouts);
+      }
+
+      if (uartDevice->handle)
+      {
+        DCB dcb;
+        SecureZeroMemory(&dcb, sizeof(DCB));
+        dcb.DCBlength = sizeof(DCB);
+
+        GetCommState(uartDevice->handle, &dcb);
+
+        switch (uartDevice->controlReg & 0x03)
+        {
+          case 0:
+            dcb.BaudRate = uartDevice->clockFreq;
+            break;
+
+          case UART_CTL_CLOCK_DIV_16:
+            dcb.BaudRate = uartDevice->clockFreq / 16;
+            break;
+
+          case UART_CTL_CLOCK_DIV_64:
+            dcb.BaudRate = uartDevice->clockFreq / 64;
+            break;
+        }
+
+        switch (uartDevice->controlReg & 0x1c)
+        {
+          case UART_CTL_WORD_7BIT_EPB_2SB:
+            dcb.ByteSize = 7;
+            dcb.Parity = EVENPARITY;
+            dcb.StopBits = TWOSTOPBITS;
+            break;
+
+          case UART_CTL_WORD_7BIT_OPB_2SB:
+            dcb.ByteSize = 7;
+            dcb.Parity = ODDPARITY;
+            dcb.StopBits = TWOSTOPBITS;
+            break;
+
+          case UART_CTL_WORD_7BIT_EPB_1SB:
+            dcb.ByteSize = 7;
+            dcb.Parity = EVENPARITY;
+            dcb.StopBits = ONESTOPBIT;
+            break;
+
+          case UART_CTL_WORD_7BIT_OPB_1SB:
+            dcb.ByteSize = 7;
+            dcb.Parity = ODDPARITY;
+            dcb.StopBits = ONESTOPBIT;
+            break;
+
+          case UART_CTL_WORD_8BIT_2SB:
+            dcb.ByteSize = 8;
+            dcb.Parity = NOPARITY;
+            dcb.StopBits = TWOSTOPBITS;
+            break;
+
+          case UART_CTL_WORD_8BIT_1SB:
+            dcb.ByteSize = 8;
+            dcb.Parity = NOPARITY;
+            dcb.StopBits = ONESTOPBIT;
+            break;
+
+          case UART_CTL_WORD_8BIT_EPAR_1SB:
+            dcb.ByteSize = 8;
+            dcb.Parity = EVENPARITY;
+            dcb.StopBits = ONESTOPBIT;
+            break;
+
+          case UART_CTL_WORD_8BIT_OPAR_1SB:
+            dcb.ByteSize = 8;
+            dcb.Parity = ODDPARITY;
+            dcb.StopBits = ONESTOPBIT;
+            break;
+        }
+        SetCommState(uartDevice->handle, &dcb);
+      }
+
       return 1;
     }
     else if (addr == (uartDevice->addr | 0x01))
     {
-      DWORD bytesWritten = 0;
-      if (!WriteFile(uartDevice->handle, &val, 1, &bytesWritten, NULL))
+      if (uartDevice->handle)
       {
-        /* shrug */
+        DWORD bytesWritten = 0;
+        if (!WriteFile(uartDevice->handle, &val, 1, &bytesWritten, NULL))
+        {
+          /* shrug */
+        }
       }
       return 1;
     }
