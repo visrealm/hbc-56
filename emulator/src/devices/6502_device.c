@@ -44,9 +44,8 @@ struct CPU6502Device
 };
 typedef struct CPU6502Device CPU6502Device;
 
-extern uint8_t mem_read(uint16_t addr);
-extern uint8_t mem_read_dbg(uint16_t addr);
-extern void mem_write(uint16_t addr, uint8_t val);
+uint8_t hbc56MemRead(uint16_t addr, bool dbg);
+void hbc56MemWrite(uint16_t addr, uint8_t val);
 
  /* Function:  create6502CpuDevice
   * --------------------
@@ -58,7 +57,7 @@ HBC56Device create6502CpuDevice()
   CPU6502Device* cpuDevice = (CPU6502Device*)malloc(sizeof(CPU6502Device));
   if (cpuDevice)
   {
-    cpuDevice->cpu6502 = vrEmu6502New(CPU_W65C02, mem_read, mem_write);
+    cpuDevice->cpu6502 = vrEmu6502New(CPU_W65C02, hbc56MemRead, hbc56MemWrite);
     cpuDevice->currentState = CPU_RUNNING;
     cpuDevice->intSignal = INTERRUPT_RELEASE;
     cpuDevice->nmiSignal = INTERRUPT_RELEASE;
@@ -151,7 +150,8 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
       /* currently, we disable interrupts while debugging since the tms9918
          will constantly trigger interrupts which don't allow debugging user code. 
          this will become an option */
-      if (cpuDevice->currentState == CPU_RUNNING)
+      if (cpuDevice->currentState == CPU_RUNNING ||
+          cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
       {
         checkInterrupt(&cpuDevice->nmiSignal, vrEmu6502Nmi(cpuDevice->cpu6502));
         checkInterrupt(&cpuDevice->intSignal, vrEmu6502Int(cpuDevice->cpu6502));
@@ -164,24 +164,38 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
 
       if (doTick)
       {
+        if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
+        {
+          if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
+          {
+            if (cpuDevice->nmiSignal != INTERRUPT_RELEASE ||
+              cpuDevice->intSignal != INTERRUPT_RELEASE)
+            {
+              cpuDevice->currentState = CPU_BREAK;
+            }
+          }
+        }
+
         vrEmu6502Tick(cpuDevice->cpu6502);
 
         if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
         {
-          uint8_t opcode = mem_read_dbg(vrEmu6502GetPC(cpuDevice->cpu6502));
-          int isJsr = (opcode == CPU_6502_JSR);
-          int isRts = (opcode == CPU_6502_RTS);
-          int isBrk = (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_BRK);
+          uint8_t nextOpcode = vrEmu6502GetNextOpcode(cpuDevice->cpu6502);
+          int isJsr = (nextOpcode == CPU_6502_JSR);
+          int isRts = (nextOpcode == CPU_6502_RTS);
+          int isBrk = (nextOpcode == CPU_6502_BRK);
 
-          if (isJsr)
-          {
-            cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502);
-          }
-          else if (isRts && cpuDevice->callStackPtr)
+          if (isRts && cpuDevice->callStackPtr)
           {
             --cpuDevice->callStackPtr;
           }
-          else if (isBrk)
+
+          if (isJsr)
+          {
+            cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
+          }
+          
+          if (isBrk)
           {
             cpuDevice->currentState = CPU_BREAK;
           }
@@ -214,7 +228,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
   CPU6502Device* cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
   {
-    uint8_t opcode = vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502);
+    uint8_t opcode = vrEmu6502GetNextOpcode(cpuDevice->cpu6502);
     int isJsr = (opcode == CPU_6502_JSR);
 
     switch (state)
@@ -249,6 +263,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
         break;
       }
 
+      case CPU_BREAK_ON_INTERRUPT:
       case CPU_RUNNING:
       {
         cpuDevice->breakMode = 0;

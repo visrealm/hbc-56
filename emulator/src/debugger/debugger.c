@@ -32,7 +32,7 @@ static int fgColor = 0;
 static int bgColor = 0;
 
 extern char console_font_6x8[];
-extern uint8_t mem_read_dbg(uint16_t addr);
+uint8_t hbc56MemRead(uint16_t addr, bool dbg);
 
 uint16_t debugMemoryAddr = 0;
 uint16_t debugTmsMemoryAddr = 0;
@@ -43,6 +43,48 @@ static char *labelMap[0x10000] = {NULL};
 static HBC56Device* tms9918 = NULL;
 
 static char tmpBuffer[256] = {0};
+
+
+enum
+{
+  imp,
+  indx,
+  zp,
+  acc,
+  abso,
+  absx,
+  rel,
+  indy,
+  imm,
+  zpx,
+  zpy,
+  absy,
+  ind
+};
+
+static int addrtable[256] = {
+  /* 0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
+     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 0 */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 1 */
+    abso, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 2 */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 3 */
+     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 4 */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 5 */
+     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm,  ind, abso, abso, abso, /* 6 */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 7 */
+     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* 8 */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* 9 */
+     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* A */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* B */
+     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp,  imp, absx, absx, absx, absx, /* D */
+     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
+     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, imp }; /* F */
+
+static const char* opcodes[256];
+
+
+
 
 static int isProbablyConstant(const char* str)
 {
@@ -145,6 +187,13 @@ void debuggerInit(VrEmu6502* cpu6502_)
   cpu6502 = cpu6502_;
   fgColor = green;
   bgColor = 0x00000000;
+
+  for (uint16_t i = 0; i <= 0xff; ++i)
+  {
+    opcodes[i] = vrEmu6502OpcodeToMnemonicStr(cpu6502, i);
+  }
+
+  opcodes[0xff] = "-";
 }
 
 void debuggerInitTms(HBC56Device* tms)
@@ -223,61 +272,6 @@ static void debuggerOutput(const char* str,int x,int y)
     debuggerOutputChar(*(p++),x++,y);
   }
 }
-enum
-{
-  imp,
-  indx,
-  zp,
-  acc,
-  abso,
-  absx,
-  rel,
-  indy,
-  imm,
-  zpx,
-  zpy,
-  absy,
-  ind
-};
-
-static int addrtable[256] = {
-/* 0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
-   imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 0 */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 1 */
-  abso, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 2 */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 3 */
-   imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 4 */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 5 */
-   imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm,  ind, abso, abso, abso, /* 6 */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 7 */
-   imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* 8 */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* 9 */
-   imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* A */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* B */
-   imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* D */
-   imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
-   rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, imp}; /* F */
-
-static char *opcodes[256] = {
-/* 0  |  1   |  2   |  3   |  4   |  5   |  6   |  7   |  8   |  9   |  A   |  B   |  C   |  D   |  E   |  F   |      */
- "brk", "ora", "nop", "slo", "nop", "ora", "asl", "slo", "php", "ora", "asl", "nop", "nop", "ora", "asl", "slo", /* 0 */
- "bpl", "ora", "nop", "slo", "nop", "ora", "asl", "slo", "clc", "ora", "nop", "slo", "nop", "ora", "asl", "slo", /* 1 */
- "jsr", "and", "nop", "rla", "bit", "and", "rol", "rla", "plp", "and", "rol", "nop", "bit", "and", "rol", "rla", /* 2 */
- "bmi", "and", "nop", "rla", "nop", "and", "rol", "rla", "sec", "and", "nop", "rla", "nop", "and", "rol", "rla", /* 3 */
- "rti", "eor", "nop", "sre", "nop", "eor", "lsr", "sre", "pha", "eor", "lsr", "nop", "jmp", "eor", "lsr", "sre", /* 4 */
- "bvc", "eor", "nop", "sre", "nop", "eor", "lsr", "sre", "cli", "eor", "nop", "sre", "nop", "eor", "lsr", "sre", /* 5 */
- "rts", "adc", "nop", "rra", "nop", "adc", "ror", "rra", "pla", "adc", "ror", "nop", "jmp", "adc", "ror", "rra", /* 6 */
- "bvs", "adc", "nop", "rra", "nop", "adc", "ror", "rra", "sei", "adc", "nop", "rra", "nop", "adc", "ror", "rra", /* 7 */
- "nop", "sta", "nop", "sax", "sty", "sta", "stx", "sax", "dey", "nop", "txa", "nop", "sty", "sta", "stx", "sax", /* 8 */
- "bcc", "sta", "nop", "nop", "sty", "sta", "stx", "sax", "tya", "sta", "txs", "nop", "nop", "sta", "nop", "nop", /* 9 */
- "ldy", "lda", "ldx", "lax", "ldy", "lda", "ldx", "lax", "tay", "lda", "tax", "nop", "ldy", "lda", "ldx", "lax", /* A */
- "bcs", "lda", "nop", "lax", "ldy", "lda", "ldx", "lax", "clv", "lda", "tsx", "lax", "ldy", "lda", "ldx", "lax", /* B */
- "cpy", "cmp", "nop", "dcp", "cpy", "cmp", "dec", "dcp", "iny", "cmp", "dex", "nop", "cpy", "cmp", "dec", "dcp", /* C */
- "bne", "cmp", "nop", "dcp", "nop", "cmp", "dec", "dcp", "cld", "cmp", "nop", "dcp", "nop", "cmp", "dec", "dcp", /* D */
- "cpx", "sbc", "nop", "isb", "cpx", "sbc", "inc", "isb", "inx", "sbc", "nop", "sbc", "cpx", "sbc", "inc", "isb", /* E */
- "beq", "sbc", "nop", "isb", "nop", "sbc", "inc", "isb", "sed", "sbc", "nop", "isb", "nop", "sbc", "inc", "-" }; /* F */
-
 
 static const int disassemblyVpos = 6;
 
@@ -287,7 +281,7 @@ static const int disassemblyVpos = 6;
 
 static int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
 {
-  uint8_t addr = mem_read_dbg((*pc)++);
+  uint8_t addr = hbc56MemRead((*pc)++, true);
 
   *value = addr;
 
@@ -325,7 +319,7 @@ static int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
 
 static int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value)
 {
-  uint16_t addr = mem_read_dbg((*pc)++);
+  uint16_t addr = hbc56MemRead((*pc)++, true);
 
   if (rel) 
   {
@@ -333,7 +327,7 @@ static int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t
   }
   else
   {
-    addr |= mem_read_dbg((*pc)++) << 8;
+    addr |= hbc56MemRead((*pc)++, true) << 8;
   }
 
   *value = addr;
@@ -380,26 +374,19 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
   memset(debuggerFrameBuffer, 0, sizeof(debuggerFrameBuffer));
 
-  //static CPU6502Regs prevRegs;
-  //static CPU6502Regs lastRegs;
   static uint16_t lastPc;
 
   static uint16_t highlightAddr = 0;
 
   fgColor = green;
-//  if (lastRegs.a != cpu6502->a) fgColor = red;
   debuggerOutput("A:  $", 0, 1);
   debuggerOutputHex(vrEmu6502GetAcc(cpu6502),5,1);
   debuggerOutput(SDL_itoa(vrEmu6502GetAcc(cpu6502),buffer,10),10,1);
 
-//  fgColor = green;
-//  if (lastRegs.x != cpu6502->x) fgColor = red;
   debuggerOutput("X:  $", 0, 2);
   debuggerOutputHex(vrEmu6502GetX(cpu6502),5,2);
   debuggerOutput(SDL_itoa(vrEmu6502GetX(cpu6502),buffer,10),10,2);
 
-//  fgColor = green;
-//  if (lastRegs.y != cpu6502->y) fgColor = red;
   debuggerOutput("Y:  $", 0, 3);
   debuggerOutputHex(vrEmu6502GetY(cpu6502),5,3);
   debuggerOutput(SDL_itoa(vrEmu6502GetY(cpu6502),buffer,10),10,3);
@@ -408,28 +395,25 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
   debuggerOutputHex16(vrEmu6502GetPC(cpu6502), 25, 1);
   debuggerOutput(SDL_itoa(vrEmu6502GetPC(cpu6502), buffer, 10), 30, 1);
 
-//  fgColor = green;
-//  if (lastRegs.s != cpu6502->s) fgColor = red;
   debuggerOutput("SP: $1", 20, 2);
   debuggerOutputHex(vrEmu6502GetStackPointer(cpu6502), 26, 2);
   debuggerOutput(SDL_itoa(vrEmu6502GetStackPointer(cpu6502), buffer, 10), 30, 2);
 
-//  fgColor = green;
   debuggerOutput("F:", 20, 3);
 
   uint8_t flags = vrEmu6502GetStatus(cpu6502);
-//  fgColor = cpu6502->p.n ? (lastRegs.p.n == cpu6502->p.n ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x80) ? 'N' : 'n', 24, 3);
-//  fgColor = cpu6502->p.v ? (lastRegs.p.v == cpu6502->p.v ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x40) ? 'V' : 'v', 25, 3);
-//  fgColor = cpu6502->p.d ? (lastRegs.p.d == cpu6502->p.d ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x08) ? 'D' : 'd', 26, 3);
-//  fgColor = cpu6502->p.i ? (lastRegs.p.i == cpu6502->p.i ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x04) ? 'I' : 'i', 27, 3);
-//  fgColor = cpu6502->p.z ? (lastRegs.p.z == cpu6502->p.z ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x02) ? 'Z' : 'z', 28, 3);
-//  fgColor = cpu6502->p.c ? (lastRegs.p.c == cpu6502->p.c ? green : red) : dkgreen;
-  debuggerOutputChar((flags & 0x01) ? 'C' : 'c', 29, 3);
+  fgColor = (flags & FlagN) ? green : red;
+  debuggerOutputChar((flags & FlagN) ? 'N' : 'n', 24, 3);
+  fgColor = (flags & FlagV) ? green : red;
+  debuggerOutputChar((flags & FlagV) ? 'V' : 'v', 25, 3);
+  fgColor = (flags & FlagD) ? green : red;
+  debuggerOutputChar((flags & FlagD) ? 'D' : 'd', 26, 3);
+  fgColor = (flags & FlagI) ? green : red;
+  debuggerOutputChar((flags & FlagI) ? 'I' : 'i', 27, 3);
+  fgColor = (flags & FlagZ) ? green : red;
+  debuggerOutputChar((flags & FlagZ) ? 'Z' : 'z', 28, 3);
+  fgColor = (flags & FlagC) ? green : red;
+  debuggerOutputChar((flags & FlagC) ? 'C' : 'c', 29, 3);
 
   fgColor = green;
 
@@ -465,7 +449,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
     int xPos = 1;
 
-    uint8_t opcode = mem_read_dbg(pc);
+    uint8_t opcode = hbc56MemRead(pc, true);
     debuggerOutput("$", xPos, i + disassemblyVpos); xPos += 1;
     debuggerOutputHex16(pc, xPos, i + disassemblyVpos); xPos += 5;
     debuggerOutput(opcodes[opcode], xPos, i + disassemblyVpos);
@@ -507,7 +491,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
         break;
       case imm:
         debuggerOutput("#$", xPos, i + disassemblyVpos); xPos += 2;
-        debuggerOutputHex(mem_read_dbg(pc++), xPos, i + disassemblyVpos); xPos += 2;
+        debuggerOutputHex(hbc56MemRead(pc++, true), xPos, i + disassemblyVpos); xPos += 2;
         skipValue = 1;
         break;
       case zpx:
@@ -536,7 +520,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
         int yPos = mouseCharY - 2;
         bgColor = 0xffffff00;
         fgColor = 0x00000000;
-        uint8_t value = mem_read_dbg(refAddr);
+        uint8_t value = hbc56MemRead(refAddr, true);
 
         int labelWidth = 0;
         if (labelMap[refAddr]) labelWidth = (int)SDL_strlen(labelMap[refAddr]) + 2;
@@ -586,7 +570,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
   int y = 0;
   while (sp != 0)
   {
-    uint8_t d = mem_read_dbg(0x100 + sp);
+    uint8_t d = hbc56MemRead(0x100 + sp, true);
     debuggerOutput("$1   $", 40, y + disassemblyVpos);
     debuggerOutputHex(sp, 42, y + disassemblyVpos);
     debuggerOutputHex(d, 46, y + disassemblyVpos);
@@ -608,7 +592,7 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
     for (uint8_t x = 0; x< 8; ++x)
     {
-      uint8_t d = mem_read_dbg(addr);
+      uint8_t d = hbc56MemRead(addr, true);
 
       if (addr == highlightAddr) { fgColor = yellow; }
 

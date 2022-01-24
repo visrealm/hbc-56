@@ -318,7 +318,10 @@ static uint8_t writeTms9918Device(HBC56Device* device, uint16_t addr, uint8_t va
   return 0;
 }
 
-
+/* Function:  readTms9918Vram
+ * --------------------
+ * read a value from vram directly
+ */
 uint8_t readTms9918Vram(HBC56Device* device, uint16_t vramAddr)
 {
   TMS9918Device* tmsDevice = getTms9918Device(device);
@@ -329,6 +332,10 @@ uint8_t readTms9918Vram(HBC56Device* device, uint16_t vramAddr)
   return 0;
 }
 
+/* Function:  readTms9918Reg
+ * --------------------
+ * read a registry value directly
+ */
 uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg)
 {
   TMS9918Device* tmsDevice = getTms9918Device(device);

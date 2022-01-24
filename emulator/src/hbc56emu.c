@@ -28,11 +28,14 @@
 #include "devices/keyboard_device.h"
 #include "devices/nes_device.h"
 #include "devices/ay38910_device.h"
+#include "devices/uart_device.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <time.h>
 #include <string.h>
+
 
 static HBC56Device devices[HBC56_MAX_DEVICES];
 static int deviceCount = 0;
@@ -204,13 +207,20 @@ void hbc56DebugStepOut()
   debug6502State(cpuDevice, CPU_STEP_OUT);
 }
 
+/* Function:  hbc56DebugBreakOnInt
+ * --------------------
+ * break on interrupt
+ */
+void hbc56DebugBreakOnInt()
+{
+  debug6502State(cpuDevice, CPU_BREAK_ON_INTERRUPT);
+}
 
-
-/* Function:  mem_read_impl
+/* Function:  hbc56MemRead
  * --------------------
  * read a value from a device
  */
-static uint8_t mem_read_impl(uint16_t addr, int dbg)
+uint8_t hbc56MemRead(uint16_t addr, bool dbg)
 {
   uint8_t val = 0x00;
   for (size_t i = 0; i < deviceCount; ++i)
@@ -222,28 +232,11 @@ static uint8_t mem_read_impl(uint16_t addr, int dbg)
   return val;
 }
 
-
-/* Function:  mem_read
- * --------------------
- * read a value from a device (regular mode)
- */
-uint8_t mem_read(uint16_t addr) {
-  return mem_read_impl(addr, 0);
-}
-
-/* Function:  mem_read_dbg
- * --------------------
- * read a value from a device (debugger mode)
- */
-uint8_t mem_read_dbg(uint16_t addr) {
-  return mem_read_impl(addr, 1);
-}
-
-/* Function:  mem_write
+/* Function:  hbc56MemWrite
  * --------------------
  * write a valude to a device
  */
-void mem_write(uint16_t addr, uint8_t val)
+void hbc56MemWrite(uint16_t addr, uint8_t val)
 {
   for (size_t i = 0; i < deviceCount; ++i)
   {
@@ -416,6 +409,9 @@ static void doEvents()
       case SDLK_F5:
         hbc56DebugRun();
         break;
+      case SDLK_F7:
+        hbc56DebugBreakOnInt();
+        break;
       case SDLK_PAGEUP:
       case SDLK_KP_9:
         if (withControl)
@@ -485,6 +481,7 @@ static void doEvents()
       case SDLK_F2:
       case SDLK_F12:
       case SDLK_F5:
+      case SDLK_F7:
       case SDLK_PAGEUP:
       case SDLK_KP_9:
       case SDLK_PAGEDOWN:
@@ -763,6 +760,10 @@ int main(int argc, char* argv[])
   #if HBC56_AY_3_8910_COUNT > 1
     hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
   #endif
+#endif
+
+#if HBC56_HAVE_UART
+  hbc56AddDevice(createUartDevice(HBC56_IO_ADDRESS(HBC56_UART_PORT), HBC56_UART_PORTNAME, HBC56_UART_BAUDRATE));
 #endif
 
 

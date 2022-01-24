@@ -97,5 +97,11 @@ void hbc56DebugStepOver();
  */
 void hbc56DebugStepOut();
 
+/* Function:  hbc56DebugBreakOnInt
+ * --------------------
+ * break on interrupt
+ */
+void hbc56DebugBreakOnInt();
+
 
 #endif

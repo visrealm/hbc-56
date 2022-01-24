@@ -59,6 +59,12 @@
 #define HBC56_AY38910_B_PORT    0x44
 #define HBC56_AY38910_CLOCK     2000000
 
+#ifdef _WINDOWS
+#define HBC56_HAVE_UART         1
+#define HBC56_UART_PORT         0x20
+#define HBC56_UART_PORTNAME     "\\\\.\\COM7"
+#define HBC56_UART_BAUDRATE     115200
+#endif
 
 /* computed configuration values (shouldn't need to touch these) 
   -------------------------------------------------------------------------- */

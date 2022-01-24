@@ -10,12 +10,15 @@
  */
 
 #include "uart_device.h"
-#if 0
+
+#ifdef _WINDOWS
+
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 
 static void destroyUartDevice(HBC56Device*);
+static void tickUartDevice(HBC56Device*, uint32_t, double);
 static uint8_t readUartDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeUartDevice(HBC56Device*, uint16_t, uint8_t);
 
@@ -24,6 +27,16 @@ struct UartDevice
 {
   uint32_t addr;
   HANDLE   handle;
+
+  uint8_t readBufferBytes;
+  uint8_t readBufferBytesRead;
+
+  uint8_t readBuffer[255];
+
+  uint8_t statusRequested;
+
+  double timeSinceIO;
+  
 };
 typedef struct UartDevice UartDevice;
 
@@ -41,6 +54,9 @@ HBC56Device createUartDevice(
   if (uartDevice)
   {
     uartDevice->addr = addr;
+    uartDevice->readBufferBytes = 0;
+    uartDevice->readBufferBytesRead = 0;
+    uartDevice->statusRequested = 0;
     uartDevice->handle = CreateFileA(port,
                                      GENERIC_READ | GENERIC_WRITE,
                                      0,
@@ -62,9 +78,20 @@ HBC56Device createUartDevice(
     SetCommState(uartDevice->handle, &dcb);
 
     device.data = uartDevice;
-    device.destroyFn = &destroyUartDevice;
-    device.readFn = &readUartDevice;
-    device.writeFn = &writeUartDevice;
+    device.destroyFn = destroyUartDevice;
+    device.tickFn = tickUartDevice;
+    device.readFn = readUartDevice;
+    device.writeFn = writeUartDevice;
+
+    COMMTIMEOUTS timeouts = { 0 };
+
+    //Setting Timeouts
+    timeouts.ReadIntervalTimeout = 0;
+    timeouts.ReadTotalTimeoutConstant = 1;
+    timeouts.ReadTotalTimeoutMultiplier = 0;
+    timeouts.WriteTotalTimeoutConstant = 1;
+    timeouts.WriteTotalTimeoutMultiplier = 0;
+    SetCommTimeouts(uartDevice->handle, &timeouts);
   }
   else
   {
@@ -102,6 +129,33 @@ static void destroyUartDevice(HBC56Device *device)
   device->data = NULL;
 }
 
+/* Function:  tickUartDevice
+ * --------------------
+ * tick the uart device
+ */
+static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+{
+  UartDevice* uartDevice = getUartDevice(device);
+  if (uartDevice)
+  {
+    uartDevice->timeSinceIO += deltaTime;
+
+    if (uartDevice->readBufferBytes == uartDevice->readBufferBytesRead &&
+        uartDevice->timeSinceIO > 0.01 && uartDevice->statusRequested)
+    {
+      DWORD bytesRead = 0;
+      if (ReadFile(uartDevice->handle, uartDevice->readBuffer, sizeof(uartDevice->readBuffer), &bytesRead, NULL) && bytesRead)
+      {
+        uartDevice->readBufferBytes = bytesRead & 0xff;
+        uartDevice->readBufferBytesRead = 0;
+      }
+
+      uartDevice->timeSinceIO = 0;
+    }
+  }
+}
+
+
 /* Function:  readUartDevice
  * --------------------
  * read from the uart device
@@ -114,12 +168,24 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
     if (addr == uartDevice->addr)   // status register
     {
       *val = 0;
+
+      uartDevice->statusRequested = 1;
+
+      if (uartDevice->readBufferBytes > uartDevice->readBufferBytesRead)
+      {
+        *val |= 0x01;
+      }
+
+      *val |= 0x02; // tx reg empty
+      
       return 1;
     }
     else if (addr == (uartDevice->addr | 0x01)) // data
     {
-      
-      *val = 0;
+      if (uartDevice->readBufferBytes > uartDevice->readBufferBytesRead)
+      {
+        *val = uartDevice->readBuffer[uartDevice->readBufferBytesRead++];
+      }
       return 1;
     }
   }
@@ -130,35 +196,24 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
  * --------------------
  * write to the memory device
  */
-static uint8_t writeMemoryDevice(HBC56Device* device, uint16_t addr, uint8_t val)
+static uint8_t writeUartDevice(HBC56Device* device, uint16_t addr, uint8_t val)
 {
-  MemoryDevice* memoryDevice = getMemoryDevice(device);
-  if (memoryDevice)
+  UartDevice* uartDevice = getUartDevice(device);
+  if (uartDevice)
   {
-    if (addr >= memoryDevice->startAddr &&
-        addr < memoryDevice->endAddr)
+    if (addr == uartDevice->addr)
     {
-      memoryDevice->data[addr - memoryDevice->startAddr] = val;
       return 1;
     }
-  }
-  return 0;
-}
-
-/* Function:  setMemoryDeviceContents
- * --------------------
- * update a ram/rom device contents. contents size must be equal to device size
- */
-int setMemoryDeviceContents(HBC56Device* device, const uint8_t* contents, uint32_t contentSize)
-{
-  MemoryDevice* memoryDevice = getMemoryDevice(device);
-  if (memoryDevice)
-  {
-    if (memoryDevice->endAddr - memoryDevice->startAddr != contentSize)
-      return 0;
-
-    memcpy(memoryDevice->data, contents, contentSize);
-    return 1;
+    else if (addr == (uartDevice->addr | 0x01))
+    {
+      DWORD bytesWritten = 0;
+      if (!WriteFile(uartDevice->handle, &val, 1, &bytesWritten, NULL))
+      {
+        /* shrug */
+      }
+      return 1;
+    }
   }
   return 0;
 }
