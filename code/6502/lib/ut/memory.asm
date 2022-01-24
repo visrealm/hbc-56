@@ -13,7 +13,7 @@
 !src "ut/memory.inc"
 
 
-!ifndef MEMORY_ZP_START { MEMORY_ZP_START = MEMORY_TMP1
+!ifndef MEMORY_ZP_START { MEMORY_ZP_START = $48
         !warn "MEMORY_ZP_START not provided. Defaulting to ", MEMORY_ZP_START
 }
 

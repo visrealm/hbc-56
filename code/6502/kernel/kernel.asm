@@ -23,6 +23,7 @@ JMP_OPCODE = $4c
 ; -------------------------
 LCD_IO_PORT             = $02
 TMS9918_IO_PORT         = $10
+UART_IO_PORT            = $20
 AY_IO_PORT              = $40
 KB_IO_PORT              = $80
 NES_IO_PORT             = $82
@@ -46,7 +47,11 @@ TMS9918_ZP_END          = TMS9918_ZP_START + .TMS_ZP_SIZE
 LCD_ZP_START            = TMS9918_ZP_END
 LCD_ZP_END              = LCD_ZP_START + .LCD_ZP_SIZE
 
-MEMORY_ZP_START         = LCD_ZP_END
+!ifdef HBC56_DISABLE_UART { .UART_ZP_SIZE = 0 } else { .UART_ZP_SIZE = 0 }
+UART_ZP_START            = LCD_ZP_END
+UART_ZP_END              = UART_ZP_START + .UART_ZP_SIZE
+
+MEMORY_ZP_START         = UART_ZP_END
 MEMORY_ZP_END           = MEMORY_ZP_START + 6
 
 STR_ADDR                = MEMORY_ZP_END
@@ -67,7 +72,7 @@ HBC56_USER_ZP_START     = HBC56_KERNEL_ZP_END
 ; -------------------------
 ; Kernel RAM
 ; -------------------------
-HBC56_KERNEL_RAM_START  = $7b00
+HBC56_KERNEL_RAM_START  = $7a00
 
 TILEMAP_RAM_START       = HBC56_KERNEL_RAM_START
 TILEMAP_RAM_END         = TILEMAP_RAM_START + $116
@@ -83,8 +88,12 @@ TMS9918_RAM_END         = TMS9918_RAM_START + .TMS_RAM_SIZE
 LCD_RAM_START           = TMS9918_RAM_END
 LCD_RAM_END             = LCD_RAM_START + .LCD_RAM_SIZE
 
+!ifdef HBC56_DISABLE_UART { .UART_RAM_SIZE = 0 } else { .UART_RAM_SIZE = 0 }
+UART_RAM_START            = LCD_RAM_END
+UART_RAM_END              = UART_RAM_START + .UART_RAM_SIZE
+
 !ifdef HBC56_DISABLE_SFXMAN { .SFXMAN_RAM_SIZE = 0 } else { .SFXMAN_RAM_SIZE = 18 }
-SFXMAN_RAM_START        = LCD_RAM_END
+SFXMAN_RAM_START        = UART_RAM_END
 SFXMAN_RAM_END          = SFXMAN_RAM_START + .SFXMAN_RAM_SIZE
 
 BCD_RAM_START           = SFXMAN_RAM_END
@@ -106,8 +115,9 @@ HBC56_TMP               = LAST_MODULE_RAM_END + 3
 
 HBC56_CONSOLE_FLAGS     = LAST_MODULE_RAM_END + 4
 HBC56_CONSOLE_FLAG_CURSOR = $80
-HBC56_CONSOLE_FLAG_NES  = $40
-HBC56_CONSOLE_FLAG_LCD  = $20
+HBC56_CONSOLE_FLAG_NES    = $40
+HBC56_CONSOLE_FLAG_LCD    = $20
+HBC56_CONSOLE_FLAG_NOWAIT = $10
 
 HBC56_TMP_X             = LAST_MODULE_RAM_END + 5
 HBC56_TMP_Y             = LAST_MODULE_RAM_END + 6
@@ -119,7 +129,11 @@ HBC56_META_TITLE_LEN    = HBC56_META_TITLE_END + 1
 
 ; callback function on vsync
 HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
-;!warn "Total RAM used: ",.NES_RAM_END-HBC56_KERNEL_RAM_START
+
+
+HBC56_KERNEL_RAM_END    = HBC56_VSYNC_CALLBACK + 2
+HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
+;!warn "Total RAM used: ",HBC56_KERNEL_RAM_SIZE
 
 !src "hbc56.asm"
 *=HBC56_KERNEL_START
@@ -147,6 +161,10 @@ HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
         !src "gfx/bitmap.asm"
         !src "lcd/lcd.asm"
         !src "gfx/tilemap.asm"
+}
+
+!ifndef HBC56_DISABLE_UART {
+        !src "ser/uart.asm"
 }
 
 !src "inp/nes.asm"
@@ -222,7 +240,7 @@ hbc56HighBell:
         !ifdef HAVE_AY3891X {
                 +ayToneEnable AY_PSG0, AY_CHC
                 +aySetVolume AY_PSG0, AY_CHC, $ff
-                +ayPlayNote AY_PSG0, AY_CHC, NOTE_F5
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_F5
         }
         jmp .noteTimeout
 
@@ -230,7 +248,7 @@ hbc56Bell:
         !ifdef HAVE_AY3891X {
                 +ayToneEnable AY_PSG0, AY_CHC
                 +aySetVolume AY_PSG0, AY_CHC, $ff
-                +ayPlayNote AY_PSG0, AY_CHC, NOTE_E3
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_E3
         }
         jmp .noteTimeout
 
@@ -318,16 +336,14 @@ kernelMain:
        
         !ifdef HAVE_TMS9918 {
                 +tmsEnableInterrupts
-
-                ;+tmsSetAddrColorTable 16
-                ;+tmsColorFgBg TMS_WHITE, HBC56_BACKGROUND
-                ;ldx #2
-                ;jsr _tmsSendX8
-
         }
         cli
 
         jsr hbc56HighBell
+
+        lda #HBC56_CONSOLE_FLAG_NOWAIT
+        bit HBC56_CONSOLE_FLAGS
+        bne .afterInput
 
         lda #HBC56_CONSOLE_FLAG_NES
         and HBC56_CONSOLE_FLAGS

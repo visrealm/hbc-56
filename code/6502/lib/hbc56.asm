@@ -8,9 +8,9 @@
 ;
 ;
 
-!cpu 6502
+!cpu w65c02
 !initmem $FF
-cputype = $6502
+cputype = $65c02
 
 !src "hbc56.inc"
 

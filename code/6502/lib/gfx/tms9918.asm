@@ -23,11 +23,11 @@ HAVE_TMS9918 = 1
         !warn "TMS9918_IO_PORT not provided. Defaulting to ", TMS9918_IO_PORT
 }
 
-!ifndef TMS9918_ZP_START { TMS9918_ZP_START = $ed
+!ifndef TMS9918_ZP_START { TMS9918_ZP_START = $30
         !warn "TMS9918_ZP_START not provided. Defaulting to ", TMS9918_ZP_START
 }
 
-!ifndef TMS9918_RAM_START { TMS9918_RAM_START = $7e10
+!ifndef TMS9918_RAM_START { TMS9918_RAM_START = $7ba0
         !warn "TMS9918_RAM_START not provided. Defaulting to ", TMS9918_RAM_START
 }
 
@@ -43,15 +43,17 @@ TMS9918_ZP_SIZE         = 2                     ; LAST ZP ADDRESS
 .TMS9918_REG0_SHADOW_ADDR = TMS9918_RAM_START
 .TMS9918_REG1_SHADOW_ADDR = TMS9918_RAM_START + 1
 
-.TMS9918_CONSOLE_X        = TMS9918_RAM_START + 2
-.TMS9918_CONSOLE_Y        = TMS9918_RAM_START + 3
-.TMS9918_CONSOLE_SIZE_X   = TMS9918_RAM_START + 4
-.TMS9918_REGY             = TMS9918_RAM_START + 5
-.TMS9918_TMP_READ_ROW     = TMS9918_RAM_START + 6
-.TMS9918_TMP_WRITE_ROW    = TMS9918_RAM_START + 7
+TMS9918_CONSOLE_X         = TMS9918_RAM_START + 2
+TMS9918_CONSOLE_Y         = TMS9918_RAM_START + 3
+TMS9918_CONSOLE_SIZE_X    = TMS9918_RAM_START + 4
+TMS9918_CONSOLE_LINE_LEN  = TMS9918_RAM_START + 5
+.TMS9918_REGX             = TMS9918_RAM_START + 6
+.TMS9918_REGY             = TMS9918_RAM_START + 7
+.TMS9918_TMP_READ_ROW     = TMS9918_RAM_START + 8
+.TMS9918_TMP_WRITE_ROW    = TMS9918_RAM_START + 9
 
 .TMS9918_TMP_BUFFER       = TMS9918_RAM_START + 10 ; 40 bytes 
-.TMS9918_RAM_SIZE         = 50
+TMS9918_RAM_SIZE         = 50
 
 
 
@@ -59,7 +61,7 @@ TMS9918_ZP_SIZE         = 2                     ; LAST ZP ADDRESS
 	!error "TMS9918_ZP requires ",TMS9918_ZP_SIZE," bytes. Allocated ",TMS9918_ZP_END - TMS9918_ZP_START
 }
 
-!if TMS9918_RAM_END < (TMS9918_RAM_START + .TMS9918_RAM_SIZE) {
+!if TMS9918_RAM_END < (TMS9918_RAM_START + TMS9918_RAM_SIZE) {
 	!error "TMS9918_RAM requires ",.TMS9918_RAM_SIZE," bytes. Allocated ",TMS9918_RAM_END - TMS9918_RAM_START
 }
 
@@ -316,7 +318,7 @@ tmsModeGraphicsI:
         jsr tmsReg1SetFields
 
         lda #32
-        sta .TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_SIZE_X
         rts
 
 ; -----------------------------------------------------------------------------
@@ -330,7 +332,7 @@ tmsModeGraphicsII:
         jsr tmsReg1SetFields
 
         lda #32
-        sta .TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_SIZE_X
 
         rts
 
@@ -345,7 +347,7 @@ tmsModeText:
         jsr tmsReg1SetFields
 
         lda #40
-        sta .TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_SIZE_X
 
         rts
 
@@ -370,8 +372,8 @@ tmsInit:
         sta .TMS9918_REG1_SHADOW_ADDR
 
         lda #0
-        sta .TMS9918_CONSOLE_X
-        sta .TMS9918_CONSOLE_Y
+        sta TMS9918_CONSOLE_X
+        sta TMS9918_CONSOLE_Y
 
         ; set up the registers
         ldx #0
@@ -681,7 +683,7 @@ tmsConsoleScrollLine:
         ldy .TMS9918_TMP_READ_ROW
         ldx #0
         lda #40
-        cmp .TMS9918_CONSOLE_SIZE_X
+        cmp TMS9918_CONSOLE_SIZE_X
         beq +
         jsr tmsSetPosTmpAddress
         jmp ++
@@ -696,7 +698,7 @@ tmsConsoleScrollLine:
         ldy .TMS9918_TMP_WRITE_ROW
         ldx #0
         lda #40
-        cmp .TMS9918_CONSOLE_SIZE_X
+        cmp TMS9918_CONSOLE_SIZE_X
         beq +
         jsr tmsSetPosTmpAddress
         jmp ++
@@ -726,7 +728,7 @@ tmsConsoleScrollLine:
         +tmsGet
         sta .TMS9918_TMP_BUFFER, x
         inx
-        cpx .TMS9918_CONSOLE_SIZE_X
+        cpx TMS9918_CONSOLE_SIZE_X
         bne -
         rts
 
@@ -737,7 +739,7 @@ tmsConsoleScrollLine:
         lda .TMS9918_TMP_BUFFER, x
         +tmsPut
         inx
-        cpx .TMS9918_CONSOLE_SIZE_X
+        cpx TMS9918_CONSOLE_SIZE_X
         bne -
         rts
 
@@ -745,19 +747,18 @@ tmsConsoleScrollLine:
 ; tmsIncPosConsole: Increment console position
 ; -----------------------------------------------------------------------------
 tmsIncPosConsole:
-        ;!byte $db
-        inc .TMS9918_CONSOLE_X
-        lda .TMS9918_CONSOLE_X
-        cmp .TMS9918_CONSOLE_SIZE_X
+        inc TMS9918_CONSOLE_X
+        lda TMS9918_CONSOLE_X
+        cmp TMS9918_CONSOLE_SIZE_X
         bne +
         lda #0
-        sta .TMS9918_CONSOLE_X
-        inc .TMS9918_CONSOLE_Y
+        sta TMS9918_CONSOLE_X
+        inc TMS9918_CONSOLE_Y
 +
-        lda .TMS9918_CONSOLE_Y
+        lda TMS9918_CONSOLE_Y
         cmp #24
         bcc +
-        dec .TMS9918_CONSOLE_Y
+        dec TMS9918_CONSOLE_Y
         jmp tmsConsoleScrollLine
 +
         rts
@@ -767,28 +768,37 @@ tmsIncPosConsole:
 ; tmsDecPosConsole: Increment console position
 ; -----------------------------------------------------------------------------
 tmsDecPosConsole:
-        dec .TMS9918_CONSOLE_X
+        dec TMS9918_CONSOLE_X
         bpl ++
-        lda .TMS9918_CONSOLE_SIZE_X
-        sta .TMS9918_CONSOLE_X
-        dec .TMS9918_CONSOLE_X
+        lda TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_X
+        dec TMS9918_CONSOLE_X
         lda #0
-        cmp .TMS9918_CONSOLE_Y
+        cmp TMS9918_CONSOLE_Y
         bne +
-        sta .TMS9918_CONSOLE_X
+        sta TMS9918_CONSOLE_X
         rts        
 +
-        dec .TMS9918_CONSOLE_Y
+        dec TMS9918_CONSOLE_Y
 ++
         rts
 
 
 ; -----------------------------------------------------------------------------
+; tmsConsoleHome: Set cursor position top left
+; -----------------------------------------------------------------------------
+tmsConsoleHome:
+        stz TMS9918_CONSOLE_X
+        stz TMS9918_CONSOLE_Y
+
+        ; flow through
+
+; -----------------------------------------------------------------------------
 ; tmsSetPosConsole: Set cursor position to console position
 ; -----------------------------------------------------------------------------
 tmsSetPosConsole:
-        ldx .TMS9918_CONSOLE_X
-        ldy .TMS9918_CONSOLE_Y
+        ldx TMS9918_CONSOLE_X
+        ldy TMS9918_CONSOLE_Y
 
         ; flow through
 
@@ -908,6 +918,7 @@ tmsPrint:
 ;  'A': Character to output to console
 ; -----------------------------------------------------------------------------
 tmsConsoleOut:
+        stx .TMS9918_REGX
         sty .TMS9918_REGY
         php
         sei
@@ -924,10 +935,12 @@ tmsConsoleOut:
         pla
         +tmsPut
         jsr tmsIncPosConsole
+        inc TMS9918_CONSOLE_LINE_LEN
 
 .endConsoleOut
         plp
         ldy .TMS9918_REGY
+        ldx .TMS9918_REGX
         rts
 
 .tmsConsoleNewline
@@ -963,10 +976,18 @@ tmsConsolePrint:
 ; tmsConsoleNewline: Output a newline to the console (scrolls if on last line)
 ; -----------------------------------------------------------------------------
 tmsConsoleNewline:
-        +tmsConsoleOut ' '
-        lda .TMS9918_CONSOLE_SIZE_X
-        sta .TMS9918_CONSOLE_X
-        dec .TMS9918_CONSOLE_X
+        +tmsPut ' '
+        lda TMS9918_CONSOLE_X
+        bne +
+        lda TMS9918_CONSOLE_LINE_LEN
+        beq +
+        rts
+        beq +
++
+        lda TMS9918_CONSOLE_SIZE_X
+        sta TMS9918_CONSOLE_X
+        dec TMS9918_CONSOLE_X
+        stz TMS9918_CONSOLE_LINE_LEN
         jmp tmsIncPosConsole
 
 
@@ -974,8 +995,8 @@ tmsConsoleNewline:
 ; tmsConsoleBackspace: Output a backspace to the console
 ; -----------------------------------------------------------------------------
 tmsConsoleBackspace:
-        +tmsConsoleOut ' '
-        jsr tmsDecPosConsole
         jsr tmsDecPosConsole
         +tmsConsoleOut ' '
+        +tmsPut ' '
+        dec TMS9918_CONSOLE_LINE_LEN
         jmp tmsDecPosConsole

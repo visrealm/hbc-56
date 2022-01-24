@@ -47,101 +47,101 @@ hbc56Main:
 	}
 
 
-	+playNote NOTE_E4
-	+playNote NOTE_E4
+	+playNote NOTE_FREQ_E4
+	+playNote NOTE_FREQ_E4
 	jsr toneDelay
-	+playNote NOTE_E4
+	+playNote NOTE_FREQ_E4
 
 	jsr toneDelay
-	+playNote NOTE_C4
-	+playNote NOTE_E4
+	+playNote NOTE_FREQ_C4
+	+playNote NOTE_FREQ_E4
 	jsr toneDelay
 
-	+playNote NOTE_G4
-	jsr toneDelay
-	jsr toneDelay
-	jsr toneDelay
-
-	+playNote NOTE_G3
+	+playNote NOTE_FREQ_G4
 	jsr toneDelay
 	jsr toneDelay
 	jsr toneDelay
 
-	+playNote NOTE_C4
+	+playNote NOTE_FREQ_G3
 	jsr toneDelay
-	jsr toneDelay
-	+playNote NOTE_G3
-
-	jsr toneDelay
-	jsr toneDelay
-	+playNote NOTE_E3
-	jsr toneDelay
-
-	jsr toneDelay
-	+playNote NOTE_A3
-	jsr toneDelay
-	+playNote NOTE_B3
-
-	jsr toneDelay
-	+playNote NOTE_AS3
-	+playNote NOTE_A3
-	jsr toneDelay
-
-	+playNote NOTE_G3
-	+playNote NOTE_E4
-	+playNote NOTE_G4
-
-	+playNote NOTE_A4
-	jsr toneDelay
-	+playNote NOTE_F4
-	+playNote NOTE_G4
-
-	jsr toneDelay
-	+playNote NOTE_E4
-	jsr toneDelay
-	+playNote NOTE_C4
-
-	+playNote NOTE_D4
-	+playNote NOTE_B3
 	jsr toneDelay
 	jsr toneDelay
 
-	+playNote NOTE_C4
+	+playNote NOTE_FREQ_C4
 	jsr toneDelay
 	jsr toneDelay
-	+playNote NOTE_G3
+	+playNote NOTE_FREQ_G3
 
 	jsr toneDelay
 	jsr toneDelay
-	+playNote NOTE_E3
+	+playNote NOTE_FREQ_E3
 	jsr toneDelay
 
 	jsr toneDelay
-	+playNote NOTE_A3
+	+playNote NOTE_FREQ_A3
 	jsr toneDelay
-	+playNote NOTE_B3
+	+playNote NOTE_FREQ_B3
 
 	jsr toneDelay
-	+playNote NOTE_AS3
-	+playNote NOTE_A3
+	+playNote NOTE_FREQ_AS3
+	+playNote NOTE_FREQ_A3
 	jsr toneDelay
 
-	+playNote NOTE_G3
-	+playNote NOTE_E4
-	+playNote NOTE_G4
+	+playNote NOTE_FREQ_G3
+	+playNote NOTE_FREQ_E4
+	+playNote NOTE_FREQ_G4
 
-	+playNote NOTE_A4
+	+playNote NOTE_FREQ_A4
 	jsr toneDelay
-	+playNote NOTE_F4
-	+playNote NOTE_G4
+	+playNote NOTE_FREQ_F4
+	+playNote NOTE_FREQ_G4
 
 	jsr toneDelay
-	+playNote NOTE_E4
+	+playNote NOTE_FREQ_E4
 	jsr toneDelay
-	+playNote NOTE_C4
+	+playNote NOTE_FREQ_C4
 
-	+playNote NOTE_D4
-	+playNote NOTE_B3
+	+playNote NOTE_FREQ_D4
+	+playNote NOTE_FREQ_B3
+	jsr toneDelay
+	jsr toneDelay
+
+	+playNote NOTE_FREQ_C4
+	jsr toneDelay
+	jsr toneDelay
+	+playNote NOTE_FREQ_G3
+
+	jsr toneDelay
+	jsr toneDelay
+	+playNote NOTE_FREQ_E3
+	jsr toneDelay
+
+	jsr toneDelay
+	+playNote NOTE_FREQ_A3
+	jsr toneDelay
+	+playNote NOTE_FREQ_B3
+
+	jsr toneDelay
+	+playNote NOTE_FREQ_AS3
+	+playNote NOTE_FREQ_A3
+	jsr toneDelay
+
+	+playNote NOTE_FREQ_G3
+	+playNote NOTE_FREQ_E4
+	+playNote NOTE_FREQ_G4
+
+	+playNote NOTE_FREQ_A4
+	jsr toneDelay
+	+playNote NOTE_FREQ_F4
+	+playNote NOTE_FREQ_G4
+
+	jsr toneDelay
+	+playNote NOTE_FREQ_E4
+	jsr toneDelay
+	+playNote NOTE_FREQ_C4
+
+	+playNote NOTE_FREQ_D4
+	+playNote NOTE_FREQ_B3
 	jsr toneDelay
 	jsr medDelay
 

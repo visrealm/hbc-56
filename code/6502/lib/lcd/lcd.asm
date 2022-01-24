@@ -11,11 +11,11 @@
         !warn "LCD_IO_PORT not provided. Defaulting to ", LCD_IO_PORT
 }
 
-!ifndef LCD_ZP_START { LCD_ZP_START = LCD_TMP1
+!ifndef LCD_ZP_START { LCD_ZP_START = $38
         !warn "LCD_ZP_START not provided. Defaulting to ", LCD_ZP_START
 }
 
-!ifndef LCD_RAM_START { LCD_RAM_START = $7d00
+!ifndef LCD_RAM_START { LCD_RAM_START = $7c00
         !warn "LCD_RAM_START not provided. Defaulting to ", LCD_RAM_START
 }
 

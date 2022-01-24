@@ -32,6 +32,13 @@
         sta HBC56_CONSOLE_FLAGS
 }
 
+!macro setHbcMetaNoWait {
+        lda #HBC56_CONSOLE_FLAG_NOWAIT
+        ora HBC56_CONSOLE_FLAGS
+        sta HBC56_CONSOLE_FLAGS
+}
+
+
 !macro hbc56SetVsyncCallback .vsync {
         lda #<.vsync
         sta HBC56_VSYNC_CALLBACK

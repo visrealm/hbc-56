@@ -15,11 +15,11 @@
 
 HAVE_BITMAP = 1
 
-!ifndef BITMAP_ZP_START { BITMAP_ZP_START = $f0
+!ifndef BITMAP_ZP_START { BITMAP_ZP_START = $28
         !warn "BITMAP_ZP_START not provided. Defaulting to ", BITMAP_ZP_START
 }
 
-!ifndef BITMAP_RAM_START { BITMAP_RAM_START = $7c00
+!ifndef BITMAP_RAM_START { BITMAP_RAM_START = $7b80
         !warn "BITMAP_RAM_START not provided. Defaulting to ", BITMAP_RAM_START
 }
 

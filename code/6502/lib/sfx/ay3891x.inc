@@ -45,6 +45,19 @@
         +ayWrite .dev, AY_CHA_TONE_H + (.chan * 2), >.val
 }
 
+!macro ayToneWord .freq {
+        !word (AY_CLOCK_FREQ / (32.0 * .freq))
+}
+
+!macro ayToneByteL .freq {
+        !byte <(AY_CLOCK_FREQ / (32.0 * .freq))
+}
+
+!macro ayToneByteH .freq {
+        !byte >(AY_CLOCK_FREQ / (32.0 * .freq))
+}
+
+
 !macro ayToneEnable .dev, .chan {
         +ayRead .dev, AY_ENABLES
         and #!($01 << .chan)
@@ -74,7 +87,7 @@
 }
 
 !macro aySetVolumeEnvelope .dev, .chan {
-        +ayWrite .dev, (AY_CHA_AMPL + .chan, $10
+        +ayWrite .dev, (AY_CHA_AMPL + .chan), $10
 }
 
 !macro aySetEnvelopePeriod .dev, .period {

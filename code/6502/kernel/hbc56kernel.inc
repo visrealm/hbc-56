@@ -8,9 +8,9 @@
 ;
 ;
 
-!cpu 6502
+!cpu w65c02
 !initmem $FF
-cputype = $6502
+cputype = $65c02
 
 !src "kernel.o.lmap"
 
@@ -22,6 +22,7 @@ cputype = $6502
 !src "inp/nes.inc"
 !src "inp/keyboard.inc"
 !src "sfx/ay3891x.inc"
+!src "ser/uart.inc"
 !src "kernel.inc"
 
 *=HBC56_META_VECTOR

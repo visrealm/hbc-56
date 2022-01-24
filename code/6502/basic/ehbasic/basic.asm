@@ -1025,158 +1025,188 @@ LAB_138E
 ; faster, dictionary search version ....
 
 LAB_13A6
-	LDY	#$FF			; set save index (makes for easy math later)
+      LDY   #$FF              ; set save index (makes for easy math later)
 
-	SEC				; set carry for subtract
-	LDA	Bpntrl		; get basic execute pointer low byte
-	SBC	#<Ibuffs		; subtract input buffer start pointer
-	TAX				; copy result to X (index past line # if any)
+      SEC                     ; set carry for subtract
+      LDA   Bpntrl            ; get basic execute pointer low byte
+      SBC   #<Ibuffs          ; subtract input buffer start pointer
+      TAX                     ; copy result to X (index past line # if any)
 
-	STX	Oquote		; clear open quote/DATA flag
+      STX   Oquote            ; clear open quote/DATA flag
 LAB_13AC
-	LDA	Ibuffs,X		; get byte from input buffer
-	BEQ	LAB_13EC		; if null save byte then exit
+      LDA   Ibuffs,X          ; get byte from input buffer
+      BEQ   LAB_13EC          ; if null save byte then exit
 
-	CMP	#'_'			; compare with "_"
-	BCS	LAB_13EC		; if >= go save byte then continue crunching
+; Applied case sensitivity patch from 
+; https://github.com/Klaus2m5/6502_EhBASIC_V2.22/blob/master/mixed_case_keywords_mod.txt
+;
+; *** begin patch: lower case token recognition V2 ***
+; ***              WARNING! changes documented behavior!
+; *** add
+      CMP   #'{'              ; convert lower to upper case
+      BCS   LAB_13EC          ; is above lower case
+      CMP   #'a'
+      BCC   PATCH_LC          ; is below lower case
+      AND   #$DF              ; mask lower case bit
+      
+PATCH_LC
+; *** end
+   
+      CMP   #'_'              ; compare with "_"
+      BCS   LAB_13EC          ; if >= go save byte then continue crunching
 
-	CMP	#'<'			; compare with "<"
-	BCS	LAB_13CC		; if >= go crunch now
+      CMP   #'<'              ; compare with "<"
+      BCS   LAB_13CC          ; if >= go crunch now
 
-	CMP	#'0'			; compare with "0"
-	BCS	LAB_13EC		; if >= go save byte then continue crunching
+      CMP   #'0'              ; compare with "0"
+      BCS   LAB_13EC          ; if >= go save byte then continue crunching
 
-	STA	Scnquo		; save buffer byte as search character
-	CMP	#$22			; is it quote character?
-	BEQ	LAB_1410		; branch if so (copy quoted string)
+      STA   Scnquo            ; save buffer byte as search character
+      CMP   #$22              ; is it quote character?
+      BEQ   LAB_1410          ; branch if so (copy quoted string)
 
-	CMP	#'*'			; compare with "*"
-	BCC	LAB_13EC		; if < go save byte then continue crunching
+      CMP   #'*'              ; compare with "*"
+      BCC   LAB_13EC          ; if < go save byte then continue crunching
 
-					; else crunch now
+                              ; else crunch now
 LAB_13CC
-	BIT	Oquote		; get open quote/DATA token flag
-	BVS	LAB_13EC		; branch if b6 of Oquote set (was DATA)
-					; go save byte then continue crunching
+      BIT   Oquote            ; get open quote/DATA token flag
+      BVS   LAB_13EC          ; branch if b6 of Oquote set (was DATA)
+                              ; go save byte then continue crunching
 
-	STX	TempB			; save buffer read index
-	STY	csidx			; copy buffer save index
-	LDY	#<TAB_1STC		; get keyword first character table low address
-	STY	ut2_pl		; save pointer low byte
-	LDY	#>TAB_1STC		; get keyword first character table high address
-	STY	ut2_ph		; save pointer high byte
-	LDY	#$00			; clear table pointer
+      STX   TempB             ; save buffer read index
+      STY   csidx             ; copy buffer save index
+      LDY   #<TAB_1STC        ; get keyword first character table low address
+      STY   ut2_pl            ; save pointer low byte
+      LDY   #>TAB_1STC        ; get keyword first character table high address
+      STY   ut2_ph            ; save pointer high byte
+      LDY   #$00              ; clear table pointer
 
 LAB_13D0
-	CMP	(ut2_pl),Y		; compare with keyword first character table byte
-	BEQ	LAB_13D1		; go do word_table_chr if match
+      CMP   (ut2_pl),Y        ; compare with keyword first character table byte
+      BEQ   LAB_13D1          ; go do word_table_chr if match
 
-	BCC	LAB_13EA		; if < keyword first character table byte go restore
-					; Y and save to crunched
+; *** replace
+;      BCC   LAB_13EA          ; if < keyword first character table byte go restore
+; *** with
+      BCC   PATCH_LC2         ; if < keyword first character table byte go restore
+; *** end
+                              ; Y and save to crunched
 
-	INY				; else increment pointer
-	BNE	LAB_13D0		; and loop (branch always)
+      INY                     ; else increment pointer
+      BNE   LAB_13D0          ; and loop (branch always)
 
 ; have matched first character of some keyword
 
 LAB_13D1
-	TYA				; copy matching index
-	ASL				; *2 (bytes per pointer)
-	TAX				; copy to new index
-	LDA	TAB_CHRT,X		; get keyword table pointer low byte
-	STA	ut2_pl		; save pointer low byte
-	LDA	TAB_CHRT+1,X	; get keyword table pointer high byte
-	STA	ut2_ph		; save pointer high byte
+      TYA                     ; copy matching index
+      ASL                     ; *2 (bytes per pointer)
+      TAX                     ; copy to new index
+      LDA   TAB_CHRT,X        ; get keyword table pointer low byte
+      STA   ut2_pl            ; save pointer low byte
+      LDA   TAB_CHRT+1,X      ; get keyword table pointer high byte
+      STA   ut2_ph            ; save pointer high byte
 
-	LDY	#$FF			; clear table pointer (make -1 for start)
+      LDY   #$FF              ; clear table pointer (make -1 for start)
 
-	LDX	TempB			; restore buffer read index
+      LDX   TempB             ; restore buffer read index
 
 LAB_13D6
-	INY				; next table byte
-	LDA	(ut2_pl),Y		; get byte from table
+      INY                     ; next table byte
+      LDA   (ut2_pl),Y        ; get byte from table
 LAB_13D8
-	BMI	LAB_13EA		; all bytes matched so go save token
+      BMI   LAB_13EA          ; all bytes matched so go save token
 
-	INX				; next buffer byte
-	CMP	Ibuffs,X		; compare with byte from input buffer
-	BEQ	LAB_13D6		; go compare next if match
+      INX                     ; next buffer byte
+; *** replace
+;      CMP   Ibuffs,X          ; compare with byte from input buffer
+; *** with
+      EOR     Ibuffs,x        ; check bits against table
+      AND     #$DF            ; DF masks the upper/lower case bit
+; *** end      
+      BEQ   LAB_13D6          ; go compare next if match
 
-	BNE	LAB_1417		; branch if >< (not found keyword)
+      BNE   LAB_1417          ; branch if >< (not found keyword)
 
 LAB_13EA
-	LDY	csidx			; restore save index
+      LDY   csidx             ; restore save index
 
-					; save crunched to output
+                              ; save crunched to output
 LAB_13EC
-	INX				; increment buffer index (to next input byte)
-	INY				; increment save index (to next output byte)
-	STA	Ibuffs,Y		; save byte to output
-	CMP	#$00			; set the flags, set carry
-	BEQ	LAB_142A		; do exit if was null [EOL]
+      INX                     ; increment buffer index (to next input byte)
+      INY                     ; increment save index (to next output byte)
+      STA   Ibuffs,Y          ; save byte to output
+      CMP   #$00              ; set the flags, set carry
+      BEQ   LAB_142A          ; do exit if was null [EOL]
 
-					; A holds token or byte here
-	SBC	#':'			; subtract ":" (carry set by CMP #00)
-	BEQ	LAB_13FF		; branch if it was ":" (is now $00)
+                              ; A holds token or byte here
+      SBC   #':'              ; subtract ":" (carry set by CMP #00)
+      BEQ   LAB_13FF          ; branch if it was ":" (is now $00)
 
-					; A now holds token-$3A
-	CMP	#TK_DATA-$3A	; compare with DATA token - $3A
-	BNE	LAB_1401		; branch if not DATA
+                              ; A now holds token-$3A
+      CMP   #TK_DATA-$3A      ; compare with DATA token - $3A
+      BNE   LAB_1401          ; branch if not DATA
 
-					; token was : or DATA
+                              ; token was : or DATA
 LAB_13FF
-	STA	Oquote		; save token-$3A (clear for ":", TK_DATA-$3A for DATA)
+      STA   Oquote            ; save token-$3A (clear for ":", TK_DATA-$3A for DATA)
 LAB_1401
-	EOR	#TK_REM-$3A		; effectively subtract REM token offset
-	BNE	LAB_13AC		; If wasn't REM then go crunch rest of line
+      EOR   #TK_REM-$3A       ; effectively subtract REM token offset
+      BNE   LAB_13AC          ; If wasn't REM then go crunch rest of line
 
-	STA	Asrch			; else was REM so set search for [EOL]
+      STA   Asrch             ; else was REM so set search for [EOL]
 
-					; loop for REM, "..." etc.
+                              ; loop for REM, "..." etc.
+
 LAB_1408
-	LDA	Ibuffs,X		; get byte from input buffer
-	BEQ	LAB_13EC		; branch if null [EOL]
+      LDA   Ibuffs,X          ; get byte from input buffer
+      BEQ   LAB_13EC          ; branch if null [EOL]
 
-	CMP	Asrch			; compare with stored character
-	BEQ	LAB_13EC		; branch if match (end quote)
+      CMP   Asrch             ; compare with stored character
+      BEQ   LAB_13EC          ; branch if match (end quote)
 
-					; entry for copy string in quotes, don't crunch
+                              ; entry for copy string in quotes, don't crunch
 LAB_1410
-	INY				; increment buffer save index
-	STA	Ibuffs,Y		; save byte to output
-	INX				; increment buffer read index
-	BNE	LAB_1408		; loop while <> 0 (should never be 0!)
+      INY                     ; increment buffer save index
+      STA   Ibuffs,Y          ; save byte to output
+      INX                     ; increment buffer read index
+      BNE   LAB_1408          ; loop while <> 0 (should never be 0!)
 
-					; not found keyword this go
+                              ; not found keyword this go
 LAB_1417
-	LDX	TempB			; compare has failed, restore buffer index (start byte!)
+      LDX   TempB             ; compare has failed, restore buffer index (start byte!)
 
-					; now find the end of this word in the table
+                              ; now find the end of this word in the table
 LAB_141B
-	LDA	(ut2_pl),Y		; get table byte
-	PHP				; save status
-	INY				; increment table index
-	PLP				; restore byte status
-	BPL	LAB_141B		; if not end of keyword go do next
+      LDA   (ut2_pl),Y        ; get table byte
+      PHP                     ; save status
+      INY                     ; increment table index
+      PLP                     ; restore byte status
+      BPL   LAB_141B          ; if not end of keyword go do next
 
-	LDA	(ut2_pl),Y		; get byte from keyword table
-	BNE	LAB_13D8		; go test next word if not zero byte (end of table)
+      LDA   (ut2_pl),Y        ; get byte from keyword table
+      BNE   LAB_13D8          ; go test next word if not zero byte (end of table)
 
-					; reached end of table with no match
-	LDA	Ibuffs,X		; restore byte from input buffer
-	BPL	LAB_13EA		; branch always (all bytes in buffer are $00-$7F)
-					; go save byte in output and continue crunching
+                              ; reached end of table with no match
+; *** add label
+PATCH_LC2
+; *** end
+; *** end   patch: lower case token recognition V2 ***
 
-					; reached [EOL]
+      LDA   Ibuffs,X          ; restore byte from input buffer
+      BPL   LAB_13EA          ; branch always (all bytes in buffer are $00-$7F)
+                              ; go save byte in output and continue crunching
+
+                              ; reached [EOL]
 LAB_142A
-	INY				; increment pointer
-	INY				; increment pointer (makes it next line pointer high byte)
-	STA	Ibuffs,Y		; save [EOL] (marks [EOT] in immediate mode)
-	INY				; adjust for line copy
-	INY				; adjust for line copy
-	INY				; adjust for line copy
-	DEC	Bpntrl		; allow for increment (change if buffer starts at $xxFF)
-	RTS
+      INY                     ; increment pointer
+      INY                     ; increment pointer (makes it next line pointer high byte)
+      STA   Ibuffs,Y          ; save [EOL] (marks [EOT] in immediate mode)
+      INY                     ; adjust for line copy
+      INY                     ; adjust for line copy
+      INY                     ; adjust for line copy
+      DEC   Bpntrl            ; allow for increment (change if buffer starts at $xxFF)
+      RTS
 
 ; search Basic for temp integer line number from start of mem
 
