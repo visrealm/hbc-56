@@ -188,7 +188,7 @@ void debuggerInit(VrEmu6502* cpu6502_)
   fgColor = green;
   bgColor = 0x00000000;
 
-  for (uint16_t i = 0; i <= 0xff; ++i)
+  for (int i = 0; i <= 0xff; ++i)
   {
     opcodes[i] = vrEmu6502OpcodeToMnemonicStr(cpu6502, i);
   }
