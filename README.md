@@ -1,7 +1,7 @@
 # Troy's HBC-56
 My Homebrew 8-bit Computer
 
-<img src="img/repository.png" alt="HBC-56" width="640px">
+<img src="img/hbc56_spin.gif" alt="HBC-56" width="640px">
 
 A homebrew 8-bit computer with a backplane. Initially supporting the 6502 CPU, TMS9918A VDP and Dual AY-3-8910 PSG's. With plans to add support for Z80 and perhaps other CPUs in the future.
 
