@@ -44,48 +44,6 @@ static HBC56Device* tms9918 = NULL;
 
 static char tmpBuffer[256] = {0};
 
-
-enum
-{
-  imp,
-  indx,
-  zp,
-  acc,
-  abso,
-  absx,
-  rel,
-  indy,
-  imm,
-  zpx,
-  zpy,
-  absy,
-  ind
-};
-
-static int addrtable[256] = {
-  /* 0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
-     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 0 */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 1 */
-    abso, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 2 */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 3 */
-     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 4 */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 5 */
-     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm,  ind, abso, abso, abso, /* 6 */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 7 */
-     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* 8 */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* 9 */
-     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* A */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* B */
-     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp,  imp, absx, absx, absx, absx, /* D */
-     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
-     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, imp }; /* F */
-
-static const char* opcodes[256];
-
-
-
-
 static int isProbablyConstant(const char* str)
 {
   SDL_strlcpy(tmpBuffer, str, sizeof(tmpBuffer) - 1);
@@ -187,13 +145,6 @@ void debuggerInit(VrEmu6502* cpu6502_)
   cpu6502 = cpu6502_;
   fgColor = green;
   bgColor = 0x00000000;
-
-  for (int i = 0; i <= 0xff; ++i)
-  {
-    opcodes[i] = vrEmu6502OpcodeToMnemonicStr(cpu6502, i);
-  }
-
-  opcodes[0xff] = "-";
 }
 
 void debuggerInitTms(HBC56Device* tms)
@@ -278,93 +229,6 @@ static const int disassemblyVpos = 6;
 #define OUTPUT_HEX_WITH_LABEL 0
 
 
-
-static int debuggerOutputAddress8(uint16_t *pc, int x, int i, uint16_t* value)
-{
-  uint8_t addr = hbc56MemRead((*pc)++, true);
-
-  *value = addr;
-
-  int len = 0;
-  int oldFgColor = fgColor;
-
-  if (labelMap[addr])
-  {
-    int oldFgColor = fgColor;
-    if (i != 0 && fgColor != red) fgColor = blue;
-    debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
-    len += (int)SDL_strlen(labelMap[addr]);
-#if OUTPUT_HEX_WITH_LABEL
-    if (i != 0) fgColor = dkgreen;
-    debuggerOutput(" [", x + len, i + disassemblyVpos);
-    len += 2;
-  }
-#else
-  } else {
-#endif
-
-    debuggerOutput("$", x + len, i + disassemblyVpos);
-    debuggerOutputHex(addr, x + len + 1, i + disassemblyVpos);
-    len += 3;
-#if OUTPUT_HEX_WITH_LABEL
-    if (len > 3)
-    {
-      debuggerOutput("]", x + len, i + disassemblyVpos); ++len;
-      fgColor = oldFgColor;
-#endif
-    }
-
-  return len;
-}
-
-static int debuggerOutputAddress16(uint16_t *pc, int x, int i, int rel, uint16_t *value)
-{
-  uint16_t addr = hbc56MemRead((*pc)++, true);
-
-  if (rel) 
-  {
-    addr = *pc + (int8_t)addr;
-  }
-  else
-  {
-    addr |= hbc56MemRead((*pc)++, true) << 8;
-  }
-
-  *value = addr;
-
-  int len = 0;
-  int oldFgColor = fgColor;
-
-  if (labelMap[addr])
-  {
-    if (i != 0 && fgColor != red) fgColor = blue;
-    debuggerOutput(labelMap[addr], x, i + disassemblyVpos);
-    len += (int)SDL_strlen(labelMap[addr]);
-#if OUTPUT_HEX_WITH_LABEL
-    if (i != 0) fgColor = dkgreen;
-    debuggerOutput(" [", x + len, i + disassemblyVpos);
-    len += 2;
-  }
-#else
-}
-  else {
-#endif
-
-    debuggerOutput("$", x + len, i + disassemblyVpos);
-    debuggerOutputHex16(addr, x + len + 1, i + disassemblyVpos);
-    len += 5;
-#if OUTPUT_HEX_WITH_LABEL
-    if (len > 5)
-    {
-      debuggerOutput("]", x + len, i + disassemblyVpos); ++len;
-#endif
-
-  }
-
-  return len;
-}
-
-
 void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 {
   char buffer[10];
@@ -420,8 +284,6 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
   if (lastPc != vrEmu6502GetPC(cpu6502))
   {
     lastPc = vrEmu6502GetPC(cpu6502);
-    //lastRegs = prevRegs;
-    //prevRegs = *cpu6502;
   }
 
   uint16_t pc = vrEmu6502GetPC(cpu6502);
@@ -452,68 +314,16 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
     uint8_t opcode = hbc56MemRead(pc, true);
     debuggerOutput("$", xPos, i + disassemblyVpos); xPos += 1;
     debuggerOutputHex16(pc, xPos, i + disassemblyVpos); xPos += 5;
-    debuggerOutput(opcodes[opcode], xPos, i + disassemblyVpos);
-    xPos += (int)SDL_strlen(opcodes[opcode]) + 1;
 
-    ++pc;
     uint16_t refAddr = 0;
-    int skipValue = 0;
-    switch (addrtable[opcode])
-    {
-      case imp:
-        skipValue = 1;
-        break;
-      case indx:
-        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
-        xPos += debuggerOutputAddress8(&pc, xPos, i, &refAddr);
-        debuggerOutput(",X)", xPos, i + disassemblyVpos); xPos += 3;
-        break;
-      case zp:
-        xPos += debuggerOutputAddress8(&pc, xPos, i, &refAddr);
-        break;
-      case acc:
-        skipValue = 1;
-        break;
-      case abso:
-        xPos += debuggerOutputAddress16(&pc, xPos, i, 0, &refAddr);
-        break;
-      case absx:
-        xPos += debuggerOutputAddress16(&pc, xPos, i, 0, &refAddr);
-        debuggerOutput(",X", xPos, i + disassemblyVpos); xPos += 2;
-        break;
-      case rel:
-        xPos += debuggerOutputAddress16(&pc, xPos, i, 1, &refAddr);
-        break;
-      case indy:
-        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
-        xPos += debuggerOutputAddress8(&pc, xPos, i, &refAddr);
-        debuggerOutput("),Y", xPos, i + disassemblyVpos); xPos += 3;
-        break;
-      case imm:
-        debuggerOutput("#$", xPos, i + disassemblyVpos); xPos += 2;
-        debuggerOutputHex(hbc56MemRead(pc++, true), xPos, i + disassemblyVpos); xPos += 2;
-        skipValue = 1;
-        break;
-      case zpx:
-        xPos += debuggerOutputAddress8(&pc, xPos, i, &refAddr);
-        debuggerOutput(",X", xPos, i + disassemblyVpos); xPos += 2;
-        break;
-      case zpy:
-        xPos += debuggerOutputAddress8(&pc, xPos, i, &refAddr);
-        debuggerOutput(",Y", xPos, i + disassemblyVpos); xPos += 2;
-        break;
-      case absy:
-        xPos += debuggerOutputAddress16(&pc, xPos, i, 0, &refAddr);
-        debuggerOutput(",Y", 17, i + disassemblyVpos); xPos += 2;
-        break;
-      case ind:
-        debuggerOutput("(", xPos, i + disassemblyVpos); xPos += 1;
-        xPos += debuggerOutputAddress16(&pc, xPos, i, 0, &refAddr);
-        debuggerOutput(")", xPos, i + disassemblyVpos); xPos += 1;
-        break;
-    }
+    char instructionBuffer[32];
 
-    if (!skipValue && (mouseCharY == (i + disassemblyVpos)))
+    pc = vrEmu6502DisassembleInstruction(cpu6502, pc, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
+
+    debuggerOutput(instructionBuffer, xPos, i + disassemblyVpos);
+    xPos += (int)strnlen(instructionBuffer, sizeof(instructionBuffer));
+
+    if (refAddr && (mouseCharY == (i + disassemblyVpos)))
     {
       if (mouseCharX >= 10 && mouseCharX <= xPos)
       {

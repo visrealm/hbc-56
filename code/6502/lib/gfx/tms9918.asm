@@ -206,6 +206,8 @@ _tmsWaitReg:
 ; TMS_TMP_ADDRESS: Address to set
 ; -----------------------------------------------------------------------------
 tmsSetAddressWrite:
+        php
+        sei
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
         +tmsWaitReg
@@ -213,6 +215,7 @@ tmsSetAddressWrite:
         ora #$40
         sta TMS9918_REG
         +tmsWaitReg
+        plp
         rts
 
 ; -----------------------------------------------------------------------------
@@ -221,12 +224,15 @@ tmsSetAddressWrite:
 ; TMS_TMP_ADDRESS: Address to read
 ; -----------------------------------------------------------------------------
 tmsSetAddressRead:
+        php
+        sei
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
         +tmsWaitReg
         lda TMS_TMP_ADDRESS + 1
         sta TMS9918_REG
         +tmsWaitReg
+        plp
         rts
 
 
@@ -239,12 +245,15 @@ tmsSetAddressRead:
 ; -----------------------------------------------------------------------------
 tmsSetRegister:
         pha
+        php
+        sei
         sta TMS9918_REG
         +tmsWaitReg
         txa
         ora #$80
         sta TMS9918_REG
         +tmsWaitReg
+        plp
         pla
         rts
 
@@ -366,6 +375,8 @@ tmsModeMulticolor:
 ; tmsInit: Initialise the registers
 ; -----------------------------------------------------------------------------
 tmsInit:
+        php
+        sei
         lda TMS_REGISTER_DATA
         sta .TMS9918_REG0_SHADOW_ADDR
         lda TMS_REGISTER_DATA + 1
@@ -402,6 +413,8 @@ tmsInit:
 
         jsr tmsInitSpriteTable
 
+        plp
+        
         rts
 
 

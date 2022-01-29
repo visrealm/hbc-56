@@ -10,8 +10,7 @@
                         "problemMatcher": {
                                 "owner": "acme",
                                 "fileLocation": [
-                                    "relative",
-                                    "${fileDirname}"
+                                    "absolute"
                                 ],
                                 "pattern": {
                                     "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
@@ -32,8 +31,7 @@
                         "problemMatcher": {
                                 "owner": "acme",
                                 "fileLocation": [
-                                    "relative",
-                                    "${workspaceFolder}/lib"
+                                    "absolute"
                                 ],
                                 "pattern": {
                                     "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",

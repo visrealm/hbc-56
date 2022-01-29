@@ -29,7 +29,7 @@ make tms9918gfx2test
 Example: invaders
 ```
 cd invaders
-acme -I ..\lib -I ..\kernel -o invaders.o -l invaders.o.lmap invaders.asm
+..\..\..\tools\acme\bin\acme -I ..\lib -I ..\kernel -o invaders.o -l invaders.o.lmap invaders.asm
 ```
 #### Manually running a demo
 Example: invaders

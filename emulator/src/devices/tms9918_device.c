@@ -11,7 +11,8 @@
 
 #include "tms9918_device.h"
 
-#include "tms9918_core.h"
+#include "vrEmuTms9918.h"
+#include "vrEmuTms9918Util.h"
 
 #include "../hbc56emu.h"
 
@@ -40,36 +41,16 @@ static uint8_t writeTms9918Device(HBC56Device*, uint16_t, uint8_t);
 #define TMS9918_FRAME_TIME      (1.0 / TMS9918_FPS)
 #define TMS9918_ROW_TIME        (TMS9918_FRAME_TIME / (double)TMS9918_DISPLAY_HEIGHT)
 #define TMS9918_PIXEL_TIME      (TMS9918_ROW_TIME / (double)TMS9918_DISPLAY_WIDTH)
-#define TMS9918_BORDER_X        ((TMS9918_DISPLAY_WIDTH - TMS9918A_PIXELS_X) / 2)
-#define TMS9918_BORDER_Y        ((TMS9918_DISPLAY_HEIGHT - TMS9918A_PIXELS_Y) / 2)
+#define TMS9918_BORDER_X        ((TMS9918_DISPLAY_WIDTH - TMS9918_PIXELS_X) / 2)
+#define TMS9918_BORDER_Y        ((TMS9918_DISPLAY_HEIGHT - TMS9918_PIXELS_Y) / 2)
 #define TMS9918_DISPLAY_PIXELS  (TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT)
-
-/* tms9918 palette */
-static const uint32_t tms9918Pal[] = {
-  0x00000000, /* transparent */
-  0x000000ff, /* black */
-  0x21c942ff, /* medium green */
-  0x5edc78ff, /* light green */
-  0x5455edff, /* dark blue */
-  0x7d75fcff, /* light blue */
-  0xd3524dff, /* dark red */
-  0x43ebf6ff, /* cyan */
-  0xfd5554ff, /* medium red */
-  0xff7978ff, /* light red */
-  0xd3c153ff, /* dark yellow */
-  0xe5ce80ff, /* light yellow */
-  0x21b03cff, /* dark green */
-  0xc95bbaff, /* magenta */
-  0xccccccff, /* grey */
-  0xffffffff  /* white */
-};
 
 /* tms9918 device data */
 struct TMS9918Device
 {
   uint16_t       dataAddr;
   uint16_t       regAddr;
-  VrEmuTms9918a *tms9918;
+  VrEmuTms9918  *tms9918;
   uint32_t       frameBuffer[TMS9918_DISPLAY_PIXELS];
   double         unusedTime;
   int            currentFramePixels;
@@ -90,7 +71,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Rendere
   {
     tmsDevice->dataAddr = dataAddr;
     tmsDevice->regAddr = regAddr;
-    tmsDevice->tms9918 = vrEmuTms9918aNew();
+    tmsDevice->tms9918 = vrEmuTms9918New();
     tmsDevice->unusedTime = 0.0f;
     tmsDevice->currentFramePixels = 0;
     memset(tmsDevice->frameBuffer, 0, sizeof(tmsDevice->frameBuffer));
@@ -139,7 +120,7 @@ static void resetTms9918Device(HBC56Device* device)
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
-    vrEmuTms9918aReset(tmsDevice->tms9918);
+    vrEmuTms9918Reset(tmsDevice->tms9918);
   }
 }
 
@@ -152,7 +133,7 @@ static void destroyTms9918Device(HBC56Device *device)
   TMS9918Device *tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
-    vrEmuTms9918aDestroy(tmsDevice->tms9918);
+    vrEmuTms9918Destroy(tmsDevice->tms9918);
   }
   free(tmsDevice);
   device->data = NULL;
@@ -213,8 +194,8 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
     }
 
     /* get the background color for this run of pixels */
-    uint8_t bgColor = (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918)
-                        ? vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_7)
+    uint8_t bgColor = (vrEmuTms9918DisplayEnabled(tmsDevice->tms9918)
+                        ? vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_7)
                         : TMS_BLACK) & 0x0f;
 
     //bgColor = (++c) & 0x0f;  /* for testing */
@@ -236,22 +217,22 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
       {
         tmsRow = currentRow - TMS9918_BORDER_Y;
         memset(tmsDevice->scanlineBuffer, bgColor, sizeof(tmsDevice->scanlineBuffer));
-        if (tmsRow >=0 && tmsRow < TMS9918A_PIXELS_Y)
+        if (tmsRow >=0 && tmsRow < TMS9918_PIXELS_Y)
         {
-          vrEmuTms9918aScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X); 
+          vrEmuTms9918ScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X); 
         }
 
         firstPix = 0;
       }
 
       /* update the frame buffer pixel from the scanline pixel */
-      *(fbPtr++) = tms9918Pal[tmsDevice->scanlineBuffer[currentCol]];
+      *(fbPtr++) = vrEmuTms9918Palette[tmsDevice->scanlineBuffer[currentCol]];
 
       /* if we're at the end of the main tms9918 frame, trigger an interrupt */
       if (++tmsDevice->currentFramePixels == (TMS9918_DISPLAY_WIDTH * (TMS9918_DISPLAY_HEIGHT - TMS9918_BORDER_Y)))
       {
-        if (vrEmuTms9918aDisplayEnabled(tmsDevice->tms9918) &&
-            (vrEmuTms9918aRegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
+        if (vrEmuTms9918DisplayEnabled(tmsDevice->tms9918) &&
+            (vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
         {
           hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RAISE);
         }
@@ -275,7 +256,7 @@ static uint8_t readTms9918Device(HBC56Device* device, uint16_t addr, uint8_t *va
   {
     if (addr == tmsDevice->regAddr)
     {
-      *val = vrEmuTms9918aReadStatus(tmsDevice->tms9918);
+      *val = vrEmuTms9918ReadStatus(tmsDevice->tms9918);
       if (!dbg) hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RELEASE);
       return 1;
     }
@@ -283,11 +264,11 @@ static uint8_t readTms9918Device(HBC56Device* device, uint16_t addr, uint8_t *va
     {
       if (dbg)
       {
-        *val = vrEmuTms9918aReadDataNoInc(tmsDevice->tms9918);
+        *val = vrEmuTms9918ReadDataNoInc(tmsDevice->tms9918);
       }
       else
       {
-        *val = vrEmuTms9918aReadData(tmsDevice->tms9918);
+        *val = vrEmuTms9918ReadData(tmsDevice->tms9918);
       }
       return 1;
     }
@@ -306,12 +287,12 @@ static uint8_t writeTms9918Device(HBC56Device* device, uint16_t addr, uint8_t va
   {
     if (addr == tmsDevice->regAddr)
     {
-      vrEmuTms9918aWriteAddr(tmsDevice->tms9918, val);
+      vrEmuTms9918WriteAddr(tmsDevice->tms9918, val);
       return 1;
     }
     else if (addr == tmsDevice->dataAddr)
     {
-      vrEmuTms9918aWriteData(tmsDevice->tms9918, val);
+      vrEmuTms9918WriteData(tmsDevice->tms9918, val);
       return 1;
     }
   }
@@ -327,7 +308,7 @@ uint8_t readTms9918Vram(HBC56Device* device, uint16_t vramAddr)
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
-    return vrEmuTms9918aVramValue(tmsDevice->tms9918, vramAddr);
+    return vrEmuTms9918VramValue(tmsDevice->tms9918, vramAddr);
   }
   return 0;
 }
@@ -341,7 +322,7 @@ uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg)
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
-    return vrEmuTms9918aRegValue(tmsDevice->tms9918, reg);
+    return vrEmuTms9918RegValue(tmsDevice->tms9918, reg);
   }
   return 0;
 }

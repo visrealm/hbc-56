@@ -15,7 +15,7 @@
 HBC56EMU=$(ROOT_PATH)../../emulator/bin/Hbc56Emu.exe
 
 # Comile command
-ACME=$(ROOT_PATH)../../Tools/acme/acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
+ACME=$(ROOT_PATH)../../tools/acme/bin/acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
 
 LCD_MODEL?=12864
 
@@ -31,5 +31,9 @@ kernel:
 # Default compile task
 %.o: %.asm kernel makefile $(ROOT_PATH)makefile
 	$(ACME) -o $@ -l $@.lmap -r $@.rpt $<
+
+# Hex compile task
+%.hex: %.asm kernel makefile $(ROOT_PATH)makefile
+	$(ACME) -f hex -o $@ -l $@.lmap -r $@.rpt $<
 
 .PHONY: clean

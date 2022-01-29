@@ -16,3 +16,6 @@
 [submodule "emulator/modules/65c02"]
 	path = emulator/modules/65c02
 	url = https://github.com/visrealm/vrEmu6502.git
+[submodule "tools/acme"]
+	path = tools/acme
+	url = https://github.com/visrealm/acme.git

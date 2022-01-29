@@ -90,7 +90,6 @@ inputLoop:
 
         cpx #$e1                ; is it the pause/break key?
         beq pauseBreakLoop
-
         jmp keyPressed          ; just a regular key (pressed)
 
 ; -----------------------------------------------------------------------------
@@ -104,7 +103,8 @@ pauseBreakLoop:
         cpx #$14                ; if it's $14, then it's a press
         beq pausePressed
 
-        jsr kbWaitForScancode   ; eat the next two scancodes
+        jsr kbWaitForScancode   ; eat the next three scancodes
+        jsr kbWaitForScancode
         jsr kbWaitForScancode
 
         lda #0                  ; mark as released
@@ -112,8 +112,7 @@ pauseBreakLoop:
         jmp keyPressed
 
 pausePressed:
-        jsr kbWaitForScancode   ; eat the next two scancodes
-        jsr kbWaitForScancode
+        jsr kbWaitForScancode   ; eat the next scancode
 
         lda #1                  ; mark as pressed
         sta pressedTable + 2
@@ -271,9 +270,9 @@ doneShowExtKey:
 
         lda #1                  ; set sprite visibility based on frame count
         bit HBC56_TICKS
+
         beq evenFrame
         jmp oddFrame
-	rts
 
 ; -----------------------------------------------------------------------------
 ; Even frames hide overlay sprites

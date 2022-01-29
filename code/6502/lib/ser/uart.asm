@@ -76,7 +76,7 @@ uartInit:
         nop
         nop
 
-        lda #(UART_CTL_CLOCK_DIV_16 | UART_CTL_WORD_8BIT_1SB)
+        lda #(UART_CTL_CLOCK_DIV_16 | UART_CTL_WORD_8BIT_EPAR_1SB)
         sta UART_REG
         nop
         nop
