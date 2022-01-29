@@ -1,6 +1,6 @@
 The keyboard portion of this circuit utilises a PIC16F627A microcontroller.
 
-The code for the PIC is available at: [/mcu/keyboard/main.asm](../mcu/keyboard/main.asm).
+The code for the PIC is available at: [/mcu/keyboard/main.asm](../../mcu/keyboard/main.asm).
 
 Videos covering the development of this board:
 
