@@ -1,6 +1,6 @@
-## HBC-56 Schematics / gerbers
+## HBC-56 Schematics / PCBs
 
-THis directory contains all of the schematics and (some) gerbers for this build.
+THis directory contains all of the schematics and (some) PCBs/Gerbers for this build.
 
 ### Schematics with PCBs
 * [HBC-56 Backplane](backplane)
