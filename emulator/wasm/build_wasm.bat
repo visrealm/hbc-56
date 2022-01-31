@@ -38,7 +38,8 @@ emcc -o hbc56.html ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\65c02\src\vrEmu6502.c ^
   ..\modules\lcd\src\vrEmuLcd.c ^
-  ..\modules\tms9918\src\tms9918_core.c ^
+  ..\modules\tms9918\src\vrEmuTms9918.c ^
+  ..\modules\tms9918\src\vrEmuTms9918Util.c ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
   -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_hbc56ToggleDebugger','_hbc56DebugBreak','_hbc56DebugRun','_hbc56DebugStepInto','_hbc56DebugStepOver','_hbc56DebugStepOut','_main']" ^
