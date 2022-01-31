@@ -1,9 +1,8 @@
-# Troy's HBC-56
-My Homebrew 8-bit Computer
+# HBC-56
 
-<img src="img/repository.png" alt="HBC-56" width="640px">
+A homebrew 8-bit computer on a (56 pin) backplane.
 
-A homebrew 8-bit computer with a backplane. Initially supporting the 6502 CPU, TMS9918A VDP and Dual AY-3-8910 PSG's. With plans to add support for Z80 and perhaps other CPUs in the future.
+Initially supporting the 6502 CPU, TMS9918A VDP and Dual AY-3-8910 PSG's. With plans to add support for Z80 and perhaps other CPUs in the future.
 
 Current cards:
 * 6502 CPU card
@@ -16,28 +15,30 @@ Current cards:
 
 All [source code](code/6502) and [schematics](schematics) are available in this repository.
 
+<img src="img/hbc56_spin.gif" alt="HBC-56" width="640px">
+
 ## Emulator
 I have also included an emulator for this system. The emulator supports:
 
 * Realtime execution of code (at 4MHz).
 * Step through disassembled code with labels.
 * Examine CPU and VDP registers, RAM and VRAM.
-* Full support for all TMS9918A display modes. See my TMS9918 emulator here: https://github.com/visrealm/vrEmuTms9918
+* Full support for all TMS9918A display modes. See my TMS9918 emulator here: [github.com/visrealm/vrEmuTms9918](https://github.com/visrealm/vrEmuTms9918)
 * Support for the dual AY-3-8910 audio, keyboard and NES controller.
 
-The emulator is also available for Web (Beta). You can try a live instance here: https://visrealm.github.io/hbc-56/emulator/wasm You can load a new ROM by dragging the rom file on to the emulator.
+The emulator is also available for Web (Beta). You can try the [live HBC-56 emulator instance](https://visrealm.github.io/hbc-56/emulator/wasm) on GitHub pages. You can load a new ROM by dragging the rom file on to the emulator.
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
 ## Running the demos
 There are several ways to build ad run the demos. They are set up with makefiles, so it is preferred to have [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) installed and in your PATH environment variable.
 #### VSCode
-1. Open the code/6502 directory in VSCode
-2. For each test/demo program (eg. basic, invaders, tests\tms, tests\sfx, etc.) navigate to the .asm file and hit \<Ctrl\>+\<F5\>. This will build and run the program in the emulator. \<Ctrl\>+\<Shift\>+\<B\> to just build without running.
+1. Open the [code/6502](code/6502) directory in VSCode
+2. For each test/demo program (eg. basic, invaders, tests\tms, tests\sfx, etc.) navigate to the .asm file and hit **\<Ctrl\>+\<F5\>**. This will build and run the program in the emulator. **\<Ctrl\>+\<Shift\>+\<B\>** to just build the ROM image without running.
   
 #### Command-line (MAKE)
   
-For each path (basic, invaders, tests\tms, tests\sfx):
+For each path ([basic](code/6502/basic), [invaders](code/6502/invaders), [tests/tms](code/6502/tests/tms),[tests/sfx](code/6502/tests/sfx)):
 1. Open a console to the path
 2. Type `make` (this will build the default program and run it in the emulator:
 
@@ -47,7 +48,7 @@ For each path (basic, invaders, tests\tms, tests\sfx):
  * Type `make <basefile>` (filename without extension) to build and run a specific demo eg:
  
 ```
-cd code\6502\tests\tms
+cd code/6502/tests/tms
 make tms9918gfx2test
 ```
 

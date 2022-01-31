@@ -8,8 +8,7 @@
 
 ## Running the demos
 1. Ensure [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) is available on your system and in your PATH
-2. Ensure [ACME assembler](https://sourceforge.net/projects/acme-crossass) is in your PATH
-3. For each path (basic, invaders, tests\tms, tests\sfx):
+2. For each path (basic, invaders, tests\tms, tests\sfx):
  * Open a console to the path
  * Type `make` (this will build the default program and run it in the emulator:
 
