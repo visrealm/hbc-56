@@ -1,0 +1,67 @@
+Name hbc56ramromshadow;
+Partno hbc5602;
+Revision 01;
+Date 2/9/2021;
+Designer Troy Schrapel;
+Company Troy Schrapel;
+Location Australia;
+Assembly None;
+Device g16v8;
+
+/*
+ * Input pins
+ */
+Pin 1 = !ce;
+Pin 2 = b0;
+Pin 3 = b1;
+Pin 4 = b2;
+Pin 5 = b3;
+Pin 6 = b4;
+Pin 7 = b5;
+Pin 8 = b6;
+Pin 9 = b7;
+Pin 12 = a12;
+Pin 13 = a13;
+Pin 14 = a14;
+
+/*
+ * Output pins
+ */
+Pin 17 = !romCE;
+Pin 18 = !ramCE;
+
+a134 = a13 & a14;
+na134 = !a14 & !a13;
+na14a13 = !a14 &  a13;
+a14na13 = a14 &  !a13;
+
+/*
+ * Common logic
+ */
+s0 = na134   & !a12 & b0;
+s1 = na134   &  a12 & b1;
+s2 = na14a13 & !a12 & b2;
+s3 = na14a13 &  a12 & b3;
+s4 = a14na13 & !a12 & b4;
+s5 = a14na13 &  a12 & b5;
+s6 =  a134   & !a12 & b6;
+s7 =  a134   &  a12 & b7;
+
+bs0 = na134   & !a12 & !b0;
+bs1 = na134   &  a12 & !b1;
+bs2 = na14a13 & !a12 & !b2;
+bs3 = na14a13 &  a12 & !b3;
+bs4 = a14na13 & !a12 & !b4;
+bs5 = a14na13 &  a12 & !b5;
+bs6 =  a134   & !a12 & !b6;
+bs7 =  a134   &  a12 & !b7;
+
+/*
+ * Output logic
+ */
+roE = ce & (s0 # s1 # s2 # s3 # s4 # s5 # s6 # s7);
+raE = ce & (bs0 # bs1 # bs2 # bs3 # bs4 # bs5 # bs6 # bs7);
+
+romCE = roE;
+ramCE = raE;
+
