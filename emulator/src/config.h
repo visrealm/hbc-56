@@ -39,6 +39,7 @@
 #define HBC56_TMS9918_PORT      0x10
 #define HBC56_TMS9918_DAT_PORT  HBC56_TMS9918_PORT
 #define HBC56_TMS9918_REG_PORT (HBC56_TMS9918_PORT | 0x01)
+#define HBC56_TMS9918_IRQ       1
 
 
 #define HBC56_HAVE_LCD          1
@@ -63,7 +64,8 @@
 #define HBC56_HAVE_UART         1
 #define HBC56_UART_PORT         0x20
 #define HBC56_UART_PORTNAME     "COM7"
-#define HBC56_UART_CLOCK_FREQ   3686400 / 2
+#define HBC56_UART_CLOCK_FREQ   3686400 / 4
+#define HBC56_UART_IRQ          2
 #endif
 
 /* computed configuration values (shouldn't need to touch these) 

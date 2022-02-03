@@ -45,9 +45,9 @@ HBC56Device *hbc56AddDevice(HBC56Device device);
 
 /* Function:  hbc56Interrupt
  * --------------------
- * raise or release an interrupt
+ * raise or release an interrupt (irq# and signal)
  */
-void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal);
+void hbc56Interrupt(uint8_t irq, HBC56InterruptSignal signal);
 
 /* Function:  hbc56LoadRom
  * --------------------

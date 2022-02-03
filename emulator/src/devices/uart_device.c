@@ -13,6 +13,8 @@
 
 #ifdef _WINDOWS
 
+#include "../hbc56emu.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -35,12 +37,13 @@ struct UartDevice
   uint8_t readBufferBytes;
   uint8_t readBufferBytesRead;
 
-  uint8_t readBuffer[255];
+  uint8_t readBuffer[4];
 
   uint8_t statusRequested;
 
   uint8_t controlReg;
   uint8_t statusReg;
+  uint8_t irq;
 
   double timeSinceIO;
   
@@ -77,7 +80,8 @@ typedef struct UartDevice UartDevice;
 HBC56Device createUartDevice(
   uint32_t addr,
   const char* port,
-  int clockRate)
+  int clockRate,
+  uint8_t irq)
 {
   HBC56Device device = createDevice("UART");
   UartDevice* uartDevice = (UartDevice*)malloc(sizeof(UartDevice));
@@ -147,7 +151,7 @@ static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double delt
     uartDevice->timeSinceIO += deltaTime;
 
     if (uartDevice->readBufferBytes == uartDevice->readBufferBytesRead &&
-        uartDevice->timeSinceIO > 0.01 && uartDevice->statusRequested)
+        uartDevice->timeSinceIO > 0.002 && uartDevice->statusRequested)
     {
       DWORD bytesRead = 0;
       if (ReadFile(uartDevice->handle, uartDevice->readBuffer, sizeof(uartDevice->readBuffer), &bytesRead, NULL) && bytesRead)
@@ -156,6 +160,11 @@ static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double delt
         uartDevice->readBufferBytesRead = 0;
 
         uartDevice->statusReg |= UART_STATUS_RX_REG_FULL;
+
+        if (uartDevice->controlReg & UART_CTL_RX_INT_ENABLE)
+        {
+          hbc56Interrupt(uartDevice->irq, INTERRUPT_RAISE);
+        }
       }
 
       uartDevice->timeSinceIO = 0;
@@ -189,6 +198,11 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
         if (uartDevice->readBufferBytes == uartDevice->readBufferBytesRead)
         {
           uartDevice->statusReg &= ~(UART_STATUS_RX_REG_FULL);
+
+          if (uartDevice->controlReg & UART_CTL_RX_INT_ENABLE)
+          {
+            hbc56Interrupt(uartDevice->irq, INTERRUPT_RELEASE);
+          }
         }
       }
       return 1;

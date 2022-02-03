@@ -46,6 +46,9 @@ static HBC56Device* romDevice = NULL;
 static char tempBuffer[256];
 static int debugWindowShown = 1;
 
+#define MAX_IRQS 5
+static HBC56InterruptSignal irqs[MAX_IRQS];
+
 
 /* Function:  hbc56Reset
  * --------------------
@@ -58,6 +61,11 @@ void hbc56Reset()
     resetDevice(&devices[i]);
   }
 
+  for (int i = 0; i < MAX_IRQS; ++i)
+  {
+    irqs[i] = INTERRUPT_RELEASE;
+  }
+  
   debug6502State(cpuDevice, CPU_RUNNING);
 }
 
@@ -98,13 +106,33 @@ HBC56Device* hbc56AddDevice(HBC56Device device)
 
 /* Function:  hbc56Interrupt
  * --------------------
- * raise or release an interrupt
+ raise or release an interrupt (irq# and signal)
  */
-void hbc56Interrupt(HBC56InterruptType type, HBC56InterruptSignal signal)
+void hbc56Interrupt(uint8_t irq, HBC56InterruptSignal signal)
 {
+  if (irq < MAX_IRQS)
+  {
+    irqs[irq] = signal;
+  } 
+
   if (cpuDevice)
   {
-    interrupt6502(cpuDevice, type, signal);
+    signal = INTERRUPT_RELEASE;
+
+    for (int i = 0; i < MAX_IRQS;++i)
+    {
+      if (irqs[i] == INTERRUPT_RAISE)
+      {
+        signal = INTERRUPT_RAISE;
+      }
+      else if (irqs[i] == INTERRUPT_TRIGGER)
+      {
+        irqs[i] = INTERRUPT_RELEASE;
+        signal = INTERRUPT_RAISE;
+      }
+    }
+
+    interrupt6502(cpuDevice, INTERRUPT_INT, signal);
   }
 }
 
@@ -735,7 +763,7 @@ int main(int argc, char* argv[])
   hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
 
 #if HBC56_HAVE_TMS9918
-  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), state->renderers[0]));
+  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), HBC56_TMS9918_IRQ, state->renderers[0]));
   debuggerInitTms(tms9918Device);
 #endif
 
@@ -764,7 +792,7 @@ int main(int argc, char* argv[])
 
 #ifdef _WINDOWS
 #if HBC56_HAVE_UART
-  hbc56AddDevice(createUartDevice(HBC56_IO_ADDRESS(HBC56_UART_PORT), HBC56_UART_PORTNAME, HBC56_UART_CLOCK_FREQ));
+  hbc56AddDevice(createUartDevice(HBC56_IO_ADDRESS(HBC56_UART_PORT), HBC56_UART_PORTNAME, HBC56_UART_CLOCK_FREQ, HBC56_UART_IRQ));
 #endif
 #endif
 

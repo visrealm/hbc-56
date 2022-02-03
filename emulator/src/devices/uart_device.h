@@ -19,7 +19,7 @@
  * --------------------
  * create a uart device for the given address
  */
-HBC56Device createUartDevice(uint32_t addr, const char *port, int clockrate);
+HBC56Device createUartDevice(uint32_t addr, const char *port, int clockrate, uint8_t irq);
 
 
 #endif

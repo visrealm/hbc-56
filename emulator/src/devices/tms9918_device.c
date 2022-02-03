@@ -22,8 +22,6 @@
 #include <string.h>
 #include <math.h>
 
-extern int triggerIrq;
-
 static void resetTms9918Device(HBC56Device*);
 static void destroyTms9918Device(HBC56Device*);
 static void renderTms9918Device(HBC56Device* device);
@@ -55,6 +53,7 @@ struct TMS9918Device
   double         unusedTime;
   int            currentFramePixels;
   uint8_t        scanlineBuffer[TMS9918_DISPLAY_WIDTH];
+  uint8_t        irq;
 };
 typedef struct TMS9918Device TMS9918Device;
 
@@ -63,7 +62,7 @@ typedef struct TMS9918Device TMS9918Device;
   * --------------------
   * create a TMS9918 device
   */
-HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Renderer* renderer)
+HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, uint8_t irq, SDL_Renderer* renderer)
 {
   HBC56Device device = createDevice("TMS9918 VDP");
   TMS9918Device* tmsDevice = (TMS9918Device*)malloc(sizeof(TMS9918Device));
@@ -71,6 +70,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, SDL_Rendere
   {
     tmsDevice->dataAddr = dataAddr;
     tmsDevice->regAddr = regAddr;
+    tmsDevice->irq = irq;
     tmsDevice->tms9918 = vrEmuTms9918New();
     tmsDevice->unusedTime = 0.0f;
     tmsDevice->currentFramePixels = 0;
@@ -234,7 +234,7 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
         if (vrEmuTms9918DisplayEnabled(tmsDevice->tms9918) &&
             (vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
         {
-          hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RAISE);
+          hbc56Interrupt(tmsDevice->irq, INTERRUPT_RAISE);
         }
       }
     }
@@ -257,7 +257,7 @@ static uint8_t readTms9918Device(HBC56Device* device, uint16_t addr, uint8_t *va
     if (addr == tmsDevice->regAddr)
     {
       *val = vrEmuTms9918ReadStatus(tmsDevice->tms9918);
-      if (!dbg) hbc56Interrupt(INTERRUPT_INT, INTERRUPT_RELEASE);
+      if (!dbg) hbc56Interrupt(tmsDevice->irq, INTERRUPT_RELEASE);
       return 1;
     }
     else if (addr == tmsDevice->dataAddr)
