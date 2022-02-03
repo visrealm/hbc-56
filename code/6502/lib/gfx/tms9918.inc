@@ -146,7 +146,7 @@
 ; tmsSetAddressWrite: Set an address in the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsReadStatus  {
-        lda TMS9918_REG
+        bit TMS9918_REG
 }
 
 !macro tmsSendData .sourceAddr, .numBytes {

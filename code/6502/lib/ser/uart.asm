@@ -30,12 +30,25 @@ HAVE_UART = 1
 ; -----------------------------------------------------------------------------
 ; Zero page
 ; -----------------------------------------------------------------------------
-UART_ZP_SIZE         = 0
+UART_RX_BUFFER_HEAD  = UART_ZP_START
+UART_RX_BUFFER_TAIL  = UART_ZP_START + 1
+UART_RX_BUFFER_SIZE  = UART_ZP_START + 2
+@UART_ZP_END         = UART_ZP_START + 3
+
+!if (.UART_ZP_SIZE < @UART_ZP_END - UART_ZP_START) {
+        !error "UART ZP allocation insufficient. Allocated: ", .UART_ZP_SIZE, " Require: ", (@UART_ZP_END - UART_ZP_START)
+}
 
 ; -----------------------------------------------------------------------------
 ; High RAM
 ; -----------------------------------------------------------------------------
-UART_RAM_SIZE        = 0
+UART_RX_BUFFER       = UART_RAM_START
+
+@UART_RAM_END        = UART_RAM_START + $100
+
+!if (.UART_RAM_SIZE < @UART_RAM_END - UART_RAM_START) {
+        !error "UART RAM allocation insufficient. Allocated: ", .UART_RAM_SIZE, " Require: ", (@UART_RAM_END - UART_RAM_START)
+}
 
 
 ; IO Ports
@@ -47,7 +60,7 @@ UART_DATA     = IO_PORT_BASE_ADDRESS | UART_IO_PORT | $01
 ; -----------------------------------------------------------------------------
 UART_CTL_MASTER_RESET       = %00000011
 UART_CTL_CLOCK_DIV_16       = %00000001
-UART_CTL_CLOCK_DIV_64       = %00000011
+UART_CTL_CLOCK_DIV_64       = %00000010
 UART_CTL_WORD_7BIT_EPB_2SB  = %00000000
 UART_CTL_WORD_7BIT_OPB_2SB  = %00000100
 UART_CTL_WORD_7BIT_EPB_1SB  = %00001000
@@ -67,20 +80,45 @@ UART_STATUS_RCVR_OVERRUN    = %00100000
 UART_STATUS_PARITY_ERROR    = %01000000
 UART_STATUS_IRQ             = %10000000
 
+UART_FLOWCTRL_XON           = $11
+UART_FLOWCTRL_XOFF          = $13
+
 ; -----------------------------------------------------------------------------
 ; uartInit: Initialise the UART
 ; -----------------------------------------------------------------------------
 uartInit:
+        lda #0
+        sta UART_RX_BUFFER_HEAD
+        sta UART_RX_BUFFER_TAIL
+
         lda #UART_CTL_MASTER_RESET
         sta UART_REG
         nop
         nop
 
-        lda #(UART_CTL_CLOCK_DIV_16 | UART_CTL_WORD_8BIT_EPAR_1SB)
+        lda #(UART_CTL_CLOCK_DIV_64 | UART_CTL_WORD_8BIT_2SB | UART_CTL_RX_INT_ENABLE)
         sta UART_REG
         nop
         nop
         rts
+
+
+uartIrq:
+        pha
+        phx
+-
+        lda #UART_STATUS_RX_REG_FULL
+        bit UART_REG
+        beq +
+        lda UART_DATA
+        ldx UART_RX_BUFFER_HEAD
+        sta UART_RX_BUFFER, x
+        inc UART_RX_BUFFER_HEAD
+        bra -
++
+        plx
+        pla
+        rti
 
 
 ; -----------------------------------------------------------------------------
@@ -120,9 +158,10 @@ uartOut:
 ;   A: Value of the buffer
 ; -----------------------------------------------------------------------------
 uartInWait:
-        jsr uartInNoWait
-        bcc uartInWait
-        rts
+        lda UART_RX_BUFFER_HEAD
+        cmp UART_RX_BUFFER_TAIL
+        beq uartInWait
+        bra .readUartValue
 
 ; -----------------------------------------------------------------------------
 ; uartInNoWait: Input a byte from the UART (don't wait)
@@ -132,16 +171,18 @@ uartInWait:
 ;   C: Set if a key is read
 ; -----------------------------------------------------------------------------
 uartInNoWait:
-        lda #UART_STATUS_RX_REG_FULL
-        bit UART_REG
-        bne +
-        clc
-        rts
-+
-        nop
-        nop
-        lda UART_DATA
+        lda UART_RX_BUFFER_HEAD
+        cmp UART_RX_BUFFER_TAIL
+        beq @noData
+
+.readUartValue
+        ldx UART_RX_BUFFER_TAIL
+        lda UART_RX_BUFFER, x
+        inc UART_RX_BUFFER_TAIL
         sec
+        rts
+@noData
+        clc
         rts
 
 ; -----------------------------------------------------------------------------
