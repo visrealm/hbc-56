@@ -83,16 +83,17 @@ hbc56Meta:
 hbc56Main:
         +tmsColorFgBg FG, BG
         jsr tmsSetBackground
-        jsr tmsModeText
+        jsr tmsModeGraphicsI
        
 !if TMS {
+        jsr tmsModeText
 	+tmsUpdateFont TMS_TEXT_MODE_FONT
         +consoleEnableCursor
 
+}       
         +tmsEnableOutput
         +tmsDisableInterrupts
         +tmsReadStatus
-}       
         
 !if UART {
         jsr uartInit
@@ -116,8 +117,7 @@ commandLoop
 
         jsr outPrompt
 
-        lda #$11        ; XON
-        +outputA
+        jsr uartFlowCtrlXon
 
 inputLoop
         +inputA
@@ -146,8 +146,9 @@ inputLoop
 
 commandEntered:
         +outputA
-        lda #$13        ; XOFF
-        +outputA
+
+        jsr uartFlowCtrlXoff
+
         ldx #0
 
 @checkChar
