@@ -25,15 +25,27 @@ cputype = $65c02
 !src "ser/uart.inc"
 !src "kernel.inc"
 
-*=HBC56_META_VECTOR
-!ifdef hbc56Meta {
-        jmp hbc56Meta
+!ifndef HBC_56_EXCLUDE_KERNEL_ROM {
+
+        ; if the program is includes the kernal image
+        ; then... include it
+
+        *=HBC56_META_VECTOR
+        !ifdef hbc56Meta {
+                jmp hbc56Meta
+        } else {
+                rts
+        }
+
+        *=HBC56_KERNEL_START
+        !bin "kernel.o"
+
+        *=DEFAULT_HBC56_RST_VECTOR
+        jmp hbc56Main
+
 } else {
-        rts
+
+        ; otherwise, place the program in RAM
+
+        *=$0400
 }
-
-*=HBC56_KERNEL_START
-!bin "kernel.o"
-
-*=DEFAULT_HBC56_RST_VECTOR
-jmp hbc56Main

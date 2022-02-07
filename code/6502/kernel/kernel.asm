@@ -140,6 +140,7 @@ HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
 
 +hbc56Title "github.com/visrealm/hbc-56"
 
+!src "ut/ascii.asm"
 !src "ut/bcd.asm"
 !src "ut/memory.asm"
 

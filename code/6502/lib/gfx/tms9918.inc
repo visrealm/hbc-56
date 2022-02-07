@@ -6,9 +6,9 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
-;
-; Dependencies:
-;  - hbc56.asm
+
+
+
 
 ; -----------------------------------------------------------------------------
 ; tmsWaitReg: Not sure how much delay we need so make a macro for now
@@ -35,12 +35,15 @@
 ; tmsSetAddressRead: Set an address to read from the TMS9918
 ; -----------------------------------------------------------------------------
 !macro tmsSetAddressRead .addr {
+        php
+        sei             ; we can't be interrupted here
         lda #<(.addr)
         sta TMS9918_REG
         +tmsWaitReg
         lda #>(.addr)
         sta TMS9918_REG
         +tmsWaitReg
+        plp
 }
 
 ; -----------------------------------------------------------------------------
@@ -143,7 +146,7 @@
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddressWrite: Set an address in the TMS9918
+; tmsReadStatus: Read status - clear interrupt
 ; -----------------------------------------------------------------------------
 !macro tmsReadStatus  {
         bit TMS9918_REG

@@ -57,7 +57,6 @@ hbc56Main:
         ; any single-time setup?
 
 restartGame:
-        jsr tmsInit
         +tmsDisableOutput
 
         sei
@@ -133,6 +132,7 @@ restartGame:
 
         +tmsEnableOutput
 
+        +setIntHandler onVSync
         +hbc56SetVsyncCallback gameLoop
 
         +tmsEnableInterrupts
@@ -147,7 +147,7 @@ nextFrame:
 gameLoop:
         +tmsDisableInterrupts
 
-        +nes1BranchIfNotPressed NES_B, skipFire
+        +nes2BranchIfNotPressed NES_B, skipFire
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
         bne skipFire
@@ -164,11 +164,11 @@ gameLoop:
         +tmsSpritePosXYReg SPRITE_BULLET
 skipFire
 
-        +nes1BranchIfNotPressed NES_LEFT, skipMoveLeft
+        +nes2BranchIfNotPressed NES_LEFT, skipMoveLeft
         dec PLAYER_X
         dec PLAYER_X
 skipMoveLeft
-        +nes1BranchIfNotPressed NES_RIGHT, skipMoveRight
+        +nes2BranchIfNotPressed NES_RIGHT, skipMoveRight
         inc PLAYER_X
         inc PLAYER_X
 skipMoveRight

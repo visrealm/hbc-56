@@ -207,7 +207,7 @@ _tmsWaitReg:
 ; -----------------------------------------------------------------------------
 tmsSetAddressWrite:
         php
-        sei
+        sei                     ; we can't be interrupted here
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
         +tmsWaitReg
@@ -225,7 +225,7 @@ tmsSetAddressWrite:
 ; -----------------------------------------------------------------------------
 tmsSetAddressRead:
         php
-        sei
+        sei                     ; we can't be interrupted here
         lda TMS_TMP_ADDRESS
         sta TMS9918_REG
         +tmsWaitReg
@@ -244,9 +244,8 @@ tmsSetAddressRead:
 ;  X: The register (0 - 7)
 ; -----------------------------------------------------------------------------
 tmsSetRegister:
-        pha
         php
-        sei
+        sei             ; we can't be interrupted here
         sta TMS9918_REG
         +tmsWaitReg
         txa
@@ -254,7 +253,6 @@ tmsSetRegister:
         sta TMS9918_REG
         +tmsWaitReg
         plp
-        pla
         rts
 
 ; -----------------------------------------------------------------------------
@@ -376,7 +374,7 @@ tmsModeMulticolor:
 ; -----------------------------------------------------------------------------
 tmsInit:
         php
-        sei
+        sei                             ; we can't be interrupted here
         lda TMS_REGISTER_DATA
         sta .TMS9918_REG0_SHADOW_ADDR
         lda TMS_REGISTER_DATA + 1

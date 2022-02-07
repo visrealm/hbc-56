@@ -19,6 +19,9 @@ HEX_L                   = CURR_ADDR_H + 2
 TEMP_ADDR               = HEX_L + 1
 TEMP_ADDR_H             = HEX_L + 2
 
+DUMP_ROW_START_L        = TEMP_ADDR + 1
+DUMP_ROW_START_H        = TEMP_ADDR + 2
+
 COMMAND_BUFFER          = HBC56_KERNEL_RAM_END
 COMMAND_BUFFER_LEN      = 250
 
@@ -134,8 +137,18 @@ inputLoop
         +outputA
         bra inputLoop
 +
-        jsr isWhitespace
-        bcs inputLoop
+        cmp #$20        ; printable?
+        bcs +
+
+        ; here, we're dealing with a non-printable character
+        ; handle it?
+
+        lda #'E'
+        +outputA
+        bra inputLoop
++
+        ;jsr isWhitespace
+        ;bcs inputLoop
         sta COMMAND_BUFFER,x
         +outputA
         inc COMMAND_LEN ; TODO: check length...
@@ -156,9 +169,10 @@ commandEntered:
         beq commandLoop
 
         lda COMMAND_BUFFER,x
+        inx
         pha
         jsr isWhitespace
-        bcs @nextChar
+        bcs @checkChar
         pla
 
         cmp #'$'        ; move to an address?
@@ -185,12 +199,6 @@ commandEntered:
         jmp commandLoop
 
         jmp cmdInvalid
-
-@nextChar
-        inx
-        bne @checkChar
-
-        jmp commandLoop
 
 cmdInvalid:
         jsr invalidCommand
@@ -228,6 +236,13 @@ cmdClear:
 
 readHexByte
         lda COMMAND_BUFFER,x
+
+        jsr isDigitX
+        bcs +
+        inx
+        cpx COMMAND_LEN
+        bne readHexByte
++
         sta HEX_H
         inx
         cpx COMMAND_LEN
@@ -257,7 +272,7 @@ addressCommand:
         rts
 
 writeCommand:
-        ldx #1
+        ;ldx #1
 -
         jsr readHexByte
 
@@ -272,17 +287,25 @@ writeCommand:
         rts        
 
 dumpCommand:
+        phx
         +outputStringAddr dumpHeader
+        plx
 
         ldy #0
         stz TMP_C
 
-        ldx #1
-        cpx COMMAND_LEN
-        beq @newLine
-        jsr readHexByte
-        jsr hexToAcc
-        sta TMP_C        
+        lda CURR_ADDR
+        and #$f0
+        sta DUMP_ROW_START_L
+        lda CURR_ADDR_H
+        sta DUMP_ROW_START_H
+
+        ;ldx #1
+;        cpx COMMAND_LEN
+;        beq @newLine
+;;        jsr readHexByte
+ ;       jsr hexToAcc
+  ;      sta TMP_C        
 
 @newLine
         lda #$0d
@@ -314,9 +337,9 @@ dumpCommand:
         jsr outHex8
         iny
         cpy TMP_C
-        beq @endDump
+        beq @doRaw
         tya
-        and #$07
+        and #$0f
         bne @nextByte
 
 @doRaw
@@ -335,12 +358,14 @@ dumpCommand:
 +
         +outputA
         inx
-        cpx #8
+        cpx #16
         bne -
-        cpy #0
+        cpy TMP_C
         bne @newLine
 
 @endDump
+        lda #$0d
+        +outputA
         rts
 
 
@@ -369,6 +394,9 @@ clearScreen:
 
 outPrompt:
         jsr outNewline
+
+        +outputStringAddr greenText
+
         lda #'$'
         +outputA
         lda CURR_ADDR_H
@@ -377,28 +405,27 @@ outPrompt:
         jsr outHex8
         lda #'>'
         +outputA
+
+        +outputStringAddr resetText
         rts
 
 outNewline:
         lda #$0d
         +outputA
-        ;lda #$0a
-        ;+outputA
         rts
 
 isWhitespace:
-        phx
-        ldx #whitespaceCharsCount
+        ldy #whitespaceCharsCount
 -
-        clc
-        dex
-        beq ++
-        cmp whitespaceChars,x
+        dey
+        cmp whitespaceChars,y
+        beq +
+        cpy #0
         bne -
+        clc
+        rts
 +
         sec
-++
-        plx
         rts
 
 hexNibbleToAcc:
@@ -446,19 +473,23 @@ outHex8:
 hexDigits:
 !text "0123456789abcdef"
 
+greenText:
+!text $1b,"[32m",$1b,"[1m",0
+resetText:
+!text $1b,"[0m",0
 
 whitespaceChars:
 !byte ' ','\n','\t','\r',$0b,$0c
 whitespaceCharsCount = * - whitespaceChars
 
 helpMessage:
-!text "Troy's HBC-56 - Monitor Help\n"
-!text "  c       - clear screen\n"
-!text "  d[#]    - output # bytes from current address\n"
-!text "  h       - help\n"
-!text "  r       - reset HBC-56\n"
-!text "  w<xx>   - write value and increment address\n"
-!text "  $<xxxx> - set current address", 0
+!text "HBC-56 - Monitor Help\n"
+!text "  c        - clear screen\n"
+!text "  d [#]    - output # bytes from current address\n"
+!text "  h        - help\n"
+!text "  r        - reset HBC-56\n"
+!text "  w <xx>   - write value and increment address\n"
+!text "  $ <xxxx> - set current address\n", 0
 
 welcomeMessage:
 !text " _    _  _____    _____   _______ _____\n"
@@ -466,13 +497,13 @@ welcomeMessage:
 !text "| |__| | ____) || /   ___| |___ / /___\n"
 !text "|  __  ||  __ < | |  /__/|____ \\|  __ \\\n"
 !text "| |  | || |__) || \\____   ____) | (__) |\n"
-!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n",0
+!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n\n",0
 welcomeMessage2:
-!text "\nMemory Monitor (enter \"h\" for help)\n"
-!text "----------------------------------------", 0
+!text "HBC-56 Memory Monitor (enter \"h\" for help)\n"
+!text "------------------------------------------", 0
 dumpHeader:
-!text "       00 01 02 03 04 05 06 07 01234567\n"
-!text "       --------------------------------",0
+!text "       00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 0123456789abcdef\n"
+!text "       ----------------------------------------------- ----------------",0
 
 
 

@@ -108,31 +108,6 @@ kbReadByte:
 @end
         rts
 
-; -----------------------------------------------------------------------------
-; isAlpha: Is the ASCII character a letter (A-Z or a-z)
-; -----------------------------------------------------------------------------
-; Inputs:
-;   A: ASCII character
-; Outputs:
-;   Carry set if alpha, carry clear if not alpha
-; -----------------------------------------------------------------------------
-isAlpha:
-        cmp #'A'
-        bcc .notAlpha   ; less than 'A'?
-        cmp #'Z' + 1
-        bcc .isAlpha    ; less than or equal 'Z'?
-        cmp #'a'
-        bcc .notAlpha   ; less than 'a'?
-        cmp #'z' + 1
-        bcs .notAlpha   ; less than or equal 'z'?
-
-.isAlpha
-        sec
-        rts
-
-.notAlpha:
-        clc
-        rts
 
 ; -----------------------------------------------------------------------------
 ; kbReadAscii: Read keyboard buffer

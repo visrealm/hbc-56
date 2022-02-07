@@ -9,7 +9,7 @@
 ; Game field definitions
 ;
 
-GAMEFIELD = $1000
+GAMEFIELD = $6000
 
 GAME_COLS  = 11
 GAME_ROWS  = 10

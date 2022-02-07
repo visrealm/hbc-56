@@ -16,7 +16,7 @@
                                     "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
                                     "file": 2,
                                     "location": 3,
-                                    "message": 1
+                                    "message": 6
                                 }
                             },
                         "group": {
@@ -37,7 +37,7 @@
                                     "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
                                     "file": 2,
                                     "location": 3,
-                                    "message": 1
+                                    "message": 6
                                 }
                             },
                         "group": {
