@@ -46,12 +46,12 @@ NES_A           = %10000000
 ; nesWaitForPress: Wait for a NES button press (either port)
 ; -----------------------------------------------------------------------------
 nesWaitForPress:
-        lda NES1_IO_ADDR
-        cmp #$ff
+        lda #$ff
+@notPressed
+        cmp NES1_IO_ADDR
         bne @pressed
-        lda NES2_IO_ADDR
-        cmp #$ff
-        beq nesWaitForPress        
+        cmp NES2_IO_ADDR
+        beq @notPressed
 @pressed
         rts
 
@@ -63,15 +63,11 @@ nesWaitForPress:
 ; Outputs:
 ;   Carry set if pressed, Carry clear if not
 nes1Pressed:
-        sta NES_TMP
-        lda NES1_IO_ADDR
-        eor #$ff
-        and NES_TMP
+        bit NES1_IO_ADDR
         clc
-        beq +
+        bne +
         sec
 +
-        lda NES_TMP
         rts
 
 ; -----------------------------------------------------------------------------
@@ -82,15 +78,11 @@ nes1Pressed:
 ; Outputs:
 ;   Carry set if pressed, Carry clear if not
 nes2Pressed:
-        sta NES_TMP
-        lda NES2_IO_ADDR
-        eor #$ff
-        and NES_TMP
+        bit NES1_IO_ADDR
         clc
-        beq +
+        bne +
         sec
 +
-        lda NES_TMP
         rts
 
 

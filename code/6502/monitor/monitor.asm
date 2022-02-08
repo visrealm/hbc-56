@@ -51,11 +51,7 @@ TMS  = 0
                 +uartOutStringAddr .addr
         }
         !if TMS {
-                lda #<.addr
-                sta STR_ADDR_L
-                lda #>.addr
-                sta STR_ADDR_H
-                jsr tmsConsolePrint        
+                +tmsConsolePrintAddr .addr
 
         }
 }
@@ -110,11 +106,14 @@ hbc56Main:
         lda #$10
         sta CURR_ADDR_H
 
-        jsr clearScreen
+        +outputStringAddr clearCommandBytes
 
         +outputStringAddr welcomeMessage
         +outputStringAddr welcomeMessage2
 
+; -----------------------------------------------------------------------------
+; main loop
+; -----------------------------------------------------------------------------
 commandLoop
         stz COMMAND_LEN
 
@@ -155,8 +154,13 @@ inputLoop
         
         bra inputLoop  ; always
 
+quit:
+
         rts
 
+; -----------------------------------------------------------------------------
+; parse and run a command
+; -----------------------------------------------------------------------------
 commandEntered:
         +outputA
 
@@ -171,69 +175,62 @@ commandEntered:
         lda COMMAND_BUFFER,x
         inx
         pha
-        jsr isWhitespace
+        jsr isSpace
         bcs @checkChar
         pla
 
         cmp #'$'        ; move to an address?
-        beq cmdAddr
-
+        bne +
+        jmp addressCommand
++
         cmp #'d'        ; dump memory
-        beq cmdDump
-
+        bne +
+        jmp dumpCommand
++
         cmp #'c'        ; clear
-        beq cmdClear
+        bne +
+        jmp clearCommand
++
 
         cmp #'e'        ; execute
-        beq cmdExecute
+        bne +
+        jsr doExecute
+        jmp commandLoop
++
 
-        cmp #'r'        ; reset
-        beq cmdReset
+        cmp #'q'        ; quit
+        bne +
+        jmp quit
++
 
         cmp #'w'        ; write
-        beq cmdWrite
+        bne +
+        jmp writeCommand
++
+
+        cmp #'s'        ; send
+        bne +
+        jmp sendCommand
++
 
         cmp #'h'        ; help!
-        beq cmdHelp
+        bne +
+        jmp helpCommand
++
 
-        jmp commandLoop
-
-        jmp cmdInvalid
-
-cmdInvalid:
         jsr invalidCommand
+
         jmp commandLoop
 
-cmdAddr:
-        jsr addressCommand
-        jmp commandLoop
-
-cmdWrite:
-        jsr writeCommand
-        jmp commandLoop
-
-cmdReset:
-        jmp hbc56Reset
-
-cmdDump:
-        jsr dumpCommand
-        jmp commandLoop
-
+; -----------------------------------------------------------------------------
+; run subroutine (or code) at current address
+; -----------------------------------------------------------------------------
 doExecute:
         jmp (CURR_ADDR)
 
-cmdExecute:
-        jsr doExecute
-        jmp commandLoop
-
-cmdHelp:
-        jsr helpCommand
-        jmp commandLoop
-
-cmdClear:
-        jsr clearScreen
-        jmp commandLoop
-
+; -----------------------------------------------------------------------------
+; read a hex byte from the buffer, store in HEXL/HEX_H
+; -----------------------------------------------------------------------------
 readHexByte
         lda COMMAND_BUFFER,x
 
@@ -256,146 +253,18 @@ readHexByte
         inx
         rts
 
-addressCommand:
-        lda COMMAND_BUFFER+1
-        sta HEX_H
-        lda COMMAND_BUFFER+2
-        sta HEX_L
-        jsr hexToAcc
-        sta CURR_ADDR_H
-        lda COMMAND_BUFFER+3
-        sta HEX_H
-        lda COMMAND_BUFFER+4
-        sta HEX_L
-        jsr hexToAcc
-        sta CURR_ADDR
-        rts
-
-writeCommand:
-        ;ldx #1
--
-        jsr readHexByte
-
-        jsr hexToAcc
-        sta (CURR_ADDR)
-        inc CURR_ADDR
-        bne +
-        inc CURR_ADDR_H
-+
-        cpx COMMAND_LEN
-        bcc -
-        rts        
-
-dumpCommand:
-        phx
-        +outputStringAddr dumpHeader
-        plx
-
-        ldy #0
-        stz TMP_C
-
-        lda CURR_ADDR
-        and #$f0
-        sta DUMP_ROW_START_L
-        lda CURR_ADDR_H
-        sta DUMP_ROW_START_H
-
-        ;ldx #1
-;        cpx COMMAND_LEN
-;        beq @newLine
-;;        jsr readHexByte
- ;       jsr hexToAcc
-  ;      sta TMP_C        
-
-@newLine
-        lda #$0d
-        +outputA
-        lda #'$'
-        +outputA
-        tya
-        clc
-        adc CURR_ADDR
-        sta TEMP_ADDR
-        lda CURR_ADDR_H
-        bcc +
-        inc 
-        sta TEMP_ADDR_H
-+
-        jsr outHex8
-        lda TEMP_ADDR
-        jsr outHex8
-        lda #':'
-        +outputA
-        ldx #0
-
-@nextByte
-        lda #' '
-        +outputA
-        lda (CURR_ADDR),y
-        sta COMMAND_BUFFER,x
-        inx
-        jsr outHex8
-        iny
-        cpy TMP_C
-        beq @doRaw
-        tya
-        and #$0f
-        bne @nextByte
-
-@doRaw
-        lda #' '
-        +outputA
-        ldx #0
--
-        lda COMMAND_BUFFER,x
-        cmp #' '
-        bcs +
-        lda #'.'
-+
-        cmp #'~'
-        bcc +
-        lda #'.'
-+
-        +outputA
-        inx
-        cpx #16
-        bne -
-        cpy TMP_C
-        bne @newLine
-
-@endDump
-        lda #$0d
-        +outputA
-        rts
-
-
-helpCommand:
-        +outputStringAddr helpMessage
-        rts
-
+; -----------------------------------------------------------------------------
+; invalid command message
+; -----------------------------------------------------------------------------
 invalidCommand:
-        +outputString "* Syntax error *\n\nEnter \"h\" for help."
+        +outputStringAddr syntaxErrorMsg
         rts
 
-clearScreen:
-!if UART {
-        lda #$1b
-        +outputA
-        +outputString "[2J"
-        lda #$1b
-        +outputA
-        +outputString "[H"
-} 
-!if TMS {
-        jsr tmsInitTextTable ; clear output
-        jsr tmsConsoleHome
-}
-        rts
-
+; -----------------------------------------------------------------------------
+; output the command prompt
+; -----------------------------------------------------------------------------
 outPrompt:
         jsr outNewline
-
-        +outputStringAddr greenText
 
         lda #'$'
         +outputA
@@ -405,29 +274,23 @@ outPrompt:
         jsr outHex8
         lda #'>'
         +outputA
+        lda #' '
+        +outputA
 
         +outputStringAddr resetText
         rts
 
+
+; -----------------------------------------------------------------------------
+; output a newline characer
+; -----------------------------------------------------------------------------
 outNewline:
         lda #$0d
         +outputA
         rts
-
-isWhitespace:
-        ldy #whitespaceCharsCount
--
-        dey
-        cmp whitespaceChars,y
-        beq +
-        cpy #0
-        bne -
-        clc
-        rts
-+
-        sec
-        rts
-
+; -----------------------------------------------------------------------------
+; convert 4-bit HEX ascii character to binary in accumulator
+; -----------------------------------------------------------------------------
 hexNibbleToAcc:
         sec
         sbc #'0'
@@ -445,6 +308,9 @@ hexNibbleToAcc:
 @hexVal
         rts
 
+; -----------------------------------------------------------------------------
+; convert 8-bit HEX ascii string to binary in accumulator
+; -----------------------------------------------------------------------------
 hexToAcc:
         lda HEX_H
         jsr hexNibbleToAcc
@@ -455,6 +321,9 @@ hexToAcc:
         ora HEX_H
         rts
 
+; -----------------------------------------------------------------------------
+; output accumulator as a hex byte
+; -----------------------------------------------------------------------------
 outHex8:
         phx
 	pha
@@ -470,41 +339,36 @@ outHex8:
         plx
 	rts
 
+!src "commands/address.asm"
+!src "commands/clear.asm"
+!src "commands/dump.asm"
+!src "commands/write.asm"
+!src "commands/help.asm"
+
 hexDigits:
 !text "0123456789abcdef"
 
 greenText:
-!text $1b,"[32m",$1b,"[1m",0
+!text $1b,"[94m",$1b,"[1m",0
 resetText:
 !text $1b,"[0m",0
 
-whitespaceChars:
-!byte ' ','\n','\t','\r',$0b,$0c
-whitespaceCharsCount = * - whitespaceChars
-
-helpMessage:
-!text "HBC-56 - Monitor Help\n"
-!text "  c        - clear screen\n"
-!text "  d [#]    - output # bytes from current address\n"
-!text "  h        - help\n"
-!text "  r        - reset HBC-56\n"
-!text "  w <xx>   - write value and increment address\n"
-!text "  $ <xxxx> - set current address\n", 0
-
 welcomeMessage:
-!text " _    _  _____    _____   _______ _____\n"
+!text $1b,"[94m"," _    _  _____    _____   _______ _____\n"
 !text "| |  | |/____ \\  / ___/  |  ____// ___/\n"
 !text "| |__| | ____) || /   ___| |___ / /___\n"
 !text "|  __  ||  __ < | |  /__/|____ \\|  __ \\\n"
 !text "| |  | || |__) || \\____   ____) | (__) |\n"
-!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n\n",0
+!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n\n",$1b,"[0m",0
 welcomeMessage2:
-!text "HBC-56 Memory Monitor (enter \"h\" for help)\n"
-!text "------------------------------------------", 0
+!text "HBC-56 Memory Monitor (Enter ",$1b,"[1m\"h\"",$1b,"[0m for help)\n"
+!text "------------------------------------------\n", 0
 dumpHeader:
 !text "       00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 0123456789abcdef\n"
 !text "       ----------------------------------------------- ----------------",0
 
+syntaxErrorMsg:
+!text $07,$1b,"[91m","* Syntax error *",$1b,"[0m","  Enter \"h\" for help.\n",0
 
 
 !if TMS {

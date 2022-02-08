@@ -27,8 +27,8 @@ for infile in sys.argv[1:]:
         inTilesY = int(src.height / TILE_SIZE)
         numInTiles = inTilesX * inTilesY
 
-        for x in range(inTilesX):
-          for y in range(inTilesY):
+        for y in range(inTilesY):
+          for x in range(inTilesX):
             xOff = x * TILE_SIZE
             yOff = y * TILE_SIZE
             for sy in range(TILE_SIZE):

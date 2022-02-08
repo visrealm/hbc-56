@@ -130,6 +130,40 @@ isDigitX:
 @endIsDigitX
         rts
 
+
+; -----------------------------------------------------------------------------
+; isSpace: Is the ASCII character a whitespace character?
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: ASCII character
+; Outputs:
+;   Carry set if space, carry clear if not space
+; -----------------------------------------------------------------------------
+isSpace:
+        cmp #' '
+        beq @isSpace
+        bcs @notSpace
+        cmp #'\n'
+        beq @isSpace
+        cmp #'\r'
+        beq @isSpace
+        cmp #'\t'
+        beq @isSpace
+        cmp #'\r'
+        beq @isSpace
+        cmp #$0b
+        beq @isSpace
+        cmp #$0c
+        beq @isSpace
+
+@notSpace:
+        clc
+        rts
+
+@isSpace
+        sec
+        rts
+
 ; -----------------------------------------------------------------------------
 ; toUpper: convert an ascii character to upper case
 ; -----------------------------------------------------------------------------

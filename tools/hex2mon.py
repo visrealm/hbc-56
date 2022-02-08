@@ -25,12 +25,13 @@ for infile in sys.argv[1:]:
         for index, line in enumerate(lines):
             if line[7:9]=="00":
                 dst.write("$"+line[3:7]+"\r")
-                dst.write("w"+line[9:-3]+"\r")
+                dst.write("w "+line[9:-3]+"\r")
         
         lmapf = open(infile+".lmap","r")
         for i,line in enumerate(list(lmapf)):
             if line[:11]=="	hbc56Main	": 
-                dst.write(line[13:18]+"\re\r")
+                startAddrStr = line[14:18]
+                dst.write("$" + '{:04x}'.format(int(startAddrStr,16))+"\re")
         
         dst.close()
         src.close()

@@ -12,7 +12,7 @@
 
 !macro nes1BranchIfPressed .buttonMask, addr {
         pha
-        lda #.buttonMask
+        lda #(.buttonMask)
         jsr nes1Pressed
         pla
         bcs addr
@@ -20,7 +20,7 @@
 
 !macro nes1BranchIfNotPressed .buttonMask, addr {
         pha
-        lda #.buttonMask
+        lda #(.buttonMask)
         jsr nes1Pressed
         pla
         bcc addr
@@ -28,7 +28,7 @@
 
 !macro nes2BranchIfPressed .buttonMask, addr {
         pha
-        lda #.buttonMask
+        lda #(.buttonMask)
         jsr nes2Pressed
         pla
         bcs addr
@@ -36,7 +36,7 @@
 
 !macro nes2BranchIfNotPressed .buttonMask, addr {
         pha
-        lda #.buttonMask
+        lda #(.buttonMask)
         jsr nes2Pressed
         pla
         bcc addr

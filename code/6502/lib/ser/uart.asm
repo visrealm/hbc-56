@@ -132,11 +132,11 @@ uartIrq:
 
 @flowControlCheck
         ; check flow control
-        bbs7 UART_RX_FLAGS, @endFlowControlCheck    ; if already xoff, just leave
-        lda #UART_RX_BUFFER_XOFF_SIZE               ; otherwise, shouild we ask for xoff?
-        cmp UART_RX_BUFFER_BYTES
-        bcs @endFlowControlCheck                    ; all good
-        jsr uartFlowCtrlXoff                        ; stop please.
+        ;bbs7 UART_RX_FLAGS, @endFlowControlCheck    ; if already xoff, just leave
+        ;lda #UART_RX_BUFFER_XOFF_SIZE               ; otherwise, shouild we ask for xoff?
+        ;cmp UART_RX_BUFFER_BYTES
+        ;bcs @endFlowControlCheck                    ; all good
+        ;jsr uartFlowCtrlXoff                        ; stop please.
 
 @endFlowControlCheck
         plx
@@ -190,11 +190,11 @@ uartInNoWait:
         dec UART_RX_BUFFER_BYTES
 
         ; check flow control
-        bbr7 UART_RX_FLAGS, @done       ; if already xon, just exit again
-        lda #UART_RX_BUFFER_XON_SIZE    ; otherwise, show we ask for xon?
-        cmp UART_RX_BUFFER_BYTES
-        bcc @done                       ; all good
-        jsr uartFlowCtrlXon             ; continue sending please.
+        ;bbr7 UART_RX_FLAGS, @done       ; if already xon, just exit again
+        ;lda #UART_RX_BUFFER_XON_SIZE    ; otherwise, show we ask for xon?
+        ;cmp UART_RX_BUFFER_BYTES
+        ;bcc @done                       ; all good
+        ;jsr uartFlowCtrlXon             ; continue sending please.
 @done
         sec
         rts

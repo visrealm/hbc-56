@@ -119,6 +119,21 @@
         jsr tmsConsoleOut
 }
 
+
+; -----------------------------------------------------------------------------
+; tmsConsolePrintAddr: Print text to console
+; -----------------------------------------------------------------------------
+; Inputs:
+;  textAddr: Address of null-terminated string to print
+; -----------------------------------------------------------------------------
+!macro tmsConsolePrintAddr .textAddr {
+        lda #<.textAddr
+        sta STR_ADDR_L
+        lda #>.textAddr
+        sta STR_ADDR_H
+        jsr tmsConsolePrint        
+}
+
 ; -----------------------------------------------------------------------------
 ; tmsConsolePrint: Print immediate text to console
 ; -----------------------------------------------------------------------------
@@ -130,12 +145,7 @@
 .textAddr
 	!text .str,0
 .afterText        
-
-        lda #<.textAddr
-        sta STR_ADDR_L
-        lda #>.textAddr
-        sta STR_ADDR_H
-        jsr tmsConsolePrint        
+        +tmsConsolePrintAddr .textAddr
 }
 
 ; -----------------------------------------------------------------------------
