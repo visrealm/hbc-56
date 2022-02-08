@@ -64,7 +64,7 @@
 #define HBC56_HAVE_UART         1
 #define HBC56_UART_PORT         0x20
 #define HBC56_UART_PORTNAME     "COM7"
-#define HBC56_UART_CLOCK_FREQ   3686400 / 4
+#define HBC56_UART_CLOCK_FREQ   HBC56_CLOCK_FREQ
 #define HBC56_UART_IRQ          2
 #endif
 

@@ -43,13 +43,21 @@ static HBC56Device createMemoryDevice(
   MemoryDevice* memoryDevice = (MemoryDevice*)malloc(sizeof(MemoryDevice));
   if (memoryDevice)
   {
-    memoryDevice->startAddr = startAddr;
-    memoryDevice->endAddr = endAddr;
     memoryDevice->data = malloc((size_t)(endAddr - startAddr));
-    device.data = memoryDevice;
-    device.destroyFn = &destroyMemoryDevice;
-    device.readFn = &readMemoryDevice;
-    device.writeFn = &writeMemoryDevice;
+    if (!memoryDevice->data)
+    {
+      destroyDevice(&device);
+    }
+    else
+    {
+      memset(memoryDevice->data, 0xcc, (size_t)(endAddr - startAddr));
+      memoryDevice->startAddr = startAddr;
+      memoryDevice->endAddr = endAddr;
+      device.data = memoryDevice;
+      device.destroyFn = &destroyMemoryDevice;
+      device.readFn = &readMemoryDevice;
+      device.writeFn = &writeMemoryDevice;
+    }
   }
   else
   {

@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <windows.h>
 
+static void resetUartDevice(HBC56Device*);
 static void destroyUartDevice(HBC56Device*);
 static void tickUartDevice(HBC56Device*, uint32_t, double);
 static uint8_t readUartDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
@@ -52,7 +53,7 @@ typedef struct UartDevice UartDevice;
 
 #define UART_CTL_MASTER_RESET         0b00000011
 #define UART_CTL_CLOCK_DIV_16         0b00000001
-#define UART_CTL_CLOCK_DIV_64         0b00000011
+#define UART_CTL_CLOCK_DIV_64         0b00000010
 #define UART_CTL_WORD_7BIT_EPB_2SB    0b00000000
 #define UART_CTL_WORD_7BIT_OPB_2SB    0b00000100
 #define UART_CTL_WORD_7BIT_EPB_1SB    0b00001000
@@ -92,6 +93,8 @@ HBC56Device createUartDevice(
     uartDevice->readBufferBytes = 0;
     uartDevice->readBufferBytesRead = 0;
     uartDevice->statusRequested = 0;
+    uartDevice->controlReg = 0;
+    uartDevice->irq = irq;
     uartDevice->statusReg = UART_STATUS_TX_REG_EMPTY;
     uartDevice->handle = 0;
 
@@ -99,6 +102,7 @@ HBC56Device createUartDevice(
 
     device.data = uartDevice;
     device.destroyFn = destroyUartDevice;
+    device.resetFn = resetUartDevice;
     device.tickFn = tickUartDevice;
     device.readFn = readUartDevice;
     device.writeFn = writeUartDevice;
@@ -121,6 +125,27 @@ inline static UartDevice* getUartDevice(HBC56Device* device)
   return (UartDevice*)device->data;
 }
 
+/* Function:  resetUartDevice
+ * --------------------
+ * destroy/clean up the uart data structure
+ */
+static void resetUartDevice(HBC56Device* device)
+{
+  UartDevice* uartDevice = getUartDevice(device);
+  if (uartDevice)
+  {
+    if (uartDevice->handle)
+    {
+      CloseHandle(uartDevice->handle);
+    }
+    uartDevice->handle = 0;
+    uartDevice->readBufferBytes = 0;
+    uartDevice->readBufferBytesRead = 0;
+    uartDevice->statusRequested = 0;
+    uartDevice->statusReg = UART_STATUS_TX_REG_EMPTY;
+  }
+}
+
 /* Function:  destroyUartDevice
  * --------------------
  * destroy/clean up the uart data structure
@@ -130,10 +155,7 @@ static void destroyUartDevice(HBC56Device *device)
   UartDevice *uartDevice = getUartDevice(device);
   if (uartDevice)
   {
-    if (uartDevice->handle)
-    {
-      CloseHandle(uartDevice->handle);
-    }
+    resetDevice(device);
   }
   free(uartDevice);
   device->data = NULL;
@@ -160,14 +182,17 @@ static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double delt
         uartDevice->readBufferBytesRead = 0;
 
         uartDevice->statusReg |= UART_STATUS_RX_REG_FULL;
-
-        if (uartDevice->controlReg & UART_CTL_RX_INT_ENABLE)
-        {
-          hbc56Interrupt(uartDevice->irq, INTERRUPT_RAISE);
-        }
       }
 
       uartDevice->timeSinceIO = 0;
+    }
+
+    if (uartDevice->readBufferBytes > uartDevice->readBufferBytesRead)
+    {
+      if (uartDevice->controlReg & UART_CTL_RX_INT_ENABLE)
+      {
+        hbc56Interrupt(uartDevice->irq, INTERRUPT_RAISE);
+      }
     }
   }
 }
@@ -250,8 +275,7 @@ static uint8_t writeUartDevice(HBC56Device* device, uint16_t addr, uint8_t val)
         timeouts.WriteTotalTimeoutMultiplier = 0;
         SetCommTimeouts(uartDevice->handle, &timeouts);
       }
-
-      if (uartDevice->handle)
+      else if (uartDevice->handle)
       {
         DCB dcb;
         SecureZeroMemory(&dcb, sizeof(DCB));
@@ -265,11 +289,19 @@ static uint8_t writeUartDevice(HBC56Device* device, uint16_t addr, uint8_t val)
             dcb.BaudRate = uartDevice->clockFreq;
             break;
 
+          case UART_CTL_MASTER_RESET:  // reset
+            uartDevice->readBufferBytes = 0;
+            uartDevice->readBufferBytesRead = 0;
+            uartDevice->statusRequested = 0;
+            uartDevice->statusReg = UART_STATUS_TX_REG_EMPTY;
+            break;
+
           case UART_CTL_CLOCK_DIV_16:
             dcb.BaudRate = uartDevice->clockFreq / 16;
             break;
 
           case UART_CTL_CLOCK_DIV_64:
+          default:
             dcb.BaudRate = uartDevice->clockFreq / 64;
             break;
         }
@@ -325,6 +357,14 @@ static uint8_t writeUartDevice(HBC56Device* device, uint16_t addr, uint8_t val)
             break;
         }
         SetCommState(uartDevice->handle, &dcb);
+
+        DWORD bytesRead = 0;
+        while (ReadFile(uartDevice->handle, uartDevice->readBuffer, sizeof(uartDevice->readBuffer), &bytesRead, NULL) && bytesRead)
+        {
+          // empty buffer
+        }
+
+        hbc56Interrupt(uartDevice->irq, INTERRUPT_RELEASE);
       }
 
       return 1;
