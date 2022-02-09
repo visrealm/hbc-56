@@ -11,7 +11,11 @@
 ; hbc56SetupDisplay - Setup the display (UART)
 ; -----------------------------------------------------------------------------
 hbc56SetupDisplay:
-        jmp uartInit
+        sei
+        jsr uartInit
+        +tmsDisableInterrupts
+        +setIntHandler uartIrq
+        rts
 
 ; -----------------------------------------------------------------------------
 ; hbc56Out - EhBASIC output subroutine (for HBC-56 TMS9918)

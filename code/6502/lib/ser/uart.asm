@@ -215,8 +215,12 @@ uartOut:
 
 @aciaTestSend
         bit UART_REG
-        beq @aciaDelay
+        bra +
+        nop
+        nop
+        jmp @aciaTestSend
 
++
         pla
         pha
         cmp #$08        ; bs
@@ -226,12 +230,6 @@ uartOut:
         sta UART_DATA
         pla
         rts
-
-@aciaDelay
-        nop
-        nop
-        jmp @aciaTestSend
-
 
 
 ; -----------------------------------------------------------------------------

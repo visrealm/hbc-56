@@ -21,4 +21,5 @@
 ; -----------------------------------------------------------------------------
 hbc56Meta:
         +setHbcMetaTitle "HBC-56 BASIC"
+        +setHbcMetaNoWait
         rts

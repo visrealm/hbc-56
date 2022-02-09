@@ -224,10 +224,7 @@ static uint8_t readUartDevice(HBC56Device* device, uint16_t addr, uint8_t *val, 
         {
           uartDevice->statusReg &= ~(UART_STATUS_RX_REG_FULL);
 
-          if (uartDevice->controlReg & UART_CTL_RX_INT_ENABLE)
-          {
-            hbc56Interrupt(uartDevice->irq, INTERRUPT_RELEASE);
-          }
+          hbc56Interrupt(uartDevice->irq, INTERRUPT_RELEASE);
         }
       }
       return 1;

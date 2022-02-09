@@ -15,13 +15,12 @@
 ;               C - Flag set if key captured, clear if no key pressed
 ; -----------------------------------------------------------------------------
 hbc56In
-        jmp uartInNoWait
+hbc56Break
+        stx SAVE_X              ; save registers
+        sty SAVE_Y
 
-; -----------------------------------------------------------------------------
-; hbc56Break - EhBASIC Ctrl+C check subroutine (for HBC-56) - must not block
-; -----------------------------------------------------------------------------
-; Outputs:      A - ASCII character captured from keyboard ($03 = Ctrl+C)
-; -----------------------------------------------------------------------------
-hbc56Break:
-        jmp hbc56In         ; F4 (Ctrl+C) will return $03
-        
+        jsr uartInNoWait
+
+        ldx SAVE_X              ; restore registers
+        ldy SAVE_Y
+        rts
