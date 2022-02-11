@@ -138,7 +138,12 @@ restartGame:
         +tmsEnableInterrupts
         cli
 
-        jmp hbc56Stop
+@waitForExit
+        +nes1BranchIfNotPressed NES_SELECT, @waitForExit
+
+        +tmsDisableInterrupts
+
+        rts
 
 nextFrame:
         +tmsEnableInterrupts
@@ -147,7 +152,7 @@ nextFrame:
 gameLoop:
         +tmsDisableInterrupts
 
-        +nes2BranchIfNotPressed NES_B, skipFire
+        +nes1BranchIfNotPressed NES_B, skipFire
         lda BULLET_Y
         cmp #BULLET_Y_LOADED
         bne skipFire
@@ -164,11 +169,11 @@ gameLoop:
         +tmsSpritePosXYReg SPRITE_BULLET
 skipFire
 
-        +nes2BranchIfNotPressed NES_LEFT, skipMoveLeft
+        +nes1BranchIfNotPressed NES_LEFT, skipMoveLeft
         dec PLAYER_X
         dec PLAYER_X
 skipMoveLeft
-        +nes2BranchIfNotPressed NES_RIGHT, skipMoveRight
+        +nes1BranchIfNotPressed NES_RIGHT, skipMoveRight
         inc PLAYER_X
         inc PLAYER_X
 skipMoveRight

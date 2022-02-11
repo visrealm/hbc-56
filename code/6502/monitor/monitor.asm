@@ -93,6 +93,9 @@ hbc56Main:
         +tmsEnableOutput
         +tmsDisableInterrupts
         +tmsReadStatus
+        +tmsCreatePatternImm UART_FLOWCTRL_XON, $00,$01,$03,$06,$8C,$D8,$70,$20
+        +tmsCreatePatternImm UART_FLOWCTRL_XOFF, $00,$C3,$66,$3C,$18,$3C,$66,$C3
+        +tmsSetAddrNameTable
         
 !if UART {
         jsr uartInit
@@ -119,8 +122,6 @@ commandLoop
 
         jsr outPrompt
 
-        jsr uartFlowCtrlXon
-
 inputLoop
         +inputA
 
@@ -146,8 +147,6 @@ inputLoop
         +outputA
         bra inputLoop
 +
-        ;jsr isWhitespace
-        ;bcs inputLoop
         sta COMMAND_BUFFER,x
         +outputA
         inc COMMAND_LEN ; TODO: check length...
@@ -163,8 +162,7 @@ quit:
 ; -----------------------------------------------------------------------------
 commandEntered:
         +outputA
-
-        jsr uartFlowCtrlXoff
+        jsr outNewline
 
         ldx #0
 
@@ -195,6 +193,9 @@ commandEntered:
         cmp #'e'        ; execute
         bne +
         jsr doExecute
+
+        +setIntHandler uartIrq
+        
         jmp commandLoop
 +
 
@@ -265,6 +266,8 @@ invalidCommand:
 ; -----------------------------------------------------------------------------
 outPrompt:
         jsr outNewline
+
+        +outputStringAddr blueText
 
         lda #'$'
         +outputA
@@ -348,8 +351,8 @@ outHex8:
 hexDigits:
 !text "0123456789abcdef"
 
-greenText:
-!text $1b,"[94m",$1b,"[1m",0
+blueText:
+!text $1b,"[94m",0
 resetText:
 !text $1b,"[0m",0
 

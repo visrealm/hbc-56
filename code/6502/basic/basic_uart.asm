@@ -10,8 +10,6 @@
 
 !src "basic_hbc56_core.asm"             ; core basic
 
-;!src "ser/uart.asm"
-
 !src "drivers/input_uart.asm"           ; input routines
 !src "drivers/output_uart.asm"          ; output routines
 

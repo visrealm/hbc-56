@@ -85,8 +85,8 @@ UART_STATUS_IRQ             = %10000000
 UART_FLOWCTRL_XON           = $11
 UART_FLOWCTRL_XOFF          = $13
 
-UART_RX_BUFFER_XOFF_SIZE    = UART_RX_BUFFER_SIZE - 64
-UART_RX_BUFFER_XON_SIZE     = UART_RX_BUFFER_SIZE - 128
+UART_RX_BUFFER_XOFF_SIZE    = 64
+UART_RX_BUFFER_XON_SIZE     = 4
 
 
 ; -----------------------------------------------------------------------------
@@ -118,28 +118,30 @@ uartInit:
 ; -----------------------------------------------------------------------------
 uartIrq:
         pha
-        phx
-@testForMoreData
+
         lda #UART_STATUS_RX_REG_FULL
         bit UART_REG
-        beq @flowControlCheck
-        lda UART_DATA
+        beq @endFlowControlCheck
+        nop
+        nop
+
+        phx
         ldx UART_RX_BUFFER_HEAD
+        lda UART_DATA
         sta UART_RX_BUFFER, x
         inc UART_RX_BUFFER_HEAD
         inc UART_RX_BUFFER_BYTES
-        bra @testForMoreData
+        plx
 
 @flowControlCheck
         ; check flow control
-        ;bbs7 UART_RX_FLAGS, @endFlowControlCheck    ; if already xoff, just leave
-        ;lda #UART_RX_BUFFER_XOFF_SIZE               ; otherwise, shouild we ask for xoff?
-        ;cmp UART_RX_BUFFER_BYTES
-        ;bcs @endFlowControlCheck                    ; all good
-        ;jsr uartFlowCtrlXoff                        ; stop please.
+        bbs7 UART_RX_FLAGS, @endFlowControlCheck    ; if already xoff, just leave
+        lda #UART_RX_BUFFER_XOFF_SIZE               ; otherwise, should we ask for xoff?
+        cmp UART_RX_BUFFER_BYTES
+        bcs @endFlowControlCheck                    ; all good
+        jsr uartFlowCtrlXoff                        ; stop please.
 
 @endFlowControlCheck
-        plx
         pla
         rti
 
@@ -147,9 +149,10 @@ uartIrq:
 ; uartFlowCtrlXon: Allow client to send data
 ; -----------------------------------------------------------------------------
 uartFlowCtrlXon:
-        rmb7 UART_RX_FLAGS
+        rmb7 UART_RX_FLAGS        
         lda #UART_FLOWCTRL_XON
-        jmp uartOut
+        sta TMS9918_RAM
+        jmp uartOutNoBsCheck
 
 ; -----------------------------------------------------------------------------
 ; uartFlowCtrlXoff: Stop client to sending data
@@ -157,7 +160,8 @@ uartFlowCtrlXon:
 uartFlowCtrlXoff
         smb7 UART_RX_FLAGS
         lda #UART_FLOWCTRL_XOFF
-        jmp uartOut
+        sta TMS9918_RAM
+        jmp uartOutNoBsCheck
 
 ; -----------------------------------------------------------------------------
 ; uartInWait: Input a byte from the UART (wait forever)
@@ -169,36 +173,42 @@ uartInWait:
         lda UART_RX_BUFFER_HEAD
         cmp UART_RX_BUFFER_TAIL
         beq uartInWait
-        bra .readUartValue
+        php
+        sei
+        bra .uartIncheckFlowControl
 
 ; -----------------------------------------------------------------------------
 ; uartInNoWait: Input a byte from the UART (don't wait)
 ; -----------------------------------------------------------------------------
 ; Outputs:
 ;   A: Value of the buffer
-;   C: Set if a key is read
+;   C: Set if a byte is read
 ; -----------------------------------------------------------------------------
 uartInNoWait:
+        php
+        sei
         lda UART_RX_BUFFER_HEAD
         cmp UART_RX_BUFFER_TAIL
         beq @noData
 
-.readUartValue
+.uartIncheckFlowControl
+        ; check flow control
+        bbr7 UART_RX_FLAGS, @readUartValue  ; if already xon, just exit again
+        lda #UART_RX_BUFFER_XON_SIZE        ; otherwise, should we ask for xon?
+        cmp UART_RX_BUFFER_BYTES
+        bcc @readUartValue                  ; all good
+        jsr uartFlowCtrlXon                 ; continue sending please.
+
+@readUartValue
         ldx UART_RX_BUFFER_TAIL
         lda UART_RX_BUFFER, x
         inc UART_RX_BUFFER_TAIL
         dec UART_RX_BUFFER_BYTES
-
-        ; check flow control
-        ;bbr7 UART_RX_FLAGS, @done       ; if already xon, just exit again
-        ;lda #UART_RX_BUFFER_XON_SIZE    ; otherwise, show we ask for xon?
-        ;cmp UART_RX_BUFFER_BYTES
-        ;bcc @done                       ; all good
-        ;jsr uartFlowCtrlXon             ; continue sending please.
-@done
+        plp
         sec
         rts
 @noData
+        plp
         clc
         rts
 
@@ -210,25 +220,23 @@ uartInNoWait:
 ;   A: Value to output
 ; -----------------------------------------------------------------------------
 uartOut:
+        cmp #$08        ; bs
+        bne uartOutNoBsCheck
+        lda #$7f        ; del
+uartOutNoBsCheck:
         pha
         lda #UART_STATUS_TX_REG_EMPTY
 
 @aciaTestSend
         bit UART_REG
-        bra +
         nop
         nop
-        jmp @aciaTestSend
+        bne +
+        bra @aciaTestSend
 
 +
         pla
-        pha
-        cmp #$08        ; bs
-        bne +
-        lda #$7f        ; del
-+
         sta UART_DATA
-        pla
         rts
 
 
@@ -243,7 +251,7 @@ uartOutString:
 -
 	lda (STR_ADDR), y
 	beq +
-        jsr uartOut
+        jsr uartOutNoBsCheck
 	iny
 	bne -
 +
