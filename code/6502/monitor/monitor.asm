@@ -90,12 +90,9 @@ hbc56Main:
         +consoleEnableCursor
 
 }       
-        +tmsEnableOutput
+        +tmsDisableOutput
         +tmsDisableInterrupts
         +tmsReadStatus
-        +tmsCreatePatternImm UART_FLOWCTRL_XON, $00,$01,$03,$06,$8C,$D8,$70,$20
-        +tmsCreatePatternImm UART_FLOWCTRL_XOFF, $00,$C3,$66,$3C,$18,$3C,$66,$C3
-        +tmsSetAddrNameTable
         
 !if UART {
         jsr uartInit

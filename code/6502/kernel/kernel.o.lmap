@@ -44,7 +44,7 @@
 	TILEMAP_RAM_END	= $7b16
 	tmsSetRegister	= $e5a3
 	UART_STATUS_TX_REG_EMPTY	= $2
-	UART_RX_BUFFER_XOFF_SIZE	= $40
+	UART_RX_BUFFER_XOFF_SIZE	= $c0
 	KB_FLAGS	= $7c5b
 	HBC56_NMI_VECTOR	= $7e04
 	BITMAP_ZP_END	= $24
@@ -53,7 +53,7 @@
 	toUpper	= $e086	; unused
 	NES_TMP	= $7c5e	; unused
 	HBC56_META_TITLE_END	= $7c79
-	uartFlowCtrlXoff	= $e9be	; ?
+	uartFlowCtrlXoff	= $e9bf	; ?
 	SFXMAN_RAM_START	= $7c58
 	uartInWait	= $e9c8
 	uartOutString	= $ea0c	; unused
@@ -152,7 +152,7 @@
 	hbc56Reset	= $f08d	; unused
 	hbc56CustomDelayMs	= $f093	; unused
 	_tmsWaitReg	= $e575
-	uartOut	= $e9f5	; unused
+	uartOut	= $e9f5	; ?
 	KB_TMP_X	= $7c5c
 	HBC56_KERNEL_RAM_START	= $7a00
 	KB_TMP_Y	= $7c5d

@@ -85,7 +85,7 @@ UART_STATUS_IRQ             = %10000000
 UART_FLOWCTRL_XON           = $11
 UART_FLOWCTRL_XOFF          = $13
 
-UART_RX_BUFFER_XOFF_SIZE    = 64
+UART_RX_BUFFER_XOFF_SIZE    = 192
 UART_RX_BUFFER_XON_SIZE     = 4
 
 
@@ -151,8 +151,11 @@ uartIrq:
 uartFlowCtrlXon:
         rmb7 UART_RX_FLAGS        
         lda #UART_FLOWCTRL_XON
-        sta TMS9918_RAM
-        jmp uartOutNoBsCheck
+        nop
+        nop
+        nop
+        nop
+        jmp uartOut
 
 ; -----------------------------------------------------------------------------
 ; uartFlowCtrlXoff: Stop client to sending data
@@ -160,7 +163,8 @@ uartFlowCtrlXon:
 uartFlowCtrlXoff
         smb7 UART_RX_FLAGS
         lda #UART_FLOWCTRL_XOFF
-        sta TMS9918_RAM
+        nop
+        nop
         jmp uartOutNoBsCheck
 
 ; -----------------------------------------------------------------------------
