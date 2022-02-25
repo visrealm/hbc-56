@@ -23,7 +23,7 @@ DUMP_ROW_START_L        = TEMP_ADDR + 1
 DUMP_ROW_START_H        = TEMP_ADDR + 2
 
 COMMAND_BUFFER          = HBC56_KERNEL_RAM_END
-COMMAND_BUFFER_LEN      = 250
+COMMAND_BUFFER_LEN      = 160
 
 UART = 1
 TMS  = 0
@@ -134,6 +134,13 @@ inputLoop
         +outputA
         bra inputLoop
 +
+        cpx #COMMAND_BUFFER_LEN
+        bne +
+        lda #$07
+        +outputA
+        bra inputLoop
++
+
         cmp #$20        ; printable?
         bcs +
 
@@ -159,9 +166,10 @@ quit:
 ; -----------------------------------------------------------------------------
 commandEntered:
         +outputA
-        jsr outNewline
 
         ldx #0
+
+nextCommand:
 
 @checkChar
         cpx COMMAND_LEN
@@ -262,8 +270,6 @@ invalidCommand:
 ; output the command prompt
 ; -----------------------------------------------------------------------------
 outPrompt:
-        jsr outNewline
-
         +outputStringAddr blueText
 
         lda #'$'

@@ -26,4 +26,11 @@ addressCommand:
         jsr hexToAcc
         
         sta CURR_ADDR
+
+        lda COMMAND_LEN
+        cmp #6
+        bcc +
+        ldx #6
+        jmp nextCommand
+        +
         jmp commandLoop

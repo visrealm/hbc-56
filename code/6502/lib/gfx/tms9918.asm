@@ -415,7 +415,15 @@ tmsInit:
         
         rts
 
-
+; -----------------------------------------------------------------------------
+; _tmsSendPage: Send A for a kilobyte
+; -----------------------------------------------------------------------------
+_tmsSendKb
+        jsr _tmsSendPage
+        jsr _tmsSendPage
+        jsr _tmsSendPage
+        ; flow through
+        
 ; -----------------------------------------------------------------------------
 ; _tmsSendPage: Send A for a whole page
 ; -----------------------------------------------------------------------------
@@ -857,6 +865,7 @@ tmsSetPosRead:
 ;   A: Pattern number
 ;   Y: Y offset (row) in the pattern
 ; -----------------------------------------------------------------------------
+tmsSetPatternTmpAddressBank0:
 tmsSetPatternTmpAddress:
         pha
         lda #>TMS_VRAM_PATT_ADDRESS
@@ -877,6 +886,38 @@ tmsSetPatternTmpAddress:
         ora TMS_TMP_ADDRESS
         sta TMS_TMP_ADDRESS
         rts
+
+; -----------------------------------------------------------------------------
+; tmsSetPatternTmpAddressBank1: Set TMS_TMP_ADDRESS for a given pattern 
+;                               definition in bank 1 (GFX II)
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: Pattern number
+;   Y: Y offset (row) in the pattern
+; -----------------------------------------------------------------------------
+tmsSetPatternTmpAddressBank1:
+        jsr tmsSetPatternTmpAddress
+        lda TMS_TMP_ADDRESS + 1
+        clc
+        adc #8
+        sta TMS_TMP_ADDRESS + 1
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsSetPatternTmpAddressBank2: Set TMS_TMP_ADDRESS for a given pattern 
+;                               definition in bank 2 (GFX II)
+; -----------------------------------------------------------------------------
+; Inputs:
+;   A: Pattern number
+;   Y: Y offset (row) in the pattern
+; -----------------------------------------------------------------------------
+tmsSetPatternTmpAddressBank2:
+        jsr tmsSetPatternTmpAddress
+        lda TMS_TMP_ADDRESS + 1
+        clc
+        adc #16
+        sta TMS_TMP_ADDRESS + 1
+        rts        
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPatternWrite: Set pattern definition to write to
