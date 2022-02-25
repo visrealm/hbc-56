@@ -28,6 +28,8 @@ TMP      = ZP0 + 10
 PADX     = ZP0 + 11
 PADW     = ZP0 + 12
 
+LAST_BLOCK = ZP0 + 13
+
 BALL_BASE   = TMS_WHITE
 BALL_SHADE  = TMS_GREY
 
@@ -35,7 +37,13 @@ PADDLE_HIGH  = TMS_WHITE
 PADDLE_BASE  = TMS_CYAN
 PADDLE_SHADE = TMS_LT_BLUE
 
+PADDLE_WIDTH = 50
+NUM_BLOCKS   = 80
 
+; block data
+BLOCK_TYPE   = $0400
+BLOCK_X      = $0500
+BLOCK_Y      = $0600
 
 hbc56Meta:
         +setHbcMetaTitle "BREAKOUT"
@@ -82,7 +90,7 @@ hbc56Main:
         jsr _tmsSendKb
 
 
-        +tmsSetAddrColorTableII 1
+        +tmsSetAddrColorTableII 3
         +tmsSendData redBlockPal, 8
         +tmsSendData redBlockPal+8, 8
         +tmsSendData redBlockPal+8, 8
@@ -90,7 +98,7 @@ hbc56Main:
         +tmsSendData yellowBlockPal+8, 8
         +tmsSendData yellowBlockPal+8, 8
 
-        +tmsSetAddrColorTableII 257
+        +tmsSetAddrColorTableII 259
         +tmsSendData greenBlockPal, 8
         +tmsSendData greenBlockPal+8, 8
         +tmsSendData greenBlockPal+8, 8
@@ -98,18 +106,18 @@ hbc56Main:
         +tmsSendData blueBlockPal+8, 8
         +tmsSendData blueBlockPal+8, 8
 
-        +tmsSetAddrPattTableInd 1
+        +tmsSetAddrPattTableInd 3
         +tmsSendData block, 8 * 3
         +tmsSendData block, 8 * 3
-        +tmsSetAddrPattTableInd 257
+        +tmsSetAddrPattTableInd 259
         +tmsSendData block, 8 * 3
         +tmsSendData block, 8 * 3
 
-        +tmsSetPosWrite 0,4
-        +tmsSendData block1, 32 * 2
-        +tmsSendData block2, 32 * 2
-        +tmsSendData block1, 32 * 2
-        +tmsSendData block2, 32 * 2
+;        +tmsSetPosWrite 0,4
+;        +tmsSendData block1, 32 * 2
+;        +tmsSendData block2, 32 * 2
+;        +tmsSendData block1, 32 * 2
+;        +tmsSendData block2, 32 * 2
 
 
         ; create ball
@@ -199,12 +207,55 @@ hbc56Main:
 +++
 }
 
+loadLevel:
+        +memcpy BLOCK_TYPE, level1, 256
+        +memcpy BLOCK_X,    level1 + 256, 256
+        +memcpy BLOCK_Y,    level1 + 512, 256
+
+        jsr renderLevel
+
+        lda #79
+        sta LAST_BLOCK
+
+        rts
+
+
+NUM_BLOCKS = 80
+renderLevel:
+        ldx #0
+-
+        jsr renderBlock
+        inx
+        cpx #NUM_BLOCKS
+        bne -
+        rts
+
+; X is block index
+renderBlock:
+        phx
+        ldy BLOCK_Y, x
+        lda BLOCK_X, x
+        tax
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+
+        plx
+        lda BLOCK_TYPE, x 
+        +tmsPut
+        inc
+        +tmsPut
+        inc
+        +tmsPut
+
+
+        rts
+
 resetGame:
 
         ; draw paddle pattern
-        lda #128
+        lda #(256-PADDLE_WIDTH)/2
         sta PADX
-        lda #32
+        lda #PADDLE_WIDTH
         sta PADW
 
         jsr drawPaddle
@@ -239,8 +290,10 @@ resetGame:
         jsr tmsSetPatternTmpAddressBank2
         jsr tmsSetAddressWrite
         lda #0
-        jsr _tmsSendPage        
+        jsr _tmsSendPage
 
+        jsr loadLevel
+        
         rts
 
 drawPaddle:
@@ -443,6 +496,14 @@ gameLoop:
         +nes1BranchIfNotPressed NES_RIGHT, +
         jsr pushRight
 +
+        ldx LAST_BLOCK
+        lda #0
+        sta BLOCK_TYPE,x
+        jsr renderBlock
+        dex
+        dex
+        dex
+        stx LAST_BLOCK
         bra @doneYCheck
 
 @checkTop
@@ -550,8 +611,38 @@ redBlockPal:
 !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
 !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
 block1:
-!byte 0,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,0
-!byte 0,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,0
+!byte 0,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,0
+!byte 0,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,0
 block2:
-!byte 0,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,0
-!byte 0,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,0
+!byte 0,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,0
+!byte 0,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,0
+
+
+level1:
+!byte 3,3,3,3,3,3,3,3,3,3
+!byte 3,3,3,3,3,3,3,3,3,3
+!byte 6,6,6,6,6,6,6,6,6,6
+!byte 6,6,6,6,6,6,6,6,6,6
+!byte 3,3,3,3,3,3,3,3,3,3
+!byte 3,3,3,3,3,3,3,3,3,3
+!byte 6,6,6,6,6,6,6,6,6,6
+!byte 6,6,6,6,6,6,6,6,6,6
+!fill 256-80, 0
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!byte 1,4,7,10,13,16,19,22,25,28
+!fill 256-80, 0
+!byte 4,4,4,4,4,4,4,4,4,4
+!byte 5,5,5,5,5,5,5,5,5,5
+!byte 6,6,6,6,6,6,6,6,6,6
+!byte 7,7,7,7,7,7,7,7,7,7
+!byte 8,8,8,8,8,8,8,8,8,8
+!byte 9,9,9,9,9,9,9,9,9,9
+!byte 10,10,10,10,10,10,10,10,10,10
+!byte 11,11,11,11,11,11,11,11,11,11
+!fill 256-80, 0
