@@ -31,9 +31,9 @@ PADW     = ZP0 + 12
 BALL_BASE   = TMS_WHITE
 BALL_SHADE  = TMS_GREY
 
-PADDLE_HIGH  = TMS_CYAN << 4 | TMS_BLACK
-PADDLE_BASE  = TMS_LT_BLUE << 4 | TMS_BLACK
-PADDLE_SHADE = TMS_DK_BLUE << 4 | TMS_BLACK
+PADDLE_HIGH  = TMS_WHITE
+PADDLE_BASE  = TMS_CYAN
+PADDLE_SHADE = TMS_LT_BLUE
 
 
 
@@ -52,7 +52,7 @@ hbc56Main:
         +tmsDisableInterrupts
         +tmsDisableOutput
 
-        +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
+        +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
         ; initialise vram
@@ -82,11 +82,43 @@ hbc56Main:
         jsr _tmsSendKb
 
 
+        +tmsSetAddrColorTableII 1
+        +tmsSendData redBlockPal, 8
+        +tmsSendData redBlockPal+8, 8
+        +tmsSendData redBlockPal+8, 8
+        +tmsSendData yellowBlockPal, 8
+        +tmsSendData yellowBlockPal+8, 8
+        +tmsSendData yellowBlockPal+8, 8
+
+        +tmsSetAddrColorTableII 257
+        +tmsSendData greenBlockPal, 8
+        +tmsSendData greenBlockPal+8, 8
+        +tmsSendData greenBlockPal+8, 8
+        +tmsSendData blueBlockPal, 8
+        +tmsSendData blueBlockPal+8, 8
+        +tmsSendData blueBlockPal+8, 8
+
+        +tmsSetAddrPattTableInd 1
+        +tmsSendData block, 8 * 3
+        +tmsSendData block, 8 * 3
+        +tmsSetAddrPattTableInd 257
+        +tmsSendData block, 8 * 3
+        +tmsSendData block, 8 * 3
+
+        +tmsSetPosWrite 0,4
+        +tmsSendData block1, 32 * 2
+        +tmsSendData block2, 32 * 2
+        +tmsSendData block1, 32 * 2
+        +tmsSendData block2, 32 * 2
+
+
         ; create ball
         +tmsCreateSpritePattern 0, ballPattern
         +tmsCreateSpritePattern 1, ballPattern + 8
 
-
+        ; create paddle highlights
+        +tmsCreateSpritePattern 2, paddleLeft
+        +tmsCreateSpritePattern 3, paddleRight
 
         ; output paddle row name table entries
         +tmsSetPosWrite 0, 23
@@ -111,6 +143,9 @@ hbc56Main:
 
         +tmsCreateSprite 0, 0, 0, 0, BALL_BASE
         +tmsCreateSprite 1, 1, 0, 0, BALL_SHADE
+
+        +tmsCreateSprite 2, 2, 0, 0, PADDLE_HIGH
+        +tmsCreateSprite 3, 3, 0, 0, PADDLE_SHADE
 
         jsr setBallPos
 
@@ -167,7 +202,7 @@ hbc56Main:
 resetGame:
 
         ; draw paddle pattern
-        lda #128-12
+        lda #128
         sta PADX
         lda #32
         sta PADW
@@ -311,7 +346,16 @@ drawPaddle:
         +tmsPut
         +tmsPut
         +tmsPut
-        
+
+        ldx PADX
+        ldy #192-5
+        +tmsSpritePosXYReg 2
+        clc
+        txa
+        adc PADW
+        sbc #1
+        tax
+        +tmsSpritePosXYReg 3
         rts
 
 
@@ -333,6 +377,9 @@ setBallPos:
 
 
 gameLoop:
+        +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
+;        jsr tmsSetBackground
+
         +nes1BranchIfNotPressed NES_LEFT, +
         lda PADX
         cmp #2
@@ -379,12 +426,16 @@ gameLoop:
 @checkPaddle
         cmp #192-5-5
         bcc  @doneYCheck
-        lda POSX
-        cmp PADX
-        bcc @doneYCheck
-        sbc PADW
-        cmp PADX
+        lda PADX
+        sec
+        sbc #5
+        cmp POSX
         bcs @doneYCheck
+        lda PADX
+        clc
+        adc PADW
+        cmp POSX
+        bcc @doneYCheck
         +negate DIRY
         +nes1BranchIfNotPressed NES_LEFT, +
         jsr pushLeft
@@ -403,6 +454,9 @@ gameLoop:
 
 
         jsr setBallPos
+
+        +tmsColorFgBg TMS_WHITE, TMS_BLACK
+        jsr tmsSetBackground
 
 
         rts
@@ -437,6 +491,7 @@ decreaseSpdX:
         bpl +
         lda #0
         sta SPDX
+        +negate SPDX_SUB
         +negate DIRX
 +
         rts
@@ -446,5 +501,57 @@ ballPattern:
 !byte $70,$f8,$f8,$f8,$70,$00,$00,$00
 !byte $00,$18,$28,$58,$70,$00,$00,$00
 
+PADDLE_HIGH_FGBG  = PADDLE_HIGH << 4 | TMS_BLACK
+PADDLE_BASE_FGBG  = PADDLE_BASE << 4 | TMS_BLACK
+PADDLE_SHADE_FGBG = PADDLE_SHADE << 4 | TMS_BLACK
+
 paddlePal:
-!byte TMS_BLACK,TMS_BLACK,TMS_BLACK,PADDLE_HIGH,PADDLE_BASE,PADDLE_BASE,PADDLE_BASE,PADDLE_SHADE
+!byte TMS_BLACK,TMS_BLACK,TMS_BLACK,PADDLE_HIGH_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_SHADE_FGBG
+paddleLeft:
+!byte $c0,$80,$80,$00,$00,$00,$00,$00
+paddleRight:
+!byte $40,$40,$c0,$00,$00,$00,$00,$00
+
+block:
+!byte $7f,$3f,$7f,$7f,$7f,$7f,$7f,$00
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00
+!byte $fc,$fe,$fe,$fe,$fe,$fe,$fc,$00
+
+BLUE_HIGH       = TMS_CYAN    << 4   | TMS_TRANSPARENT
+BLUE_BASE       = TMS_LT_BLUE << 4   | TMS_TRANSPARENT
+BLUE_BASEH      = TMS_LT_BLUE << 4   | TMS_CYAN
+BLUE_SHADE      = TMS_DK_BLUE << 4   | TMS_TRANSPARENT
+
+GREEN_HIGH      = TMS_LT_GREEN  << 4 | TMS_TRANSPARENT
+GREEN_BASE      = TMS_MED_GREEN << 4 | TMS_TRANSPARENT
+GREEN_BASEH     = TMS_MED_GREEN << 4 | TMS_LT_GREEN
+GREEN_SHADE     = TMS_DK_GREEN  << 4 | TMS_TRANSPARENT
+
+YELLOW_HIGH     = TMS_WHITE     << 4 | TMS_TRANSPARENT
+YELLOW_BASE     = TMS_LT_YELLOW << 4 | TMS_TRANSPARENT
+YELLOW_BASEH    = TMS_LT_YELLOW << 4 | TMS_WHITE
+YELLOW_SHADE    = TMS_DK_YELLOW << 4 | TMS_TRANSPARENT
+
+RED_HIGH        = TMS_LT_RED  << 4 | TMS_TRANSPARENT
+RED_BASE        = TMS_MED_RED << 4 | TMS_TRANSPARENT
+RED_BASEH       = TMS_MED_RED << 4 | TMS_LT_RED
+RED_SHADE       = TMS_DK_RED  << 4 | TMS_TRANSPARENT
+
+blueBlockPal:
+!byte BLUE_HIGH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_SHADE,TMS_TRANSPARENT
+!byte BLUE_HIGH,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_SHADE,TMS_TRANSPARENT
+greenBlockPal:
+!byte GREEN_HIGH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_SHADE,TMS_TRANSPARENT
+!byte GREEN_HIGH,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_SHADE,TMS_TRANSPARENT
+yellowBlockPal:
+!byte YELLOW_HIGH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_SHADE,TMS_TRANSPARENT
+!byte YELLOW_HIGH,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_SHADE,TMS_TRANSPARENT
+redBlockPal:
+!byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
+!byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
+block1:
+!byte 0,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,0
+!byte 0,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,0
+block2:
+!byte 0,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,0
+!byte 0,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,4,5,6,0
