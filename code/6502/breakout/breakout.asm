@@ -30,6 +30,7 @@ PADW     = ZP0 + 12
 
 LAST_BLOCK = ZP0 + 13
 
+
 BALL_BASE   = TMS_WHITE
 BALL_SHADE  = TMS_GREY
 
@@ -174,15 +175,15 @@ hbc56Main:
 !macro negate val {
         lda val
         eor #$ff
-        clc
-        adc #1
+        inc
         sta val
 }
 
 
 !macro addSubPixel pos, spd, dir {
         bit dir
-        bpl ++
+        bpl @posDir
+@negDir
         clc
         lda pos + 1
         adc spd + 1
@@ -194,8 +195,8 @@ hbc56Main:
         sec
         sbc spd
         sta pos
-        bra +++
-++
+        bra @end
+@posDir
         clc
         lda pos + 1
         adc spd + 1
@@ -204,7 +205,7 @@ hbc56Main:
         lda pos
         adc spd
         sta pos
-+++
+@end
 }
 
 loadLevel:
@@ -306,33 +307,21 @@ drawPaddle:
         jsr tmsSetPatternTmpAddressBank2
         jsr tmsSetAddressWrite
         lda #0
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
+        ldx #1
+        jsr _tmsSendX8
 
         lda PADW
         sta TMP
         lda PADX
         and #$07
         tax
-        clc
-        adc TMP
+        lda TMP
         sec
-        sbc #8
+        sbc subEight, x
         sta TMP
-        lda #$ff
-        cpx #0
-        beq +
--
-        lsr
-        dex
-        bne -
-+
+        ldy subEight, x
+        lda bitsRight, y
+
         lsr
         +tmsPut
         sec
@@ -351,20 +340,11 @@ drawPaddle:
 +
         tax
         lda TMP
-        stx TMP
         sec
-        sbc TMP
+        sbc values, x
         sta TMP
-        dex
-        lda #$80
-        cpx #0
-        beq +
--
-        sec
-        ror
-        dex
-        bne -
-+
+        lda bitsLeft, x
+
         tax
         lda #0
         +tmsPut
@@ -391,14 +371,8 @@ drawPaddle:
 @doneDraw:
 
         lda #0
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        +tmsPut
+        ldx #1
+        jsr _tmsSendX8
 
         ldx PADX
         ldy #192-5
@@ -406,7 +380,7 @@ drawPaddle:
         clc
         txa
         adc PADW
-        sbc #1
+        dec
         tax
         +tmsSpritePosXYReg 3
         rts
@@ -431,7 +405,13 @@ setBallPos:
 
 gameLoop:
         +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
-;        jsr tmsSetBackground
+        jsr tmsSetBackground
+
+        ;lda PADW
+        ;inc
+        ;and #$7f
+        ;sta PADW
+
 
         +nes1BranchIfNotPressed NES_LEFT, +
         lda PADX
@@ -610,12 +590,15 @@ yellowBlockPal:
 redBlockPal:
 !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
 !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
-block1:
-!byte 0,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,0
-!byte 0,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,3,4,5,0
-block2:
-!byte 0,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,0
-!byte 0,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,6,7,8,0
+
+bitsLeft:
+!byte $00,$80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
+bitsRight:
+!byte $00,$01,$03,$07,$0f,$1f,$3f,$7f,$ff
+subEight:
+!byte 8,7,6,5,4,3,2,1,0
+values:
+!byte 0,1,2,3,4,5,6,7,8
 
 
 level1:
