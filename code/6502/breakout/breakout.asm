@@ -24,12 +24,16 @@ DIRX     = ZP0 + 8
 DIRY     = ZP0 + 9
 
 TMP      = ZP0 + 10
+; a block of TMP
 
-PADX     = ZP0 + 11
-PADW     = ZP0 + 12
+PADX     = ZP0 + 21
+PADW     = ZP0 + 22
 
-LAST_BLOCK = ZP0 + 13
+LAST_BLOCK = ZP0 + 23
 
+GAME_AREA_LEFT  = 8
+GAME_AREA_WIDTH = 24 * 7
+GAME_AREA_RIGHT = GAME_AREA_LEFT + GAME_AREA_WIDTH
 
 BALL_BASE   = TMS_WHITE
 BALL_SHADE  = TMS_GREY
@@ -38,13 +42,10 @@ PADDLE_HIGH  = TMS_WHITE
 PADDLE_BASE  = TMS_CYAN
 PADDLE_SHADE = TMS_LT_BLUE
 
-PADDLE_WIDTH = 50
-NUM_BLOCKS   = 80
+PADDLE_WIDTH = 32
+NUM_BLOCKS   = 128
 
-; block data
-BLOCK_TYPE   = $0400
-BLOCK_X      = $0500
-BLOCK_Y      = $0600
+LEVEL_DATA   = $0400
 
 hbc56Meta:
         +setHbcMetaTitle "BREAKOUT"
@@ -126,18 +127,39 @@ hbc56Main:
         +tmsCreateSpritePattern 1, ballPattern + 8
 
         ; create paddle highlights
-        +tmsCreateSpritePattern 2, paddleLeft
-        +tmsCreateSpritePattern 3, paddleRight
-
-        ; output paddle row name table entries
-        +tmsSetPosWrite 0, 23
-        lda #256-32
-        ldx #32
+        +tmsCreateSpritePattern 2, paddleLeftSpr
+        +tmsCreateSpritePattern 3, paddleRightSpr
+        ; create paddle patterns
+        +tmsSetAddrPattTableInd 768-32
+        +memcpy TMP, paddlePatt, 8
+        ldy #8
+--
+        phy
+        +tmsSendData TMP, 8
+        ply
+        ldx #0
 -
-        +tmsPut
-        inc
-        dex
+        lsr TMP, x
+        inx
+        cpx #8
         bne -
+        dey
+        bne --
+        +tmsSendData paddlePatt + 8, 8
+        +memcpy TMP, paddlePatt + 16, 8
+        ldy #8
+--
+        phy
+        +tmsSendData TMP, 8
+        ply
+        ldx #0
+-
+        asl TMP, x
+        inx
+        cpx #8
+        bne -
+        dey
+        bne --
 
         ; set up paddle row colors
         +tmsSetAddrColorTableII 768-32
@@ -209,9 +231,7 @@ hbc56Main:
 }
 
 loadLevel:
-        +memcpy BLOCK_TYPE, level1, 256
-        +memcpy BLOCK_X,    level1 + 256, 256
-        +memcpy BLOCK_Y,    level1 + 512, 256
+        +memcpy LEVEL_DATA, level1, 128
 
         jsr renderLevel
 
@@ -221,7 +241,6 @@ loadLevel:
         rts
 
 
-NUM_BLOCKS = 80
 renderLevel:
         ldx #0
 -
@@ -234,14 +253,24 @@ renderLevel:
 ; X is block index
 renderBlock:
         phx
-        ldy BLOCK_Y, x
-        lda BLOCK_X, x
+        stx TMP
+        txa
+        +div8
+        inc
+        tay
+        lda TMP
+        and #$07
+        sta TMP
+        asl
+        sec
+        adc TMP
         tax
+
         jsr tmsSetPosTmpAddress
         jsr tmsSetAddressWrite
 
         plx
-        lda BLOCK_TYPE, x 
+        lda LEVEL_DATA, x 
         +tmsPut
         inc
         +tmsPut
@@ -254,7 +283,7 @@ renderBlock:
 resetGame:
 
         ; draw paddle pattern
-        lda #(256-PADDLE_WIDTH)/2
+        lda #(GAME_AREA_WIDTH-PADDLE_WIDTH)/2 + GAME_AREA_LEFT
         sta PADX
         lda #PADDLE_WIDTH
         sta PADW
@@ -267,7 +296,7 @@ resetGame:
 
         lda #0
         sta SPDX
-        lda #2
+        lda #3
         sta SPDY
 
         lda #0
@@ -280,57 +309,128 @@ resetGame:
         sta DIRX
         sta DIRY
 
-        lda #128-3
+        lda #GAME_AREA_WIDTH/2+GAME_AREA_LEFT-3
         sta POSX
 
         lda #98-3
         sta POSY
 
-        lda #256-32
-        ldy #0
-        jsr tmsSetPatternTmpAddressBank2
-        jsr tmsSetAddressWrite
+        +tmsSetPosWrite 0, 23
         lda #0
-        jsr _tmsSendPage
+        ldx #32
+-
+        +tmsPut
+        dex
+        bne -
 
         jsr loadLevel
+
+        jsr drawBorder
         
         rts
 
+drawBorder:
+        ; border patterns
+        +tmsSetAddrPattTableInd $10
+        +tmsSendData borderTL, 7*8
+        +tmsSetAddrPattTableInd $110
+        +tmsSendData borderTL, 7*8
+        +tmsSetAddrPattTableInd $210
+        +tmsSendData borderTL, 7*8
+
+        ; border palette
+        +tmsSetAddrColorTableII $10
+        jsr sendBorderPal
+        +tmsSetAddrColorTableII $110
+        jsr sendBorderPal
+        +tmsSetAddrColorTableII $210
+        jsr sendBorderPal
+
+        ; border
+        +tmsSetPosWrite 0,0
+        +tmsPut $10
+        ldx #7*3
+        lda #$11
+-
+        +tmsPut
+        dex
+        bne -
+        +tmsPut $12
+
+        ldx #0
+        ldy #1
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+        ldx #22
+-
+        +tmsPut $13
+        jsr tmsSetAddressNextRow
+        jsr tmsSetAddressWrite
+        dex
+        bne -
+        +tmsPut $15
+
+
+        ldx #7*3+1
+        ldy #1
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+        ldx #22
+-
+        +tmsPut $14
+        jsr tmsSetAddressNextRow
+        jsr tmsSetAddressWrite
+        dex
+        bne -
+        +tmsPut $15
+
+        rts
+
+sendBorderPal
+        +tmsSendData borderPal, 8
+        +tmsSendData borderPal, 8
+        +tmsSendData borderPal, 8
+        +tmsSendData borderPal+1, 8
+        +tmsSendData borderPal+1, 8
+        +tmsSendData borderPal+1, 8
+        +tmsSendData borderPal+1, 8
+        rts
+
+
 drawPaddle:
+        lda PADW
+        cmp #8
+        bcs +
+        rts
++
         lda PADX
         +div8
-        dec
-        clc
-        adc #256-32
-        ldy #3
-        jsr tmsSetPatternTmpAddressBank2
-        jsr tmsSetAddressWrite
-        lda #0
-        ldx #1
-        jsr _tmsSendX8
-
-        lda PADW
         sta TMP
+        cmp #1
+        beq +
+        dec
++
+        tax
+        ldy #23
+        jsr tmsSetPosWrite
+        lda TMP
+        cmp #1
+        beq +
+        +tmsPut 0
++
         lda PADX
         and #$07
-        tax
-        lda TMP
-        sec
-        sbc subEight, x
-        sta TMP
-        ldy subEight, x
-        lda bitsRight, y
 
-        lsr
-        +tmsPut
+        tax
+        clc
+        adc PADW
         sec
-        rol
+        sbc #8
+        sta TMP
+
+        lda leftPatterns, x
         +tmsPut
-        +tmsPut
-        +tmsPut
-        lsr
-        +tmsPut
+
 @loop
         lda TMP
         beq @doneDraw
@@ -340,39 +440,23 @@ drawPaddle:
 +
         tax
         lda TMP
+        stx TMP
         sec
-        sbc values, x
+        sbc TMP
         sta TMP
-        lda bitsLeft, x
 
-        tax
-        lda #0
-        +tmsPut
-        +tmsPut
-        +tmsPut
-
-        lda TMP
-        bne +
-        txa
-        asl
-        bra ++
-+
-        txa
-++
-        tay
-        +tmsPut
-        txa
-        +tmsPut
-        +tmsPut
-        +tmsPut
-        tya
+        lda rightPatterns, x
         +tmsPut
         bra @loop
-@doneDraw:
 
-        lda #0
-        ldx #1
-        jsr _tmsSendX8
+@doneDraw:
+        lda PADX
+        clc
+        adc PADW
+        cmp #GAME_AREA_RIGHT-8
+        bcs +
+        +tmsPut 0
++
 
         ldx PADX
         ldy #192-5
@@ -405,17 +489,24 @@ setBallPos:
 
 gameLoop:
         +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
-        jsr tmsSetBackground
+        ;jsr tmsSetBackground
 
         ;lda PADW
         ;inc
         ;and #$7f
         ;sta PADW
 
+        lda POSY
+        cmp #12 * 8
+        bcs +
+;        !byte $db
+
++
+
 
         +nes1BranchIfNotPressed NES_LEFT, +
         lda PADX
-        cmp #2
+        cmp #GAME_AREA_LEFT + 2
         bcc +
         dec PADX
         dec PADX
@@ -424,7 +515,7 @@ gameLoop:
         lda PADX
         clc
         adc PADW
-        cmp #253
+        cmp #GAME_AREA_RIGHT-2
         bcs +
         inc PADX
         inc PADX
@@ -437,13 +528,13 @@ gameLoop:
         bit DIRX
         bmi @checkLeft
         lda POSX
-        cmp #255-5
+        cmp #GAME_AREA_RIGHT-5
         bcc @doneXCheck
         +negate DIRX
         bra @doneXCheck
 @checkLeft
         lda POSX
-        cmp #3
+        cmp #GAME_AREA_LEFT
         bcs @doneXCheck
         +negate DIRX
 @doneXCheck
@@ -460,8 +551,11 @@ gameLoop:
         cmp #192-5-5
         bcc  @doneYCheck
         lda PADX
+        cmp #6
+        bcc +
         sec
         sbc #5
++
         cmp POSX
         bcs @doneYCheck
         lda PADX
@@ -477,9 +571,12 @@ gameLoop:
         jsr pushRight
 +
         ldx LAST_BLOCK
+        lda LEVEL_DATA,x
+        beq +
         lda #0
-        sta BLOCK_TYPE,x
+        sta LEVEL_DATA,x
         jsr renderBlock
++
         dex
         dex
         dex
@@ -488,7 +585,7 @@ gameLoop:
 
 @checkTop
         lda POSY
-        cmp #2
+        cmp #9
         bcs @doneYCheck
         +negate DIRY
 @doneYCheck
@@ -538,9 +635,16 @@ decreaseSpdX:
         rts
 
 
+; BALL
+; ----------
+
 ballPattern:
 !byte $70,$f8,$f8,$f8,$70,$00,$00,$00
 !byte $00,$18,$28,$58,$70,$00,$00,$00
+
+
+; PADDLE
+; ----------
 
 PADDLE_HIGH_FGBG  = PADDLE_HIGH << 4 | TMS_BLACK
 PADDLE_BASE_FGBG  = PADDLE_BASE << 4 | TMS_BLACK
@@ -548,15 +652,29 @@ PADDLE_SHADE_FGBG = PADDLE_SHADE << 4 | TMS_BLACK
 
 paddlePal:
 !byte TMS_BLACK,TMS_BLACK,TMS_BLACK,PADDLE_HIGH_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_SHADE_FGBG
-paddleLeft:
+paddleLeftSpr:
 !byte $c0,$80,$80,$00,$00,$00,$00,$00
-paddleRight:
+paddleRightSpr:
 !byte $40,$40,$c0,$00,$00,$00,$00,$00
+paddlePatt:
+!byte $00,$00,$00,$7f,$ff,$ff,$ff,$7f   ; left
+!byte $00,$00,$00,$ff,$ff,$ff,$ff,$ff   ; centre
+!byte $00,$00,$00,$fe,$ff,$ff,$ff,$fe   ; right
+
+leftPatterns:
+!byte 224,225,226,227,228,229,230,231
+rightPatterns:
+!byte 240,239,238,237,236,235,234,233,232
+
+
+
+; BLOCKS
+; ----------
 
 block:
-!byte $7f,$3f,$7f,$7f,$7f,$7f,$7f,$00
-!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00
-!byte $fc,$fe,$fe,$fe,$fe,$fe,$fc,$00
+!byte $7f,$3f,$7f,$7f,$7f,$7f,$7f,$00   ; left
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00   ; centre
+!byte $fc,$fe,$fe,$fe,$fe,$fe,$fc,$00   ; right
 
 BLUE_HIGH       = TMS_CYAN    << 4   | TMS_TRANSPARENT
 BLUE_BASE       = TMS_LT_BLUE << 4   | TMS_TRANSPARENT
@@ -591,41 +709,47 @@ redBlockPal:
 !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
 !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
 
-bitsLeft:
-!byte $00,$80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
-bitsRight:
-!byte $00,$01,$03,$07,$0f,$1f,$3f,$7f,$ff
-subEight:
-!byte 8,7,6,5,4,3,2,1,0
-values:
-!byte 0,1,2,3,4,5,6,7,8
+; BORDER
+; ----------
+
+borderTL:
+!byte $3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff
+borderT:
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00
+borderTR:
+!byte $f8,$fc,$fe,$fe,$fe,$fe,$fe,$fe
+borderL:
+!byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
+borderR:
+!byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
+borderBL:
+!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+borderBR:
+!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+
+BORDER_BASE_FGBG  = TMS_MAGENTA << 4 | TMS_TRANSPARENT
+BORDER_HIGH_FGBG  = TMS_WHITE   << 4 | TMS_TRANSPARENT
+
+borderPal:
+!byte BORDER_HIGH_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG
 
 
-level1:
-!byte 3,3,3,3,3,3,3,3,3,3
-!byte 3,3,3,3,3,3,3,3,3,3
-!byte 6,6,6,6,6,6,6,6,6,6
-!byte 6,6,6,6,6,6,6,6,6,6
-!byte 3,3,3,3,3,3,3,3,3,3
-!byte 3,3,3,3,3,3,3,3,3,3
-!byte 6,6,6,6,6,6,6,6,6,6
-!byte 6,6,6,6,6,6,6,6,6,6
-!fill 256-80, 0
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!byte 1,4,7,10,13,16,19,22,25,28
-!fill 256-80, 0
-!byte 4,4,4,4,4,4,4,4,4,4
-!byte 5,5,5,5,5,5,5,5,5,5
-!byte 6,6,6,6,6,6,6,6,6,6
-!byte 7,7,7,7,7,7,7,7,7,7
-!byte 8,8,8,8,8,8,8,8,8,8
-!byte 9,9,9,9,9,9,9,9,9,9
-!byte 10,10,10,10,10,10,10,10,10,10
-!byte 11,11,11,11,11,11,11,11,11,11
-!fill 256-80, 0
+
+
+
+; LEVEL DATA
+; ----------
+
+level1: 
+!byte 0,0,0,0,0,0,0,0 ; block types
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 3,3,3,3,3,3,3,0
+!byte 3,3,3,3,3,3,3,0
+!byte 6,6,6,6,6,6,6,0
+!byte 6,6,6,6,6,6,6,0
+!byte 3,3,3,3,3,3,3,0
+!byte 3,3,3,3,3,3,3,0
+!byte 6,6,6,6,6,6,6,0
+!byte 6,6,6,6,6,6,6,0
+!fill 128-88, 0
