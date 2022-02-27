@@ -29,7 +29,13 @@ TMP      = ZP0 + 10
 PADX     = ZP0 + 21
 PADW     = ZP0 + 22
 
-LAST_BLOCK = ZP0 + 23
+LEVEL    = ZP0 + 23
+SCORE_H  = ZP0 + 24
+SCORE_M  = ZP0 + 25
+SCORE_L  = ZP0 + 26
+BALLS    = ZP0 + 27
+
+MULT     = ZP0 + 28
 
 GAME_AREA_LEFT  = 8
 GAME_AREA_WIDTH = 24 * 7
@@ -92,6 +98,7 @@ hbc56Main:
         jsr _tmsSendKb
 
 
+        ; block data
         +tmsSetAddrColorTableII 3
         +tmsSendData redBlockPal, 8
         +tmsSendData redBlockPal+8, 8
@@ -114,6 +121,80 @@ hbc56Main:
         +tmsSetAddrPattTableInd 259
         +tmsSendData block, 8 * 3
         +tmsSendData block, 8 * 3
+
+        ; title data
+        +tmsSetAddrPattTableInd 128
+        +tmsSendData titlePatt, 8*9*2
+        +tmsSetAddrColorTableII 128
+        lda #9
+        sta TMP
+-
+        +tmsSendData titlePal, 8
+        dec TMP
+        bne -
+
+        lda #9
+        sta TMP
+-
+        +tmsSendData titlePal + 8, 8
+        dec TMP
+        bne -
+
+        ; label data
+        +tmsSetAddrPattTableInd 146
+        +tmsSendData levelPatt, 8*7
+
+        +tmsSetAddrPattTableInd 256+146
+        +tmsSendData scorePatt, 8*7
+        +tmsSendData ballsPatt, 8*7
+
+        +tmsSetAddrColorTableII 146
+        lda #8
+        sta TMP
+-
+        +tmsSendData labelPal, 8
+        dec TMP
+        bne -
+
+        +tmsSetAddrColorTableII 256+146
+        lda #16
+        sta TMP
+-
+        +tmsSendData labelPal, 8
+        dec TMP
+        bne -
+
+        ; digits data
+        +tmsSetAddrPattTableInd '0'
+        +tmsSendData digitsPatt, 8*10
+        +tmsSetAddrPattTableInd 256+'0'
+        +tmsSendData digitsPatt, 8*10
+        +tmsSetAddrPattTableInd 512+'0'
+        +tmsSendData digitsPatt, 8*10
+
+        +tmsSetAddrColorTableII '0'
+        lda #10
+        sta TMP
+-
+        +tmsSendData digitsPal, 8
+        dec TMP
+        bne -
+
+        +tmsSetAddrColorTableII 256+'0'
+        lda #10
+        sta TMP
+-
+        +tmsSendData digitsPal, 8
+        dec TMP
+        bne -
+
+        +tmsSetAddrColorTableII 512+'0'
+        lda #10
+        sta TMP
+-
+        +tmsSendData digitsPal, 8
+        dec TMP
+        bne -
 
 ;        +tmsSetPosWrite 0,4
 ;        +tmsSendData block1, 32 * 2
@@ -169,6 +250,18 @@ hbc56Main:
         +tmsSendData paddlePal, 8
         dec TMP
         bne -
+
+
+        lda #4
+        sta BALLS
+
+        lda #0
+        sta SCORE_H
+        sta SCORE_M
+        sta SCORE_L
+
+        lda #1
+        sta LEVEL
 
         jsr resetGame
 
@@ -235,9 +328,6 @@ loadLevel:
 
         jsr renderLevel
 
-        lda #79
-        sta LAST_BLOCK
-
         rts
 
 
@@ -280,8 +370,18 @@ renderBlock:
 
         rts
 
-resetGame:
 
+loseBall:
+        lda #1
+        sta MULT
+        dec BALLS
+        bmi endGame
+
+        jsr resetPaddle
+
+        rts
+
+resetPaddle:
         ; draw paddle pattern
         lda #(GAME_AREA_WIDTH-PADDLE_WIDTH)/2 + GAME_AREA_LEFT
         sta PADX
@@ -315,18 +415,89 @@ resetGame:
         lda #128-3
         sta POSY
 
-        +tmsSetPosWrite 0, 23
+        +tmsSetPosWrite 1, 23
         lda #0
-        ldx #32
+        ldx #21
 -
         +tmsPut
         dex
         bne -
 
+
+        ; output ball count
+        +tmsSetPosWrite 26, 16
+        +tmsPut '0'
+        lda BALLS
+        jsr outputBCD
+        
+        rts
+
+endGame:
+        lda #1
+        sta LEVEL
+
+        lda #0
+        sta SCORE_L
+        sta SCORE_M
+        sta SCORE_H
+
+        lda #4
+        sta BALLS
+
+resetGame:
+
+        jsr resetPaddle
+
         jsr loadLevel
 
         jsr drawBorder
-        
+
+        ; output level number
+        +tmsSetPosWrite 26, 6
+        +tmsPut '0'
+        lda LEVEL
+        jsr outputBCD
+
+        lda #0
+        jsr addScore
+                
+        rts
+
+addScore:
+        sed
+        adc SCORE_L
+        sta SCORE_L
+        bcc @endAddScore
+        lda #0
+        adc SCORE_M
+        sta SCORE_M
+        bcc @endAddScore
+        lda #0
+        adc SCORE_H
+        sta SCORE_H
+
+@endAddScore
+        cld
+
+        ; output ball count
+        +tmsSetPosWrite 25, 11
+        lda SCORE_H
+        jsr outputBCD
+        lda SCORE_M
+        jsr outputBCD
+        lda SCORE_L
+        jsr outputBCD
+        rts
+
+outputBCD:
+        sta TMP
+        +lsr4
+        ora #$30
+        +tmsPut
+        lda TMP
+        and #$0f
+        ora #$30
+        +tmsPut
         rts
 
 drawBorder:
@@ -383,6 +554,55 @@ drawBorder:
         dex
         bne -
         +tmsPut $15
+
+        +tmsSetPosWrite 23,0
+        lda #128
+        ldx #9
+-
+        +tmsPut
+        inc
+        dex
+        bne -
+
+        ; render title
+        +tmsSetPosWrite 23,1
+        lda #128+9
+        ldx #9
+-
+        +tmsPut
+        inc
+        dex
+        bne -
+
+        ; render labels
+        +tmsSetPosWrite 24,4
+        lda #146
+        ldx #7
+-
+        +tmsPut
+        inc
+        dex
+        bne -
+
+        +tmsSetPosWrite 24,9
+        lda #146
+        ldx #7
+-
+        +tmsPut
+        inc
+        dex
+        bne -
+
+        +tmsSetPosWrite 24,14
+        lda #146+7
+        ldx #7
+-
+        +tmsPut
+        inc
+        dex
+        bne -
+
+
 
         rts
 
@@ -517,8 +737,8 @@ posToLevelCell:
 gameLoop:
         ;!byte $db
 
-        +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
-        jsr tmsSetBackground
+        ;+tmsColorFgBg TMS_WHITE, TMS_MAGENTA
+        ;jsr tmsSetBackground
 
         lda POSY
         cmp #12 * 8
@@ -526,7 +746,13 @@ gameLoop:
 
         ; convert position to cell
         ldx POSX
+        inx
+        inx
+        inx
         ldy POSY
+        iny
+        iny
+        iny
         jsr posToLevelCell
         cmp #255
         beq @noHit
@@ -537,6 +763,15 @@ gameLoop:
         sta LEVEL_DATA, x
         jsr renderBlock
         +negate DIRY
+
+        ldx MULT
+-
+        lda #$25
+        jsr addScore
+        dex
+        bne -
+
+        inc MULT
 
 @noHit:
 
@@ -582,7 +817,8 @@ gameLoop:
         bcc @checkPaddle
         cmp #240
         bcc @doneYCheck
-        jsr resetGame
+        jmp loseBall
+
 @checkPaddle
         cmp #192-5-6
         bcc  @doneYCheck
@@ -599,13 +835,18 @@ gameLoop:
         adc PADW
         cmp POSX
         bcc @doneYCheck
+        
+        ; paddle hit
         +negate DIRY
+
         +nes1BranchIfNotPressed NES_LEFT, +
         jsr pushLeft
 +
         +nes1BranchIfNotPressed NES_RIGHT, +
         jsr pushRight
 +
+        lda #1
+        sta MULT
 
         bra @doneYCheck
 
@@ -753,14 +994,78 @@ borderBL:
 borderBR:
 !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
 
-BORDER_BASE_FGBG  = TMS_MAGENTA << 4 | TMS_TRANSPARENT
-BORDER_HIGH_FGBG  = TMS_WHITE   << 4 | TMS_TRANSPARENT
-
 borderPal:
-!byte BORDER_HIGH_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG,BORDER_BASE_FGBG
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
 
 
+titlePatt:
+!byte $00,$1e,$3f,$7f,$03,$01,$03,$7f,$00,$0f,$1f,$bf,$81,$80,$81,$bf,$00,$1f,$9f,$df,$d8,$d8,$d8,$df,$00,$e1,$c1,$83,$03,$07,$06,$e6,$00,$86,$86,$c6,$c6,$e6,$66,$67,$00,$18,$39,$33,$63,$67,$c6,$c6,$00,$c3,$e3,$f3,$33,$3b,$1b,$1b,$00,$0c,$0c,$0d,$0c,$0c,$0c,$0c,$00,$7f,$fe,$fc,$30,$30,$30,$30
+!byte $7f,$7f,$63,$61,$63,$7f,$7f,$7f,$3f,$bf,$be,$b7,$b3,$b1,$b0,$30,$df,$9f,$18,$18,$98,$df,$df,$df,$c6,$86,$06,$0e,$0c,$ec,$cd,$8d,$67,$67,$66,$76,$36,$36,$f6,$f6,$86,$c6,$c6,$67,$63,$33,$39,$18,$1b,$1b,$1b,$3b,$31,$f1,$e0,$c0,$0c,$0c,$0c,$9c,$98,$f8,$f0,$60,$30,$30,$30,$30,$30,$30,$30,$30
 
+titlePal:
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MED_RED, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_YELLOW, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
+
+levelPatt:
+!byte $0c,$0c,$0c,$0c,$0c,$0c,$0f,$0f,$07,$07,$06,$07,$07,$06,$f7,$e7,$fb,$f3,$01,$f9,$f0,$00,$f8,$f0,$01,$83,$83,$c7,$c6,$6c,$7c,$38,$bf,$bf,$30,$3f,$3f,$30,$3f,$3f,$d8,$98,$18,$d8,$98,$18,$df,$9f,$00,$00,$00,$00,$00,$00,$e0,$c0
+scorePatt:
+!byte $1f,$3f,$30,$3f,$3f,$00,$1f,$3f,$e3,$c7,$07,$ce,$ee,$67,$e7,$c3,$fc,$f8,$01,$01,$01,$01,$fc,$f8,$7e,$ff,$c3,$81,$81,$c3,$ff,$7e,$0f,$1f,$80,$80,$9f,$9f,$18,$18,$e3,$f3,$3b,$3b,$f3,$e3,$73,$3b,$fc,$f8,$00,$fc,$f8,$00,$fc,$f8
+ballsPatt:
+!byte $0f,$1f,$00,$1f,$1f,$18,$1f,$1f,$e0,$f0,$30,$f1,$f3,$33,$f6,$e6,$60,$f0,$f0,$98,$9c,$0c,$7e,$fe,$c0,$c0,$c0,$c0,$c0,$c0,$ff,$fe,$60,$60,$60,$60,$60,$60,$7f,$7f,$1f,$3f,$30,$3f,$3f,$00,$9f,$3f,$e0,$c0,$00,$c0,$e0,$60,$e0,$c0
+
+labelPal:
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+
+digitsPatt:
+!byte $7C,$CE,$DE,$F6,$E6,$C6,$7C,$00 ; 0
+!byte $18,$38,$18,$18,$18,$18,$7E,$00 ; 1
+!byte $7C,$C6,$06,$7C,$C0,$C0,$FE,$00 ; 2
+!byte $FC,$06,$06,$3C,$06,$06,$FC,$00 ; 3
+!byte $0C,$CC,$CC,$CC,$FE,$0C,$0C,$00 ; 4
+!byte $FE,$C0,$FC,$06,$06,$C6,$7C,$00 ; 5
+!byte $7C,$C0,$C0,$FC,$C6,$C6,$7C,$00 ; 6
+!byte $FE,$06,$06,$0C,$18,$30,$30,$00 ; 7
+!byte $7C,$C6,$C6,$7C,$C6,$C6,$7C,$00 ; 8
+!byte $7C,$C6,$C6,$7E,$06,$06,$7C,$00 ; 9
+
+digitsPal:
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
 
 
 ; LEVEL DATA
