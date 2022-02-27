@@ -211,7 +211,7 @@ hbc56Main:
         adc spd + 1
         sta pos + 1
         lda pos
-        bcc +
+        bcs +
         dec
 +
         sec
@@ -296,7 +296,7 @@ resetGame:
 
         lda #0
         sta SPDX
-        lda #3
+        lda #2
         sta SPDY
 
         lda #0
@@ -312,7 +312,7 @@ resetGame:
         lda #GAME_AREA_WIDTH/2+GAME_AREA_LEFT-3
         sta POSX
 
-        lda #98-3
+        lda #128-3
         sta POSY
 
         +tmsSetPosWrite 0, 23
@@ -486,23 +486,59 @@ setBallPos:
         +tmsSpritePosXYReg 1
         rts
 
+xPosToLevelCell:
+!byte 255,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,255,255,255
+yPosToLevelCell:
+!byte 255,0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,255
+
+; X and Y = pixel location
+; returns: A = level index (or 255)
+posToLevelCell:
+        txa
+        +div8
+        tax
+        lda xPosToLevelCell, x
+        cmp #255
+        beq @outOfBounds
+        sta TMP
+        tya
+        +div8
+        tay
+        lda yPosToLevelCell, y
+        cmp #255
+        beq @outOfBounds
+        clc
+        adc TMP
+
+@outOfBounds:
+        rts
+
 
 gameLoop:
-        +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
-        ;jsr tmsSetBackground
+        ;!byte $db
 
-        ;lda PADW
-        ;inc
-        ;and #$7f
-        ;sta PADW
+        +tmsColorFgBg TMS_WHITE, TMS_MAGENTA
+        jsr tmsSetBackground
 
         lda POSY
         cmp #12 * 8
-        bcs +
-;        !byte $db
+        bcs @noHit
 
-+
+        ; convert position to cell
+        ldx POSX
+        ldy POSY
+        jsr posToLevelCell
+        cmp #255
+        beq @noHit
+        tax
+        lda LEVEL_DATA, x
+        beq @noHit
+        lda #0
+        sta LEVEL_DATA, x
+        jsr renderBlock
+        +negate DIRY
 
+@noHit:
 
         +nes1BranchIfNotPressed NES_LEFT, +
         lda PADX
@@ -542,13 +578,13 @@ gameLoop:
         bit DIRY
         bmi @checkTop
         lda POSY
-        cmp #192-8
+        cmp #192-6
         bcc @checkPaddle
         cmp #240
         bcc @doneYCheck
         jsr resetGame
 @checkPaddle
-        cmp #192-5-5
+        cmp #192-5-6
         bcc  @doneYCheck
         lda PADX
         cmp #6
@@ -570,17 +606,7 @@ gameLoop:
         +nes1BranchIfNotPressed NES_RIGHT, +
         jsr pushRight
 +
-        ldx LAST_BLOCK
-        lda LEVEL_DATA,x
-        beq +
-        lda #0
-        sta LEVEL_DATA,x
-        jsr renderBlock
-+
-        dex
-        dex
-        dex
-        stx LAST_BLOCK
+
         bra @doneYCheck
 
 @checkTop
@@ -611,7 +637,7 @@ pushRight:
 
 increaseSpdX:
         clc
-        lda #128
+        lda #100
         adc SPDX_SUB
         sta SPDX_SUB
         bcc +
@@ -622,7 +648,7 @@ increaseSpdX:
 decreaseSpdX:
         sec
         lda SPDX_SUB
-        sbc #128
+        sbc #100
         sta SPDX_SUB
         bcs +
         dec SPDX
