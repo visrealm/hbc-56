@@ -50,6 +50,11 @@ PADDLE_HIGH  = TMS_WHITE
 PADDLE_BASE  = TMS_CYAN
 PADDLE_SHADE = TMS_LT_BLUE
 
+TONE_PADDLE = 6
+TONE_WALL   = 2
+TONE_BRICK  = 4
+
+
 PADDLE_WIDTH = 32
 NUM_BLOCKS   = 128
 
@@ -254,6 +259,14 @@ hbc56Main:
         bne -
 
 
+        +ayToneEnable AY_PSG0, AY_CHC
+        +aySetVolume AY_PSG0, AY_CHC, $00
+
+        +aySetVolumeEnvelope AY_PSG0, AY_CHC
+        +aySetEnvelopePeriod AY_PSG0, 350
+
+
+
         lda #4
         sta BALLS
 
@@ -325,11 +338,25 @@ hbc56Main:
 @end
 }
 
+playNote:
+        tax
+        lda notesL,x
+        +ayWriteA AY_PSG0, AY_CHC_TONE_L
+        lda notesH,x
+        +ayWriteA AY_PSG0, AY_CHC_TONE_H
+        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
+        rts
+
 loadLevel:
         lda LEVEL
         cmp #2
         bne +
         +memcpy LEVEL_DATA, level2, 128
+        jmp @endLoad
++
+        cmp #3
+        bne +
+        +memcpy LEVEL_DATA, level3, 128
         jmp @endLoad
 +
 
@@ -801,6 +828,11 @@ gameLoop:
 
         inc MULT
 
+        lda MULT
+        inc
+        inc
+        jsr playNote
+
 @noHit:
 
         +nes1BranchIfNotPressed NES_LEFT, +
@@ -830,12 +862,20 @@ gameLoop:
         cmp #GAME_AREA_RIGHT-5
         bcc @doneXCheck
         +negate DIRX
+
+        lda #TONE_WALL
+        jsr playNote
+
         bra @doneXCheck
 @checkLeft
         lda POSX
         cmp #GAME_AREA_LEFT
         bcs @doneXCheck
         +negate DIRX
+
+        lda #TONE_WALL
+        jsr playNote
+
 @doneXCheck
 
         bit DIRY
@@ -876,6 +916,9 @@ gameLoop:
         lda #1
         sta MULT
 
+        lda #TONE_PADDLE
+        jsr playNote
+
         bra @doneYCheck
 
 @checkTop
@@ -883,6 +926,10 @@ gameLoop:
         cmp #9
         bcs @doneYCheck
         +negate DIRY
+
+        lda #TONE_WALL
+        jsr playNote
+
 @doneYCheck
 
 
@@ -1034,6 +1081,9 @@ borderPal:
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
 
 
+; TITLE
+; ----------
+
 titlePatt:
 !byte $00,$1e,$3f,$7f,$03,$01,$03,$7f,$00,$0f,$1f,$bf,$81,$80,$81,$bf,$00,$1f,$9f,$df,$d8,$d8,$d8,$df,$00,$e1,$c1,$83,$03,$07,$06,$e6,$00,$86,$86,$c6,$c6,$e6,$66,$67,$00,$18,$39,$33,$63,$67,$c6,$c6,$00,$c3,$e3,$f3,$33,$3b,$1b,$1b,$00,$0c,$0c,$0d,$0c,$0c,$0c,$0c,$00,$7f,$fe,$fc,$30,$30,$30,$30
 !byte $7f,$7f,$63,$61,$63,$7f,$7f,$7f,$3f,$bf,$be,$b7,$b3,$b1,$b0,$30,$df,$9f,$18,$18,$98,$df,$df,$df,$c6,$86,$06,$0e,$0c,$ec,$cd,$8d,$67,$67,$66,$76,$36,$36,$f6,$f6,$86,$c6,$c6,$67,$63,$33,$39,$18,$1b,$1b,$1b,$3b,$31,$f1,$e0,$c0,$0c,$0c,$0c,$9c,$98,$f8,$f0,$60,$30,$30,$30,$30,$30,$30,$30,$30
@@ -1056,6 +1106,9 @@ titlePal:
 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
 
+; LABELS
+; ----------
+
 levelPatt:
 !byte $0c,$0c,$0c,$0c,$0c,$0c,$0f,$0f,$07,$07,$06,$07,$07,$06,$f7,$e7,$fb,$f3,$01,$f9,$f0,$00,$f8,$f0,$01,$83,$83,$c7,$c6,$6c,$7c,$38,$bf,$bf,$30,$3f,$3f,$30,$3f,$3f,$d8,$98,$18,$d8,$98,$18,$df,$9f,$00,$00,$00,$00,$00,$00,$e0,$c0
 scorePatt:
@@ -1072,6 +1125,9 @@ labelPal:
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+
+; FONT
+; ----------
 
 digitsPatt:
 !byte $7C,$CE,$DE,$F6,$E6,$C6,$7C,$00 ; 0
@@ -1095,12 +1151,84 @@ digitsPal:
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
 
+; AUDIO DATA
+; ----------
+
+notesL:
+!byte 0
++ayToneByteL NOTE_FREQ_B3
++ayToneByteL NOTE_FREQ_C4
++ayToneByteL NOTE_FREQ_CS4
++ayToneByteL NOTE_FREQ_D4
++ayToneByteL NOTE_FREQ_DS4
++ayToneByteL NOTE_FREQ_E4
++ayToneByteL NOTE_FREQ_F4
++ayToneByteL NOTE_FREQ_FS4
++ayToneByteL NOTE_FREQ_G4
++ayToneByteL NOTE_FREQ_GS4
++ayToneByteL NOTE_FREQ_A4
++ayToneByteL NOTE_FREQ_AS4
++ayToneByteL NOTE_FREQ_B4
++ayToneByteL NOTE_FREQ_C5
++ayToneByteL NOTE_FREQ_CS5
++ayToneByteL NOTE_FREQ_D5
++ayToneByteL NOTE_FREQ_DS5
++ayToneByteL NOTE_FREQ_E5
++ayToneByteL NOTE_FREQ_F5
++ayToneByteL NOTE_FREQ_FS5
++ayToneByteL NOTE_FREQ_G5
++ayToneByteL NOTE_FREQ_GS5
++ayToneByteL NOTE_FREQ_A5
++ayToneByteL NOTE_FREQ_AS5
+
+notesH:
+!byte 0
++ayToneByteH NOTE_FREQ_B3
++ayToneByteH NOTE_FREQ_C4
++ayToneByteH NOTE_FREQ_CS4
++ayToneByteH NOTE_FREQ_D4
++ayToneByteH NOTE_FREQ_DS4
++ayToneByteH NOTE_FREQ_E4
++ayToneByteH NOTE_FREQ_F4
++ayToneByteH NOTE_FREQ_FS4
++ayToneByteH NOTE_FREQ_G4
++ayToneByteH NOTE_FREQ_GS4
++ayToneByteH NOTE_FREQ_A4
++ayToneByteH NOTE_FREQ_AS4
++ayToneByteH NOTE_FREQ_B4
++ayToneByteH NOTE_FREQ_C5
++ayToneByteH NOTE_FREQ_CS5
++ayToneByteH NOTE_FREQ_D5
++ayToneByteH NOTE_FREQ_DS5
++ayToneByteH NOTE_FREQ_E5
++ayToneByteH NOTE_FREQ_F5 
++ayToneByteH NOTE_FREQ_FS5
++ayToneByteH NOTE_FREQ_G5
++ayToneByteH NOTE_FREQ_GS5
++ayToneByteH NOTE_FREQ_A5
++ayToneByteH NOTE_FREQ_AS5
+
 
 ; LEVEL DATA
 ; ----------
 
 level1: 
-!byte 0,0,0,0,0,0,0,0 ; block types
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 3,3,3,3,3,3,3,0
+!byte 6,6,6,6,6,6,6,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 3,3,3,3,3,3,3,0
+!byte 6,6,6,6,6,6,6,0
+!fill 128-88, 0
+
+
+level2: 
+!byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 3,3,3,3,3,3,3,0
@@ -1114,8 +1242,8 @@ level1:
 !fill 128-88, 0
 
 
-level2: 
-!byte 0,0,0,0,0,0,0,0 ; block types
+level3: 
+!byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 3,3,3,3,3,3,3,0
