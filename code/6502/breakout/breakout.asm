@@ -37,6 +37,8 @@ BALLS    = ZP0 + 27
 
 MULT     = ZP0 + 28
 
+BLOCK_COUNT = ZP0 + 29
+
 GAME_AREA_LEFT  = 8
 GAME_AREA_WIDTH = 24 * 7
 GAME_AREA_RIGHT = GAME_AREA_LEFT + GAME_AREA_WIDTH
@@ -324,8 +326,20 @@ hbc56Main:
 }
 
 loadLevel:
+        lda LEVEL
+        cmp #2
+        bne +
+        +memcpy LEVEL_DATA, level2, 128
+        jmp @endLoad
++
+
+        ; default to level 1
         +memcpy LEVEL_DATA, level1, 128
 
+
+@endLoad
+        lda #0
+        sta BLOCK_COUNT
         jsr renderLevel
 
         rts
@@ -335,6 +349,10 @@ renderLevel:
         ldx #0
 -
         jsr renderBlock
+        lda LEVEL_DATA, x
+        beq +
+        inc BLOCK_COUNT
++
         inx
         cpx #NUM_BLOCKS
         bne -
@@ -429,8 +447,13 @@ resetPaddle:
         +tmsPut '0'
         lda BALLS
         jsr outputBCD
-        
+
         rts
+
+
+nextLevel
+        inc LEVEL
+        bra resetGame
 
 endGame:
         lda #1
@@ -443,6 +466,7 @@ endGame:
 
         lda #4
         sta BALLS
+        bra resetGame
 
 resetGame:
 
@@ -763,6 +787,10 @@ gameLoop:
         sta LEVEL_DATA, x
         jsr renderBlock
         +negate DIRY
+        dec BLOCK_COUNT
+        bne +
+        jsr nextLevel
++
 
         ldx MULT
 -
@@ -1083,4 +1111,19 @@ level1:
 !byte 3,3,3,3,3,3,3,0
 !byte 6,6,6,6,6,6,6,0
 !byte 6,6,6,6,6,6,6,0
+!fill 128-88, 0
+
+
+level2: 
+!byte 0,0,0,0,0,0,0,0 ; block types
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 3,3,3,3,3,3,3,0
+!byte 0,0,0,0,0,0,0,0
+!byte 6,6,6,6,6,6,6,0
+!byte 0,0,0,0,0,0,0,0
+!byte 3,3,3,3,3,3,3,0
+!byte 0,0,0,0,0,0,0,0
+!byte 6,6,6,6,6,6,6,0
+!byte 0,0,0,0,0,0,0,0
 !fill 128-88, 0
