@@ -194,11 +194,7 @@ _tmsWaitData:
         nop
         nop
         nop
-        nop
 _tmsWaitReg:
-        nop
-        nop
-        nop
         nop
         nop
         nop
