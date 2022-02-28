@@ -170,29 +170,83 @@
         bit TMS9918_REG
 }
 
+; -----------------------------------------------------------------------------
+; tmsSendData: Send # bytes from .sourceAddr to tms9918 data port
+; -----------------------------------------------------------------------------
 !macro tmsSendData .sourceAddr, .numBytes {
         lda #<.sourceAddr
         sta TMS_TMP_ADDRESS
         lda #>.sourceAddr
         sta TMS_TMP_ADDRESS + 1
 
-!if .numBytes < 256 {
-        ldx #.numBytes
-        jsr tmsSendBytes
-} else {
-        !do while .numBytes > 0 {
-                !if .numBytes > 255 {
-                        ldx #0
-                        !set .numBytes = .numBytes - 256
-                } else {
-                        ldx #.numBytes
-                        !set .numBytes = 0
-                }
+        !if .numBytes < 256 {
+                ldx #.numBytes
                 jsr tmsSendBytes
-                inc TMS_TMP_ADDRESS + 1
+        } else {
+                !do while .numBytes > 0 {
+                        !if .numBytes > 255 {
+                                ldx #0
+                                !set .numBytes = .numBytes - 256
+                        } else {
+                                ldx #.numBytes
+                                !set .numBytes = 0
+                        }
+                        jsr tmsSendBytes
+                        inc TMS_TMP_ADDRESS + 1
+                }
+        }
+
+}
+
+; -----------------------------------------------------------------------------
+; tmsSendDataRpt: Send # bytes from .sourceAddr to tms9918 data port .rpt times
+; -----------------------------------------------------------------------------
+!macro tmsSendDataRpt .sourceAddr, .numBytes, .rpt {
+        lda #<.sourceAddr
+        sta TMS_TMP_ADDRESS
+        lda #>.sourceAddr
+        sta TMS_TMP_ADDRESS + 1
+
+        !if .numBytes < 256 {
+                !if .rpt < 5 {
+                        !for i,1,.rpt {
+                                ldx #.numBytes
+                                jsr tmsSendBytes
+                        }
+                } else {
+                        lda #.rpt
+                        sta TMS9918_TMP_BUFFER
+-
+                        ldx #.numBytes
+                        jsr tmsSendBytes
+                        dec TMS9918_TMP_BUFFER
+                        bne -
+                }
+        } else {
+                !error "tmsSendDataRpt supports <256 bytes only"
         }
 }
 
+
+; -----------------------------------------------------------------------------
+; tmsPutRpt: Send value .rpt times
+; -----------------------------------------------------------------------------
+!macro tmsPutRpt .value, .rpt {
+        ldx #.rpt
+        lda #.value
+-
+        +tmsPut
+        dex
+        bne -
+}
+
+!macro tmsPutSeq .from, .count {
+        lda #.from
+-
+        +tmsPut
+        inc
+        cmp #.from + .count
+        bne -
 }
 
 !macro tmsSetSourceAddressInd .addr {
@@ -399,8 +453,6 @@
 ; -----------------------------------------------------------------------------
 !macro tmsCreateSprite .ind, .pattInd, .xPos, .yPos, .color {
 
-        
-
         ; sprite attr table
         +tmsSetAddrSpriteAttrTableInd .ind
 
@@ -408,7 +460,6 @@
         +tmsPut .xPos
         +tmsPut .pattInd
         +tmsPut .color
-        
 }
 
 ; -----------------------------------------------------------------------------
@@ -423,6 +474,15 @@
         +tmsPut .yPos
         +tmsPut .xPos        
 }
+
+
+; -----------------------------------------------------------------------------
+; tmsSetLastSprite: Mark a sprite as the last sprite (set next ypos to )
+; -----------------------------------------------------------------------------
+!macro tmsSetLastSprite .ind {
+        +tmsSpritePos .ind + 1, 0, $d0
+}
+
 
 ; -----------------------------------------------------------------------------
 ; tmsSpritePosXYReg: Set a sprite position from x/y registers

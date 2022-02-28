@@ -52,8 +52,8 @@ TMS9918_CONSOLE_LINE_LEN  = TMS9918_RAM_START + 5
 .TMS9918_TMP_READ_ROW     = TMS9918_RAM_START + 8
 .TMS9918_TMP_WRITE_ROW    = TMS9918_RAM_START + 9
 
-.TMS9918_TMP_BUFFER       = TMS9918_RAM_START + 10 ; 40 bytes 
-TMS9918_RAM_SIZE         = 50
+TMS9918_TMP_BUFFER        = TMS9918_RAM_START + 10 ; 40 bytes 
+TMS9918_RAM_SIZE          = 50
 
 
 
@@ -805,7 +805,7 @@ tmsConsoleScrollLine:
         ldx #0
 -
         +tmsGet
-        sta .TMS9918_TMP_BUFFER, x
+        sta TMS9918_TMP_BUFFER, x
         inx
         cpx TMS9918_CONSOLE_SIZE_X
         bne -
@@ -815,7 +815,7 @@ tmsConsoleScrollLine:
         ldx #0
 
 -
-        lda .TMS9918_TMP_BUFFER, x
+        lda TMS9918_TMP_BUFFER, x
         +tmsPut
         inx
         cpx TMS9918_CONSOLE_SIZE_X

@@ -111,45 +111,22 @@ hbc56Main:
 
         ; block data
         +tmsSetAddrColorTableII 3
-        +tmsSendData redBlockPal, 8
-        +tmsSendData redBlockPal+8, 8
-        +tmsSendData redBlockPal+8, 8
-        +tmsSendData yellowBlockPal, 8
-        +tmsSendData yellowBlockPal+8, 8
-        +tmsSendData yellowBlockPal+8, 8
+        jsr sendBlocksPal
 
         +tmsSetAddrColorTableII 259
-        +tmsSendData greenBlockPal, 8
-        +tmsSendData greenBlockPal+8, 8
-        +tmsSendData greenBlockPal+8, 8
-        +tmsSendData blueBlockPal, 8
-        +tmsSendData blueBlockPal+8, 8
-        +tmsSendData blueBlockPal+8, 8
+        jsr sendBlocksPal
 
         +tmsSetAddrPattTableInd 3
-        +tmsSendData block, 8 * 3
-        +tmsSendData block, 8 * 3
+        +tmsSendDataRpt block, 8 * 3, 4
         +tmsSetAddrPattTableInd 259
-        +tmsSendData block, 8 * 3
-        +tmsSendData block, 8 * 3
+        +tmsSendDataRpt block, 8 * 3, 4
 
         ; title data
         +tmsSetAddrPattTableInd 128
         +tmsSendData titlePatt, 8*9*2
         +tmsSetAddrColorTableII 128
-        lda #9
-        sta TMP
--
-        +tmsSendData titlePal, 8
-        dec TMP
-        bne -
-
-        lda #9
-        sta TMP
--
-        +tmsSendData titlePal + 8, 8
-        dec TMP
-        bne -
+        +tmsSendDataRpt titlePal, 8, 9
+        +tmsSendDataRpt titlePal + 8, 8, 9
 
         ; label data
         +tmsSetAddrPattTableInd 146
@@ -160,20 +137,10 @@ hbc56Main:
         +tmsSendData ballsPatt, 8*7
 
         +tmsSetAddrColorTableII 146
-        lda #8
-        sta TMP
--
-        +tmsSendData labelPal, 8
-        dec TMP
-        bne -
+        +tmsSendDataRpt labelPal, 8, 8
 
         +tmsSetAddrColorTableII 256+146
-        lda #16
-        sta TMP
--
-        +tmsSendData labelPal, 8
-        dec TMP
-        bne -
+        +tmsSendDataRpt labelPal, 8, 16
 
         ; digits data
         +tmsSetAddrPattTableInd '0'
@@ -184,35 +151,13 @@ hbc56Main:
         +tmsSendData digitsPatt, 8*10
 
         +tmsSetAddrColorTableII '0'
-        lda #10
-        sta TMP
--
-        +tmsSendData digitsPal, 8
-        dec TMP
-        bne -
+        +tmsSendDataRpt digitsPal, 8, 10
 
         +tmsSetAddrColorTableII 256+'0'
-        lda #10
-        sta TMP
--
-        +tmsSendData digitsPal, 8
-        dec TMP
-        bne -
+        +tmsSendDataRpt digitsPal, 8, 10
 
         +tmsSetAddrColorTableII 512+'0'
-        lda #10
-        sta TMP
--
-        +tmsSendData digitsPal, 8
-        dec TMP
-        bne -
-
-;        +tmsSetPosWrite 0,4
-;        +tmsSendData block1, 32 * 2
-;        +tmsSendData block2, 32 * 2
-;        +tmsSendData block1, 32 * 2
-;        +tmsSendData block2, 32 * 2
-
+        +tmsSendDataRpt digitsPal, 8, 10
 
         ; create ball
         +tmsCreateSpritePattern 0, ballPattern
@@ -267,7 +212,7 @@ hbc56Main:
         +aySetVolume AY_PSG0, AY_CHC, $00
 
         +aySetVolumeEnvelope AY_PSG0, AY_CHC
-        +aySetEnvelopePeriod AY_PSG0, 850
+        +aySetEnvelopePeriod AY_PSG0, 800
 
 
 
@@ -295,6 +240,8 @@ hbc56Main:
         +tmsCreateSprite 2, 2, 0, 0, PADDLE_HIGH
         +tmsCreateSprite 3, 3, 0, 0, PADDLE_SHADE
 
+        +tmsSetLastSprite 3
+
         jsr setBallPos
 
         +tmsEnableOutput
@@ -307,15 +254,20 @@ hbc56Main:
 
         cli
 
--
-        +nes1BranchIfNotPressed NES_B, +
-        jsr tmsModeGraphicsI
-+
-        +nes1BranchIfNotPressed NES_A, -
-        jmp hbc56Main
+        jmp hbc56Stop
 
         rts
 
+sendBlocksPal:
+        +tmsSendData redBlockPal, 8
+        +tmsSendDataRpt redBlockPal+8, 8, 2
+        +tmsSendData yellowBlockPal, 8
+        +tmsSendDataRpt yellowBlockPal+8, 8, 2
+        +tmsSendData greenBlockPal, 8
+        +tmsSendDataRpt greenBlockPal+8, 8, 2
+        +tmsSendData blueBlockPal, 8
+        +tmsSendDataRpt blueBlockPal+8, 8, 2
+        rts
 
 
 !macro negate val {
@@ -365,6 +317,8 @@ playNote:
 
 loadLevel:
         lda LEVEL
+        and #03
+
         cmp #2
         bne +
         +memcpy LEVEL_DATA, level2, 128
@@ -373,6 +327,11 @@ loadLevel:
         cmp #3
         bne +
         +memcpy LEVEL_DATA, level3, 128
+        jmp @endLoad
++
+        cmp #0
+        bne +
+        +memcpy LEVEL_DATA, level4, 128
         jmp @endLoad
 +
 
@@ -421,14 +380,16 @@ renderBlock:
         jsr tmsSetAddressWrite
 
         plx
-        lda LEVEL_DATA, x 
+        phx
+        lda LEVEL_DATA, x
+        tax
+        lda tileData, x
         +tmsPut
         inc
         +tmsPut
         inc
         +tmsPut
-
-
+        plx
         rts
 
 
@@ -587,12 +548,9 @@ drawBorder:
         ; border
         +tmsSetPosWrite 0,0
         +tmsPut $10
-        ldx #7*3
-        lda #$11
--
-        +tmsPut
-        dex
-        bne -
+        
+        +tmsPutRpt $11, 7*3
+        
         +tmsPut $12
 
         ldx #0
@@ -623,64 +581,27 @@ drawBorder:
         +tmsPut $15
 
         +tmsSetPosWrite 23,0
-        lda #128
-        ldx #9
--
-        +tmsPut
-        inc
-        dex
-        bne -
+        +tmsPutSeq 128, 9
 
         ; render title
         +tmsSetPosWrite 23,1
-        lda #128+9
-        ldx #9
--
-        +tmsPut
-        inc
-        dex
-        bne -
+        +tmsPutSeq 128 + 9, 9
 
         ; render labels
         +tmsSetPosWrite 24,4
-        lda #146
-        ldx #7
--
-        +tmsPut
-        inc
-        dex
-        bne -
+        +tmsPutSeq 146, 7
 
         +tmsSetPosWrite 24,9
-        lda #146
-        ldx #7
--
-        +tmsPut
-        inc
-        dex
-        bne -
+        +tmsPutSeq 146, 7
 
         +tmsSetPosWrite 24,14
-        lda #146+7
-        ldx #7
--
-        +tmsPut
-        inc
-        dex
-        bne -
-
-
+        +tmsPutSeq 146 + 7, 7
 
         rts
 
 sendBorderPal
-        +tmsSendData borderPal, 8
-        +tmsSendData borderPal, 8
-        +tmsSendData borderPal, 8
-        +tmsSendData borderPal+1, 8
-        +tmsSendData borderPal+1, 8
-        +tmsSendData borderPal+1, 8
-        +tmsSendData borderPal+1, 8
+        +tmsSendDataRpt borderPal, 8, 3
+        +tmsSendDataRpt borderPal+1, 8, 4
         rts
 
 
@@ -1059,6 +980,9 @@ redBlockPal:
 !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
 !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
 
+tileData:
+!byte 0,3,6,9,12
+
 ; BORDER
 ; ----------
 
@@ -1099,8 +1023,8 @@ titlePatt:
 titlePal:
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
@@ -1164,13 +1088,13 @@ digitsPal:
 
 notesL:
 !byte 0
-+ayToneByteL NOTE_FREQ_B3
-+ayToneByteL NOTE_FREQ_C4
-+ayToneByteL NOTE_FREQ_CS4
-+ayToneByteL NOTE_FREQ_D4
-+ayToneByteL NOTE_FREQ_DS4
-+ayToneByteL NOTE_FREQ_E4
-+ayToneByteL NOTE_FREQ_F4
+;+ayToneByteL NOTE_FREQ_B3
+;+ayToneByteL NOTE_FREQ_C4
+;+ayToneByteL NOTE_FREQ_CS4
+;+ayToneByteL NOTE_FREQ_D4
+;+ayToneByteL NOTE_FREQ_DS4
+;+ayToneByteL NOTE_FREQ_E4
+;+ayToneByteL NOTE_FREQ_F4
 +ayToneByteL NOTE_FREQ_FS4
 +ayToneByteL NOTE_FREQ_G4
 +ayToneByteL NOTE_FREQ_GS4
@@ -1188,16 +1112,28 @@ notesL:
 +ayToneByteL NOTE_FREQ_GS5
 +ayToneByteL NOTE_FREQ_A5
 +ayToneByteL NOTE_FREQ_AS5
++ayToneByteL NOTE_FREQ_B5
++ayToneByteL NOTE_FREQ_C6
++ayToneByteL NOTE_FREQ_CS6
++ayToneByteL NOTE_FREQ_D6
++ayToneByteL NOTE_FREQ_DS6
++ayToneByteL NOTE_FREQ_E6
++ayToneByteL NOTE_FREQ_F6
++ayToneByteL NOTE_FREQ_FS6
++ayToneByteL NOTE_FREQ_G6
++ayToneByteL NOTE_FREQ_GS6
++ayToneByteL NOTE_FREQ_A6
++ayToneByteL NOTE_FREQ_AS6
 
 notesH:
 !byte 0
-+ayToneByteH NOTE_FREQ_B3
-+ayToneByteH NOTE_FREQ_C4
-+ayToneByteH NOTE_FREQ_CS4
-+ayToneByteH NOTE_FREQ_D4
-+ayToneByteH NOTE_FREQ_DS4
-+ayToneByteH NOTE_FREQ_E4
-+ayToneByteH NOTE_FREQ_F4
+;+ayToneByteH NOTE_FREQ_B3
+;+ayToneByteH NOTE_FREQ_C4
+;+ayToneByteH NOTE_FREQ_CS4
+;+ayToneByteH NOTE_FREQ_D4
+;+ayToneByteH NOTE_FREQ_DS4
+;+ayToneByteH NOTE_FREQ_E4
+;+ayToneByteH NOTE_FREQ_F4
 +ayToneByteH NOTE_FREQ_FS4
 +ayToneByteH NOTE_FREQ_G4
 +ayToneByteH NOTE_FREQ_GS4
@@ -1215,23 +1151,34 @@ notesH:
 +ayToneByteH NOTE_FREQ_GS5
 +ayToneByteH NOTE_FREQ_A5
 +ayToneByteH NOTE_FREQ_AS5
-
++ayToneByteH NOTE_FREQ_B5
++ayToneByteH NOTE_FREQ_C6
++ayToneByteH NOTE_FREQ_CS6
++ayToneByteH NOTE_FREQ_D6
++ayToneByteH NOTE_FREQ_DS6
++ayToneByteH NOTE_FREQ_E6
++ayToneByteH NOTE_FREQ_F6
++ayToneByteH NOTE_FREQ_FS6
++ayToneByteH NOTE_FREQ_G6
++ayToneByteH NOTE_FREQ_GS6
++ayToneByteH NOTE_FREQ_A6
++ayToneByteH NOTE_FREQ_AS6
 
 ; LEVEL DATA
 ; ----------
 
-level1: 
+level4: 
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,0,0,0,0,0
+!byte 1,1,1,1,1,1,1,0
+!byte 2,2,2,2,2,2,2,0
+!byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 3,3,3,3,3,3,3,0
-!byte 6,6,6,6,6,6,6,0
-!byte 0,0,0,0,0,0,0,0
-!byte 0,0,0,0,0,0,0,0
-!byte 0,0,0,0,0,0,0,0
-!byte 0,0,0,0,0,0,0,0
-!byte 3,3,3,3,3,3,3,0
-!byte 6,6,6,6,6,6,6,0
+!byte 4,4,4,4,4,4,4,0
 !fill 128-88, 0
 
 
@@ -1239,14 +1186,14 @@ level2:
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
+!byte 1,1,1,1,1,1,1,0
+!byte 1,1,1,1,1,1,1,0
+!byte 2,2,2,2,2,2,2,0
+!byte 2,2,2,2,2,2,2,0
 !byte 3,3,3,3,3,3,3,0
 !byte 3,3,3,3,3,3,3,0
-!byte 6,6,6,6,6,6,6,0
-!byte 6,6,6,6,6,6,6,0
-!byte 3,3,3,3,3,3,3,0
-!byte 3,3,3,3,3,3,3,0
-!byte 6,6,6,6,6,6,6,0
-!byte 6,6,6,6,6,6,6,0
+!byte 4,4,4,4,4,4,4,0
+!byte 4,4,4,4,4,4,4,0
 !fill 128-88, 0
 
 
@@ -1254,12 +1201,28 @@ level3:
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
+!byte 1,1,1,1,1,1,1,0
+!byte 0,0,0,0,0,0,0,0
+!byte 2,2,2,2,2,2,2,0
+!byte 0,0,0,0,0,0,0,0
 !byte 3,3,3,3,3,3,3,0
 !byte 0,0,0,0,0,0,0,0
-!byte 6,6,6,6,6,6,6,0
+!byte 4,4,4,4,4,4,4,0
 !byte 0,0,0,0,0,0,0,0
-!byte 3,3,3,3,3,3,3,0
+!fill 128-88, 0
+
+
+level1: 
 !byte 0,0,0,0,0,0,0,0
-!byte 6,6,6,6,6,6,6,0
+!byte 0,0,0,0,0,0,0,0
+!byte 0,0,0,1,0,0,0,0
+!byte 0,0,1,2,1,0,0,0
+!byte 0,1,2,0,2,1,0,0
+!byte 1,2,0,0,0,2,1,0
+!byte 2,0,0,3,0,0,2,0
+!byte 0,0,3,4,3,0,0,0
+!byte 0,3,4,0,4,3,0,0
+!byte 3,4,0,0,0,4,3,0
+!byte 4,0,0,0,0,0,4,0
 !byte 0,0,0,0,0,0,0,0
 !fill 128-88, 0
