@@ -164,7 +164,7 @@ TMS_SPRITE_SIZE2X       = TMS_SPRITE_SIZE * 2
 ; -----------------------------------------------------------------------------
 TMS_REGISTER_DATA:
 !byte TMS_R0_EXT_VDP_DISABLE
-!byte TMS_R1_RAM_16K | TMS_R1_SPRITE_MAG2
+!byte TMS_R1_RAM_16K
 !byte TMS_VRAM_NAME_ADDRESS >> 10
 !byte TMS_VRAM_COLOR_ADDRESS >> 6
 !byte TMS_VRAM_PATT_ADDRESS >> 11
@@ -194,10 +194,24 @@ _tmsWaitData:
         nop
         nop
         nop
+        nop
 _tmsWaitReg:
         nop
         nop
         nop
+        nop
+        nop
+        nop
+        rts
+
+tmsSetAddressNextRow:
+        lda TMS_TMP_ADDRESS
+        clc
+        adc #32
+        sta TMS_TMP_ADDRESS
+        bcc +
+        inc TMS_TMP_ADDRESS + 1
++
         rts
 
 ; -----------------------------------------------------------------------------
@@ -314,10 +328,34 @@ tmsReg1ClearFields:
         and .TMS9918_REG1_SHADOW_ADDR
         jmp .tmsReg1SetFields
 
+
+; -----------------------------------------------------------------------------
+; tmsModeReset: Reset graphics Mode
+; -----------------------------------------------------------------------------
+tmsModeReset:
+        lda #$03
+        jsr tmsReg0ClearFields
+
+        lda #$18
+        jsr tmsReg0ClearFields
+
+        ; if we were in Graphics II, then we need to reset
+        ; the color and pattern table addresses
+        lda #0;(TMS_VRAM_COLOR_ADDRESS >> 6)
+        ldx #3
+        jsr tmsSetRegister
+
+        lda #TMS_VRAM_PATT_ADDRESS >> 11
+        ldx #4
+        jsr tmsSetRegister
+        rts
+
 ; -----------------------------------------------------------------------------
 ; tmsModeGraphicsI: Set up for Graphics I mode
 ; -----------------------------------------------------------------------------
 tmsModeGraphicsI:
+        jsr tmsModeReset
+
         lda #TMS_R0_MODE_GRAPHICS_I
         jsr tmsReg0SetFields
 
@@ -332,11 +370,33 @@ tmsModeGraphicsI:
 ; tmsModeGraphicsII: Set up for Graphics II mode
 ; -----------------------------------------------------------------------------
 tmsModeGraphicsII:
+        jsr tmsModeReset
+
         lda #TMS_R0_MODE_GRAPHICS_II
         jsr tmsReg0SetFields
 
         lda #TMS_R1_MODE_GRAPHICS_II
         jsr tmsReg1SetFields
+
+        ; in Graphics II, Registers 3 and 4 work differently
+        ;
+        ; reg3 - Color table
+        ;   $7f = $0000
+        ;   $ff = $2000
+        ;
+        ; reg4 - Pattern table
+        ;  $03 = $0000
+        ;  $07 = $2000
+
+        ; set color table to $0000
+        lda #$7f
+        ldx #3
+        jsr tmsSetRegister
+
+        ; set pattern table to $2000
+        lda #$07
+        ldx #4
+        jsr tmsSetRegister
 
         lda #32
         sta TMS9918_CONSOLE_SIZE_X
@@ -347,6 +407,8 @@ tmsModeGraphicsII:
 ; tmsModeText: Set up for Text mode
 ; -----------------------------------------------------------------------------
 tmsModeText:
+        jsr tmsModeReset
+
         lda #TMS_R0_MODE_TEXT
         jsr tmsReg0SetFields
 
@@ -362,6 +424,8 @@ tmsModeText:
 ; tmsModeMulticolor: Set up for Multicolor mode
 ; -----------------------------------------------------------------------------
 tmsModeMulticolor:
+        jsr tmsModeReset
+
         lda #TMS_R0_MODE_MULTICOLOR
         jsr tmsReg0SetFields
 
