@@ -39,6 +39,10 @@ MULT     = ZP0 + 28
 
 BLOCK_COUNT = ZP0 + 29
 
+PADSPD     = ZP0 + 30
+PADSPD_SUB = ZP0 + 31
+
+
 GAME_AREA_LEFT  = 8
 GAME_AREA_WIDTH = 24 * 7
 GAME_AREA_RIGHT = GAME_AREA_LEFT + GAME_AREA_WIDTH
@@ -55,22 +59,22 @@ TONE_WALL   = 2
 TONE_BRICK  = 4
 
 
-PADDLE_WIDTH = 32
-NUM_BLOCKS   = 128
+PADDLE_WIDTH      = 32
+PADDLE_SPEED      = 0
+PADDLE_SPEED_SUB  = 100
+NUM_BLOCKS        = 128
 
 LEVEL_DATA   = $0400
 
 hbc56Meta:
         +setHbcMetaTitle "BREAKOUT"
+        +setHbcMetaNES
         rts
 
 hbc56Main:
         sei
 
         jsr tmsModeGraphicsII
-
-        lda #$0f
-        jsr tmsReg1ClearFields
 
         +tmsDisableInterrupts
         +tmsDisableOutput
@@ -263,7 +267,7 @@ hbc56Main:
         +aySetVolume AY_PSG0, AY_CHC, $00
 
         +aySetVolumeEnvelope AY_PSG0, AY_CHC
-        +aySetEnvelopePeriod AY_PSG0, 350
+        +aySetEnvelopePeriod AY_PSG0, 850
 
 
 
@@ -278,6 +282,11 @@ hbc56Main:
         lda #1
         sta LEVEL
 
+        lda #PADDLE_SPEED
+        sta PADSPD
+        lda #PADDLE_SPEED_SUB
+        sta PADSPD_SUB
+
         jsr resetGame
 
         +tmsCreateSprite 0, 0, 0, 0, BALL_BASE
@@ -290,13 +299,20 @@ hbc56Main:
 
         +tmsEnableOutput
 
+        jsr gameLoop
+
         +hbc56SetVsyncCallback gameLoop
 
         +tmsEnableInterrupts
 
         cli
 
-        jsr hbc56Stop
+-
+        +nes1BranchIfNotPressed NES_B, +
+        jsr tmsModeGraphicsI
++
+        +nes1BranchIfNotPressed NES_A, -
+        jmp hbc56Main
 
         rts
 
@@ -835,6 +851,7 @@ gameLoop:
 
 @noHit:
 
+
         +nes1BranchIfNotPressed NES_LEFT, +
         lda PADX
         cmp #GAME_AREA_LEFT + 2
@@ -942,38 +959,29 @@ gameLoop:
         rts
 
 pushLeft:
-        bit DIRX
-        bmi increaseSpdX
-        bra decreaseSpdX
+        lda #-1
+        sta TMP
+        +addSubPixel SPDX, PADSPD, TMP
 
-pushRight:
-        bit DIRX
-        bpl increaseSpdX
-        bra decreaseSpdX
-
-increaseSpdX:
-        clc
-        lda #100
-        adc SPDX_SUB
-        sta SPDX_SUB
-        bcc +
-        inc SPDX
-+
-        rts
-        
-decreaseSpdX:
-        sec
-        lda SPDX_SUB
-        sbc #100
-        sta SPDX_SUB
-        bcs +
-        dec SPDX
+        lda SPDX
         bpl +
-        lda #0
-        sta SPDX
-        +negate SPDX_SUB
+        +negate SPDX
         +negate DIRX
 +
+
+        rts
+
+pushRight:
+        lda #1
+        sta TMP
+        +addSubPixel SPDX, PADSPD, TMP
+
+        lda SPDX
+        bpl +
+        +negate SPDX
+        +negate DIRX
++
+
         rts
 
 
