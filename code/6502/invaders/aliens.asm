@@ -57,7 +57,7 @@ setupAliens:
 ; aliensUpdateTileset: Update patterns for a single alien type
 ; -----------------------------------------------------------------------------
 !macro aliensUpdateAlienTileset .patternIndex, .baseAddress, .offset {
-        +tmsSetAddrPattTableInd .patternIndex
+        +tmsSetAddrPattTable .patternIndex
         +tmsSetSourceAddressIndOffset .baseAddress, .offset
         +tmsSendBytes 16
 }

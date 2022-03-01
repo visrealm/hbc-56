@@ -28,19 +28,19 @@ hbc56Main:
         +tmsSetAddrColorTable
         +tmsSendData colorTab, 32
         
-        +tmsSetAddrPattTableInd 128
+        +tmsSetAddrPattTable 128
         +tmsSendData brownWhite, 8*8
 
-        +tmsSetAddrPattTableInd 128+8
+        +tmsSetAddrPattTable 128+8
         +tmsSendData blackBrown, 32*8
 
-        +tmsSetAddrPattTableInd 128+40
+        +tmsSetAddrPattTable 128+40
         +tmsSendData greyBlack, 16*8
 
-        +tmsSetAddrPattTableInd 128+56
+        +tmsSetAddrPattTable 128+56
         +tmsSendData greenBlack, 8*8
 
-        +tmsSetAddrPattTableInd 128+64
+        +tmsSetAddrPattTable 128+64
         +tmsSendData greenBrown, 8*8
 
         +tmsSetAddrSpritePattTable

@@ -50,14 +50,14 @@
 	bne -
 } else {
 	lda #<.src
-	sta MEMCPY_SRC
+	sta MEM_SRC
 	lda #>.src
-	sta MEMCPY_SRC + 1
+	sta MEM_SRC + 1
 
 	lda #<.dst
-	sta MEMCPY_DST
+	sta MEM_DST
 	lda #>.dst
-	sta MEMCPY_DST + 1
+	sta MEM_DST + 1
 
 
 		lda #<.cnt
@@ -71,30 +71,30 @@
 
 !macro setMemCpySrc .src {
 	lda #<.src
-	sta MEMCPY_SRC
+	sta MEM_SRC
 	lda #>.src
-	sta MEMCPY_SRC + 1
+	sta MEM_SRC + 1
 }
 
 !macro setMemCpyDst .dst {
 	lda #<.dst
-	sta MEMCPY_DST
+	sta MEM_DST
 	lda #>.dst
-	sta MEMCPY_DST + 1
+	sta MEM_DST + 1
 }
 
 !macro setMemCpySrcInd .srcRef {
 	lda .srcRef
-	sta MEMCPY_SRC
+	sta MEM_SRC
 	lda .srcRef + 1
-	sta MEMCPY_SRC + 1
+	sta MEM_SRC + 1
 }
 
 !macro setMemCpyDstInd .dstRef {
 	lda .dstRef
-	sta MEMCPY_DST
+	sta MEM_DST
 	lda .dstRef + 1
-	sta MEMCPY_DST + 1
+	sta MEM_DST + 1
 }
 
 !macro memcpySinglePage .bytes {
@@ -122,14 +122,14 @@
 	}
 	
 	lda #<.src
-	sta MEMCPY_SRC
+	sta MEM_SRC
 	lda #>.src
-	sta MEMCPY_SRC + 1
+	sta MEM_SRC + 1
 
 	lda #<.dst
-	sta MEMCPY_DST
+	sta MEM_DST
 	lda #>.dst
-	sta MEMCPY_DST + 1
+	sta MEM_DST + 1
 
 	!if .cnt <= 256 {
 		ldy #<.cnt					

@@ -29,7 +29,7 @@ BUNKER_BYTES = * - bunkerLayout
 ; Setup the bunker
 ; -----------------------------------------------------------------------------
 setupBunker:
-        +tmsSetAddrPattTableInd 176
+        +tmsSetAddrPattTable 176
         +tmsSendData BBORDR, 8 * 8
         
         +tmsSetPosWrite 4, 21

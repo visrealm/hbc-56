@@ -65,7 +65,7 @@ hbc56BootScreen:
         +tmsSetPosWrite 5,7
         +tmsSendData hbc56LogoInd + 44, 22
 
-        +tmsSetAddrPattTableInd 200
+        +tmsSetAddrPattTable 200
         +tmsSendData hbc56LogoPatt, $178
 
         +tmsPrintZ HBC56_META_TITLE, 8, 14

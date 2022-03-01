@@ -22,7 +22,7 @@ SHIELD_BYTES = * - shieldLayout
 ; Setup the shields
 ; -----------------------------------------------------------------------------
 setupShield:
-        +tmsSetAddrPattTableInd 8
+        +tmsSetAddrPattTable 8
         +tmsSendData SHIELD, 8 * 6  ; Shield1 8 - 13
         +tmsSendData SHIELD, 8 * 6  ; Shield2 14 - 18
         +tmsSendData SHIELD, 8 * 6  ; Shield3 20 - 25

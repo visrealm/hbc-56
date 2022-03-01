@@ -277,34 +277,55 @@
 ; tmsSetAddrPattTable: Initialise address for font table
 ; -----------------------------------------------------------------------------
 !macro tmsSetAddrPattTable {
-        +tmsSetAddrPattTableInd 0
+        +tmsSetAddrPattTable 0
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableInd: Initialise address for pattern table
+; tmsSetAddrPattTable: Initialise address for pattern table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableInd .ind {
+!macro tmsSetAddrPattTable .ind {
         +tmsSetAddressWrite TMS_VRAM_PATT_ADDRESS + (8 * .ind)
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableInd: Initialise address for pattern table
+; tmsSetAddrPattTable: Initialise address for pattern table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableInd .ind, .row {
+!macro tmsSetAddrPattTable .ind, .row {
         +tmsSetAddressWrite TMS_VRAM_PATT_ADDRESS + (8 * .ind) + .row
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableIndRead: Initialise address for pattern table to read
+; tmsSetAddrPattTableIIBank0: Initialise address for pattern table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableIndRead .ind {
+!macro tmsSetAddrPattTableIIBank0 .ind {
+        +tmsSetAddrPattTable .ind
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrPattTableIIBank1: Initialise address for pattern table
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrPattTableIIBank1 .ind {
+        +tmsSetAddrPattTable 256 + .ind
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrPattTableIIBank2: Initialise address for pattern table
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrPattTableIIBank2 .ind {
+        +tmsSetAddrPattTable 512 + .ind
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrPattTableRead: Initialise address for pattern table to read
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrPattTableRead .ind {
         +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind)
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrPattTableIndRowRead: Initialise address for pattern table to read
+; tmsSetAddrPattTableRowRead: Initialise address for pattern table to read
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrPattTableIndRead .ind, .row {
+!macro tmsSetAddrPattTableRead .ind, .row {
         +tmsSetAddressRead TMS_VRAM_PATT_ADDRESS + (8 * .ind) + .row
 }
 
@@ -312,7 +333,7 @@
 ; tmsUpdateFont: Update the pattern table with a given font
 ; -----------------------------------------------------------------------------
 !macro tmsUpdateFont .fontAddr {
-        +tmsSetAddrPattTableInd 32
+        +tmsSetAddrPattTable 32
         +tmsSendData .fontAddr, $300
 }
 
@@ -345,16 +366,37 @@
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrSpriteAttrTable: Initialise address for sprite attributes table
+; tmsSetAddrColorTableIIBank0: Initialise address for color table index (mode II)
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpriteAttrTable {
-        +tmsSetAddrSpriteAttrTableInd 0
+!macro tmsSetAddrColorTableIIBank0 .ind {
+        +tmsSetAddrColorTableII .ind
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrSpriteAttrTableInd: Initialise address for sprite attributes table
+; tmsSetAddrColorTableIIBank1: Initialise address for color table index (mode II)
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpriteAttrTableInd .index {
+!macro tmsSetAddrColorTableIIBank1 .ind {
+        +tmsSetAddrColorTableII 256 + .ind
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrColorTableIIBank2: Initialise address for color table index (mode II)
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrColorTableIIBank2 .ind {
+        +tmsSetAddrColorTableII 512 + .ind
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrSpriteAttrTable: Initialise address for sprite attributes table
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrSpriteAttrTable {
+        +tmsSetAddrSpriteAttrTable 0
+}
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrSpriteAttrTable: Initialise address for sprite attributes table
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrSpriteAttrTable .index {
         +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + .index * 4
 }
 
@@ -362,13 +404,13 @@
 ; tmsSetAddrSpritePattTable: Initialise address for sprite pattern table
 ; -----------------------------------------------------------------------------
 !macro tmsSetAddrSpritePattTable {
-        +tmsSetAddrSpritePattTableInd 0
+        +tmsSetAddrSpritePattTable 0
 }
 
 ; -----------------------------------------------------------------------------
-; tmsSetAddrSpritePattTableInd: Initialise address for sprite pattern table
+; tmsSetAddrSpritePattTable: Initialise address for sprite pattern table
 ; -----------------------------------------------------------------------------
-!macro tmsSetAddrSpritePattTableInd .index {
+!macro tmsSetAddrSpritePattTable .index {
         +tmsSetAddressWrite TMS_VRAM_SPRITE_PATT_ADDRESS + .index * 8
 }
 
@@ -381,7 +423,7 @@
         
 
         ; sprite pattern table
-        +tmsSetAddrSpritePattTableInd .pattInd
+        +tmsSetAddrSpritePattTable .pattInd
 
         ldx #0
 -
@@ -404,7 +446,7 @@
         
 
         ; sprite pattern table
-        +tmsSetAddrSpritePattTableInd .pattInd * 4
+        +tmsSetAddrSpritePattTable .pattInd * 4
 
         ldx #0
 -
@@ -422,7 +464,7 @@
 !macro tmsCreateSpritePatternImm .ind, .b0, .b1, .b2, .b3, .b4, .b5, .b6, .b7 {
 
         ; sprite pattern table
-        +tmsSetAddrSpritePattTableInd .ind
+        +tmsSetAddrSpritePattTable .ind
         +tmsPut .b0
         +tmsPut .b2
         +tmsPut .b2
@@ -436,7 +478,7 @@
 !macro tmsCreatePatternImm .ind, .b0, .b1, .b2, .b3, .b4, .b5, .b6, .b7 {
 
         ; sprite pattern table
-        +tmsSetAddrPattTableInd .ind
+        +tmsSetAddrPattTable .ind
         +tmsPut .b0
         +tmsPut .b2
         +tmsPut .b2
@@ -454,7 +496,7 @@
 !macro tmsCreateSprite .ind, .pattInd, .xPos, .yPos, .color {
 
         ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
+        +tmsSetAddrSpriteAttrTable .ind
 
         +tmsPut .yPos
         +tmsPut .xPos
@@ -469,7 +511,7 @@
         
 
         ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
+        +tmsSetAddrSpriteAttrTable .ind
 
         +tmsPut .yPos
         +tmsPut .xPos        
@@ -491,7 +533,7 @@
         
 
         ; sprite attr table
-        +tmsSetAddrSpriteAttrTableInd .ind
+        +tmsSetAddrSpriteAttrTable .ind
 
         tya
         +tmsPut 

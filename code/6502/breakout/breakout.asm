@@ -9,96 +9,230 @@
 
 !src "hbc56kernel.inc"
 
+; Zero page addresses
+; -------------------------
 ZP0 = HBC56_USER_ZP_START
-POSX     = ZP0
-POSX_SUB = ZP0 + 1
-POSY     = ZP0 + 2
-POSY_SUB = ZP0 + 3
 
-SPDX     = ZP0 + 4
-SPDX_SUB = ZP0 + 5
-SPDY     = ZP0 + 6
-SPDY_SUB = ZP0 + 7
+; ball position
+POSX        = ZP0
+POSX_SUB    = ZP0 + 1
+POSY        = ZP0 + 2
+POSY_SUB    = ZP0 + 3
 
-DIRX     = ZP0 + 8
-DIRY     = ZP0 + 9
+; ball speed
+SPDX        = ZP0 + 4
+SPDX_SUB    = ZP0 + 5
+SPDY        = ZP0 + 6
+SPDY_SUB    = ZP0 + 7
 
-TMP      = ZP0 + 10
-; a block of TMP
+; ball direction
+DIRX        = ZP0 + 8
+DIRY        = ZP0 + 9
 
-PADX     = ZP0 + 21
-PADW     = ZP0 + 22
+; paddle position and width
+PADX        = ZP0 + 10
+PADW        = ZP0 + 11
 
-LEVEL    = ZP0 + 23
-SCORE_H  = ZP0 + 24
-SCORE_M  = ZP0 + 25
-SCORE_L  = ZP0 + 26
-BALLS    = ZP0 + 27
+; current level
+LEVEL       = ZP0 + 12
 
-MULT     = ZP0 + 28
+; current score
+SCORE_H     = ZP0 + 13
+SCORE_M     = ZP0 + 14
+SCORE_L     = ZP0 + 15
 
-BLOCK_COUNT = ZP0 + 29
+; ball count
+BALLS       = ZP0 + 16
 
-PADSPD     = ZP0 + 30
-PADSPD_SUB = ZP0 + 31
+; score multiplier (number of blocks hit since paddle)
+MULT        = ZP0 + 17
 
+; blocks remaining
+BLOCKS_LEFT = ZP0 + 18
 
-GAME_AREA_LEFT  = 8
-GAME_AREA_WIDTH = 24 * 7
-GAME_AREA_RIGHT = GAME_AREA_LEFT + GAME_AREA_WIDTH
+; paddle speed (for ball acceleration)
+PADSPD     = ZP0 + 19
+PADSPD_SUB = ZP0 + 20
 
-BALL_BASE   = TMS_WHITE
-BALL_SHADE  = TMS_GREY
-
-PADDLE_HIGH  = TMS_WHITE
-PADDLE_BASE  = TMS_CYAN
-PADDLE_SHADE = TMS_LT_BLUE
-
-TONE_PADDLE = 6
-TONE_WALL   = 2
-TONE_BRICK  = 4
+; temporary storage
+TMP        = ZP0 + 21
+TMP_SIZE   = 10
 
 
+; Ball constants
+; -------------------------
+BALL_BASE         = TMS_WHITE
+BALL_SHADE        = TMS_GREY
+BALL_SIZE         = 6
+BALL_SPRITE_INDEX = 0
+BALL_SHADOW_INDEX = 1
+
+INITIAL_BALLS = 4
+
+; Paddle constants
+; -------------------------
 PADDLE_WIDTH      = 32
 PADDLE_SPEED      = 0
 PADDLE_SPEED_SUB  = 100
-NUM_BLOCKS        = 128
+PADDLE_L_SPRITE_INDEX = 2
+PADDLE_R_SPRITE_INDEX = 3
+PADDLE_SPRITE_Y   = 192 - 5
 
+PADDLE_COLOR_HIGH  = TMS_WHITE
+PADDLE_COLOR_BASE  = TMS_CYAN
+PADDLE_COLOR_SHADE = TMS_LT_BLUE
+
+; Level constants
+; -------------------------
+BRICKS_TILE_INDEX = 12
+BRICKS_WIDTH      = 3
+BRICK_TYPES       = 4
+LEVEL_HEIGHT      = 12
+LEVEL_WIDTH       = 7
+NO_BRICK          = 255
+
+GAME_AREA_LEFT    = 8
+GAME_AREA_WIDTH   = 8 * BRICKS_WIDTH * LEVEL_WIDTH
+GAME_AREA_RIGHT   = GAME_AREA_LEFT + GAME_AREA_WIDTH
+LEVEL_SIZE        = LEVEL_HEIGHT * (LEVEL_WIDTH + 1)
+
+
+; UI constants
+; -------------------------
+TITLE_WIDTH        = 9
+TITLE_HEIGHT       = 2
+TITLE_TILE_INDEX   = 128
+TITLE_X            = 23
+TITLE_Y            = 0
+
+LABEL_WIDTH        = 7
+
+LEVEL_TILE_INDEX   = 146
+LEVEL_LABEL_X      = 24
+LEVEL_LABEL_Y      = 4
+LEVEL_X            = 26
+LEVEL_Y            = 6
+
+SCORE_TILE_INDEX   = 146
+SCORE_LABEL_X      = 24
+SCORE_LABEL_Y      = 9
+SCORE_X            = 25
+SCORE_Y            = 11
+
+BALLS_TILE_INDEX   = SCORE_TILE_INDEX + LABEL_WIDTH
+BALLS_LABEL_X      = 24
+BALLS_LABEL_Y      = 14
+
+BORDER_TILE_INDEX = $1a
+BORDER_TL_INDEX   = BORDER_TILE_INDEX
+BORDER_TOP_INDEX  = BORDER_TILE_INDEX + 1
+BORDER_TR_INDEX   = BORDER_TILE_INDEX + 2
+BORDER_L_INDEX    = BORDER_TILE_INDEX + 3
+BORDER_R_INDEX    = BORDER_TILE_INDEX + 4
+BORDER_BL_INDEX   = BORDER_TILE_INDEX + 5
+BORDER_BR_INDEX   = BORDER_TILE_INDEX + 6
+BORDER_TILES      = 7
+BORDER_X          = 0
+BORDER_Y          = 0
+BORDER_WIDTH      = (BRICKS_WIDTH * LEVEL_WIDTH) + 2
+BORDER_HEIGHT     = 24
+
+; Audio constants
+; -------------------------
+TONE_PADDLE       = 6
+TONE_WALL         = 2
+TONE_BRICK        = 4
+AUDIO_TONE_PERIOD = 400
+
+; RAM locations
+; -------------------------
 LEVEL_DATA   = $0400
 
+
+; -----------------------------------------------------------------------------
+; HBC-56 Program Metadata
+; -----------------------------------------------------------------------------
 hbc56Meta:
         +setHbcMetaTitle "BREAKOUT"
         +setHbcMetaNES
         rts
 
+; -----------------------------------------------------------------------------
+; HBC-56 Program Entry
+; -----------------------------------------------------------------------------
 hbc56Main:
+
         sei
 
+        ; go to graphics II mode
         jsr tmsModeGraphicsII
 
+        ; disable display durint init
         +tmsDisableInterrupts
         +tmsDisableOutput
 
+        ; set backrground
         +tmsColorFgBg TMS_WHITE, TMS_BLACK
         jsr tmsSetBackground
 
-        ; initialise vram
+        ; set up graphics
+        jsr initVram
+
+        ; set up audio
+        jsr initAudio
+
+        ; reset the game
+        jsr resetGame
+
+        ; set up game loop as vsync callback
+        +hbc56SetVsyncCallback gameLoop
+
+        cli
+
+        jmp hbc56Stop
+
+
+; -----------------------------------------------------------------------------
+; Initialise TMS9918 VRAM
+; -----------------------------------------------------------------------------
+initVram:
+
+        jsr clearVram
+
+        ; load the brick graphics
+        jsr brickTilesToVram
+
+        ; load the ui graphics
+        jsr uiTilesToVram
+
+        jsr initSprites
+
+        jsr generatePaddleGlyphs
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Clear/reset VRAM
+; -----------------------------------------------------------------------------
+clearVram:
+        ; clear the name table
         +tmsSetAddrNameTable
         lda #0
         jsr _tmsSendPage        
         jsr _tmsSendPage
         jsr _tmsSendPage
 
+        ; set all color table entries to transparent
         +tmsSetAddrColorTable
-        +tmsColorFgBg TMS_WHITE, TMS_BLACK
+        +tmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
         jsr _tmsSendKb
         jsr _tmsSendKb
         jsr _tmsSendKb
         jsr _tmsSendKb
         jsr _tmsSendKb
-        jsr _tmsSendKb
-        
+        jsr _tmsSendKb        
 
+        ; clear the pattern table
         +tmsSetAddrPattTable
         lda #0
         jsr _tmsSendKb
@@ -107,177 +241,199 @@ hbc56Main:
         jsr _tmsSendKb
         jsr _tmsSendKb
         jsr _tmsSendKb
+        rts
 
+; -----------------------------------------------------------------------------
+; Write brick data to VRAM
+; -----------------------------------------------------------------------------
+brickTilesToVram:
 
-        ; block data
-        +tmsSetAddrColorTableII 3
-        jsr sendBlocksPal
+        ; brick patterns (for each bank)
+        +tmsSetAddrPattTableIIBank0 BRICKS_TILE_INDEX
+        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
 
-        +tmsSetAddrColorTableII 259
-        jsr sendBlocksPal
+        +tmsSetAddrPattTableIIBank1 BRICKS_TILE_INDEX
+        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
 
-        +tmsSetAddrPattTableInd 3
-        +tmsSendDataRpt block, 8 * 3, 4
-        +tmsSetAddrPattTableInd 259
-        +tmsSendDataRpt block, 8 * 3, 4
+        +tmsSetAddrPattTableIIBank2 BRICKS_TILE_INDEX
+        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
 
-        ; title data
-        +tmsSetAddrPattTableInd 128
-        +tmsSendData titlePatt, 8*9*2
-        +tmsSetAddrColorTableII 128
-        +tmsSendDataRpt titlePal, 8, 9
-        +tmsSendDataRpt titlePal + 8, 8, 9
+        ; brick colors (for each bank)
+        +tmsSetAddrColorTableIIBank0 BRICKS_TILE_INDEX
+        jsr @sendBlocksPal
 
-        ; label data
-        +tmsSetAddrPattTableInd 146
-        +tmsSendData levelPatt, 8*7
+        +tmsSetAddrColorTableIIBank1 BRICKS_TILE_INDEX
+        jsr @sendBlocksPal
 
-        +tmsSetAddrPattTableInd 256+146
-        +tmsSendData scorePatt, 8*7
-        +tmsSendData ballsPatt, 8*7
+        +tmsSetAddrColorTableIIBank2 BRICKS_TILE_INDEX
+        jsr @sendBlocksPal
 
-        +tmsSetAddrColorTableII 146
-        +tmsSendDataRpt labelPal, 8, 8
+        rts
 
-        +tmsSetAddrColorTableII 256+146
-        +tmsSendDataRpt labelPal, 8, 16
+@sendBlocksPal:
+        +tmsSendData    redBlockPal, 8
+        +tmsSendDataRpt redBlockPal + 8, 8, 2
+        +tmsSendData    yellowBlockPal, 8
+        +tmsSendDataRpt yellowBlockPal + 8, 8, 2
+        +tmsSendData    greenBlockPal, 8
+        +tmsSendDataRpt greenBlockPal + 8, 8, 2
+        +tmsSendData    blueBlockPal, 8
+        +tmsSendDataRpt blueBlockPal + 8, 8, 2
+        rts
 
-        ; digits data
-        +tmsSetAddrPattTableInd '0'
-        +tmsSendData digitsPatt, 8*10
-        +tmsSetAddrPattTableInd 256+'0'
-        +tmsSendData digitsPatt, 8*10
-        +tmsSetAddrPattTableInd 512+'0'
-        +tmsSendData digitsPatt, 8*10
+; -----------------------------------------------------------------------------
+; Generate paddle graphics
+; -----------------------------------------------------------------------------
+generatePaddleGlyphs:
+        +tmsSetAddrPattTableIIBank2 256 - 32
 
-        +tmsSetAddrColorTableII '0'
-        +tmsSendDataRpt digitsPal, 8, 10
-
-        +tmsSetAddrColorTableII 256+'0'
-        +tmsSendDataRpt digitsPal, 8, 10
-
-        +tmsSetAddrColorTableII 512+'0'
-        +tmsSendDataRpt digitsPal, 8, 10
-
-        ; create ball
-        +tmsCreateSpritePattern 0, ballPattern
-        +tmsCreateSpritePattern 1, ballPattern + 8
-
-        ; create paddle highlights
-        +tmsCreateSpritePattern 2, paddleLeftSpr
-        +tmsCreateSpritePattern 3, paddleRightSpr
-        ; create paddle patterns
-        +tmsSetAddrPattTableInd 768-32
+        ; copy paddle left to ram
         +memcpy TMP, paddlePatt, 8
+
         ldy #8
---
+@generateNextPaddleLeft
+        ; store in vram
         phy
         +tmsSendData TMP, 8
         ply
         ldx #0
--
+
+        ; shift each row right one pixel
+@nextPaddleRowL
         lsr TMP, x
         inx
         cpx #8
-        bne -
+        bne @nextPaddleRowL
+
+        ; next tile?
         dey
-        bne --
+        bne @generateNextPaddleLeft
+
+        ; send paddle centre to vram
         +tmsSendData paddlePatt + 8, 8
+
+        ; copy paddle right to ram
         +memcpy TMP, paddlePatt + 16, 8
+
+
         ldy #8
---
+@generateNextPaddleRight
+
+        ; store in vram
         phy
         +tmsSendData TMP, 8
         ply
         ldx #0
--
+
+        ; shift each row left one pixel
+@nextPaddleRow
         asl TMP, x
         inx
         cpx #8
-        bne -
+        bne @nextPaddleRow
+
+        ; next tile?
         dey
-        bne --
+        bne @generateNextPaddleRight
 
         ; set up paddle row colors
-        +tmsSetAddrColorTableII 768-32
-        ldy #32
-        sty TMP
--
-        +tmsSendData paddlePal, 8
-        dec TMP
-        bne -
+        +tmsSetAddrColorTableIIBank2 256 - 32
+        +tmsSendDataRpt paddlePal, 8, 32
+        rts
 
+; -----------------------------------------------------------------------------
+; Initialise sprites
+; -----------------------------------------------------------------------------
+initSprites:
+        ; create ball pattern
+        +tmsCreateSpritePattern BALL_SPRITE_INDEX, ballPattern
+        +tmsCreateSpritePattern BALL_SHADOW_INDEX, ballPattern + 8
 
-        +ayToneEnable AY_PSG0, AY_CHC
-        +aySetVolume AY_PSG0, AY_CHC, $00
-
-        +aySetVolumeEnvelope AY_PSG0, AY_CHC
-        +aySetEnvelopePeriod AY_PSG0, 800
-
-
-
-        lda #4
-        sta BALLS
-
-        lda #0
-        sta SCORE_H
-        sta SCORE_M
-        sta SCORE_L
-
-        lda #1
-        sta LEVEL
-
-        lda #PADDLE_SPEED
-        sta PADSPD
-        lda #PADDLE_SPEED_SUB
-        sta PADSPD_SUB
-
-        jsr resetGame
-
+        ; create paddle highlight patterns
+        +tmsCreateSpritePattern PADDLE_L_SPRITE_INDEX, paddleLeftSpr
+        +tmsCreateSpritePattern PADDLE_R_SPRITE_INDEX, paddleRightSpr
+        
+        ; create ball sprites
         +tmsCreateSprite 0, 0, 0, 0, BALL_BASE
         +tmsCreateSprite 1, 1, 0, 0, BALL_SHADE
 
-        +tmsCreateSprite 2, 2, 0, 0, PADDLE_HIGH
-        +tmsCreateSprite 3, 3, 0, 0, PADDLE_SHADE
+        ; create paddle highlight sprites
+        +tmsCreateSprite 2, 2, 0, 0, PADDLE_COLOR_HIGH
+        +tmsCreateSprite 3, 3, 0, 0, PADDLE_COLOR_SHADE
 
         +tmsSetLastSprite 3
-
-        jsr setBallPos
-
-        +tmsEnableOutput
-
-        jsr gameLoop
-
-        +hbc56SetVsyncCallback gameLoop
-
-        +tmsEnableInterrupts
-
-        cli
-
-        jmp hbc56Stop
-
         rts
 
-sendBlocksPal:
-        +tmsSendData redBlockPal, 8
-        +tmsSendDataRpt redBlockPal+8, 8, 2
-        +tmsSendData yellowBlockPal, 8
-        +tmsSendDataRpt yellowBlockPal+8, 8, 2
-        +tmsSendData greenBlockPal, 8
-        +tmsSendDataRpt greenBlockPal+8, 8, 2
-        +tmsSendData blueBlockPal, 8
-        +tmsSendDataRpt blueBlockPal+8, 8, 2
+; -----------------------------------------------------------------------------
+; Write UI elements to VRAM
+; -----------------------------------------------------------------------------
+uiTilesToVram:
+        ; border patterns
+        +tmsSetAddrPattTableIIBank0 BORDER_TILE_INDEX
+        +tmsSendData borderTL, 7 * 8
+        +tmsSetAddrPattTableIIBank1 BORDER_TILE_INDEX
+        +tmsSendData borderTL, 7 * 8
+        +tmsSetAddrPattTableIIBank2 BORDER_TILE_INDEX
+        +tmsSendData borderTL, 7 * 8
+
+        ; border palette
+        +tmsSetAddrColorTableIIBank0 BORDER_TILE_INDEX
+        jsr @sendBorderPal
+        +tmsSetAddrColorTableIIBank1 BORDER_TILE_INDEX
+        jsr @sendBorderPal
+        +tmsSetAddrColorTableIIBank2 BORDER_TILE_INDEX
+        jsr @sendBorderPal
+
+        ; title data
+        +tmsSetAddrPattTableIIBank0 TITLE_TILE_INDEX
+        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
+
+        +tmsSetAddrColorTableIIBank0 128
+        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
+        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
+
+        ; label data
+        +tmsSetAddrPattTableIIBank0 LEVEL_TILE_INDEX
+        +tmsSendData levelPatt, 8 * LABEL_WIDTH
+
+        +tmsSetAddrPattTableIIBank1 SCORE_TILE_INDEX
+        +tmsSendData scorePatt, 8 * LABEL_WIDTH
+        +tmsSendData ballsPatt, 8 * LABEL_WIDTH
+
+        +tmsSetAddrColorTableIIBank0 LEVEL_TILE_INDEX
+        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH
+
+        +tmsSetAddrColorTableIIBank1 SCORE_TILE_INDEX
+        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 2
+
+        ; digits data
+        NUM_DIGITS = 10
+        +tmsSetAddrPattTableIIBank0 '0'
+        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+        +tmsSetAddrPattTableIIBank1 '0'
+        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+        +tmsSetAddrPattTableIIBank2 '0'
+        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+
+        +tmsSetAddrColorTableIIBank0 '0'
+        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+
+        +tmsSetAddrColorTableIIBank1 '0'
+        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+
+        +tmsSetAddrColorTableIIBank2 '0'
+        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+        rts
+
+@sendBorderPal
+        +tmsSendDataRpt borderPal,     8, 3
+        +tmsSendDataRpt borderPal + 1, 8, 4
         rts
 
 
-!macro negate val {
-        lda val
-        eor #$ff
-        inc
-        sta val
-}
-
-
+; -----------------------------------------------------------------------------
+; Add two subpixel values
+; -----------------------------------------------------------------------------
 !macro addSubPixel pos, spd, dir {
         bit dir
         bpl @posDir
@@ -306,68 +462,100 @@ sendBlocksPal:
 @end
 }
 
-playNote:
-        tax
-        lda notesL,x
-        +ayWriteA AY_PSG0, AY_CHC_TONE_L
-        lda notesH,x
-        +ayWriteA AY_PSG0, AY_CHC_TONE_H
+; -----------------------------------------------------------------------------
+; Initialise audio
+; -----------------------------------------------------------------------------
+initAudio:
+        +ayToneEnable AY_PSG0, AY_CHC
+        +aySetVolume AY_PSG0, AY_CHC, $00
         +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
         rts
 
-loadLevel:
-        lda LEVEL
-        and #03
+; -----------------------------------------------------------------------------
+; Play a note from the notes tables
+; Inputs:
+;   X = index into notes tables
+; -----------------------------------------------------------------------------
+playNote:
+        sta TMP
 
-        cmp #2
-        bne +
-        +memcpy LEVEL_DATA, level2, 128
-        jmp @endLoad
-+
-        cmp #3
-        bne +
-        +memcpy LEVEL_DATA, level3, 128
-        jmp @endLoad
-+
-        cmp #0
-        bne +
-        +memcpy LEVEL_DATA, level4, 128
-        jmp @endLoad
-+
-
-        ; default to level 1
-        +memcpy LEVEL_DATA, level1, 128
-
-
-@endLoad
         lda #0
-        sta BLOCK_COUNT
-        jsr renderLevel
+        +ayWriteA AY_PSG0, AY_CHC_TONE_L
+        +ayWriteA AY_PSG0, AY_CHC_TONE_H
+
+        ldx TMP
+        lda notesL, x
+        +ayWriteA AY_PSG0, AY_CHC_TONE_L
+        lda notesH, x
+        +ayWriteA AY_PSG0, AY_CHC_TONE_H
+
+        +aySetVolumeEnvelope AY_PSG0, AY_CHC
+        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
+        +aySetEnvelopePeriod AY_PSG0, AUDIO_TONE_PERIOD
 
         rts
 
 
+; -----------------------------------------------------------------------------
+; Load level data from ROM
+; Inputs:
+;   LEVEL = level number to load
+; -----------------------------------------------------------------------------
+loadLevel:
+        lda LEVEL
+        and #03
+        asl
+        tax
+
+        lda levelMap, x
+        sta MEM_SRC
+        inx
+        lda levelMap, X
+        sta MEM_SRC + 1
+
+        +setMemCpyDst LEVEL_DATA
+
+        ldy #LEVEL_SIZE
+
+        jsr memcpySinglePage
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Render the level
+; -----------------------------------------------------------------------------
 renderLevel:
+        stz BLOCKS_LEFT
+
         ldx #0
 -
         jsr renderBlock
         lda LEVEL_DATA, x
         beq +
-        inc BLOCK_COUNT
+        inc BLOCKS_LEFT
 +
         inx
-        cpx #NUM_BLOCKS
+        cpx #LEVEL_SIZE
         bne -
         rts
 
-; X is block index
+
+; -----------------------------------------------------------------------------
+; Render a level brick
+; Inputs:
+;   X = level brick index
+; -----------------------------------------------------------------------------
 renderBlock:
         phx
+
+        ; calculate y tile
         stx TMP
         txa
         +div8
-        inc
+        inc ; start at row 1
         tay
+
+        ; calculate x tile
         lda TMP
         and #$07
         sta TMP
@@ -376,14 +564,21 @@ renderBlock:
         adc TMP
         tax
 
+        ; set tms address
         jsr tmsSetPosTmpAddress
         jsr tmsSetAddressWrite
 
         plx
         phx
+
+        ; get brick type
         lda LEVEL_DATA, x
         tax
+
+        ; get brick tile index
         lda tileData, x
+
+        ; render the three brick tiles
         +tmsPut
         inc
         +tmsPut
@@ -392,59 +587,43 @@ renderBlock:
         plx
         rts
 
-
-loseBall:
-        lda #1
-        sta MULT
-        dec BALLS
-        bmi endGame
-
-        jsr resetPaddle
-
-        rts
-
+; -----------------------------------------------------------------------------
+; Reset paddle and ball - start a round
+; -----------------------------------------------------------------------------
 resetPaddle:
-        ; draw paddle pattern
-        lda #(GAME_AREA_WIDTH-PADDLE_WIDTH)/2 + GAME_AREA_LEFT
+
+        ; reset paddle position an dsize
+        lda #(GAME_AREA_WIDTH - PADDLE_WIDTH) / 2 + GAME_AREA_LEFT
         sta PADX
         lda #PADDLE_WIDTH
         sta PADW
 
-        jsr drawPaddle
+        ; reset ball position and speed
+        stz POSX_SUB
+        stz POSY_SUB
 
-        lda #0
-        sta POSX_SUB
-        sta POSY_SUB
-
-        lda #0
-        sta SPDX
+        stz SPDX
         lda #2
         sta SPDY
 
-        lda #0
-        sta SPDX_SUB
-
-        lda #0
-        sta SPDY_SUB
+        stz SPDX_SUB
+        stz SPDY_SUB
 
         lda #1
         sta DIRX
         sta DIRY
 
-        lda #GAME_AREA_WIDTH/2+GAME_AREA_LEFT-3
+        lda #GAME_AREA_WIDTH / 2 + GAME_AREA_LEFT - 3
         sta POSX
 
-        lda #128-3
+        lda #128 - 3
         sta POSY
 
+        ; clear the paddle row
         +tmsSetPosWrite 1, 23
-        lda #0
-        ldx #21
--
-        +tmsPut
-        dex
-        bne -
+        +tmsPutRpt 0, LEVEL_WIDTH * BRICKS_WIDTH
 
+        jsr drawPaddle
 
         ; output ball count
         +tmsSetPosWrite 26, 16
@@ -454,43 +633,98 @@ resetPaddle:
 
         rts
 
+; -----------------------------------------------------------------------------
+; Ball lost
+; -----------------------------------------------------------------------------
+loseBall:
+        ; reset multiplier
+        lda #1
+        sta MULT
+        
+        ; lose a ball
+        dec BALLS
 
+        ; last ball?
+        bmi endGame
+
+        jsr resetPaddle
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Advance a level
+; -----------------------------------------------------------------------------
 nextLevel
         inc LEVEL
+        bra startGameLevel
+
+
+; -----------------------------------------------------------------------------
+; End game
+; -----------------------------------------------------------------------------
+endGame:
+        ; TODO: end game screen here
         bra resetGame
 
-endGame:
+
+; -----------------------------------------------------------------------------
+; Reset the game - new game
+; -----------------------------------------------------------------------------
+resetGame:
+        ; level 1
         lda #1
         sta LEVEL
 
+        ; score 0
         lda #0
         sta SCORE_L
         sta SCORE_M
         sta SCORE_H
 
-        lda #4
+        ; ball count
+        lda #INITIAL_BALLS
         sta BALLS
-        bra resetGame
 
-resetGame:
+        lda #PADDLE_SPEED
+        sta PADSPD
+        lda #PADDLE_SPEED_SUB
+        sta PADSPD_SUB
+
+; -----------------------------------------------------------------------------
+; Start a new level
+; -----------------------------------------------------------------------------
+startGameLevel:
+
+        +tmsDisableInterrupts
+        +tmsDisableOutput
 
         jsr resetPaddle
 
         jsr loadLevel
 
+        jsr renderLevel
+
         jsr drawBorder
 
         ; output level number
-        +tmsSetPosWrite 26, 6
+        +tmsSetPosWrite LEVEL_X, LEVEL_Y
         +tmsPut '0'
         lda LEVEL
         jsr outputBCD
 
         lda #0
         jsr addScore
-                
+
+        +tmsEnableOutput
+        +tmsEnableInterrupts
+
         rts
 
+; -----------------------------------------------------------------------------
+; Add to the score
+; Inputs:
+;   A = BCD encoded points to add
+; -----------------------------------------------------------------------------
 addScore:
         sed
         adc SCORE_L
@@ -507,110 +741,102 @@ addScore:
 @endAddScore
         cld
 
-        ; output ball count
-        +tmsSetPosWrite 25, 11
+        ; output score
+        +tmsSetPosWrite SCORE_X, SCORE_Y
         lda SCORE_H
-        jsr outputBCD
+        jsr outputBCDLow
         lda SCORE_M
         jsr outputBCD
         lda SCORE_L
         jsr outputBCD
         rts
 
+; -----------------------------------------------------------------------------
+; Output two BCD digits to current location
+; Inputs:
+;   A = BCD encoded value
+; -----------------------------------------------------------------------------
 outputBCD:
         sta TMP
         +lsr4
-        ora #$30
+        ora #'0'
         +tmsPut
         lda TMP
+outputBCDLow:
         and #$0f
-        ora #$30
+        ora #'0'
         +tmsPut
         rts
 
+; -----------------------------------------------------------------------------
+; Render the game border and ui
+; -----------------------------------------------------------------------------
 drawBorder:
-        ; border patterns
-        +tmsSetAddrPattTableInd $10
-        +tmsSendData borderTL, 7*8
-        +tmsSetAddrPattTableInd $110
-        +tmsSendData borderTL, 7*8
-        +tmsSetAddrPattTableInd $210
-        +tmsSendData borderTL, 7*8
+        ; border top
+        +tmsSetPosWrite BORDER_X, BORDER_Y
+        +tmsPut BORDER_TL_INDEX
+        +tmsPutRpt BORDER_TOP_INDEX, BORDER_WIDTH - 2
+        +tmsPut BORDER_TR_INDEX
 
-        ; border palette
-        +tmsSetAddrColorTableII $10
-        jsr sendBorderPal
-        +tmsSetAddrColorTableII $110
-        jsr sendBorderPal
-        +tmsSetAddrColorTableII $210
-        jsr sendBorderPal
-
-        ; border
-        +tmsSetPosWrite 0,0
-        +tmsPut $10
-        
-        +tmsPutRpt $11, 7*3
-        
-        +tmsPut $12
-
-        ldx #0
-        ldy #1
+        ; left border
+        ldx #BORDER_X
+        ldy #BORDER_Y + 1
         jsr tmsSetPosTmpAddress
         jsr tmsSetAddressWrite
-        ldx #22
+        ldx #BORDER_HEIGHT - 2
 -
-        +tmsPut $13
+        +tmsPut BORDER_L_INDEX
         jsr tmsSetAddressNextRow
         jsr tmsSetAddressWrite
         dex
         bne -
-        +tmsPut $15
+        +tmsPut BORDER_BL_INDEX
 
-
-        ldx #7*3+1
-        ldy #1
+        ; right border
+        ldx #BORDER_X + BORDER_WIDTH - 1
+        ldy #BORDER_Y + 1
         jsr tmsSetPosTmpAddress
         jsr tmsSetAddressWrite
-        ldx #22
+        ldx #BORDER_HEIGHT - 2
 -
-        +tmsPut $14
+        +tmsPut BORDER_R_INDEX
         jsr tmsSetAddressNextRow
         jsr tmsSetAddressWrite
         dex
         bne -
-        +tmsPut $15
-
-        +tmsSetPosWrite 23,0
-        +tmsPutSeq 128, 9
+        +tmsPut BORDER_BR_INDEX
 
         ; render title
-        +tmsSetPosWrite 23,1
-        +tmsPutSeq 128 + 9, 9
+        +tmsSetPosWrite TITLE_X, TITLE_Y
+        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+        +tmsSetPosWrite TITLE_X, TITLE_Y + 1
+        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
 
         ; render labels
-        +tmsSetPosWrite 24,4
-        +tmsPutSeq 146, 7
+        +tmsSetPosWrite LEVEL_LABEL_X, LEVEL_LABEL_Y
+        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
 
-        +tmsSetPosWrite 24,9
-        +tmsPutSeq 146, 7
+        +tmsSetPosWrite SCORE_LABEL_X, SCORE_LABEL_Y
+        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
 
-        +tmsSetPosWrite 24,14
-        +tmsPutSeq 146 + 7, 7
+        +tmsSetPosWrite BALLS_LABEL_X, BALLS_LABEL_Y
+        +tmsPutSeq BALLS_TILE_INDEX, LABEL_WIDTH
 
         rts
 
-sendBorderPal
-        +tmsSendDataRpt borderPal, 8, 3
-        +tmsSendDataRpt borderPal+1, 8, 4
-        rts
-
-
+; -----------------------------------------------------------------------------
+; Render the paddle
+; -----------------------------------------------------------------------------
 drawPaddle:
+
+        ; only support paddles > 8 pixels
         lda PADW
         cmp #8
         bcs +
         rts
 +
+
+        ; find paddle offset tile (x tile)
         lda PADX
         +div8
         sta TMP
@@ -618,34 +844,46 @@ drawPaddle:
         beq +
         dec
 +
+        ; set tms address
         tax
         ldy #23
         jsr tmsSetPosWrite
+
+        ; output a blank tile
         lda TMP
         cmp #1
         beq +
         +tmsPut 0
 +
+        ; find paddle pixel offset within the start tile
+        ; and store in x        
         lda PADX
         and #$07
-
         tax
+
+        ; store pixels remaining in TMP
         clc
         adc PADW
         sec
         sbc #8
         sta TMP
 
+        ; find the correct tile index
         lda leftPatterns, x
         +tmsPut
 
 @loop
+        ; home many pixels left?
         lda TMP
         beq @doneDraw
+
+        ; get pixel count for this tile
+        ; 9 or more? call it 8
         cmp #9
         bcc +
         lda #8
 +
+        ; compute remaining pixels
         tax
         lda TMP
         stx TMP
@@ -653,11 +891,14 @@ drawPaddle:
         sbc TMP
         sta TMP
 
+        ; find the correct tile index
         lda rightPatterns, x
         +tmsPut
         bra @loop
 
 @doneDraw:
+
+        ; output an empty tile
         lda PADX
         clc
         adc PADW
@@ -666,20 +907,23 @@ drawPaddle:
         +tmsPut 0
 +
 
+        ; reposition the paddle highlight sprites
         ldx PADX
-        ldy #192-5
-        +tmsSpritePosXYReg 2
+        ldy #PADDLE_SPRITE_Y
+        +tmsSpritePosXYReg PADDLE_L_SPRITE_INDEX
         clc
         txa
         adc PADW
         dec
         tax
-        +tmsSpritePosXYReg 3
+        +tmsSpritePosXYReg PADDLE_R_SPRITE_INDEX
         rts
 
-
-
-setBallPos:
+; -----------------------------------------------------------------------------
+; Render the ball
+; -----------------------------------------------------------------------------
+renderBall:
+        ; get ball pixel position (rounding subpixel)
         ldx POSX
         bit POSX_SUB
         bpl +
@@ -690,196 +934,138 @@ setBallPos:
         bpl +
         iny
 +
-        +tmsSpritePosXYReg 0
-        +tmsSpritePosXYReg 1
+        ; update ball sprite locations
+        +tmsSpritePosXYReg BALL_SPRITE_INDEX
+        +tmsSpritePosXYReg BALL_SHADOW_INDEX
         rts
 
-xPosToLevelCell:
-!byte 255,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,255,255,255
-yPosToLevelCell:
-!byte 255,0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,255
-
-; X and Y = pixel location
-; returns: A = level index (or 255)
+; -----------------------------------------------------------------------------
+; convert a pixel position to a game brick index
+; Inputs:
+;   X = x location (in pixels)
+;   Y = y location (in pixels)
+; Returns;
+;   A = Game brick / level index
+; -----------------------------------------------------------------------------
 posToLevelCell:
+
+        ; compute offset for x tile index
         txa
         +div8
         tax
-        lda xPosToLevelCell, x
-        cmp #255
+        lda @xPosToLevelCell, x
+
+        ; not valid? bail
+        cmp #NO_BRICK
         beq @outOfBounds
+
         sta TMP
+
+        ; compute offset for y tile index
         tya
         +div8
         tay
-        lda yPosToLevelCell, y
-        cmp #255
+        lda @yPosToLevelCell, y
+
+        ; not valid? bail
+        cmp #NO_BRICK
         beq @outOfBounds
+
+        ; both valid. sum them to get a level index
         clc
         adc TMP
 
 @outOfBounds:
         rts
 
+; convert x tile index to level offset
+@xPosToLevelCell:
+!byte NO_BRICK, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, NO_BRICK, NO_BRICK, NO_BRICK
 
-gameLoop:
-        ;!byte $db
+; convert y tile index to level offset
+@yPosToLevelCell:
+!byte NO_BRICK, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, NO_BRICK        
 
-        ;+tmsColorFgBg TMS_WHITE, TMS_MAGENTA
-        ;jsr tmsSetBackground
 
-        lda POSY
-        cmp #12 * 8
-        bcs @noHit
+; -----------------------------------------------------------------------------
+; negate a number (-ve to +ve and vice-versa)
+; -----------------------------------------------------------------------------
+!macro negate val {
+        lda val
+        eor #$ff
+        inc
+        sta val
+}
 
-        ; convert position to cell
-        ldx POSX
-        inx
-        inx
-        inx
-        ldy POSY
-        iny
-        iny
-        iny
-        jsr posToLevelCell
-        cmp #255
-        beq @noHit
-        tax
-        lda LEVEL_DATA, x
-        beq @noHit
+
+; -----------------------------------------------------------------------------
+; Call when we hit a brick.
+; Inputs:
+;   X = game brick index
+; -----------------------------------------------------------------------------
+hitBrick:
         lda #0
         sta LEVEL_DATA, x
+
+        ; clear brick
         jsr renderBlock
+
+        ; bounce ball
         +negate DIRY
-        dec BLOCK_COUNT
+
+        ; any blocks left?
+        dec BLOCKS_LEFT
         bne +
         jsr nextLevel
 +
 
+        ; add to score (multiplier times)
         ldx MULT
 -
+        ; increment score
         lda #$25
         jsr addScore
         dex
         bne -
 
+        ; increment multiplier
         inc MULT
 
+        ; play a tone based on multiplier
         lda MULT
         inc
         inc
         jsr playNote
+        rts
 
-@noHit:
-
-
-        +nes1BranchIfNotPressed NES_LEFT, +
-        lda PADX
-        cmp #GAME_AREA_LEFT + 2
-        bcc +
-        dec PADX
-        dec PADX
-+
-        +nes1BranchIfNotPressed NES_RIGHT, +
-        lda PADX
-        clc
-        adc PADW
-        cmp #GAME_AREA_RIGHT-2
-        bcs +
-        inc PADX
-        inc PADX
-+
-        jsr drawPaddle
-
-        +addSubPixel POSX, SPDX, DIRX
-        +addSubPixel POSY, SPDY, DIRY
-
-        bit DIRX
-        bmi @checkLeft
-        lda POSX
-        cmp #GAME_AREA_RIGHT-5
-        bcc @doneXCheck
-        +negate DIRX
-
-        lda #TONE_WALL
-        jsr playNote
-
-        bra @doneXCheck
-@checkLeft
-        lda POSX
-        cmp #GAME_AREA_LEFT
-        bcs @doneXCheck
-        +negate DIRX
-
-        lda #TONE_WALL
-        jsr playNote
-
-@doneXCheck
-
-        bit DIRY
-        bmi @checkTop
-        lda POSY
-        cmp #192-6
-        bcc @checkPaddle
-        cmp #240
-        bcc @doneYCheck
-        jmp loseBall
-
-@checkPaddle
-        cmp #192-5-6
-        bcc  @doneYCheck
-        lda PADX
-        cmp #6
-        bcc +
-        sec
-        sbc #5
-+
-        cmp POSX
-        bcs @doneYCheck
-        lda PADX
-        clc
-        adc PADW
-        cmp POSX
-        bcc @doneYCheck
+; -----------------------------------------------------------------------------
+; Call when we hit the paddle
+; -----------------------------------------------------------------------------
+hitPaddle:
         
         ; paddle hit
         +negate DIRY
 
+        ; accelerate ball
         +nes1BranchIfNotPressed NES_LEFT, +
-        jsr pushLeft
+        jsr @pushLeft
 +
         +nes1BranchIfNotPressed NES_RIGHT, +
-        jsr pushRight
+        jsr @pushRight
 +
+        ; reset multiplier
         lda #1
         sta MULT
 
         lda #TONE_PADDLE
         jsr playNote
-
-        bra @doneYCheck
-
-@checkTop
-        lda POSY
-        cmp #9
-        bcs @doneYCheck
-        +negate DIRY
-
-        lda #TONE_WALL
-        jsr playNote
-
-@doneYCheck
-
-
-        jsr setBallPos
-
-        +tmsColorFgBg TMS_WHITE, TMS_BLACK
-        jsr tmsSetBackground
-
-
         rts
 
-pushLeft:
+
+; -----------------------------------------------------------------------------
+; Accelerate ball left based on paddle movement
+; -----------------------------------------------------------------------------
+@pushLeft:
         lda #-1
         sta TMP
         +addSubPixel SPDX, PADSPD, TMP
@@ -889,10 +1075,12 @@ pushLeft:
         +negate SPDX
         +negate DIRX
 +
-
         rts
 
-pushRight:
+; -----------------------------------------------------------------------------
+; Accelerate ball right based on paddle movement
+; -----------------------------------------------------------------------------
+@pushRight:
         lda #1
         sta TMP
         +addSubPixel SPDX, PADSPD, TMP
@@ -902,27 +1090,169 @@ pushRight:
         +negate SPDX
         +negate DIRX
 +
-
         rts
+
+
+; -----------------------------------------------------------------------------
+; Main game loop - tied to VSYNC interrupt
+; -----------------------------------------------------------------------------
+gameLoop:
+        lda POSY
+        cmp #(LEVEL_HEIGHT) * 8
+        bcs @noHit
+
+        ; convert ball position to tile x/y
+        ldx POSX
+        inx
+        inx
+        ldy POSY
+        iny
+        iny
+
+        ; convert tile x/y to level index
+        jsr posToLevelCell
+        cmp #NO_BRICK
+        beq @noHit
+
+        ; locate brick type at level index
+        tax
+        lda LEVEL_DATA, x
+
+        ; is it empty?
+        beq @noHit
+
+        jsr hitBrick
+
+@noHit:
+
+        ; apply input
+        
+        ; left?
+        +nes1BranchIfNotPressed NES_LEFT, +
+        lda PADX
+        cmp #GAME_AREA_LEFT + 2
+        bcc +
+        dec PADX
+        dec PADX
++
+        ; right?
+        +nes1BranchIfNotPressed NES_RIGHT, +
+        lda PADX
+        clc
+        adc PADW
+        cmp #GAME_AREA_RIGHT-2
+        bcs +
+        inc PADX
+        inc PADX
++
+        
+        ; render the paddle
+        jsr drawPaddle
+
+        ; move the ball
+        +addSubPixel POSX, SPDX, DIRX
+        +addSubPixel POSY, SPDY, DIRY
+
+        ; check for ball bounces
+        bit DIRX
+        bmi @checkLeft
+
+        ; check right wall
+        lda POSX
+        cmp #GAME_AREA_RIGHT-5
+        bcc @doneXCheck
+
+        +negate DIRX
+        lda #TONE_WALL
+        jsr playNote
+
+        bra @doneXCheck
+
+        ; check left wall
+@checkLeft
+        lda POSX
+        cmp #GAME_AREA_LEFT
+        bcs @doneXCheck
+
+        +negate DIRX
+        lda #TONE_WALL
+        jsr playNote
+
+@doneXCheck
+
+        bit DIRY
+        bmi @checkTop
+
+        ; check paddle
+        lda POSY
+        cmp #192-BALL_SIZE
+        bcc @checkPaddle
+
+        ; check out of bounds
+        cmp #240
+        bcc @doneYCheck
+        jmp loseBall
+
+@checkPaddle
+        cmp #192-5-BALL_SIZE
+        bcc  @doneYCheck
+
+        lda PADX
+        cmp #BALL_SIZE
+        bcc +
+        sec
+        sbc #BALL_SIZE - 1
++
+        cmp POSX
+        bcs @doneYCheck
+        lda PADX
+        clc
+        adc PADW
+        cmp POSX
+        bcc @doneYCheck
+
+        jsr hitPaddle
+
+        bra @doneYCheck
+
+        ; check top wall
+@checkTop
+        lda POSY
+        cmp #9
+        bcs @doneYCheck
+
+        +negate DIRY
+        lda #TONE_WALL
+        jsr playNote
+
+@doneYCheck
+
+        jsr renderBall
+        rts
+
 
 
 ; BALL
 ; ----------
 
 ballPattern:
-!byte $70,$f8,$f8,$f8,$70,$00,$00,$00
-!byte $00,$18,$28,$58,$70,$00,$00,$00
+!byte $70,$f8,$f8,$f8,$70,$00,$00,$00   ; base
+!byte $00,$18,$28,$58,$70,$00,$00,$00   ; shading
 
 
 ; PADDLE
 ; ----------
 
-PADDLE_HIGH_FGBG  = PADDLE_HIGH << 4 | TMS_BLACK
-PADDLE_BASE_FGBG  = PADDLE_BASE << 4 | TMS_BLACK
-PADDLE_SHADE_FGBG = PADDLE_SHADE << 4 | TMS_BLACK
+paddlePal: ; paddle colors
++byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
++byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
++byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
++byteTmsColorFgBg PADDLE_COLOR_HIGH,  TMS_TRANSPARENT
++byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
++byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
++byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
++byteTmsColorFgBg PADDLE_COLOR_SHADE, TMS_TRANSPARENT
 
-paddlePal:
-!byte TMS_BLACK,TMS_BLACK,TMS_BLACK,PADDLE_HIGH_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_BASE_FGBG,PADDLE_SHADE_FGBG
 paddleLeftSpr:
 !byte $c0,$80,$80,$00,$00,$00,$00,$00
 paddleRightSpr:
@@ -932,11 +1262,12 @@ paddlePatt:
 !byte $00,$00,$00,$ff,$ff,$ff,$ff,$ff   ; centre
 !byte $00,$00,$00,$fe,$ff,$ff,$ff,$fe   ; right
 
+; pattern indexes to paddle left/right tiles for a given pixel offset
 leftPatterns:
 !byte 224,225,226,227,228,229,230,231
+
 rightPatterns:
 !byte 240,239,238,237,236,235,234,233,232
-
 
 
 ; BLOCKS
@@ -967,21 +1298,25 @@ RED_BASE        = TMS_MED_RED << 4 | TMS_TRANSPARENT
 RED_BASEH       = TMS_MED_RED << 4 | TMS_LT_RED
 RED_SHADE       = TMS_DK_RED  << 4 | TMS_TRANSPARENT
 
+; block palettes. first tile and remaining tiles
 blueBlockPal:
 !byte BLUE_HIGH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_SHADE,TMS_TRANSPARENT
 !byte BLUE_HIGH,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_SHADE,TMS_TRANSPARENT
+
 greenBlockPal:
 !byte GREEN_HIGH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_SHADE,TMS_TRANSPARENT
 !byte GREEN_HIGH,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_SHADE,TMS_TRANSPARENT
+
 yellowBlockPal:
 !byte YELLOW_HIGH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_SHADE,TMS_TRANSPARENT
 !byte YELLOW_HIGH,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_SHADE,TMS_TRANSPARENT
+
 redBlockPal:
 !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
 !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
 
 tileData:
-!byte 0,3,6,9,12
+!byte 0,12,15,18,21
 
 ; BORDER
 ; ----------
@@ -1002,7 +1337,7 @@ borderBR:
 !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
 
 borderPal:
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE,   TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
@@ -1083,18 +1418,12 @@ digitsPal:
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
 
+
 ; AUDIO DATA
 ; ----------
 
 notesL:
 !byte 0
-;+ayToneByteL NOTE_FREQ_B3
-;+ayToneByteL NOTE_FREQ_C4
-;+ayToneByteL NOTE_FREQ_CS4
-;+ayToneByteL NOTE_FREQ_D4
-;+ayToneByteL NOTE_FREQ_DS4
-;+ayToneByteL NOTE_FREQ_E4
-;+ayToneByteL NOTE_FREQ_F4
 +ayToneByteL NOTE_FREQ_FS4
 +ayToneByteL NOTE_FREQ_G4
 +ayToneByteL NOTE_FREQ_GS4
@@ -1127,13 +1456,6 @@ notesL:
 
 notesH:
 !byte 0
-;+ayToneByteH NOTE_FREQ_B3
-;+ayToneByteH NOTE_FREQ_C4
-;+ayToneByteH NOTE_FREQ_CS4
-;+ayToneByteH NOTE_FREQ_D4
-;+ayToneByteH NOTE_FREQ_DS4
-;+ayToneByteH NOTE_FREQ_E4
-;+ayToneByteH NOTE_FREQ_F4
 +ayToneByteH NOTE_FREQ_FS4
 +ayToneByteH NOTE_FREQ_G4
 +ayToneByteH NOTE_FREQ_GS4
@@ -1167,6 +1489,10 @@ notesH:
 ; LEVEL DATA
 ; ----------
 
+levelMap:
+!word level1, level2, level3, level4
+
+
 level4: 
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
@@ -1179,7 +1505,6 @@ level4:
 !byte 0,0,0,0,0,0,0,0
 !byte 3,3,3,3,3,3,3,0
 !byte 4,4,4,4,4,4,4,0
-!fill 128-88, 0
 
 
 level2: 
@@ -1194,7 +1519,6 @@ level2:
 !byte 3,3,3,3,3,3,3,0
 !byte 4,4,4,4,4,4,4,0
 !byte 4,4,4,4,4,4,4,0
-!fill 128-88, 0
 
 
 level3: 
@@ -1209,7 +1533,6 @@ level3:
 !byte 0,0,0,0,0,0,0,0
 !byte 4,4,4,4,4,4,4,0
 !byte 0,0,0,0,0,0,0,0
-!fill 128-88, 0
 
 
 level1: 
@@ -1225,4 +1548,3 @@ level1:
 !byte 3,4,0,0,0,4,3,0
 !byte 4,0,0,0,0,0,4,0
 !byte 0,0,0,0,0,0,0,0
-!fill 128-88, 0
