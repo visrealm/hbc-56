@@ -54,10 +54,11 @@ BLOCKS_LEFT = ZP0 + 18
 PADSPD     = ZP0 + 19
 PADSPD_SUB = ZP0 + 20
 
-; temporary storage
-TMP        = ZP0 + 21
-TMP_SIZE   = 10
+START_TIME = ZP0 + 21
 
+; temporary storage
+TMP        = ZP0 + 22
+TMP_SIZE   = 10
 
 ; Ball constants
 ; -------------------------
@@ -71,12 +72,13 @@ INITIAL_BALLS = 4
 
 ; Paddle constants
 ; -------------------------
-PADDLE_WIDTH      = 32
-PADDLE_SPEED      = 0
-PADDLE_SPEED_SUB  = 100
+PADDLE_WIDTH       = 32
+PADDLE_SPEED       = 0
+PADDLE_SPEED_SUB   = 100
 PADDLE_L_SPRITE_INDEX = 2
 PADDLE_R_SPRITE_INDEX = 3
-PADDLE_SPRITE_Y   = 192 - 5
+PADDLE_ROW         = 23
+PADDLE_SPRITE_Y    = PADDLE_ROW * 8 + 3
 
 PADDLE_COLOR_HIGH  = TMS_WHITE
 PADDLE_COLOR_BASE  = TMS_CYAN
@@ -89,13 +91,13 @@ BRICKS_WIDTH      = 3
 BRICK_TYPES       = 4
 LEVEL_HEIGHT      = 12
 LEVEL_WIDTH       = 7
+LEVEL_STRIDE      = 8
 NO_BRICK          = 255
 
 GAME_AREA_LEFT    = 8
 GAME_AREA_WIDTH   = 8 * BRICKS_WIDTH * LEVEL_WIDTH
 GAME_AREA_RIGHT   = GAME_AREA_LEFT + GAME_AREA_WIDTH
-LEVEL_SIZE        = LEVEL_HEIGHT * (LEVEL_WIDTH + 1)
-
+LEVEL_SIZE        = LEVEL_HEIGHT * LEVEL_STRIDE
 
 ; UI constants
 ; -------------------------
@@ -109,33 +111,51 @@ LABEL_WIDTH        = 7
 
 LEVEL_TILE_INDEX   = 146
 LEVEL_LABEL_X      = 24
-LEVEL_LABEL_Y      = 4
+LEVEL_LABEL_Y      = 5
 LEVEL_X            = 26
-LEVEL_Y            = 6
+LEVEL_Y            = LEVEL_LABEL_Y + 2
 
-SCORE_TILE_INDEX   = 146
+SCORE_TILE_INDEX   = LEVEL_TILE_INDEX + LABEL_WIDTH
 SCORE_LABEL_X      = 24
-SCORE_LABEL_Y      = 9
+SCORE_LABEL_Y      = 10
 SCORE_X            = 25
-SCORE_Y            = 11
+SCORE_Y            = SCORE_LABEL_Y + 2
 
 BALLS_TILE_INDEX   = SCORE_TILE_INDEX + LABEL_WIDTH
 BALLS_LABEL_X      = 24
-BALLS_LABEL_Y      = 14
+BALLS_LABEL_Y      = 15
+BALLS_X            = 26
+BALLS_Y            = BALLS_LABEL_Y + 2
 
-BORDER_TILE_INDEX = $1a
+BORDER_TILE_INDEX = 26
 BORDER_TL_INDEX   = BORDER_TILE_INDEX
 BORDER_TOP_INDEX  = BORDER_TILE_INDEX + 1
 BORDER_TR_INDEX   = BORDER_TILE_INDEX + 2
 BORDER_L_INDEX    = BORDER_TILE_INDEX + 3
 BORDER_R_INDEX    = BORDER_TILE_INDEX + 4
-BORDER_BL_INDEX   = BORDER_TILE_INDEX + 5
-BORDER_BR_INDEX   = BORDER_TILE_INDEX + 6
+BORDER_LB_INDEX   = BORDER_TILE_INDEX + 5
+BORDER_RB_INDEX   = BORDER_TILE_INDEX + 6
+BORDER_BL_INDEX   = BORDER_TILE_INDEX + 7
+BORDER_BR_INDEX   = BORDER_TILE_INDEX + 8
+BORDER_B_INDEX    = BORDER_TILE_INDEX + 9
 BORDER_TILES      = 7
 BORDER_X          = 0
 BORDER_Y          = 0
 BORDER_WIDTH      = (BRICKS_WIDTH * LEVEL_WIDTH) + 2
 BORDER_HEIGHT     = 24
+
+BOX_X             = 4
+BOX_Y             = 7
+BOX_W             = 15
+BOX_H             = 10
+
+BOX_TITLE_X       = BOX_X + 3
+BOX_TITLE_Y       = BOX_Y + 2
+BOX_LABEL_X       = BOX_TITLE_X + 1
+BOX_LABEL_Y       = BOX_TITLE_Y + 3
+
+NEW_LEVEL_TIMEOUT = 2
+
 
 ; Audio constants
 ; -------------------------
@@ -183,9 +203,6 @@ hbc56Main:
 
         ; reset the game
         jsr resetGame
-
-        ; set up game loop as vsync callback
-        +hbc56SetVsyncCallback gameLoop
 
         cli
 
@@ -354,8 +371,8 @@ initSprites:
         +tmsCreateSpritePattern PADDLE_R_SPRITE_INDEX, paddleRightSpr
         
         ; create ball sprites
-        +tmsCreateSprite 0, 0, 0, 0, BALL_BASE
-        +tmsCreateSprite 1, 1, 0, 0, BALL_SHADE
+        +tmsCreateSprite 0, 0, 0, $d0, BALL_BASE
+        +tmsCreateSprite 1, 1, 0, $d0, BALL_SHADE
 
         ; create paddle highlight sprites
         +tmsCreateSprite 2, 2, 0, 0, PADDLE_COLOR_HIGH
@@ -370,11 +387,11 @@ initSprites:
 uiTilesToVram:
         ; border patterns
         +tmsSetAddrPattTableIIBank0 BORDER_TILE_INDEX
-        +tmsSendData borderTL, 7 * 8
+        +tmsSendData borderTL, 10 * 8
         +tmsSetAddrPattTableIIBank1 BORDER_TILE_INDEX
-        +tmsSendData borderTL, 7 * 8
+        +tmsSendData borderTL, 10 * 8
         +tmsSetAddrPattTableIIBank2 BORDER_TILE_INDEX
-        +tmsSendData borderTL, 7 * 8
+        +tmsSendData borderTL, 10 * 8
 
         ; border palette
         +tmsSetAddrColorTableIIBank0 BORDER_TILE_INDEX
@@ -388,23 +405,29 @@ uiTilesToVram:
         +tmsSetAddrPattTableIIBank0 TITLE_TILE_INDEX
         +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
 
+        +tmsSetAddrPattTableIIBank1 TITLE_TILE_INDEX
+        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
+
         +tmsSetAddrColorTableIIBank0 128
+        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
+        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
+
+        +tmsSetAddrColorTableIIBank1 128
         +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
         +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
 
         ; label data
         +tmsSetAddrPattTableIIBank0 LEVEL_TILE_INDEX
-        +tmsSendData levelPatt, 8 * LABEL_WIDTH
+        +tmsSendData levelPatt, 8 *LABEL_WIDTH * 3
 
-        +tmsSetAddrPattTableIIBank1 SCORE_TILE_INDEX
-        +tmsSendData scorePatt, 8 * LABEL_WIDTH
-        +tmsSendData ballsPatt, 8 * LABEL_WIDTH
+        +tmsSetAddrPattTableIIBank1 LEVEL_TILE_INDEX
+        +tmsSendData levelPatt, 8 * LABEL_WIDTH * 3
 
         +tmsSetAddrColorTableIIBank0 LEVEL_TILE_INDEX
-        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH
+        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
 
-        +tmsSetAddrColorTableIIBank1 SCORE_TILE_INDEX
-        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 2
+        +tmsSetAddrColorTableIIBank1 LEVEL_TILE_INDEX
+        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
 
         ; digits data
         NUM_DIGITS = 10
@@ -426,10 +449,10 @@ uiTilesToVram:
         rts
 
 @sendBorderPal
-        +tmsSendDataRpt borderPal,     8, 3
-        +tmsSendDataRpt borderPal + 1, 8, 4
+        +tmsSendDataRpt borderPal + 1, 8, 3
+        +tmsSendDataRpt borderPal + 2, 8, 6
+        +tmsSendDataRpt borderPal,     8, 1
         rts
-
 
 ; -----------------------------------------------------------------------------
 ; Add two subpixel values
@@ -503,7 +526,8 @@ playNote:
 ; -----------------------------------------------------------------------------
 loadLevel:
         lda LEVEL
-        and #03
+        dec
+        and #$03
         asl
         tax
 
@@ -551,13 +575,15 @@ renderBlock:
         ; calculate y tile
         stx TMP
         txa
-        +div8
+        +div8   ; divide by level stride
         inc ; start at row 1
         tay
 
         ; calculate x tile
         lda TMP
         and #$07
+        cmp #LEVEL_WIDTH
+        bcs @endRender
         sta TMP
         asl
         sec
@@ -584,6 +610,8 @@ renderBlock:
         +tmsPut
         inc
         +tmsPut
+
+@endRender:
         plx
         rts
 
@@ -611,22 +639,23 @@ resetPaddle:
 
         lda #1
         sta DIRX
+        lda #-1
         sta DIRY
 
         lda #GAME_AREA_WIDTH / 2 + GAME_AREA_LEFT - 3
         sta POSX
 
-        lda #128 - 3
+        lda #PADDLE_SPRITE_Y - 6
         sta POSY
 
         ; clear the paddle row
-        +tmsSetPosWrite 1, 23
+        +tmsSetPosWrite 1, PADDLE_ROW
         +tmsPutRpt 0, LEVEL_WIDTH * BRICKS_WIDTH
 
-        jsr drawPaddle
+        jsr renderPaddle
 
         ; output ball count
-        +tmsSetPosWrite 26, 16
+        +tmsSetPosWrite BALLS_X, BALLS_Y
         +tmsPut '0'
         lda BALLS
         jsr outputBCD
@@ -649,6 +678,8 @@ loseBall:
 
         jsr resetPaddle
 
+        +hbc56SetVsyncCallback gameLoopWaitForStart
+
         rts
 
 ; -----------------------------------------------------------------------------
@@ -663,8 +694,9 @@ nextLevel
 ; End game
 ; -----------------------------------------------------------------------------
 endGame:
-        ; TODO: end game screen here
-        bra resetGame
+        jsr renderEndGameBox
+        +hbc56SetVsyncCallback gameLoopGameOver
+        rts
 
 
 ; -----------------------------------------------------------------------------
@@ -698,13 +730,18 @@ startGameLevel:
         +tmsDisableInterrupts
         +tmsDisableOutput
 
+        +tmsSpritePos 0, 0, $d0
+        +tmsSpritePos 1, 0, $d0
+
         jsr resetPaddle
 
         jsr loadLevel
 
         jsr renderLevel
 
-        jsr drawBorder
+        jsr renderBorder
+
+        jsr renderLevelBox
 
         ; output level number
         +tmsSetPosWrite LEVEL_X, LEVEL_Y
@@ -714,6 +751,12 @@ startGameLevel:
 
         lda #0
         jsr addScore
+
+        ; set up game loop as vsync callback
+        lda HBC56_SECONDS_L
+        sta START_TIME
+
+        +hbc56SetVsyncCallback gameLoopNewLevel
 
         +tmsEnableOutput
         +tmsEnableInterrupts
@@ -771,7 +814,7 @@ outputBCDLow:
 ; -----------------------------------------------------------------------------
 ; Render the game border and ui
 ; -----------------------------------------------------------------------------
-drawBorder:
+renderBorder:
         ; border top
         +tmsSetPosWrite BORDER_X, BORDER_Y
         +tmsPut BORDER_TL_INDEX
@@ -790,7 +833,7 @@ drawBorder:
         jsr tmsSetAddressWrite
         dex
         bne -
-        +tmsPut BORDER_BL_INDEX
+        +tmsPut BORDER_LB_INDEX
 
         ; right border
         ldx #BORDER_X + BORDER_WIDTH - 1
@@ -804,7 +847,7 @@ drawBorder:
         jsr tmsSetAddressWrite
         dex
         bne -
-        +tmsPut BORDER_BR_INDEX
+        +tmsPut BORDER_RB_INDEX
 
         ; render title
         +tmsSetPosWrite TITLE_X, TITLE_Y
@@ -825,9 +868,112 @@ drawBorder:
         rts
 
 ; -----------------------------------------------------------------------------
+; Render dialog box
+; -----------------------------------------------------------------------------
+renderBox:
+        ; border top
+        +tmsSetPosWrite BOX_X, BOX_Y
+        +tmsPut BORDER_TL_INDEX
+        +tmsPutRpt BORDER_TOP_INDEX, BOX_W - 2
+        +tmsPut BORDER_TR_INDEX
+
+        lda #BOX_H - 2
+        sta TMP
+
+        ldx #BOX_X
+        ldy #BOX_Y + 1
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+-
+        +tmsPut BORDER_L_INDEX
+        +tmsPutRpt 0, BOX_W - 2
+        +tmsPut BORDER_R_INDEX
+
+        jsr tmsSetAddressNextRow
+        jsr tmsSetAddressWrite
+
+        dec TMP
+        bne -
+
+        ; border bottom
+        +tmsSetPosWrite BOX_X, BOX_Y + BOX_H - 1
+        +tmsPut BORDER_BL_INDEX
+        +tmsPutRpt BORDER_B_INDEX, BOX_W - 2
+        +tmsPut BORDER_BR_INDEX
+        rts
+
+; -----------------------------------------------------------------------------
+; Clear the dialog box
+; -----------------------------------------------------------------------------
+clearBox:
+        lda #BOX_H
+        sta TMP
+
+        ldx #BOX_X
+        ldy #BOX_Y
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+-
+        +tmsPutRpt 0, BOX_W
+
+        jsr tmsSetAddressNextRow
+        jsr tmsSetAddressWrite
+
+        dec TMP
+        bne -
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Render the level dialog box
+; -----------------------------------------------------------------------------
+renderLevelBox:
+        jsr renderBox
+
+        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
+        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
+        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
+
+        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
+        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
+
+        +tmsSetPosWrite BOX_LABEL_X + 2, BOX_LABEL_Y + 2
+        +tmsPut '0'
+        lda LEVEL
+        jsr outputBCD
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Render the end game dialog box
+; -----------------------------------------------------------------------------
+renderEndGameBox:
+        jsr renderBox
+
+        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
+        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
+        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
+
+        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
+        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
+
+        +tmsSetPosWrite BOX_LABEL_X + 1, BOX_LABEL_Y + 2
+
+        lda SCORE_H
+        jsr outputBCDLow
+        lda SCORE_M
+        jsr outputBCD
+        lda SCORE_L
+        jsr outputBCD
+
+        rts
+
+; -----------------------------------------------------------------------------
 ; Render the paddle
 ; -----------------------------------------------------------------------------
-drawPaddle:
+renderPaddle:
 
         ; only support paddles > 8 pixels
         lda PADW
@@ -846,7 +992,7 @@ drawPaddle:
 +
         ; set tms address
         tax
-        ldy #23
+        ldy #PADDLE_ROW
         jsr tmsSetPosWrite
 
         ; output a blank tile
@@ -1013,12 +1159,6 @@ hitBrick:
         ; bounce ball
         +negate DIRY
 
-        ; any blocks left?
-        dec BLOCKS_LEFT
-        bne +
-        jsr nextLevel
-+
-
         ; add to score (multiplier times)
         ldx MULT
 -
@@ -1092,11 +1232,95 @@ hitPaddle:
 +
         rts
 
+; -----------------------------------------------------------------------------
+; Handle paddle input. Affect position
+; -----------------------------------------------------------------------------
+handlePaddleInput:
+
+        ; left?
+        +nes1BranchIfNotPressed NES_LEFT, +
+        lda PADX
+        cmp #GAME_AREA_LEFT + 2
+        bcc +
+        dec PADX
+        dec PADX
++
+        ; right?
+        +nes1BranchIfNotPressed NES_RIGHT, +
+        lda PADX
+        clc
+        adc PADW
+        cmp #GAME_AREA_RIGHT-2
+        bcs +
+        inc PADX
+        inc PADX
++
+        rts
 
 ; -----------------------------------------------------------------------------
-; Main game loop - tied to VSYNC interrupt
+; New level started - wait a couple of seconds (tied to VSYNC interrupt)
 ; -----------------------------------------------------------------------------
-gameLoop:
+gameLoopNewLevel:
+
+        lda START_TIME
+        clc
+        adc #NEW_LEVEL_TIMEOUT
+        cmp HBC56_SECONDS_L
+        bne @nextFrame
+
+        jsr clearBox
+        jsr renderLevel
+
+        +hbc56SetVsyncCallback gameLoopWaitForStart
+
+@nextFrame
+        rts
+
+; -----------------------------------------------------------------------------
+; Wait for user input (tied to VSYNC interrupt)
+; -----------------------------------------------------------------------------
+gameLoopWaitForStart:
+        
+        jsr handlePaddleInput
+
+        ; render the paddle
+        jsr renderPaddle
+
+        lda PADW
+        lsr
+        clc
+        adc PADX
+        dec
+        dec
+        sta POSX        
+
+        jsr renderBall
+
+        +nes1BranchIfNotPressed NES_A, @nextFrame
+
+        jsr hitPaddle
+
+        +hbc56SetVsyncCallback gameLoopRunning
+
+@nextFrame
+        rts
+
+
+; -----------------------------------------------------------------------------
+; Game over - Wait for user input (tied to VSYNC interrupt)
+; -----------------------------------------------------------------------------
+gameLoopGameOver:
+        +nes1BranchIfNotPressed NES_A, @nextFrame
+
+        jsr resetGame
+
+@nextFrame
+        rts
+
+; -----------------------------------------------------------------------------
+; Main game loop
+; -----------------------------------------------------------------------------
+gameLoopRunning:
         lda POSY
         cmp #(LEVEL_HEIGHT) * 8
         bcs @noHit
@@ -1123,31 +1347,19 @@ gameLoop:
 
         jsr hitBrick
 
+        ; any blocks left?
+        dec BLOCKS_LEFT
+        bne +
+        jmp nextLevel
++
+
 @noHit:
 
-        ; apply input
-        
-        ; left?
-        +nes1BranchIfNotPressed NES_LEFT, +
-        lda PADX
-        cmp #GAME_AREA_LEFT + 2
-        bcc +
-        dec PADX
-        dec PADX
-+
-        ; right?
-        +nes1BranchIfNotPressed NES_RIGHT, +
-        lda PADX
-        clc
-        adc PADW
-        cmp #GAME_AREA_RIGHT-2
-        bcs +
-        inc PADX
-        inc PADX
-+
-        
+        ; paddle input
+        jsr handlePaddleInput
+
         ; render the paddle
-        jsr drawPaddle
+        jsr renderPaddle
 
         ; move the ball
         +addSubPixel POSX, SPDX, DIRX
@@ -1185,7 +1397,7 @@ gameLoop:
 
         ; check paddle
         lda POSY
-        cmp #192-BALL_SIZE
+        cmp #PADDLE_SPRITE_Y
         bcc @checkPaddle
 
         ; check out of bounds
@@ -1194,7 +1406,7 @@ gameLoop:
         jmp loseBall
 
 @checkPaddle
-        cmp #192-5-BALL_SIZE
+        cmp #PADDLE_SPRITE_Y - 5
         bcc  @doneYCheck
 
         lda PADX
@@ -1331,12 +1543,20 @@ borderL:
 !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
 borderR:
 !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
+borderLB:
+!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+borderRB:
+!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
 borderBL:
-!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$7f,$3f
 borderBR:
-!byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+!byte $fe,$fe,$fe,$fe,$fe,$fe,$fc,$f8
+borderB:
+!byte $00,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+
 
 borderPal:
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE,   TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
@@ -1493,7 +1713,7 @@ levelMap:
 !word level1, level2, level3, level4
 
 
-level4: 
+level1: 
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
@@ -1535,7 +1755,7 @@ level3:
 !byte 0,0,0,0,0,0,0,0
 
 
-level1: 
+level4: 
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,0,0,0,0,0
 !byte 0,0,0,1,0,0,0,0
