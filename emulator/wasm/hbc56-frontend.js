@@ -151,8 +151,7 @@ function toggleAudio()
 
 function resetHbc56()
 {
-	loadRomFile("breakout");
-    //Module.ccall("hbc56Reset", "void", ["void"], []);	
+    Module.ccall("hbc56Reset", "void", ["void"], []);	
 }
 
 function loadRomFile(filename)
