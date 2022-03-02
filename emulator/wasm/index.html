@@ -24,13 +24,14 @@
 			<button type="button" class="btn btn-danger" onclick="resetHbc56()" title="Reset the HBC-56"><i class="icon-power-off"></i> Reset</button> |			
 			<button type="button" class="btn btn-info" onclick="toggleDebugger()" title="Toggle the debugger"><i class="icon-bug"></i> Debugger</button>
 			<button type="button" class="btn btn-warning" onclick="debugBreak()" title="Break"><i class="icon-pause"></i> Break</button>
+			<button type="button" class="btn btn-warning" onclick="debugBreakOnInterrupt()" title="Break on Interrupt"><i class="icon-pause"></i> Break on Interrupt</button>
 			<button type="button" class="btn btn-warning" onclick="debugStepInto()" title="Step into subroutine"><i class="icon-arrow-down"></i> Step In</button>
 			<button type="button" class="btn btn-warning" onclick="debugStepOver()" title="Step over subroutine"><i class="icon-arrow-right"></i> Step Over</button>
 			<button type="button" class="btn btn-warning" onclick="debugStepOut()" title="Step out of subroutine"><i class="icon-arrow-up"></i> Step Out</button>
 			<button type="button" class="btn btn-success" onclick="debugContinue()" title="Continue / run"><i class="icon-play"></i> Continue</button> | Drag ROM/Label map file into emulator
 		  </div>
 		  <div style="float:left;border:5px solid #2E75B5;border-radius:5px;" class="emscripten_border">
-			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1></canvas>
+			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1 width="1280" height="720"></canvas>
 		  </div>
 		  <div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;" class="emscripten_border retro">
 			  <table class="tg" style="padding:5px;">
@@ -45,6 +46,7 @@
 					<tr><td>F12</td><td>break</td></tr>
 					<tr><td>F11</td><td>step in</td></tr>
 					<tr><td>F10</td><td>step over</td></tr>
+					<tr><td>F7</td><td>break on int</td></tr>
 					<tr><td>F5</td><td>run</td></tr>
 					<tr><td>&lt;Ctrl&gt;+D</td><td>toggle debugger</td></tr>
 				 </tbody>

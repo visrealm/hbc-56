@@ -270,6 +270,10 @@ function debugBreak()
 {
     Module.ccall("hbc56DebugBreak", "void", ["void"], []);
 }
+function debugBreakOnInterrupt()
+{
+    Module.ccall("hbc56DebugBreakOnInt", "void", ["void"], []);
+}
 function debugContinue()
 {
     Module.ccall("hbc56DebugRun", "void", ["void"], []);
