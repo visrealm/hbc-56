@@ -1298,13 +1298,16 @@ gameLoopWaitForStart:
 
         jsr renderBall
 
-        +nes1BranchIfNotPressed NES_A, @nextFrame
+        +nes1BranchIfPressed NES_A, @startGame
+        +nes1BranchIfPressed NES_B, @startGame
 
+        rts
+
+@startGame
         jsr hitPaddle
 
         +hbc56SetVsyncCallback gameLoopRunning
 
-@nextFrame
         rts
 
 
@@ -1312,12 +1315,12 @@ gameLoopWaitForStart:
 ; Game over - Wait for user input (tied to VSYNC interrupt)
 ; -----------------------------------------------------------------------------
 gameLoopGameOver:
-        +nes1BranchIfNotPressed NES_A, @nextFrame
-
-        jsr resetGame
-
-@nextFrame
+        +nes1BranchIfPressed NES_A, @nextGame
+        +nes1BranchIfPressed NES_B, @nextGame
         rts
+
+@nextGame
+        jmp resetGame
 
 ; -----------------------------------------------------------------------------
 ; Main game loop
