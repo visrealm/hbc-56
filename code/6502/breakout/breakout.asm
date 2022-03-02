@@ -1268,8 +1268,10 @@ gameLoopNewLevel:
         cmp HBC56_SECONDS_L
         bne @nextFrame
 
+        +tmsDisableOutput
         jsr clearBox
         jsr renderLevel
+        +tmsEnableOutput
 
         +hbc56SetVsyncCallback gameLoopWaitForStart
 
@@ -1604,14 +1606,14 @@ ballsPatt:
 !byte $0f,$1f,$00,$1f,$1f,$18,$1f,$1f,$e0,$f0,$30,$f1,$f3,$33,$f6,$e6,$60,$f0,$f0,$98,$9c,$0c,$7e,$fe,$c0,$c0,$c0,$c0,$c0,$c0,$ff,$fe,$60,$60,$60,$60,$60,$60,$7f,$7f,$1f,$3f,$30,$3f,$3f,$00,$9f,$3f,$e0,$c0,$00,$c0,$e0,$60,$e0,$c0
 
 labelPal:
++byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
 
 ; FONT
 ; ----------
@@ -1629,14 +1631,14 @@ digitsPatt:
 !byte $7C,$C6,$C6,$7E,$06,$06,$7C,$00 ; 9
 
 digitsPal:
++byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
 
 
 ; AUDIO DATA

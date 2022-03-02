@@ -51,6 +51,15 @@ var Module = {
 
         return canvas;
     })(),
+	onRuntimeInitialized: function()
+	{
+		const urlParams = new URLSearchParams(window.location.search);
+		rom = urlParams.get('rom');
+		if (rom)
+		{
+			loadRomFile(rom);
+		}
+	},
     setStatus: function(text)
     {
         if (!Module.setStatus.last) Module.setStatus.last = {
@@ -142,12 +151,46 @@ function toggleAudio()
 
 function resetHbc56()
 {
-    Module.ccall("hbc56Reset", "void", ["void"], []);
+	loadRomFile("breakout");
+    //Module.ccall("hbc56Reset", "void", ["void"], []);	
 }
 
-function loadRomFile()
+function loadRomFile(filename)
 {
-	
+	objFile = "roms/" + filename + ".o";
+	var oReq = new XMLHttpRequest();
+	oReq.open("GET", objFile, true);
+	oReq.responseType = "arraybuffer";
+
+	oReq.onload = function (oEvent) {
+	  var arrayBuffer = oReq.response; // Note: not oReq.responseText
+	  if (arrayBuffer) {
+		var bytes = new Uint8Array(arrayBuffer);
+		var result = Module.ccall("hbc56LoadRom", "int", ["array", "int"], [bytes, bytes.length]);
+
+		if (result)
+		{
+			console.log('Loaded ROM "' + objFile + '"');
+		}
+		else
+		{
+			alert('Error loading ROM "' + objFile + '"');
+		}
+	  }
+	};
+
+	oReq.send(null);
+
+
+	var lmapReq = new XMLHttpRequest();
+	lmapReq.open("GET", objFile + ".lmap", true);
+	lmapReq.responseType = "text";
+
+	lmapReq.onload = function (lmapFile) {
+		Module.ccall("hbc56LoadLabels", "void", ["string"], [lmapReq.responseText]);
+	};
+
+	lmapReq.send(null);
 }
 
 function romDropHandler(event)
