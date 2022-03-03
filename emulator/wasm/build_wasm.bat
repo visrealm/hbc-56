@@ -16,8 +16,9 @@ emcc -o hbc56.html ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
   -D VR_6502_EMU_STATIC=1 ^
+  -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 ^
   -s USE_SDL=2 ^
-  -s INITIAL_MEMORY=33554432 ^
+  -s INITIAL_MEMORY=32MB ^
   -I ..\modules\ay38910 ^
   -I ..\modules\65c02\src ^
   -I ..\modules\lcd\src ^

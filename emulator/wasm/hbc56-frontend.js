@@ -114,22 +114,35 @@ window.addEventListener('load', init, false);
 
 function init()
 {
-
-    try
-    {
-        window.AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioContext = new AudioContext();
-        console.log("AudioContext OK.")
-    }
-    catch (e)
-    {
-        console.log("AudioContext not supported on this Browser.")
-    }
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	audioContext = new AudioContext();
+	console.log("AudioContext OK.")
 }
 
 
 function toggleAudio()
 {
+	if (audioContext == null)
+	{
+		try
+		{
+			audioContext.resume().then(() =>
+			{
+				console.log("Started Audio.")
+				Module.ccall("hbc56Audio", "void", ["int"], [1]);
+			});
+			
+			return;
+			
+		}
+		catch (e)
+		{
+			console.log("AudioContext not supported on this Browser.")
+		}
+		
+
+	}
+	
     if (audioContext && audioContext.state != "running")
     {
         audioContext.resume().then(() =>

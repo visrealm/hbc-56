@@ -38,18 +38,27 @@ void hbc56Audio(int start)
 {
   if (start && audioDevice == 0)
   {
-    SDL_InitSubSystem(SDL_INIT_AUDIO);
-
     SDL_AudioSpec want, have;
 
     SDL_memset(&want, 0, sizeof(want));
     want.freq = HBC56_AUDIO_FREQ;
     want.format = AUDIO_F32SYS;
     want.channels = 2;
-    want.samples = want.freq / 60;
+    want.samples = 1024;
     want.callback = hbc56AudioCallback;
-    audioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    SDL_OpenAudio(&want, &have);
+    audioDevice = 1;
+
     SDL_PauseAudioDevice(audioDevice, 0);
+
+    if (audioDevice == 0)
+    {
+      SDL_Log("Audio error: %s\n", SDL_GetError());
+    }
+    else
+    {
+      SDL_Log("Audio device: %d\n", audioDevice);
+    }
   }
   else if (audioDevice)
   {

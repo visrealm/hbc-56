@@ -1,3 +1,6 @@
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 #include "SDL_config.h"
 #include "window.h"
@@ -1050,7 +1053,6 @@ SDLCommonInit(SDLCommonState* state)
   int i, j, m, n, w, h;
   SDL_DisplayMode fullscreen_mode;
   char text[1024];
-
   if (state->flags & SDL_INIT_VIDEO) {
     if (state->verbose & VERBOSE_VIDEO) {
       n = SDL_GetNumVideoDrivers();
@@ -1382,7 +1384,7 @@ SDLCommonInit(SDLCommonState* state)
         SDL_Log("%s\n", text);
       }
     }
-    if (SDL_AudioInit(state->audiodriver) < 0) {
+    if (SDL_AudioInit(NULL) < 0) {
       SDL_Log("Couldn't initialize audio driver: %s\n",
         SDL_GetError());
       return SDL_FALSE;
@@ -1392,10 +1394,10 @@ SDLCommonInit(SDLCommonState* state)
         SDL_GetCurrentAudioDriver());
     }
 
-    if (SDL_OpenAudio(&state->audiospec, NULL) < 0) {
+    /*if (SDL_OpenAudio(&state->audiospec, NULL) < 0) {
       SDL_Log("Couldn't open audio: %s\n", SDL_GetError());
       return SDL_FALSE;
-    }
+    }*/
   }
 
   return SDL_TRUE;

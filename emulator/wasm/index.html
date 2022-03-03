@@ -9,10 +9,9 @@
 	  <link rel="icon" type="image/x-icon" href="favicon.ico">
    </head>
    <body>
-	  <div class="content">
-		  <span class="title"><a href="https://github.com/visrealm/hbc-56"><img src="hbc56logo.png" alt="HBC-56 Logo" height="60"/></a>
-			<span style="font-size:36px;margin-top:15px;" class="retro title">Emulator</span><span style="font-size:18px;margin-top:5px;"  class="retro title">(BETA)</span>
-		  <!--button onclick="toggleAudio()">Audio</button-->
+	  <div class="content" style="margin-top:10px;">
+		  <span><a href="https://github.com/visrealm/hbc-56"><img src="hbc56logo.png" alt="HBC-56 Logo" height="76"/></a>
+			<span style="font-size:36px; vertical-align:text-top;" class="retro title">Emulator<span style="font-size:18px; vertical-align:baseline;"  class="retro title">(BETA)</span></span>
 		  <div class="spinner" id='spinner'></div>
 		  <div class="emscripten" id="status">Downloading...</div>
 		  <div class="emscripten">
@@ -22,7 +21,7 @@
 		  <div class="toolbar">
 			<hr>
 			<button type="button" class="btn btn-danger" onclick="resetHbc56()" title="Reset the HBC-56"><i class="icon-power-off"></i> Reset</button> |			
-			<button type="button" class="btn btn-info" onclick="toggleDebugger()" title="Toggle the debugger"><i class="icon-bug"></i> Debugger</button>
+			<button type="button" class="btn btn-info" onclick="toggleDebugger()" title="Toggle the debugger"><i class="icon-bug"></i> Debugger</button> |
 			<button type="button" class="btn btn-warning" onclick="debugBreak()" title="Break"><i class="icon-pause"></i> Break</button>
 			<button type="button" class="btn btn-warning" onclick="debugBreakOnInterrupt()" title="Break on Interrupt"><i class="icon-pause"></i> Break on Interrupt</button>
 			<button type="button" class="btn btn-warning" onclick="debugStepInto()" title="Step into subroutine"><i class="icon-arrow-down"></i> Step In</button>
@@ -33,7 +32,7 @@
 		  <div style="float:left;border:5px solid #2E75B5;border-radius:5px;" class="emscripten_border">
 			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1 width="1280" height="720"></canvas>
 		  </div>
-		  <div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;" class="emscripten_border retro">
+		  <div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;float:right;width:240px;" class="emscripten_border retro">
 			  <table class="tg" style="padding:5px;">
 				 <thead>
 					<tr>
@@ -68,7 +67,15 @@
 				 </tbody>
 			  </table>
 			</div>
+			<div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;float:right;width:240px;margin-top:10px;text-align:left;" class="emscripten_border retro">
+				<p style="font-weight:bold;">ROMS</p>
+				<p><a href="?">HBC-56 BASIC</a></p>
+				<p><a href="?rom=breakout">BREAKOUT</a></p>
+				<p><a href="?rom=invaders">INVADERS</a></p>
+			</div>
 		</div>
+		
+		<div class="fixed-bottom" style="padding-top:-30px;background:white;text-align:center;font-size:20px;border-top:1px solid black;">HBC-56 Emulator - © 2022 Troy Schrapel - <a href="https://github.com/visrealm/hbc-56">https://github.com/visrealm/hbc-56</a></div>		
 	</div>
       <script src="hbc56-frontend.js"></script>
       <script async src="hbc56.js"></script>	

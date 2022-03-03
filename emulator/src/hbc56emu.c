@@ -284,6 +284,7 @@ static SDLCommonState* state;
 static int done;
 static double perfFreq = 0.0;
 static int tickCount = 0;
+static int mouseZ = 0;
 
 static uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
 static SDL_Texture* debugWindowTex = NULL;
@@ -298,8 +299,10 @@ static void doTick()
 {
   static double lastTime = 0.0;
   static double unusedClockTicksTime = 0.0;
+  static const double maxTime = 1.0 / 60.0;
 
   double thisTime = (double)SDL_GetPerformanceCounter() / perfFreq;
+  if (thisTime - lastTime > maxTime) lastTime = thisTime - maxTime;
 
   double deltaClockTicksDbl = HBC56_CLOCK_FREQ * (thisTime - lastTime) + unusedClockTicksTime;
 
@@ -376,7 +379,9 @@ static void doRender()
     mouseY = (int)(mouseY / factorY);
     mouseX -= dest.w;// * 2;
 
-    debuggerUpdate(debugWindowTex, mouseX, mouseY);
+    debuggerUpdate(debugWindowTex, mouseX, mouseY, mouseZ);
+    mouseZ = 0;
+
     dest.x = dest.w;
     dest.w = (int)(DEBUGGER_WIDTH_PX);
     dest.h = (int)(DEBUGGER_HEIGHT_PX);
@@ -402,130 +407,144 @@ static void doEvents()
     int skipProcessing = 0;
     switch (event.type)
     {
-    case SDL_KEYDOWN:
-    {
-      skipProcessing = 1;
-      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-      SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-      SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
-
-      switch (event.key.keysym.sym)
+      case SDL_KEYDOWN:
       {
-      case SDLK_r:
-        if (withControl)
-        {
-          hbc56Reset();
-        }
-        else
-        {
-          skipProcessing = 0;
-        }
-        break;
-
-      case SDLK_d:
-        if (withControl)
-        {
-          hbc56ToggleDebugger();
-        }
-        break;
-      case SDLK_F2:
-        hbc56Audio(withControl == 0);
-        break;
-      case SDLK_F12:
-        hbc56DebugBreak();
-        break;
-      case SDLK_F5:
-        hbc56DebugRun();
-        break;
-      case SDLK_F7:
-        hbc56DebugBreakOnInt();
-        break;
-      case SDLK_PAGEUP:
-      case SDLK_KP_9:
-        if (withControl)
-        {
-          debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
-        }
-        else
-        {
-          debugMemoryAddr -= withShift ? 0x1000 : 64;
-        }
-        break;
-      case SDLK_PAGEDOWN:
-      case SDLK_KP_3:
-        if (withControl)
-        {
-          debugTmsMemoryAddr += withShift ? 0x1000 : 64;
-        }
-        else
-        {
-          debugMemoryAddr += withShift ? 0x1000 : 64;
-        }
-        break;
-
-      case SDLK_F11:
-        if (withShift)
-        {
-          hbc56DebugStepOut();
-        }
-        else
-        {
-          hbc56DebugStepInto();
-        }
-        break;
-      case SDLK_F10:
-        hbc56DebugStepOver();
-        break;
-      case SDLK_ESCAPE:
-#ifdef __EMSCRIPTEN__
-        hbc56Reset();
-#else
-        done = 1;
-#endif
-        break;
-
-      default:
-        skipProcessing = 0;
-      }
-    }
-
-    case SDL_KEYUP:
-    {
-      skipProcessing = 1;
-      SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-      SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-      SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
-
-      switch (event.key.keysym.sym)
-      {
-      case SDLK_r:
-        if (!withControl) skipProcessing = 0;
-        break;
-
-      case SDLK_d:
-        if (!withControl) skipProcessing = 0;
-        break;
-
-      case SDLK_F2:
-      case SDLK_F12:
-      case SDLK_F5:
-      case SDLK_F7:
-      case SDLK_PAGEUP:
-      case SDLK_KP_9:
-      case SDLK_PAGEDOWN:
-      case SDLK_KP_3:
-      case SDLK_F11:
-      case SDLK_F10:
-      case SDLK_ESCAPE:
         skipProcessing = 1;
-        break;
+        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
 
-      default:
-        skipProcessing = 0;
+        switch (event.key.keysym.sym)
+        {
+          case SDLK_r:
+            if (withControl)
+            {
+              hbc56Reset();
+            }
+            else
+            {
+              skipProcessing = 0;
+            }
+            break;
+
+          case SDLK_d:
+            if (withControl)
+            {
+              hbc56ToggleDebugger();
+            }
+            break;
+
+          case SDLK_F2:
+            hbc56Audio(withControl == 0);
+            break;
+
+          case SDLK_F12:
+            hbc56DebugBreak();
+            break;
+
+          case SDLK_F5:
+            hbc56DebugRun();
+            break;
+
+          case SDLK_F7:
+            hbc56DebugBreakOnInt();
+            break;
+
+          case SDLK_PAGEUP:
+          case SDLK_KP_9:
+            if (withControl)
+            {
+              debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
+            }
+            else
+            {
+              debugMemoryAddr -= withShift ? 0x1000 : 64;
+            }
+            break;
+
+          case SDLK_PAGEDOWN:
+          case SDLK_KP_3:
+            if (withControl)
+            {
+              debugTmsMemoryAddr += withShift ? 0x1000 : 64;
+            }
+            else
+            {
+              debugMemoryAddr += withShift ? 0x1000 : 64;
+            }
+            break;
+
+          case SDLK_F11:
+            if (withShift)
+            {
+              hbc56DebugStepOut();
+            }
+            else
+            {
+              hbc56DebugStepInto();
+            }
+            break;
+
+          case SDLK_F10:
+            hbc56DebugStepOver();
+            break;
+
+          case SDLK_ESCAPE:
+#ifdef __EMSCRIPTEN__
+            hbc56Reset();
+#else
+            done = 1;
+#endif
+            break;
+
+          default:
+            skipProcessing = 0;
+        }
+      }
+
+      case SDL_KEYUP:
+      {
+        skipProcessing = 1;
+        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
+        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+
+        switch (event.key.keysym.sym)
+        {
+          case SDLK_r:
+            if (!withControl) skipProcessing = 0;
+            break;
+
+          case SDLK_d:
+            if (!withControl) skipProcessing = 0;
+            break;
+
+          case SDLK_F2:
+          case SDLK_F12:
+          case SDLK_F5:
+          case SDLK_F7:
+          case SDLK_PAGEUP:
+          case SDLK_KP_9:
+          case SDLK_PAGEDOWN:
+          case SDLK_KP_3:
+          case SDLK_F11:
+          case SDLK_F10:
+          case SDLK_ESCAPE:
+            skipProcessing = 1;
+            break;
+
+          default:
+            skipProcessing = 0;
+            break;
+        }
         break;
       }
-      break;
-    }
+
+      case SDL_MOUSEWHEEL:
+      {
+        mouseZ = event.wheel.y;
+        break;
+      }
     }
 
     if (!skipProcessing)
