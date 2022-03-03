@@ -22,6 +22,27 @@ NOISE0 = $62
 
 hbc56Main:
 
+        jsr tmsModeGraphicsII
+
+        +tmsColorFgBg TMS_WHITE, TMS_BLACK
+        jsr tmsSetBackground
+
+        +tmsDisableInterrupts
+        +tmsDisableOutput
+
+        +tmsSetAddrPattTable
+        +tmsSendData marioPatt, $1800
+
+        +tmsSetAddrColorTable
+        +tmsSendData marioCol, $1800
+
+        +tmsSetAddrNameTable
+	+tmsPutSeq 0, 256
+	+tmsPutSeq 0, 256
+	+tmsPutSeq 0, 256
+
+        +tmsEnableOutput
+
 
 	jsr ayInit
         lda #0
@@ -184,3 +205,9 @@ customDelay:
 	dey
 	bne -
 	rts
+
+
+marioPatt:
+!bin "mario.gfx2p"
+marioCol:
+!bin "mario.gfx2c"

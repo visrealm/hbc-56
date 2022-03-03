@@ -245,7 +245,7 @@
 -
         +tmsPut
         inc
-        cmp #.from + .count
+        cmp #<(.from + .count)
         bne -
 }
 

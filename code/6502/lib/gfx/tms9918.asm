@@ -1088,6 +1088,7 @@ tmsConsolePrint:
 ; tmsConsoleNewline: Output a newline to the console (scrolls if on last line)
 ; -----------------------------------------------------------------------------
 tmsConsoleNewline:
+        jsr tmsSetPosConsole
         +tmsPut ' '
         lda TMS9918_CONSOLE_X
         bne +

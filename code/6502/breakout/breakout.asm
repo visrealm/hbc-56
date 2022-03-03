@@ -1300,6 +1300,7 @@ gameLoopWaitForStart:
 
         +nes1BranchIfPressed NES_A, @startGame
         +nes1BranchIfPressed NES_B, @startGame
+        +nes1BranchIfPressed NES_START, @startGame
 
         rts
 
@@ -1317,6 +1318,7 @@ gameLoopWaitForStart:
 gameLoopGameOver:
         +nes1BranchIfPressed NES_A, @nextGame
         +nes1BranchIfPressed NES_B, @nextGame
+        +nes1BranchIfPressed NES_START, @nextGame
         rts
 
 @nextGame

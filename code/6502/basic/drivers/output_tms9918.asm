@@ -7,8 +7,8 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-FG     = TMS_WHITE
-BG     = TMS_BLACK
+FG     = TMS_DK_BLUE
+BG     = TMS_WHITE
 BORDER = TMS_DK_BLUE
 
 ; -----------------------------------------------------------------------------

@@ -611,6 +611,7 @@ LAB_2E05
 ; TS: Don't print free RAM
 ;	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
 
+	JSR	LAB_CRLF		; print CR/LF
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
@@ -7844,7 +7845,7 @@ LAB_MSZM
 	!text	$0D,$0A,"Memory size ",$00
 
 LAB_SMSG
-	!text	"HBC-56 BASIC",$00
+	!text	" ",$0A,$0A," ** HBC-56 BASIC ** ",$00
 
 ; numeric constants and series
 
@@ -8700,24 +8701,24 @@ LAB_BAER
 
 ;	!word ERR_UA		;$26 undimensioned array
 
-ERR_NF	!text	"NEXT without FOR",$00
-ERR_SN	!text	"Syntax",$00
-ERR_RG	!text	"RETURN without GOSUB",$00
-ERR_OD	!text	"Out of DATA",$00
-ERR_FC	!text	"Function call",$00
-ERR_OV	!text	"Overflow",$00
-ERR_OM	!text	"Out of memory",$00
-ERR_US	!text	"Undefined statement",$00
-ERR_BS	!text	"Array bounds",$00
-ERR_DD	!text	"Double dimension",$00
-ERR_D0	!text	"Divide by zero",$00
-ERR_ID	!text	"Illegal direct",$00
-ERR_TM	!text	"Type mismatch",$00
-ERR_LS	!text	"String too long",$00
-ERR_ST	!text	"String too complex",$00
-ERR_CN	!text	"Can't continue",$00
-ERR_UF	!text	"Undefined function",$00
-ERR_LD	!text	"LOOP without DO",$00
+ERR_NF	!text	" NEXT without FOR",$00
+ERR_SN	!text	" Syntax",$00
+ERR_RG	!text	" RETURN without GOSUB",$00
+ERR_OD	!text	" Out of DATA",$00
+ERR_FC	!text	" Function call",$00
+ERR_OV	!text	" Overflow",$00
+ERR_OM	!text	" Out of memory",$00
+ERR_US	!text	" Undefined statement",$00
+ERR_BS	!text	" Array bounds",$00
+ERR_DD	!text	" Double dimension",$00
+ERR_D0	!text	" Divide by zero",$00
+ERR_ID	!text	" Illegal direct",$00
+ERR_TM	!text	" Type mismatch",$00
+ERR_LS	!text	" String too long",$00
+ERR_ST	!text	" String too complex",$00
+ERR_CN	!text	" Can't continue",$00
+ERR_UF	!text	" Undefined function",$00
+ERR_LD	!text	" LOOP without DO",$00
 
 ;ERR_UV	!text	"Undefined variable",$00
 
@@ -8728,7 +8729,7 @@ ERR_LD	!text	"LOOP without DO",$00
 LAB_BMSG	!text	$07, "Break",$00
 LAB_EMSG	!text	$07, " Error",$00
 LAB_LMSG	!text	" in line ",$00
-LAB_RMSG	!text	$0A,"Ready",$0A,$00
+LAB_RMSG	!text	$0A,$0A," Ready",$0A,$0A,$00
 
 LAB_IMSG	!text	" Extra ignored",$0D,$0A,$00
 LAB_REDO	!text	" Redo from start",$0D,$0A,$00

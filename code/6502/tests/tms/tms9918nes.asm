@@ -53,6 +53,9 @@ hbc56Main:
 
         jsr tmsModeGraphicsI
 
+        lda #TMS_R1_SPRITE_MAG2
+        jsr tmsReg1SetFields
+
         jsr tmsInitTextTable ; clear the name table
 
         +tmsEnableOutput

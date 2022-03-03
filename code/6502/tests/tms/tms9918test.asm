@@ -14,7 +14,7 @@ YPOS = $45
 
 
 hbc56Meta:
-        +setHbcMetaTitle "TMS9918 GFX I"
+        +setHbcMetaTitle "BEAM TIME TEST"
         rts
 
 sprite1:
@@ -44,6 +44,9 @@ hbc56Main:
         sei
 
         jsr tmsModeGraphicsI
+
+        lda #TMS_R1_SPRITE_MAG2
+        jsr tmsReg1SetFields
 
         jsr tmsInitTextTable ; clear the name table
 
