@@ -229,12 +229,40 @@ static const int disassemblyVpos = 6;
 #define OUTPUT_HEX_WITH_LABEL 0
 
 
-void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
+void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY, int mouseZ)
 {
   char buffer[10];
 
   int mouseCharX = mouseX / DEBUGGER_CHAR_W;
   int mouseCharY = mouseY / DEBUGGER_CHAR_H;
+
+  const int memoryVpos = disassemblyVpos + 33;
+  const int vramVpos = memoryVpos + 34;
+
+  if (mouseZ && mouseX > 0)
+  {
+    mouseZ = mouseZ < 0 ? -0x20 : 0x20;
+
+    const Uint8* keystate = SDL_GetKeyboardState(NULL);
+    if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_RCTRL]) mouseZ *= 0x20;
+
+    if (mouseY >= disassemblyVpos * DEBUGGER_CHAR_H)
+    {
+      if (mouseY < memoryVpos * DEBUGGER_CHAR_H)
+      {
+        /* disassembly */
+      }
+      else if (mouseY < vramVpos * DEBUGGER_CHAR_H)
+      {
+        debugMemoryAddr -= mouseZ;
+      }
+      else
+      {
+        debugTmsMemoryAddr -= mouseZ;
+      }
+    }
+  }
+
 
   memset(debuggerFrameBuffer, 0, sizeof(debuggerFrameBuffer));
 
@@ -318,7 +346,17 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
     uint16_t refAddr = 0;
     char instructionBuffer[32];
 
-    pc = vrEmu6502DisassembleInstruction(cpu6502, pc, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
+    /* empty rom ? */
+    if (opcode == 0xff && hbc56MemRead(pc + 1, true) == 0xff)
+    {
+      ++pc;
+      instructionBuffer[0] = '-';
+      instructionBuffer[1] = 0;
+    }
+    else
+    {
+      pc = vrEmu6502DisassembleInstruction(cpu6502, pc, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
+    }
 
     debuggerOutput(instructionBuffer, xPos, i + disassemblyVpos);
     xPos += (int)strnlen(instructionBuffer, sizeof(instructionBuffer));
@@ -389,7 +427,6 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
     ++y;
   }
 
-  int memoryVpos = disassemblyVpos + 33;
   fgColor = white;
   debuggerOutput("Memory", 0, memoryVpos - 1);
   fgColor = green;
@@ -417,22 +454,21 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
 
   if (tms9918)
   {
-    memoryVpos += 34;
     fgColor = white;
-    debuggerOutput("TMS9918 VRAM", 0, memoryVpos - 1);
-    debuggerOutput("Reg", 42, memoryVpos - 1);
+    debuggerOutput("TMS9918 VRAM", 0, vramVpos - 1);
+    debuggerOutput("Reg", 42, vramVpos - 1);
     fgColor = green;
     addr = debugTmsMemoryAddr & 0x3fff;
     for (uint8_t y = 0; y < 16; ++y)
     {
-      debuggerOutput("$", 0, y + memoryVpos);
-      debuggerOutputHex16(addr, 1, y + memoryVpos);
+      debuggerOutput("$", 0, y + vramVpos);
+      debuggerOutputHex16(addr, 1, y + vramVpos);
 
       for (uint8_t x = 0; x < 8; ++x)
       {
         uint8_t d = readTms9918Vram(tms9918, addr);
-        debuggerOutputHex(d, 7 + x * 3, y + memoryVpos);
-        debuggerOutputChar(d, 32 + x, y + memoryVpos);
+        debuggerOutputHex(d, 7 + x * 3, y + vramVpos);
+        debuggerOutputChar(d, 32 + x, y + vramVpos);
         ++addr;
       }
     }
@@ -440,10 +476,10 @@ void debuggerUpdate(SDL_Texture* tex, int mouseX, int mouseY)
     for (uint8_t y = 0; y < 8; ++y)
     {
       uint8_t r = readTms9918Reg(tms9918, y);
-      debuggerOutput("R  $", 42, y + memoryVpos);
-      debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + memoryVpos);
-      debuggerOutputHex(r, 46, y + memoryVpos);
-      debuggerOutput(SDL_itoa(r, buffer, 10), 49, y + memoryVpos);
+      debuggerOutput("R  $", 42, y + vramVpos);
+      debuggerOutput(SDL_itoa(y, buffer, 10), 43, y + vramVpos);
+      debuggerOutputHex(r, 46, y + vramVpos);
+      debuggerOutput(SDL_itoa(r, buffer, 10), 49, y + vramVpos);
     }
 
   }

@@ -33,4 +33,4 @@ void debuggerInitTms(HBC56Device *tms9918);
 
 void debuggerLoadLabels(const char * labelFileContents);
 
-void debuggerUpdate(SDL_Texture *tex, int mouseX, int mouseY);
+void debuggerUpdate(SDL_Texture *tex, int mouseX, int mouseY, int mouseZ);
