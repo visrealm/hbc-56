@@ -100,7 +100,7 @@ BCD_RAM_START           = SFXMAN_RAM_END
 BCD_RAM_END             = BCD_RAM_START + 3
 
 KB_RAM_START            = BCD_RAM_END
-KB_RAM_END              = KB_RAM_START + 3
+KB_RAM_END              = KB_RAM_START + 265
 
 NES_RAM_START            = KB_RAM_END
 NES_RAM_END              = NES_RAM_START + 3

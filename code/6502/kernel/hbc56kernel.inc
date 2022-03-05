@@ -27,7 +27,7 @@ cputype = $65c02
 
 !ifndef HBC_56_EXCLUDE_KERNEL_ROM {
 
-        ; if the program is includes the kernal image
+        ; if the program requires the kernal image
         ; then... include it
 
         *=HBC56_META_VECTOR
