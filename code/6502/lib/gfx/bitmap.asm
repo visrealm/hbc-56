@@ -192,16 +192,7 @@ bitmapSetPixel:
 
 	jsr _bitmapOffset
 	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
+	lda tableBitFromLeft, x
 	
 	ora (PIX_ADDR), y
 	sta (PIX_ADDR), y
@@ -220,17 +211,8 @@ bitmapClearPixel:
 
 	jsr _bitmapOffset
 	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	eor #$ff
+	lda tableInvBitFromLeft, x
+
 	and (PIX_ADDR), y
 	sta (PIX_ADDR), y
 	
@@ -249,16 +231,8 @@ bitmapXorPixel:
 
 	jsr _bitmapOffset
 	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
+	lda tableBitFromLeft, x
+
 	eor (PIX_ADDR), y
 	sta (PIX_ADDR), y
 	
@@ -393,17 +367,9 @@ bitmapLineV:
 	lda BITMAP_LINE_STYLE
 	sta STYLE_BYTE
 	
-	lda #$80
-	
-; shift the bits to the right for the pixel offset
--
-	cpx #0
-	beq +
-	dex
-	lsr    
-	bcc -  ; carry is always clear
-+
-	sta COL_BYTE
+	lda tableBitFromLeft, x
+
+	sta COL_BYTE	
 	
 	ldx BITMAP_Y1
 -
@@ -436,7 +402,7 @@ bitmapLineV:
 	inc PIX_ADDR + 1
 +
 	sta PIX_ADDR
-    clc
+    	clc
 	bcc -
 ++
 	

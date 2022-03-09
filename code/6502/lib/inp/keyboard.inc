@@ -15,3 +15,17 @@
         cmp #.buttonMask
         bne addr
 }
+
+!macro kbSetEventHandlerPressed .cb {
+        lda #<.cb
+        sta KB_CB_PRESSED
+        lda #>.cb
+        sta KB_CB_PRESSED + 1
+}
+
+!macro kbSetEventHandlerReleased .cb {
+        lda #<.cb
+        sta KB_CB_RELEASED
+        lda #>.cb
+        sta KB_CB_RELEASED + 1
+}

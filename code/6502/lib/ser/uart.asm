@@ -7,8 +7,6 @@
 ; https://github.com/visrealm/hbc-56
 ;
 
-!src "hbc56.inc"
-
 HAVE_UART = 1
 
 ; -------------------------
@@ -117,8 +115,6 @@ uartInit:
 ; uartIrq: Standard UART IRQ handler
 ; -----------------------------------------------------------------------------
 uartIrq:
-        pha
-
         lda #UART_STATUS_RX_REG_FULL
         bit UART_REG
         beq @endFlowControlCheck
@@ -142,8 +138,7 @@ uartIrq:
         jsr uartFlowCtrlXoff                        ; stop please.
 
 @endFlowControlCheck
-        pla
-        rti
+        rts
 
 ; -----------------------------------------------------------------------------
 ; uartFlowCtrlXon: Allow client to send data

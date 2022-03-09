@@ -32,5 +32,5 @@ addressCommand:
         bcc +
         ldx #6
         jmp nextCommand
-        +
++
         jmp commandLoop

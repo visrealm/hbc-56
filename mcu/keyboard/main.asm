@@ -24,8 +24,8 @@ CONFIG  CP = OFF              ; Flash Program Memory Code Protection bit (Code p
 ;                          PIC16F627A
 ;                            PINOUT
 ;                         +----------+
-;     DAT_RDY (O) - RA2 ==| 1     18 |== RA1 - PS/2 DATA (I)
-;        _INT (O) - RA3 ==| 2     17 |== RA0 - PS/2 DATA (I)
+;     DAT_RDY (O) - RA2 ==| 1     18 |== RA1 - PS/2 DATA  (I)
+;        _INT (O) - RA3 ==| 2     17 |== RA0 - PS/2 CLOCK (I)
 ;   NEXT_CODE (I) - RA4 ==| 3     16 |== RA7 - XTAL 1
 ;      _RESET (I) - RA5 ==| 4     15 |== RA6 - XTAL 2
 ;                   GND ==| 5     14 |== VCC
@@ -112,9 +112,9 @@ endm
 ; resetTimer
 ; ------------------------------------------------------------------------------
 resetTimer macro
-    bcf	    T0IF    ; Clear Timer0 interrupt flag
     clrf    TMR0    ; Set timer to 255 (one increment will trigger interrupt)
     decf    TMR0
+    bcf	    T0IF    ; Clear Timer0 interrupt flag
 endm
 
 ; ------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ init:
     bank0
     clrf    PORTA	  ; Initialize GPIO by clearing output
     clrf    PORTB	  ; Initialize GPIO by clearing output
-    bcf	    _INT_PIN	  ; Turn off interrupt out
+    bsf	    _INT_PIN	  ; Turn off interrupt out
     movlw   CMCON_CM_MASK ; Turn comparators off
     movwf   CMCON
 

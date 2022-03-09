@@ -110,10 +110,10 @@ HBC56Device* hbc56AddDevice(HBC56Device device)
  */
 void hbc56Interrupt(uint8_t irq, HBC56InterruptSignal signal)
 {
-  if (irq < MAX_IRQS)
-  {
-    irqs[irq] = signal;
-  } 
+  if (irq == 0 || irq > MAX_IRQS) return;
+  irq--;
+
+  irqs[irq] = signal;
 
   if (cpuDevice)
   {
@@ -251,6 +251,17 @@ void hbc56DebugBreakOnInt()
 uint8_t hbc56MemRead(uint16_t addr, bool dbg)
 {
   uint8_t val = 0x00;
+  if (addr == 0x7fef)
+  {
+    if (irqs[0]) val |= 0x01;
+    if (irqs[1]) val |= 0x02;
+    if (irqs[2]) val |= 0x04;
+    if (irqs[3]) val |= 0x08;
+    if (irqs[4]) val |= 0x10;
+    int j = val;
+    return val;
+  }
+
   for (size_t i = 0; i < deviceCount; ++i)
   {
     if (readDevice(&devices[i], addr, &val, dbg))
@@ -409,7 +420,6 @@ static void doEvents()
     {
       case SDL_KEYDOWN:
       {
-        skipProcessing = 1;
         SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
         SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
         SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
@@ -419,11 +429,8 @@ static void doEvents()
           case SDLK_r:
             if (withControl)
             {
+              skipProcessing = 1;
               hbc56Reset();
-            }
-            else
-            {
-              skipProcessing = 0;
             }
             break;
 
@@ -498,13 +505,12 @@ static void doEvents()
             break;
 
           default:
-            skipProcessing = 0;
+          break;
         }
       }
 
       case SDL_KEYUP:
       {
-        skipProcessing = 1;
         SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
         SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
         SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
@@ -512,29 +518,14 @@ static void doEvents()
         switch (event.key.keysym.sym)
         {
           case SDLK_r:
-            if (!withControl) skipProcessing = 0;
+            if (withControl) skipProcessing = 1;
             break;
 
           case SDLK_d:
-            if (!withControl) skipProcessing = 0;
-            break;
-
-          case SDLK_F2:
-          case SDLK_F12:
-          case SDLK_F5:
-          case SDLK_F7:
-          case SDLK_PAGEUP:
-          case SDLK_KP_9:
-          case SDLK_PAGEDOWN:
-          case SDLK_KP_3:
-          case SDLK_F11:
-          case SDLK_F10:
-          case SDLK_ESCAPE:
-            skipProcessing = 1;
+            if (withControl) skipProcessing = 1;
             break;
 
           default:
-            skipProcessing = 0;
             break;
         }
         break;
@@ -787,7 +778,7 @@ int main(int argc, char* argv[])
 #endif
 
 #if HBC56_HAVE_KB
-  hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT)));
+  hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT), HBC56_KB_IRQ));
 #endif
 
 #if HBC56_HAVE_NES

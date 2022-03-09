@@ -1302,6 +1302,9 @@ gameLoopWaitForStart:
         +nes1BranchIfPressed NES_B, @startGame
         +nes1BranchIfPressed NES_START, @startGame
 
+        lda KB_PRESSED_MAP + KB_SCANCODE_G
+        bne @startGame
+
         rts
 
 @startGame

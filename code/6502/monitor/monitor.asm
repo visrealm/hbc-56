@@ -64,8 +64,10 @@ TMS  = 0
         }
 }
 
+!ifdef HAVE_TMS9918 {
 FG     = TMS_GREY
 BG     = TMS_BLACK
+}
 
 
 ; -----------------------------------------------------------------------------
@@ -80,23 +82,24 @@ hbc56Meta:
 ; main entry point
 ; -----------------------------------------------------------------------------
 hbc56Main:
+
+!ifdef HAVE_TMS9918 {
         +tmsColorFgBg FG, BG
         jsr tmsSetBackground
         jsr tmsModeGraphicsI
-       
+        +tmsDisableOutput
+        +tmsDisableInterrupts
+        +tmsReadStatus
+
 !if TMS {
         jsr tmsModeText
 	+tmsUpdateFont TMS_TEXT_MODE_FONT
         +consoleEnableCursor
-
 }       
-        +tmsDisableOutput
-        +tmsDisableInterrupts
-        +tmsReadStatus
+}
         
 !if UART {
         jsr uartInit
-        +setIntHandler uartIrq
 }
 
         cli

@@ -27,6 +27,8 @@ UART_IO_PORT            = $20
 AY_IO_PORT              = $40
 KB_IO_PORT              = $80
 NES_IO_PORT             = $82
+INT_IO_PORT             = $ef
+VIA_IO_PORT             = $f0
 
 ; -------------------------
 ; Kernel Zero Page
@@ -100,11 +102,10 @@ BCD_RAM_START           = SFXMAN_RAM_END
 BCD_RAM_END             = BCD_RAM_START + 3
 
 KB_RAM_START            = BCD_RAM_END
-KB_RAM_END              = KB_RAM_START + 265
+KB_RAM_END              = KB_RAM_START + 64
 
 NES_RAM_START            = KB_RAM_END
 NES_RAM_END              = NES_RAM_START + 3
-
 
 LAST_MODULE_RAM_END     = NES_RAM_END
 
@@ -138,11 +139,10 @@ HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
 !src "hbc56.asm"
 *=HBC56_KERNEL_START
 
-+hbc56Title "github.com/visrealm/hbc-56"
-
 !src "ut/ascii.asm"
 !src "ut/bcd.asm"
 !src "ut/memory.asm"
+!src "ut/tables.asm"
 
 !ifndef HBC56_DISABLE_AY3891X {
         !src "sfx/ay3891x.asm"
@@ -168,109 +168,23 @@ HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
         !src "ser/uart.asm"
 }
 
-!src "inp/nes.asm"
-!src "inp/keyboard.asm"
-
-!src "bootscreen.asm"
-
-!src "kernel.inc"
-
-!ifdef HAVE_TMS9918 {
-.vsyncCallback:
-        bit HBC56_CONSOLE_FLAGS
-        bpl ++
-
-        lda HBC56_TICKS
-        beq .doCursor
-        cmp #30
-        beq .doCursor
-        jmp ++
-
-.doCursor:
-        stx HBC56_TMP_X
-        sty HBC56_TMP_Y
-        jsr tmsSetPosConsole
-        ldx HBC56_TMP_X
-        ldy HBC56_TMP_Y
-        lda HBC56_TICKS
-        beq +
-        lda #' '
-        +tmsPut
-        jmp ++
-+ 
-        lda #$7f
-        +tmsPut
-++
-        !ifdef HAVE_SFX_MAN {
-                jsr sfxManTick
-        }
-
-        jmp (HBC56_VSYNC_CALLBACK)
-
-.nullCallbackFunction:
-        rts
-
-onVSync:
-        pha
-        inc HBC56_TICKS
-        lda HBC56_TICKS
-        cmp #TMS_FPS
-        bne +
-        lda #0
-        sta HBC56_TICKS
-        +inc16 HBC56_SECONDS_L
-+
-
-        jsr .vsyncCallback
-
-        +tmsReadStatus
-        pla      
-        rti
-
-consoleEnableCursor:
-        +consoleEnableCursor
-        rts
-
-consoleDisableCursor:
-        +consoleDisableCursor
-        rts
+!ifndef HBC56_DISABLE_NES {
+        !src "inp/nes.asm"
 }
 
+!ifndef HBC56_DISABLE_KEYBOARD {
+        !src "inp/keyboard.asm"
+}
 
-hbc56HighBell:
-        !ifdef HAVE_AY3891X {
-                +ayToneEnable AY_PSG0, AY_CHC
-                +aySetVolume AY_PSG0, AY_CHC, $ff
-                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_F5
-        }
-        jmp .noteTimeout
++hbc56Title "github.com/visrealm/hbc-56"
 
-hbc56Bell:
-        !ifdef HAVE_AY3891X {
-                +ayToneEnable AY_PSG0, AY_CHC
-                +aySetVolume AY_PSG0, AY_CHC, $ff
-                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_E3
-        }
-        jmp .noteTimeout
+!src "bootscreen.asm"
+!src "kernel.inc"
+!src "interrupts.asm"
 
-.noteTimeout
-        !ifdef HAVE_SFXMAN {
-                lda HBC56_CONSOLE_FLAGS
-                and #HBC56_CONSOLE_FLAG_LCD
-                bne .skipSfxMan
-                +sfxManSetChannelTimeout  AY_PSG0, AY_CHC, 0.16
-                rts
-        }
-.skipSfxMan
-        !ifdef HAVE_AY3891X {
-                jsr hbc56Delay
-                jsr hbc56Delay
-                +ayStop AY_PSG0, AY_CHC
-        }
-
-        rts
-
-
+; -----------------------------------------------------------------------------
+; HBC-56 Main entry point (reset vector)
+; -----------------------------------------------------------------------------
 kernelMain:
         sei
         cld     ; make sure we're not in decimal mode
@@ -294,7 +208,9 @@ kernelMain:
 
         jsr HBC56_META_VECTOR   ; user program metadata
 
-        jsr kbInit
+        !ifdef HAVE_KEYBOARD {
+                jsr kbInit
+        }
 
         !ifdef HAVE_AY3891X {
                 jsr ayInit
@@ -310,6 +226,7 @@ kernelMain:
                 ; dummy callback
                 +hbc56SetVsyncCallback .nullCallbackFunction
         }
+
         !ifdef HAVE_LCD {
                 jsr lcdDetect
                 bcc @noLcd1
@@ -322,10 +239,11 @@ kernelMain:
 
         jsr hbc56BootScreen
 
+        +setIntHandler hbc56IntHandler
+
         !ifdef HAVE_TMS9918 {
                 +tmsEnableOutput
                 +tmsDisableInterrupts
-                +setIntHandler onVSync
         }
 
         lda #20
@@ -378,6 +296,7 @@ kernelMain:
         jmp .afterInput
 
 .keyboardInput
+!ifdef HAVE_KEYBOARD {
         ; Keyboard  input
         sei
         !ifdef HAVE_TMS9918 {
@@ -402,6 +321,7 @@ kernelMain:
         }
         cli
         jsr kbWaitForKey
+}
 
 .afterInput
 
@@ -427,12 +347,60 @@ kernelMain:
 
         jsr DEFAULT_HBC56_RST_VECTOR
 
+; -----------------------------------------------------------------------------
+; Beep (higher tone)
+; -----------------------------------------------------------------------------
+hbc56HighBell:
+        !ifdef HAVE_AY3891X {
+                +ayToneEnable AY_PSG0, AY_CHC
+                +aySetVolume AY_PSG0, AY_CHC, $ff
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_F5
+        }
+        bra .noteTimeout
+
+; -----------------------------------------------------------------------------
+; Beep (lower tone)
+; -----------------------------------------------------------------------------
+hbc56Bell:
+        !ifdef HAVE_AY3891X {
+                +ayToneEnable AY_PSG0, AY_CHC
+                +aySetVolume AY_PSG0, AY_CHC, $ff
+                +ayPlayNote AY_PSG0, AY_CHC, NOTE_FREQ_E3
+        }
+        bra .noteTimeout
+
+.noteTimeout
+        !ifdef HAVE_SFXMAN {
+                lda HBC56_CONSOLE_FLAGS
+                and #HBC56_CONSOLE_FLAG_LCD
+                bne @skipSfxMan
+                +sfxManSetChannelTimeout  AY_PSG0, AY_CHC, 0.16
+                rts
+        }
+@skipSfxMan
+        !ifdef HAVE_AY3891X {
+                jsr hbc56Delay
+                jsr hbc56Delay
+                +ayStop AY_PSG0, AY_CHC
+        }
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Software reset
+; -----------------------------------------------------------------------------
 hbc56Reset:
         jmp kernelMain
 
+; -----------------------------------------------------------------------------
+; Stop (loop forever)
+; -----------------------------------------------------------------------------
 hbc56Stop:
         jmp hbc56Stop
 
+; -----------------------------------------------------------------------------
+; Delay function
+; -----------------------------------------------------------------------------
 hbc56CustomDelayMs:
         inc DELAY_H
 -

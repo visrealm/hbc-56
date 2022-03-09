@@ -7,6 +7,13 @@
 ; https://github@com/visrealm/hbc-56
 ;
 
+!src "ut/math.inc"
+
+HAVE_KEYBOARD = 1
+
+; -------------------------
+; Constants
+; -------------------------
 !ifndef KB_IO_PORT { KB_IO_PORT = $80
         !warn "KB_IO_PORT not provided@ Defaulting to ", KB_IO_PORT
 }
@@ -24,11 +31,17 @@ KB_TMP_Y          = KB_RAM_START + 2
 KB_CB_PRESSED     = KB_RAM_START + 3
 KB_CB_RELEASED    = KB_RAM_START + 5
 KB_CURRENT_STATE  = KB_RAM_START + 7
-KB_PRESSED_MAP    = KB_RAM_START + 8
+KB_BUFFER_HEAD    = KB_RAM_START + 8         ; head of circular buffer
+KB_BUFFER_TAIL    = KB_RAM_START + 9         ; tail of circular buffer
+KB_BUFFER         = KB_RAM_START + 10
+KB_BUFFER_SIZE    = (1 << 4)
+KB_BUFFER_MASK    = KB_BUFFER_SIZE - 1
+KB_PRESSED_MAP    = KB_BUFFER + KB_BUFFER_SIZE
 
-KB_PRESSED_MAP_SIZE = 256;
+KB_PRESSED_MAP_SIZE = $fd + 1
+KB_PRESSED_MAP_BYTES = 32
 
-KB_RAM_SIZE     = 8 + KB_PRESSED_MAP_SIZE
+KB_RAM_SIZE     = (KB_PRESSED_MAP + KB_PRESSED_MAP_BYTES) - KB_RAM_START
 
 
 !if KB_RAM_END < (KB_RAM_START + KB_RAM_SIZE) {
@@ -158,13 +171,52 @@ KB_SCANCODE_WINDOWS_RIGHT = $A7
 KB_IO_ADDR         = IO_PORT_BASE_ADDRESS | KB_IO_PORT
 KB_STATUS_ADDR     = IO_PORT_BASE_ADDRESS | KB_IO_PORT | $01
 
-; -----------------------------------------------------------------------------
-; kbWaitData: Not sure how much delay we need so make a macro for now
-; -----------------------------------------------------------------------------
-!macro kbWaitData {
-        ldy #16
-        jsr hbc56CustomDelay        
+!macro kbSetKey {
+        ldx KB_BUFFER_HEAD
+        sta KB_BUFFER, x
+        sta KB_TMP_X
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda KB_PRESSED_MAP, x
+        ora tableBitFromLeft, y
+        sta KB_PRESSED_MAP, x
+        lda KB_BUFFER_HEAD
+        inc
+        and #KB_BUFFER_MASK
+        sta KB_BUFFER_HEAD
+
 }
+
+
+!macro kbClearKey {
+        sta KB_TMP_X
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda KB_PRESSED_MAP, x
+        and tableInvBitFromLeft, y
+        sta KB_PRESSED_MAP, x
+}
+
+; X is scancode
+kbIsPressed:
+        stx KB_TMP_X
+        txa
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda tableBitFromLeft, y
+        and KB_PRESSED_MAP, x
+        ldx KB_TMP_X
+        cmp #0
+        rts
 
 
 ; -----------------------------------------------------------------------------
@@ -182,7 +234,10 @@ kbInit:
         dex
         bne -
 
-        +memset KB_PRESSED_MAP, 0, 256
+        +memset KB_PRESSED_MAP, 0, KB_PRESSED_MAP_BYTES
+
+        stz KB_BUFFER_HEAD
+        stz KB_BUFFER_TAIL
 
         lda #.KB_STATE_DEFAULT
         sta KB_CURRENT_STATE
@@ -204,10 +259,10 @@ kbResetCallbacks:
         rts
 
 kbIntHandler:
-        jsr kbReadByteNoDelay
+        jsr kbReadByte
         beq .kbDummyCb
-        cpx #0
-        beq .kbDummyCb
+       ; cpx #0
+       ; beq .kbDummyCb
 
         txa     ; acc now holds scancode
 
@@ -245,10 +300,10 @@ kbIntHandler:
 +
         ; a regular key was pressed 
         ; TODO: bit field rather than a byte per key?
-        tax
-        sta KB_PRESSED_MAP, x
+        +kbSetKey
 
         jmp (KB_CB_PRESSED)
+        ; subroutine returns above
 
 .extRelKeyHandler:
         ora #$80
@@ -256,7 +311,7 @@ kbIntHandler:
 
 .relKeyHandler:
         tax
-        stz KB_PRESSED_MAP, x
+        +kbClearKey
 
         lda #.KB_STATE_DEFAULT
         sta KB_CURRENT_STATE
@@ -273,9 +328,7 @@ kbIntHandler:
 +
         ora #$80
         
-        ; TODO: bit field rather than a byte per key?
-        tax
-        sta KB_PRESSED_MAP, x
+        +kbSetKey
 
         lda #.KB_STATE_DEFAULT
         sta KB_CURRENT_STATE
@@ -303,13 +356,21 @@ kbIntHandler:
 @notLastByte
         rts
 
+.kbIncTail:
+        lda KB_BUFFER_TAIL
+        inc
+        and #KB_BUFFER_MASK
+        sta KB_BUFFER_TAIL
+        rts
 
 ; -----------------------------------------------------------------------------
 ; kbWaitForKey: Wait for a key press
 ; -----------------------------------------------------------------------------
 kbWaitForKey:
-        jsr kbReadAscii
-        bcc kbWaitForKey
+        lda KB_BUFFER_HEAD
+        cmp KB_BUFFER_TAIL
+        beq kbWaitForKey
+        jsr .kbIncTail
         rts
 
 kbWaitForScancode:
@@ -325,8 +386,6 @@ kbWaitForScancode:
 ;   X: PS/2 Scancode byte
 ; -----------------------------------------------------------------------------
 kbReadByte:        
-        +kbWaitData
-kbReadByteNoDelay:
         ldx #0
         lda #$04
         bit KB_STATUS_ADDR
@@ -413,6 +472,8 @@ kbReadAscii:
         bcc @dontSwitchCase
         eor #$20
         sec
+
+@endReadAscii:
         ldx KB_TMP_X
         ldy KB_TMP_Y
         rts
@@ -420,15 +481,11 @@ kbReadAscii:
 @dontSwitchCase
         sec
         txa
-        ldx KB_TMP_X
-        ldy KB_TMP_Y
-        rts
+        bra @endReadAscii
 
 @noCharacterRead
-        ldx KB_TMP_X
-        ldy KB_TMP_Y
         clc
-        rts
+        bra @endReadAscii
 
 
 KEY_MAP:

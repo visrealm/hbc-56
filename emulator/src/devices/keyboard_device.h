@@ -19,7 +19,7 @@
  * --------------------
  * create a keyboard device for the given address
  */
-HBC56Device createKeyboardDevice(uint16_t addr);
+HBC56Device createKeyboardDevice(uint16_t addr, uint8_t irq);
 
 
 #endif

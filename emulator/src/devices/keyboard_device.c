@@ -10,6 +10,7 @@
  */
 
 #include "keyboard_device.h"
+#include "../hbc56emu.h"
 
 #include "SDL.h"
 
@@ -27,6 +28,7 @@ static uint64_t sdl2ps2map[232][2];
 struct KeyboardDevice
 {
   uint16_t  addr;
+  uint8_t   irq;
   char      kbQueue[16];
   int       kbStart;
   int       kbEnd;
@@ -39,7 +41,8 @@ typedef struct KeyboardDevice KeyboardDevice;
  * create a ram or rom device for the given address range
  */
 HBC56Device createKeyboardDevice(
-  uint16_t addr)
+  uint16_t addr,
+  uint8_t irq)
 {
   HBC56Device device = createDevice("Keyboard");
   KeyboardDevice* keyboardDevice = (KeyboardDevice*)malloc(sizeof(KeyboardDevice));
@@ -47,6 +50,7 @@ HBC56Device createKeyboardDevice(
   {
     SDL_memset(keyboardDevice, 0, sizeof(KeyboardDevice));
     keyboardDevice->addr = addr;
+    keyboardDevice->irq = irq;
     device.data = keyboardDevice;
 
     device.resetFn = &resetKeyboardDevice;
@@ -87,6 +91,11 @@ static uint8_t readKeyboardDevice(HBC56Device* device, uint16_t addr, uint8_t *v
 
         ++kbDevice->kbStart;
         kbDevice->kbStart &= 0x0f;
+
+        if (kbDevice->kbStart == kbDevice->kbEnd)
+        {
+          hbc56Interrupt(kbDevice->irq, INTERRUPT_RELEASE);
+        }
       }
       return 1;
     }
@@ -123,20 +132,14 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
       {
         SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
 
-        if (event->key.keysym.sym == SDLK_F5) break;
-        if (event->key.keysym.sym == SDLK_F10) break;
-        if (event->key.keysym.sym == SDLK_F11) break;
-        if (event->key.keysym.sym == SDLK_F12) break;
-        if (event->key.keysym.sym == SDLK_ESCAPE) break;
-
         uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][0];
         for (int i = 0; i < 8; ++i)
         {
           uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
           if (scanCodeByte)
           {
-            
             kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+            hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
           }
           ps2ScanCode <<= 8;
         }
@@ -146,13 +149,6 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
       case SDL_KEYUP:
       {
         SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        if (event->key.keysym.sym == SDLK_F5) break;
-        if (event->key.keysym.sym == SDLK_F10) break;
-        if (event->key.keysym.sym == SDLK_F11) break;
-        if (event->key.keysym.sym == SDLK_F12) break;
-        if (event->key.keysym.sym == SDLK_ESCAPE) break;
-        if (event->key.keysym.sym == SDLK_LCTRL) break;
-        if (event->key.keysym.sym == SDLK_RCTRL) break;
 
         uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][1];
         for (int i = 0; i < 8; ++i)
@@ -161,6 +157,7 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
           if (scanCodeByte)
           {
             kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+            hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
           }
           ps2ScanCode <<= 8;
         }

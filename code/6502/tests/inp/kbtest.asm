@@ -29,7 +29,8 @@ hbc56Main:
 
         ; set up color table
         +tmsSetAddrColorTable
-        +tmsSendData colorTab, 32
+        +tmsPutRpt $1f, 31
+        +tmsPut $4f
         
         ; clear the name table
         +tmsSetAddrNameTable
@@ -50,14 +51,10 @@ hbc56Main:
         +tmsSetAddrSpritePattTable
         +tmsSendData sprites, 4*8
 
-        +tmsCreateSprite 0, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 1, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 2, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 3, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 4, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 5, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 6, 0, 0, $d0, TMS_DK_GREEN
-        +tmsCreateSprite 7, 0, 0, $d0, TMS_DK_GREEN
+        lda #0
+        jsr tmsSetSpriteTmpAddress
+        jsr tmsSetAddressWrite
+        +tmsSendDataRpt spriteAttr, 4, 8
 
         +tmsEnableOutput
 
@@ -126,10 +123,10 @@ outputLoop:
         lda #0                  ; clear pressed count
         sta PRESSED_KEY_COUNT
 
-        ldx #0                ; max normal key index
+        ldx #<KB_PRESSED_MAP_SIZE      ; max normal key index
 
 -                               ; iterate over the scancode table
-        lda KB_PRESSED_MAP,x      ; if a key is pressed, show the overlay
+        jsr kbIsPressed    ; if a key is pressed, show the overlay
         bne showKey
 doneShowKey:
         dex
@@ -181,10 +178,6 @@ keyPosY:
 ; -----------------------------------------------------------------------------
 ; Graphics data
 ; -----------------------------------------------------------------------------
-colorTab:
-!byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f
-!byte $1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$1f,$4f
-
 keyboardInd:
 !bin "keyboard.ind"
 keyboardIndEnd:
@@ -198,3 +191,6 @@ sprites:
 !byte $FF,$FF,$7F,$7F,$3F,$1F,$07,$00
 !byte $80,$E0,$F0,$F8,$F8,$FC,$FC,$FC
 !byte $FC,$FC,$F8,$F8,$F0,$E0,$80,$00
+
+spriteAttr:
+!byte $d0, 0, 0, TMS_DK_GREEN

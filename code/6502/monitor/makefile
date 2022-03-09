@@ -12,7 +12,7 @@ ROOT_PATH=../
 
 default: monitor
 
-DISABLE_KERNEL_MODULES = LCD
+DISABLE_KERNEL_MODULES = LCD TMS9918
 
 include $(ROOT_PATH)makefile
 
