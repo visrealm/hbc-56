@@ -60,7 +60,7 @@ TMS  = 0
         !if UART {
                 jsr uartInWait
         } else {
-                jsr kbWaitForKey
+                jsr kbWaitForScancode
         }
 }
 

@@ -8,7 +8,8 @@
 ;
 
 !src "hbc56.inc"
-!src "ut/math.inc"
+
+!ifndef HAVE_MATH_INC { !src "ut/math.inc" }
 !src "gfx/tms9918.inc"
 
 TMS_FONT_DATA:

@@ -10,6 +10,7 @@
 ;
 ;
 
+HAVE_MATH_INC = 1
 
 !macro lsr2 {
         lsr

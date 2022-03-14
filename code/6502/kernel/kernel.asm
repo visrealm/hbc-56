@@ -320,7 +320,7 @@ kernelMain:
 @noLcd3:
         }
         cli
-        jsr kbWaitForKey
+        jsr kbWaitForScancode
 }
 
 .afterInput

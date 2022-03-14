@@ -7,7 +7,7 @@
 ; https://github@com/visrealm/hbc-56
 ;
 
-!src "ut/math.inc"
+!ifndef HAVE_MATH_INC { !src "ut/math.inc" }
 
 HAVE_KEYBOARD = 1
 
@@ -167,57 +167,16 @@ KB_SCANCODE_WINDOWS_LEFT = $9F
 KB_SCANCODE_WINDOWS_RIGHT = $A7
 
 
+KB_SHIFT_LEFT_MAP_BYTE = KB_SCANCODE_SHIFT_LEFT >> 3
+KB_SHIFT_LEFT_MAP_BIT  = $80 >> (KB_SCANCODE_SHIFT_LEFT & $07)
+
+KB_SHIFT_RIGHT_MAP_BYTE = KB_SCANCODE_SHIFT_RIGHT >> 3
+KB_SHIFT_RIGHT_MAP_BIT  = $80 >> (KB_SCANCODE_SHIFT_RIGHT & $07)
+
+
 ; IO Ports
 KB_IO_ADDR         = IO_PORT_BASE_ADDRESS | KB_IO_PORT
 KB_STATUS_ADDR     = IO_PORT_BASE_ADDRESS | KB_IO_PORT | $01
-
-!macro kbSetKey {
-        ldx KB_BUFFER_HEAD
-        sta KB_BUFFER, x
-        sta KB_TMP_X
-        +lsr3
-        tax
-        lda KB_TMP_X
-        and #$07
-        tay
-        lda KB_PRESSED_MAP, x
-        ora tableBitFromLeft, y
-        sta KB_PRESSED_MAP, x
-        lda KB_BUFFER_HEAD
-        inc
-        and #KB_BUFFER_MASK
-        sta KB_BUFFER_HEAD
-
-}
-
-
-!macro kbClearKey {
-        sta KB_TMP_X
-        +lsr3
-        tax
-        lda KB_TMP_X
-        and #$07
-        tay
-        lda KB_PRESSED_MAP, x
-        and tableInvBitFromLeft, y
-        sta KB_PRESSED_MAP, x
-}
-
-; X is scancode
-kbIsPressed:
-        stx KB_TMP_X
-        txa
-        +lsr3
-        tax
-        lda KB_TMP_X
-        and #$07
-        tay
-        lda tableBitFromLeft, y
-        and KB_PRESSED_MAP, x
-        ldx KB_TMP_X
-        cmp #0
-        rts
-
 
 ; -----------------------------------------------------------------------------
 ; kbInit: Initialise the keyboard
@@ -230,7 +189,9 @@ kbInit:
         
         ; ensure the hardware keyboard buffer is clear
 -
-        jsr kbReadAscii
+        stx KB_TMP_X
+        jsr .kbReadByte
+        ldx KB_TMP_X
         dex
         bne -
 
@@ -258,11 +219,13 @@ kbResetCallbacks:
 .kbDummyCb:
         rts
 
+; -----------------------------------------------------------------------------
+; kbIntHandler: Standard keyboard interrupt handler
+; -----------------------------------------------------------------------------
 kbIntHandler:
-        jsr kbReadByte
+        jsr .kbReadByte
+        cpx #0
         beq .kbDummyCb
-       ; cpx #0
-       ; beq .kbDummyCb
 
         txa     ; acc now holds scancode
 
@@ -279,6 +242,7 @@ kbIntHandler:
 .kbStateHandlers:
 !word .stdKeyHandler, .relKeyHandler, .extKeyHandler, .extRelKeyHandler, .pauseKeyHandler
 
+; default scancode handler
 .stdKeyHandler
         cmp #KB_RELEASE
         bne +
@@ -300,18 +264,20 @@ kbIntHandler:
 +
         ; a regular key was pressed 
         ; TODO: bit field rather than a byte per key?
-        +kbSetKey
+        jsr .kbSetKey
 
         jmp (KB_CB_PRESSED)
         ; subroutine returns above
 
+; extended release scancode handler
 .extRelKeyHandler:
         ora #$80
         ; flow through
 
+;  release scancode handler
 .relKeyHandler:
         tax
-        +kbClearKey
+        jsr .kbClearKey
 
         lda #.KB_STATE_DEFAULT
         sta KB_CURRENT_STATE
@@ -319,6 +285,7 @@ kbIntHandler:
 
         jmp (KB_CB_RELEASED)
 
+; extended scancode handler
 .extKeyHandler:
         cmp #KB_RELEASE
         bne +
@@ -328,7 +295,7 @@ kbIntHandler:
 +
         ora #$80
         
-        +kbSetKey
+        jsr .kbSetKey
 
         lda #.KB_STATE_DEFAULT
         sta KB_CURRENT_STATE
@@ -336,6 +303,7 @@ kbIntHandler:
 
         jmp (KB_CB_PRESSED)
 
+; pause/break sequence scancode handler
 .pauseKeyHandler:
         cmp #$77
         bne @notLastByte
@@ -356,36 +324,12 @@ kbIntHandler:
 @notLastByte
         rts
 
-.kbIncTail:
-        lda KB_BUFFER_TAIL
-        inc
-        and #KB_BUFFER_MASK
-        sta KB_BUFFER_TAIL
-        rts
-
-; -----------------------------------------------------------------------------
-; kbWaitForKey: Wait for a key press
-; -----------------------------------------------------------------------------
-kbWaitForKey:
-        lda KB_BUFFER_HEAD
-        cmp KB_BUFFER_TAIL
-        beq kbWaitForKey
-        jsr .kbIncTail
-        rts
-
-kbWaitForScancode:
-        jsr kbReadByte
-        beq kbWaitForScancode
-        rts
-
-; -----------------------------------------------------------------------------
-; kbReadByte: Read keyboard buffer
 ; -----------------------------------------------------------------------------
 ; Outputs:
 ;   A: Value of the KB Status (0 if no key)
 ;   X: PS/2 Scancode byte
 ; -----------------------------------------------------------------------------
-kbReadByte:        
+.kbReadByte:        
         ldx #0
         lda #$04
         bit KB_STATUS_ADDR
@@ -402,110 +346,202 @@ kbReadByte:
 
 
 ; -----------------------------------------------------------------------------
-; kbReadAscii: Read keyboard buffer
+; .kbSetKey: Set a key is pressed in KB_PRESSED_MAP
+; Inputs:
+;    A - scancode
 ; -----------------------------------------------------------------------------
-; Outputs:
-;   A: Value of the buffer
-;   C: Set if a key is read
-; -----------------------------------------------------------------------------
-kbReadAscii:
-        stx KB_TMP_X
-        sty KB_TMP_Y
-        jsr kbReadByte
-        beq @noCharacterRead
-        cpx #KB_RELEASE
-        bne @keyPressed
+.kbSetKey:
+        ldx KB_BUFFER_HEAD      ; store at head of buffer
+        sta KB_BUFFER, x
 
-        jsr kbReadByte  ; read the released key
+        sta KB_TMP_X            ; find byte in map
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda KB_PRESSED_MAP, x
+        ora tableBitFromLeft, y ; set bit in map byte
+        sta KB_PRESSED_MAP, x   ; update map
 
-        cpx #KB_SCANCODE_SHIFT_LEFT
-        beq @shiftReleased
-        cpx #KB_SCANCODE_SHIFT_RIGHT
-        beq @shiftReleased
-        jmp +
-
-@shiftReleased:
-        lda #$ff
-        eor #KB_SHIFT_DOWN
-        and KB_FLAGS
-        sta KB_FLAGS
-+
-        jmp @noCharacterRead
-
-@keyPressed:
-        cpx #KB_SCANCODE_SHIFT_LEFT
-        beq @shiftPressed
-        cpx #KB_SCANCODE_SHIFT_RIGHT
-        beq @shiftPressed
+        ; check for toggle keys
+        ldx KB_TMP_X
         cpx #KB_SCANCODE_CAPS_LOCK
-        beq @capsLockPressed
-        jmp +
-
-@shiftPressed:
-        lda #KB_SHIFT_DOWN
-        ora KB_FLAGS
-        sta KB_FLAGS
-        jmp @noCharacterRead
-@capsLockPressed:
+        bne +
         lda #KB_CAPS_LOCK
         eor KB_FLAGS
         sta KB_FLAGS
-        jmp @noCharacterRead
-
 +
-        lda #KB_SHIFT_DOWN
-        bit KB_FLAGS
-        beq ++
-        lda KEY_MAP_SHIFTED, x
-        jmp @haveKey
-++
-        lda KEY_MAP, x
-@haveKey
-        cmp #$ff
-        beq @noCharacterRead
-        tax
-        lda #KB_CAPS_LOCK
-        bit KB_FLAGS
-        beq @dontSwitchCase
-        txa
-        jsr isAlpha
-        bcc @dontSwitchCase
-        eor #$20
-        sec
 
-@endReadAscii:
-        ldx KB_TMP_X
-        ldy KB_TMP_Y
+        lda KB_BUFFER_HEAD      ; increment (and mask) buffer head
+        inc
+        and #KB_BUFFER_MASK
+        sta KB_BUFFER_HEAD
         rts
 
-@dontSwitchCase
-        sec
-        txa
-        bra @endReadAscii
+; -----------------------------------------------------------------------------
+; .kbClearKey: Clear a key is pressed in KB_PRESSED_MAP
+; Inputs:
+;    A - scancode
+; -----------------------------------------------------------------------------
+.kbClearKey:
+        sta KB_TMP_X
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda KB_PRESSED_MAP, x
+        and tableInvBitFromLeft, y
+        sta KB_PRESSED_MAP, x
+        rts
 
-@noCharacterRead
+
+.kbPopTail:
+        lda KB_BUFFER_TAIL
+        tax
+        inc
+        and #KB_BUFFER_MASK
+        sta KB_BUFFER_TAIL
+        lda KB_BUFFER, x
+        rts
+
+; -----------------------------------------------------------------------------
+; kbIsPressed: Is a key pressed right now?
+; Inputs:
+;    X - scancode
+; Returns:
+;    Z - clear if pressed, set if not pressed
+; -----------------------------------------------------------------------------
+kbIsPressed:
+        stx KB_TMP_X
+        txa
+        +lsr3
+        tax
+        lda KB_TMP_X
+        and #$07
+        tay
+        lda tableBitFromLeft, y
+        and KB_PRESSED_MAP, x
+        ldx KB_TMP_X
+        cmp #0
+        rts
+
+
+; -----------------------------------------------------------------------------
+; kbWaitForScancode: Wait for a key press
+; Returns:
+;    A - scancode
+; -----------------------------------------------------------------------------
+kbWaitForScancode:
+        lda KB_BUFFER_HEAD
+        cmp KB_BUFFER_TAIL
+        beq kbWaitForScancode
+        jsr .kbPopTail
+        rts
+
+; -----------------------------------------------------------------------------
+; kbNextScancode: Return the next scancode in the buffer or zero if empty
+; Returns:
+;    A - scancode (or zero)
+; -----------------------------------------------------------------------------
+kbNextScancode:
+        lda KB_BUFFER_HEAD
+        cmp KB_BUFFER_TAIL
+        beq @noScancode
+        jsr .kbPopTail
+        ;!byte $db
+        rts
+
+@noScancode
+        lda #0
+        rts
+
+; -----------------------------------------------------------------------------
+; kbScancodeToAscii: Convert a scancode to ascii. shift/caps lock is honoured
+; Inputs:
+;    A - scancode (or zero)
+; Returns:
+;    A - ascii character
+; -----------------------------------------------------------------------------
+kbScancodeToAscii:
+        sta KB_TMP_X
         clc
-        bra @endReadAscii
+        bpl +
+        rts
++
+        ldx #KB_SHIFT_LEFT_MAP_BYTE
+        lda #KB_SHIFT_LEFT_MAP_BIT
+        bit KB_PRESSED_MAP, x
+        beq +
+        sec
+        bra @doneShiftCheck
++
+
+        ldx #KB_SHIFT_RIGHT_MAP_BYTE
+        lda #KB_SHIFT_RIGHT_MAP_BIT
+        bit KB_PRESSED_MAP, x
+        beq +
+        sec
++
+
+@doneShiftCheck:
+        bcs @shiftedKeys:
+        ldx KB_TMP_X
+        lda KEY_MAP, x
+        bra @end
+
+@shiftedKeys:
+        ldx KB_TMP_X
+        lda KEY_MAP_SHIFTED, x
+
+@end
+        jsr isAlpha
+        bcc @afterAlphaCheck
+        sta KB_TMP_X
+        lda #KB_CAPS_LOCK
+        and KB_FLAGS
+        beq +
+        lda KB_TMP_X
+        eor #$20
+        bra @afterAlphaCheck
++
+        lda KB_TMP_X
+@afterAlphaCheck
+        cmp #$ff
+        sec
+        bne +
+        clc
++        
+        rts
+
+kbReadAscii:
+        jsr kbNextScancode
+        beq @noKey
+        jmp kbScancodeToAscii
+@noKey
+        clc
+        rts
 
 
 KEY_MAP:
 ;      0   1   2   3   4   5   6   7   8   9   a   b   c   d   e   f
-!byte $ff,$88,$ff,$03,$82,$80,$81,$8b,$ff,$89,$87,$85,$03,$09,$60,$ff; 0
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$09,$60,$ff; 0
 !byte $ff,$ff,$ff,$ff,$ff,$71,$31,$ff,$ff,$ff,$7a,$73,$61,$77,$32,$ff; 1
 !byte $ff,$63,$78,$64,$65,$34,$33,$ff,$ff,$20,$76,$66,$74,$72,$35,$ff; 2
 !byte $ff,$6e,$62,$68,$67,$79,$36,$ff,$ff,$ff,$6d,$6a,$75,$37,$38,$ff; 3
 !byte $ff,$2c,$6b,$69,$6f,$30,$39,$ff,$ff,$2e,$2f,$6c,$3b,$70,$2d,$ff; 4
 !byte $ff,$ff,$27,$ff,$5b,$3d,$ff,$ff,$ff,$ff,$0d,$5d,$ff,$5c,$ff,$ff; 5
 !byte $ff,$ff,$ff,$ff,$ff,$ff,$08,$ff,$ff,$31,$ff,$34,$37,$ff,$ff,$ff; 6
-!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$8a,$ff,$33,$2d,$ff,$39,$ff,$ff; 7
+!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$ff,$33,$2d,$ff,$39,$ff,$ff; 7
 
 KEY_MAP_SHIFTED:
 ;      0   1   2   3   4   5   6   7   8   9   a   b   c   d   e   f
-!byte $ff,$88,$ff,$03,$82,$80,$81,$8b,$ff,$89,$87,$85,$03,$09,$7e,$ff; 0
+!byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$09,$7e,$ff; 0
 !byte $ff,$ff,$ff,$ff,$ff,$51,$21,$ff,$ff,$ff,$5a,$53,$41,$57,$40,$ff; 1
 !byte $ff,$43,$58,$44,$45,$24,$23,$ff,$ff,$20,$56,$46,$54,$52,$25,$ff; 2
 !byte $ff,$4e,$42,$48,$47,$59,$5e,$ff,$ff,$ff,$4d,$4a,$55,$26,$2a,$ff; 3
 !byte $ff,$3c,$4b,$49,$4f,$29,$28,$ff,$ff,$3e,$3f,$4c,$3a,$50,$5f,$ff; 4
 !byte $ff,$ff,$22,$ff,$7b,$2b,$ff,$ff,$ff,$ff,$0d,$7d,$ff,$7c,$ff,$ff; 5
 !byte $ff,$ff,$ff,$ff,$ff,$ff,$08,$ff,$ff,$31,$ff,$34,$37,$ff,$ff,$ff; 6
-!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$8a,$ff,$33,$2d,$ff,$39,$ff,$ff; 7
+!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$ff,$33,$2d,$ff,$39,$ff,$ff; 7

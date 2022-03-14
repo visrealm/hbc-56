@@ -132,7 +132,6 @@ restartGame:
 
         +tmsEnableOutput
 
-        +setIntHandler onVSync
         +hbc56SetVsyncCallback gameLoop
 
         +tmsEnableInterrupts

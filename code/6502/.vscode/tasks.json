@@ -10,15 +10,15 @@
                         "problemMatcher": {
                                 "owner": "acme",
                                 "fileLocation": [
-                                    "absolute"
+                                        "absolute"
                                 ],
                                 "pattern": {
-                                    "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
-                                    "file": 2,
-                                    "location": 3,
-                                    "message": 6
+                                        "regexp": "^(Error - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
+                                        "file": 2,
+                                        "location": 3,
+                                        "message": 6
                                 }
-                            },
+                        },
                         "group": {
                                 "kind": "test",
                                 "isDefault": true
@@ -31,15 +31,15 @@
                         "problemMatcher": {
                                 "owner": "acme",
                                 "fileLocation": [
-                                    "absolute"
+                                        "absolute"
                                 ],
                                 "pattern": {
-                                    "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
-                                    "file": 2,
-                                    "location": 3,
-                                    "message": 6
+                                        "regexp": "([Ee]rror - File\\s+(.*), line (\\d+) (\\((Zone|Macro) .*\\))?:\\s+(.*))$",
+                                        "file": 2,
+                                        "location": 3,
+                                        "message": 6
                                 }
-                            },
+                        },
                         "group": {
                                 "kind": "build",
                                 "isDefault": true
