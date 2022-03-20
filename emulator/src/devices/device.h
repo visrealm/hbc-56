@@ -13,6 +13,11 @@
 #define _HBC56_DEVICE_H_
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct HBC56Device;
 typedef struct HBC56Device HBC56Device;
@@ -21,7 +26,6 @@ struct SDL_Texture;
 typedef struct SDL_Texture SDL_Texture;
 
 typedef union SDL_Event SDL_Event;
-
 
 typedef enum
 {
@@ -87,6 +91,7 @@ struct HBC56Device
   void             *data;         /* private data */
 
   SDL_Texture      *output;
+  bool              visible;
 }; 
 
 
@@ -143,5 +148,10 @@ void renderAudioDevice(HBC56Device* device, float *buffer, int numSamples);
  * handle events
  */
 void eventDevice(HBC56Device* device, SDL_Event *evt);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

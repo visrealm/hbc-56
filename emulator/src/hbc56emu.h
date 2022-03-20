@@ -16,6 +16,11 @@
 #include "config.h"
 
 #include <stddef.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /* Function:  hbc56Reset
@@ -103,5 +108,11 @@ void hbc56DebugStepOut();
  */
 void hbc56DebugBreakOnInt();
 
+uint8_t hbc56MemRead(uint16_t addr, bool dbg);
+void hbc56MemWrite(uint16_t addr, uint8_t val);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

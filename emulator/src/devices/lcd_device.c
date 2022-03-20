@@ -78,14 +78,17 @@ HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, S
     {
       case LCD_1602:
         lcdDevice->lcd = vrEmuLcdNew(16, 2, EmuLcdRomA00);
+        device.name = "LCD (1602)";
         break;
 
       case LCD_2004:
         lcdDevice->lcd = vrEmuLcdNew(20, 4, EmuLcdRomA00);
+        device.name = "LCD (2004)";
         break;
 
       case LCD_GRAPHICS:
         lcdDevice->lcd = vrEmuLcdNew(128, 64, EmuLcdRomA00);
+        device.name = "LCD (12864B)";
         break;
 
       default:
@@ -104,9 +107,17 @@ HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, S
       size_t numPixels = (size_t)lcdDevice->pixelsX * (size_t)lcdDevice->pixelsY;
       lcdDevice->frameBuffer = malloc(numPixels * sizeof(uint32_t));
       
-      for (size_t i = 0; i < numPixels; ++i)
+      if (lcdDevice->frameBuffer)
       {
-        lcdDevice->frameBuffer[i] = lcdPal[LCD_PIXEL_NONE];
+        for (size_t i = 0; i < numPixels; ++i)
+        {
+          lcdDevice->frameBuffer[i] = lcdPal[LCD_PIXEL_NONE];
+        }
+      }
+      else
+      {
+        destroyDevice(&device);
+        return device;
       }
 
       device.data = lcdDevice;
@@ -194,8 +205,6 @@ static void renderLcdDevice(HBC56Device* device)
 
       int w = vrEmuLcdNumPixelsX(lcdDevice->lcd);
       int h = vrEmuLcdNumPixelsY(lcdDevice->lcd);
-
-      size_t stride = lcdDevice->pixelsX * sizeof(uint32_t);
 
       uint32_t* fbPtr = (lcdDevice->frameBuffer - 1)
                             + (LCD_BORDER_X * LCD_PIXEL_SCALE) 

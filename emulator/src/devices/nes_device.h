@@ -14,6 +14,10 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* Function:  createNESDevice
  * --------------------
@@ -21,5 +25,9 @@
  */
 HBC56Device createNESDevice(uint16_t addr);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

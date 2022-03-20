@@ -10,20 +10,20 @@
 ;  - hbc56.asm
 
 
-!macro nes1BranchIfPressed .buttonMask, addr {
+!macro nes1BranchIfPressed .buttonMask, .addr {
         pha
         lda #(.buttonMask)
         jsr nes1Pressed
         pla
-        bcs addr
+        bcs .addr
 }
 
-!macro nes1BranchIfNotPressed .buttonMask, addr {
+!macro nes1BranchIfNotPressed .buttonMask, .addr {
         pha
         lda #(.buttonMask)
         jsr nes1Pressed
         pla
-        bcc addr
+        bcc .addr
 }
 
 !macro nes2BranchIfPressed .buttonMask, addr {

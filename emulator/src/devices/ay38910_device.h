@@ -14,11 +14,19 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Function:  createAY38910Device
  * --------------------
  * create an AY-3-8910 PSG device
  */
 HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

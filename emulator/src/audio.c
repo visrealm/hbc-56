@@ -46,8 +46,7 @@ void hbc56Audio(int start)
     want.channels = 2;
     want.samples = 1024;
     want.callback = hbc56AudioCallback;
-    SDL_OpenAudio(&want, &have);
-    audioDevice = 1;
+    if (SDL_OpenAudio(&want, &have) == 0) audioDevice = 1;
 
     SDL_PauseAudioDevice(audioDevice, 0);
 

@@ -19,3 +19,7 @@
 [submodule "tools/acme"]
 	path = tools/acme
 	url = https://github.com/visrealm/acme.git
+[submodule "emulator/thirdparty/imgui"]
+	path = emulator/thirdparty/imgui
+	url = https://github.com/visrealm/imgui.git
+	branch = docking

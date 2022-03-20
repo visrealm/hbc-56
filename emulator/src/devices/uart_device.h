@@ -14,6 +14,9 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Function:  createUartDevice
  * --------------------
@@ -21,5 +24,8 @@
  */
 HBC56Device createUartDevice(uint32_t addr, const char *port, int clockrate, uint8_t irq);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

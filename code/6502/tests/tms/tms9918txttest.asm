@@ -37,10 +37,11 @@ hbc56Main:
         cli
 
 loop:
-        ldy YPOS
-        iny
-        sty YPOS
-	tya
+	lda YPOS
+	clc
+	adc #16
+	adc #0
+	sta YPOS
         ldx #7
         jsr tmsSetRegister
 

@@ -14,6 +14,9 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Function:  createRamDevice
  * --------------------
@@ -33,6 +36,10 @@ HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, const uint8_t 
  * update a ram/rom device contents. contents size must be equal to device size
  */
 int setMemoryDeviceContents(HBC56Device *device, const uint8_t* contents, uint32_t contentSize);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

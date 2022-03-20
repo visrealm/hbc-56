@@ -15,7 +15,10 @@
 #endif
 
 #include "hbc56emu.h"
-#include "window.h"
+
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_sdlrenderer.h"
 
 #include "audio.h"
 
@@ -30,11 +33,15 @@
 #include "devices/ay38910_device.h"
 #include "devices/uart_device.h"
 
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <time.h>
 #include <string.h>
+
+#define DEFAULT_WINDOW_WIDTH  640
+#define DEFAULT_WINDOW_HEIGHT 480
+
 
 
 static HBC56Device devices[HBC56_MAX_DEVICES];
@@ -44,10 +51,11 @@ static HBC56Device* cpuDevice = NULL;
 static HBC56Device* romDevice = NULL;
 
 static char tempBuffer[256];
-static int debugWindowShown = 1;
 
 #define MAX_IRQS 5
 static HBC56InterruptSignal irqs[MAX_IRQS];
+
+static SDL_Renderer* renderer = NULL;
 
 
 /* Function:  hbc56Reset
@@ -185,8 +193,7 @@ void hbc56LoadLabels(const char* labelFileContents)
  */
 void hbc56ToggleDebugger()
 {
-  debugWindowShown = !debugWindowShown;
-  debug6502State(cpuDevice, debugWindowShown ? CPU_BREAK : CPU_RUNNING);
+  debug6502State(cpuDevice, (getDebug6502State(cpuDevice) == CPU_RUNNING) ? CPU_BREAK : CPU_RUNNING);
 }
 
 /* Function:  hbc56DebugBreak
@@ -195,7 +202,6 @@ void hbc56ToggleDebugger()
  */
 void hbc56DebugBreak()
 {
-  debugWindowShown = 1;
   debug6502State(cpuDevice, CPU_BREAK);
 }
 
@@ -251,14 +257,12 @@ void hbc56DebugBreakOnInt()
 uint8_t hbc56MemRead(uint16_t addr, bool dbg)
 {
   uint8_t val = 0x00;
-  if (addr == 0x7fef)
+  if (addr == 0x7fdf)
   {
-    if (irqs[0]) val |= 0x01;
-    if (irqs[1]) val |= 0x02;
-    if (irqs[2]) val |= 0x04;
-    if (irqs[3]) val |= 0x08;
-    if (irqs[4]) val |= 0x10;
-    int j = val;
+    for (int i = 0; i < MAX_IRQS; ++i)
+    {
+      val |= !!irqs[i] << i;
+    }
     return val;
   }
 
@@ -291,14 +295,10 @@ void hbc56MemWrite(uint16_t addr, uint8_t val)
 #define LOGICAL_DISPLAY_BPP    3
 
 /* emulator state */
-static SDLCommonState* state;
 static int done;
 static double perfFreq = 0.0;
 static int tickCount = 0;
 static int mouseZ = 0;
-
-static uint8_t debugFrameBuffer[DEBUGGER_WIDTH_PX * DEBUGGER_HEIGHT_PX * LOGICAL_DISPLAY_BPP];
-static SDL_Texture* debugWindowTex = NULL;
 
 
 /* Function:  doTick
@@ -331,75 +331,169 @@ static void doTick()
   lastTime = thisTime;
 }
 
+
+static void aboutDialog(bool *aboutOpen)
+{
+  if (ImGui::Begin("About HBC-56 Emulator", aboutOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
+  {
+    ImGui::Text("HBC-56 Emulator v0.2\n\n");
+    ImGui::Text("(C) 2022 Troy Schrapel\n\n");
+    ImGui::Separator();
+    ImGui::Text("HBC-56 Emulator is licensed under the MIT License,\nsee LICENSE for more information.\n\n");
+    ImGui::Text("https://github.com/visrealm/hbc-56");
+    ImGui::End();
+  }
+}
+
+
 /* Function:  doRender
  * --------------------
  * render the various displays to the window
  */
 static void doRender()
 {
-  SDL_RenderClear(state->renderers[0]);
+  static bool aboutOpen = false;
 
-  SDL_Rect dest;
-  dest.x = 0;
-  dest.y = 0;
-  dest.w = (int)(LOGICAL_DISPLAY_SIZE_X * 3);
-  dest.h = (int)(LOGICAL_DISPLAY_SIZE_Y * 3);
+  static bool showRegisters = true;
+  static bool showStack = true;
+  static bool showDisassembly = true;
 
-  if (!debugWindowShown)
+  static bool showMemory = true;
+  static bool showTms9918Memory = true;
+  static bool showTms9918Registers = true;
+
+  ImGui_ImplSDLRenderer_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
+
+  static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+  ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGui::SetNextWindowPos(viewport->WorkPos);
+  ImGui::SetNextWindowSize(viewport->WorkSize);
+  ImGui::SetNextWindowViewport(viewport->ID);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+  window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+  // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
+  // and handle the pass-thru hole, so we ask Begin() to not render a background.
+  if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+    window_flags |= ImGuiWindowFlags_NoBackground;
+
+  // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+  // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
+  // all active windows docked into it will lose their parent and become undocked.
+  // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
+  // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+  static bool open = true;
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+  ImGui::Begin("Workspace", &open, window_flags);
+  ImGui::PopStyleVar(2);
+
+  ImGui::PopStyleVar(2);
+
+  ImGuiID dockspace_id = ImGui::GetID("Workspace");
+  ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+  if (ImGui::BeginMenuBar())
   {
-    dest.x = DEBUGGER_WIDTH_PX / 2;
+    if (ImGui::BeginMenu("File"))
+    {
+      ImGui::MenuItem("Open...", "<Ctrl> + O");
+      if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
+      if (ImGui::MenuItem("Exit", "Esc")) { done = true; }
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Window"))
+    {
+      if (ImGui::BeginMenu("Debugger"))
+      {
+        ImGui::MenuItem("Registers", "<Ctrl> + E", &showRegisters);
+        ImGui::MenuItem("Stack", "<Ctrl> + S", &showStack);
+        ImGui::MenuItem("Disassembly", "<Ctrl> + D", &showDisassembly);
+        ImGui::MenuItem("Memory", "<Ctrl> + M", &showMemory);
+        ImGui::Separator();
+        ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
+        ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
+        ImGui::EndMenu();
+      }
+
+      for (size_t i = 0; i < deviceCount; ++i)
+      {
+        if (devices[i].output)
+        {
+          ImGui::MenuItem(devices[i].name, "", &devices[i].visible);
+        }
+      }
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Help"))
+    {
+      if (ImGui::MenuItem("About...")) { aboutOpen = true; }
+
+      ImGui::EndMenu();
+    }
+    ImGui::EndMenuBar();
   }
+
+
+  //ImGui::ShowDemoWindow();
 
   for (size_t i = 0; i < deviceCount; ++i)
   {
     renderDevice(&devices[i]);
-    if (devices[i].output)
+    if (devices[i].output && devices[i].visible)
     {
-      SDL_Rect devRect = dest;
-
       int texW, texH;
       SDL_QueryTexture(devices[i].output, NULL, NULL, &texW, &texH);
+      
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+      ImGui::Begin(devices[i].name, &devices[i].visible);
+      ImGui::PopStyleVar();
 
-      double scaleX = dest.w / (double)texW;
-      double scaleY = dest.h / (double)texH;
+      ImVec2 windowSize = ImGui::GetContentRegionAvail();
+
+      double scaleX = windowSize.x / (double)texW;
+      double scaleY = windowSize.y / (double)texH;
 
       double scale = (scaleX < scaleY) ? scaleX : scaleY;
 
-      devRect.w = (int)(texW * scale);
-      devRect.h = (int)(texH * scale);
+      ImVec2 imageSize = windowSize;
+      imageSize.x = (float)(texW * scale);
+      imageSize.y = (float)(texH * scale);
 
-      devRect.x = dest.x + (dest.w - devRect.w) / 2;
-      devRect.y = dest.y + (dest.h - devRect.h) / 2;
+      ImVec2 pos = ImGui::GetCursorPos();
+      pos.x += (windowSize.x - imageSize.x) / 2;
+      pos.y += (windowSize.y - imageSize.y) / 2;
+      ImGui::SetCursorPos(pos);
 
-      SDL_RenderCopy(state->renderers[0], devices[i].output, NULL, &devRect);
+      ImGui::Image(devices[i].output, imageSize);
+      ImGui::End();
     }
   }
 
-  if (debugWindowShown)
-  {
-    int mouseX, mouseY;
-    SDL_GetMouseState(&mouseX, &mouseY);
+  if (aboutOpen) aboutDialog(&aboutOpen);
 
-    int winSizeX, winSizeY;
-    SDL_GetWindowSize(state->windows[0], &winSizeX, &winSizeY);
+  if (showRegisters) debuggerRegistersView(&showRegisters);
+  if (showStack) debuggerStackView(&showStack);
+  if (showDisassembly)debuggerDisassemblyView(&showDisassembly);
+  if (showMemory) debuggerMemoryView(&showMemory);
+  if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
+  if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
 
-    double factorX = winSizeX / (double)DEFAULT_WINDOW_WIDTH;
-    double factorY = winSizeY / (double)DEFAULT_WINDOW_HEIGHT;
+  ImGui::End();
 
-    mouseX = (int)(mouseX / factorX);
-    mouseY = (int)(mouseY / factorY);
-    mouseX -= dest.w;// * 2;
-
-    debuggerUpdate(debugWindowTex, mouseX, mouseY, mouseZ);
-    mouseZ = 0;
-
-    dest.x = dest.w;
-    dest.w = (int)(DEBUGGER_WIDTH_PX);
-    dest.h = (int)(DEBUGGER_HEIGHT_PX);
-    SDL_RenderCopy(state->renderers[0], debugWindowTex, NULL, &dest);
-  }
-
-  SDL_RenderPresent(state->renderers[0]);
+  ImGui::Render();
+  //SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
+  SDL_RenderClear(renderer);
+  ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+  SDL_RenderPresent(renderer);
 }
 
 
@@ -409,20 +503,31 @@ static void doRender()
  */
 static void doEvents()
 {
-  extern uint16_t debugMemoryAddr;
-  extern uint16_t debugTmsMemoryAddr;
 
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
+    ImGui_ImplSDL2_ProcessEvent(&event);
+
     int skipProcessing = 0;
     switch (event.type)
     {
+      case SDL_WINDOWEVENT:
+        switch (event.window.event)
+        {
+          case SDL_WINDOWEVENT_CLOSE:
+            done = 1;
+            break;
+
+          default:
+            break;
+        }
+        break;
+
       case SDL_KEYDOWN:
       {
-        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+        bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+        bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
 
         switch (event.key.keysym.sym)
         {
@@ -511,9 +616,7 @@ static void doEvents()
 
       case SDL_KEYUP:
       {
-        SDL_bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        SDL_bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-        SDL_bool withAlt = (event.key.keysym.mod & KMOD_ALT) ? 1 : 0;
+        bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
 
         switch (event.key.keysym.sym)
         {
@@ -545,7 +648,7 @@ static void doEvents()
         eventDevice(&devices[i], &event);
       }
     }
-    SDLCommonEvent(state, &event, &done);
+    //SDLCommonEvent(state, &event, &done);
   }
 }
 
@@ -615,7 +718,7 @@ static int loadRom(const char* filename)
 #endif
 
   SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %s", filename);
-  state->window_title = tempBuffer;
+  //state->window_title = tempBuffer;
 
   if (ptr)
   {
@@ -642,7 +745,7 @@ static int loadRom(const char* filename)
         long fsize = ftell(ptr);
         fseek(ptr, 0, SEEK_SET);  /* same as rewind(f); */
 
-        char *lblFileContent = malloc(fsize + 1);
+        char *lblFileContent = (char*)malloc(fsize + 1);
         fread(lblFileContent, fsize, 1, ptr);
         fclose(ptr);
 
@@ -669,26 +772,69 @@ static int loadRom(const char* filename)
  */
 int main(int argc, char* argv[])
 {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    return -1;
+  }
+
+  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+  SDL_Window* window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+
+  // Setup SDL_Renderer instance
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+  if (renderer == NULL)
+  {
+    SDL_Log("Error creating SDL_Renderer!");
+    return false;
+  }
+  //SDL_RendererInfo info;
+  //SDL_GetRendererInfo(renderer, &info);
+  //SDL_Log("Current SDL_Renderer: %s", info.name);
+
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsClassic();
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+  {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+  }
+
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+  ImGui_ImplSDLRenderer_Init(renderer);
+
+
   perfFreq = (double)SDL_GetPerformanceFrequency();
 
   /* enable standard application logging */
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
 
-  /* initialize test framework */
-  state = SDLCommonCreateState(argv, SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-  if (!state) {
-    return 1;
-  }
-
   /* window title */
-  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator");
-  state->window_title = tempBuffer;
+//  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator");
+//  state->window_title = tempBuffer;
 
   /* add the cpu device */
   cpuDevice = hbc56AddDevice(create6502CpuDevice());
 
   int romLoaded = 0;
-  LCDType lcdType = LCD_NONE;
+  LCDType lcdType = LCD_GRAPHICS;
 
 #if __EMSCRIPTEN__
   /* load the hard-coded rom */
@@ -702,7 +848,7 @@ int main(int argc, char* argv[])
   {
     int consumed;
 
-    consumed = SDLCommonArg(state, i);
+    consumed = 0;//SDLCommonArg(state, i);
     if (consumed <= 0)
     {
       consumed = -1;
@@ -745,7 +891,7 @@ int main(int argc, char* argv[])
     if (consumed < 0)
     {
       static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]", NULL };
-      SDLCommonLogUsage(state, argv[0], options);
+      //SDLCommonLogUsage(state, argv[0], options);
       return 2;
     }
     i += consumed;
@@ -754,7 +900,7 @@ int main(int argc, char* argv[])
   if (romLoaded == 0)
   {
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL };
-    SDLCommonLogUsage(state, argv[0], options);
+    //SDLCommonLogUsage(state, argv[0], options);
 
 #ifndef __EMSCRIPTEN__
     SDL_snprintf(tempBuffer, sizeof(tempBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
@@ -764,16 +910,16 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  if (!SDLCommonInit(state)) {
-    return 2;
-  }
+  //if (!SDLCommonInit(state)) {
+//    return 2;
+//  }
 
 
   /* add the various devices */
   hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
 
 #if HBC56_HAVE_TMS9918
-  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), HBC56_TMS9918_IRQ, state->renderers[0]));
+  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), HBC56_TMS9918_IRQ, renderer));
   debuggerInitTms(tms9918Device);
 #endif
 
@@ -787,9 +933,9 @@ int main(int argc, char* argv[])
 #endif
 
 #if HBC56_HAVE_LCD
-  if (lcdType != LCD_NONE)
+  //if (lcdType != LCD_NONE)
   {
-    hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), state->renderers[0]));
+    hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), renderer));
   }
 #endif
 
@@ -806,16 +952,6 @@ int main(int argc, char* argv[])
 #endif
 #endif
 
-
-  /* set up the display */
-  SDL_Renderer* renderer = state->renderers[0];
-  SDL_SetTextureBlendMode(state->targets[0], SDL_BLENDMODE_ADD);
-  SDL_RenderClear(renderer);
-  debugWindowTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, DEBUGGER_WIDTH_PX, DEBUGGER_HEIGHT_PX);
-
-#ifndef __EMSCRIPTEN__
-  SDL_SetTextureScaleMode(debugWindowTex, SDL_ScaleModeBest);
-#endif
 
   /* randomise */
   srand((unsigned int)time(NULL));
@@ -855,7 +991,13 @@ int main(int argc, char* argv[])
 
   SDL_AudioQuit();
 
-  SDLCommonQuit(state);
+  ImGui_ImplSDLRenderer_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
+
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
 
   return 0;
 }

@@ -88,7 +88,7 @@ HBC56Device createTms9918Device(uint16_t dataAddr, uint16_t regAddr, uint8_t irq
     device.output = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                       TMS9918_DISPLAY_WIDTH, TMS9918_DISPLAY_HEIGHT);
 #ifndef __EMSCRIPTEN__
-    //SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
+    SDL_SetTextureScaleMode(device.output, SDL_ScaleModeBest);
 #endif
 
   }
@@ -166,8 +166,9 @@ static void renderTms9918Device(HBC56Device* device)
  * shown in the display if called frequently enough. you can achieve beam racing effects.
  */
 int c = 0;
-static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double deltaTime)
+static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
 {
+  deltaTicks;
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {
@@ -219,7 +220,7 @@ static void tickTms9918Device(HBC56Device* device, uint32_t delataTicks, double 
         memset(tmsDevice->scanlineBuffer, bgColor, sizeof(tmsDevice->scanlineBuffer));
         if (tmsRow >=0 && tmsRow < TMS9918_PIXELS_Y)
         {
-          vrEmuTms9918ScanLine(tmsDevice->tms9918, tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X); 
+          vrEmuTms9918ScanLine(tmsDevice->tms9918, (uint8_t)tmsRow, tmsDevice->scanlineBuffer + TMS9918_BORDER_X);
         }
 
         firstPix = 0;

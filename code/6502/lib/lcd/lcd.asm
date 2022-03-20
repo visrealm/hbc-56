@@ -210,7 +210,7 @@ lcdCursorBlinkOn:
 lcdDetect:
 	clc
 	lda LCD_CMD
-	beq +
+	bne +
 	sec
 +
 	rts

@@ -314,7 +314,7 @@
 	KB_SCANCODE_ALT_LEFT	= $11	; unused
 	HBC56_INT_VECTOR	= $7e00
 	tmsIncPosConsole	= $e89b
-	INT_IO_PORT	= $ef
+	INT_IO_PORT	= $df
 	KB_PRESSED_MAP_BYTES	= $20
 	STR_ADDR_H	= $33
 	NES_RAM_END	= $7c9e
@@ -524,7 +524,7 @@
 	MEMORY_ZP_START	= $2c
 	tmsSetPosRead	= $e8f8	; unused
 	nes1Pressed	= $ea8a	; unused
-	INT_CTRL_ADDRESS	= $7fef
+	INT_CTRL_ADDRESS	= $7fdf
 	STR_ADDR	= $32
 	AY_ENV_PERIOD_H	= $c
 	tmsHex8	= $e7af	; unused

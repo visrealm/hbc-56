@@ -11,7 +11,7 @@
 :: eg. emsdk activate
 
 emcc -o hbc56.html ^
-  -O3 ^
+  -O0 ^
   -D __EMSCRIPTEN__ ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
@@ -23,9 +23,10 @@ emcc -o hbc56.html ^
   -I ..\modules\65c02\src ^
   -I ..\modules\lcd\src ^
   -I ..\modules\tms9918\src ^
-  ..\src\hbc56emu.c ^
+  -I ..\thirdparty\imgui ^
+  -I ..\thirdparty\imgui\backends ^
+  ..\src\hbc56emu.cpp ^
   ..\src\audio.c ^
-  ..\src\window.c ^
   ..\src\devices\device.c ^
   ..\src\devices\memory_device.c ^
   ..\src\devices\6502_device.c ^
@@ -34,14 +35,20 @@ emcc -o hbc56.html ^
   ..\src\devices\keyboard_device.c ^
   ..\src\devices\lcd_device.c ^
   ..\src\devices\ay38910_device.c ^
-  ..\src\debugger\debugger.c ^
-  ..\src\debugger\font.c ^
+  ..\src\debugger\debugger.cpp ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\65c02\src\vrEmu6502.c ^
   ..\modules\lcd\src\vrEmuLcd.c ^
   ..\modules\tms9918\src\vrEmuTms9918.c ^
   ..\modules\tms9918\src\vrEmuTms9918Util.c ^
+  ..\thirdparty\imgui\imgui.cpp ^
+  ..\thirdparty\imgui\imgui_draw.cpp ^
+  ..\thirdparty\imgui\imgui_tables.cpp ^
+  ..\thirdparty\imgui\imgui_widgets.cpp ^
+  ..\thirdparty\imgui\backends\imgui_impl_sdl.cpp ^
+  ..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
+  --preload-file "imgui.ini" ^
   -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_hbc56ToggleDebugger','_hbc56DebugBreak','_hbc56DebugBreakOnInt','_hbc56DebugRun','_hbc56DebugStepInto','_hbc56DebugStepOver','_hbc56DebugStepOut','_main']" ^
   -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']"

@@ -1187,12 +1187,14 @@ hitPaddle:
         +negate DIRY
 
         ; accelerate ball
-        +nes1BranchIfNotPressed NES_LEFT, +
-        jsr @pushLeft
-+
-        +nes1BranchIfNotPressed NES_RIGHT, +
-        jsr @pushRight
-+
+        +kbBranchIfPressed KB_SCANCODE_ARROW_LEFT, @leftPressed
+        +nes1BranchIfPressed NES_LEFT, @leftPressed
+@doneLeftCheck:
+
+        +kbBranchIfPressed KB_SCANCODE_ARROW_RIGHT, @rightPressed
+        +nes1BranchIfPressed NES_RIGHT, @rightPressed
+@doneRightCheck:
+
         ; reset multiplier
         lda #1
         sta MULT
@@ -1200,6 +1202,15 @@ hitPaddle:
         lda #TONE_PADDLE
         jsr playNote
         rts
+
+@leftPressed:
+        jsr @pushLeft
+        bra @doneLeftCheck
+
+@rightPressed:
+        jsr @pushRight
+        bra @doneRightCheck
+
 
 
 ; -----------------------------------------------------------------------------
@@ -1238,24 +1249,37 @@ hitPaddle:
 handlePaddleInput:
 
         ; left?
-        +nes1BranchIfNotPressed NES_LEFT, +
+        +kbBranchIfPressed KB_SCANCODE_A, @leftPressed
+        +nes1BranchIfPressed NES_LEFT, @leftPressed
+@doneLeftCheck:
+
+        ; right?
+        +kbBranchIfPressed KB_SCANCODE_D, @rightPressed
+        +nes1BranchIfPressed NES_RIGHT, @rightPressed
+
+@doneRightCheck:
+
+
+        rts
+
+@leftPressed:
         lda PADX
         cmp #GAME_AREA_LEFT + 2
-        bcc +
+        bcc @doneLeftCheck
         dec PADX
         dec PADX
-+
-        ; right?
-        +nes1BranchIfNotPressed NES_RIGHT, +
+        bra @doneLeftCheck
+
+@rightPressed:
         lda PADX
         clc
         adc PADW
         cmp #GAME_AREA_RIGHT-2
-        bcs +
+        bcs @doneRightCheck
         inc PADX
         inc PADX
-+
-        rts
+        bra @doneRightCheck
+
 
 ; -----------------------------------------------------------------------------
 ; New level started - wait a couple of seconds (tied to VSYNC interrupt)
@@ -1298,12 +1322,10 @@ gameLoopWaitForStart:
 
         jsr renderBall
 
+        +kbBranchIfPressed KB_SCANCODE_SPACEBAR, @startGame
         +nes1BranchIfPressed NES_A, @startGame
         +nes1BranchIfPressed NES_B, @startGame
         +nes1BranchIfPressed NES_START, @startGame
-
-        lda KB_PRESSED_MAP + KB_SCANCODE_G
-        bne @startGame
 
         rts
 
@@ -1319,6 +1341,7 @@ gameLoopWaitForStart:
 ; Game over - Wait for user input (tied to VSYNC interrupt)
 ; -----------------------------------------------------------------------------
 gameLoopGameOver:
+        +kbBranchIfPressed KB_SCANCODE_SPACEBAR,  @nextGame
         +nes1BranchIfPressed NES_A, @nextGame
         +nes1BranchIfPressed NES_B, @nextGame
         +nes1BranchIfPressed NES_START, @nextGame

@@ -14,6 +14,10 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SDL_Renderer;
 typedef struct SDL_Renderer SDL_Renderer;
 
@@ -31,5 +35,8 @@ typedef enum
  */
 HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, SDL_Renderer *renderer);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

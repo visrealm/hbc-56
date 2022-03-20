@@ -14,6 +14,10 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct vrEmu6502_s;
 typedef struct vrEmu6502_s VrEmu6502;
 
@@ -42,5 +46,9 @@ void debug6502State(HBC56Device* device, HBC56CpuState state);
 HBC56CpuState getDebug6502State(HBC56Device* device);
 
 VrEmu6502 *getCpuDevice(HBC56Device* device);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

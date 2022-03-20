@@ -32,13 +32,16 @@
     <Filter Include="modules\65C02">
       <UniqueIdentifier>{bb03c3ba-8d1c-4236-b142-750d9f314822}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ui\imgui">
+      <UniqueIdentifier>{b6b617c7-0a87-4564-876f-39fad8d98052}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui\imgui\backend">
+      <UniqueIdentifier>{537833cf-d201-429a-ab4c-cbd849c904e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\ay38910\emu2149.h">
       <Filter>modules\AY-3-8910</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\window.h">
-      <Filter>ui</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
       <Filter>Resource Files</Filter>
@@ -94,6 +97,21 @@
     <ClInclude Include="..\modules\tms9918\src\vrEmuTms9918Util.h">
       <Filter>modules\TMS9918</Filter>
     </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\imconfig.h">
+      <Filter>ui\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\imgui.h">
+      <Filter>ui\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\imgui_internal.h">
+      <Filter>ui\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl.h">
+      <Filter>ui\imgui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.h">
+      <Filter>ui\imgui\backend</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Hbc56Emu.rc">
@@ -109,10 +127,7 @@
     <ClCompile Include="..\modules\ay38910\emu2149.c">
       <Filter>modules\AY-3-8910</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\window.c">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\hbc56emu.c">
+    <ClCompile Include="..\src\hbc56emu.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c">
@@ -139,10 +154,7 @@
     <ClCompile Include="..\src\devices\device.c">
       <Filter>src\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\debugger\font.c">
-      <Filter>src\debugger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\debugger\debugger.c">
+    <ClCompile Include="..\src\debugger\debugger.cpp">
       <Filter>src\debugger</Filter>
     </ClCompile>
     <ClCompile Include="..\src\audio.c">
@@ -162,6 +174,27 @@
     </ClCompile>
     <ClCompile Include="..\modules\tms9918\src\vrEmuTms9918Util.c">
       <Filter>modules\TMS9918</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\imgui.cpp">
+      <Filter>ui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\imgui_demo.cpp">
+      <Filter>ui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\imgui_draw.cpp">
+      <Filter>ui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\imgui_tables.cpp">
+      <Filter>ui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\imgui_widgets.cpp">
+      <Filter>ui\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl.cpp">
+      <Filter>ui\imgui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp">
+      <Filter>ui\imgui\backend</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

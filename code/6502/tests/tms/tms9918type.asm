@@ -11,6 +11,7 @@
 
 hbc56Meta:
         +setHbcMetaTitle "CONSOLE TEST"
+        +setHbcMetaNES
         rts
 
 hbc56Main:

@@ -27,5 +27,6 @@ hbc56In
 ; Outputs:      A - ASCII character captured from keyboard ($03 = Ctrl+C)
 ; -----------------------------------------------------------------------------
 hbc56Break:
+        rts
         jmp kbReadAscii         ; F4 (Ctrl+C) will return $03
         

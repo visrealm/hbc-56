@@ -32,6 +32,7 @@ HBC56Device createDevice(const char* name)
   device.eventFn = NULL;
   device.output = NULL;
   device.data = NULL;
+  device.visible = true;
   return device;
 }
 

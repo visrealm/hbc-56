@@ -14,6 +14,9 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Function:  createKeyboardDevice
  * --------------------
@@ -21,5 +24,8 @@
  */
 HBC56Device createKeyboardDevice(uint16_t addr, uint8_t irq);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

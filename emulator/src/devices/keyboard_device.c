@@ -130,8 +130,6 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
     switch (event->type) {
       case SDL_KEYDOWN:
       {
-        SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-
         uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][0];
         for (int i = 0; i < 8; ++i)
         {
@@ -148,8 +146,6 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
 
       case SDL_KEYUP:
       {
-        SDL_bool withControl = (event->key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-
         uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][1];
         for (int i = 0; i < 8; ++i)
         {

@@ -14,6 +14,10 @@
 
 #include "device.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SDL_Renderer;
 typedef struct SDL_Renderer SDL_Renderer;
 
@@ -38,5 +42,9 @@ uint8_t readTms9918Vram(HBC56Device *device, uint16_t vramAddr);
  */
 uint8_t readTms9918Reg(HBC56Device *device, uint8_t reg);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

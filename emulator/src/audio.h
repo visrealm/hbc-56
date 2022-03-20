@@ -12,6 +12,14 @@
 #ifndef _HBC56_AUDIO_H_
 #define _HBC56_AUDIO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void hbc56Audio(int start);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

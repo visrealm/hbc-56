@@ -27,7 +27,7 @@ UART_IO_PORT            = $20
 AY_IO_PORT              = $40
 KB_IO_PORT              = $80
 NES_IO_PORT             = $82
-INT_IO_PORT             = $ef
+INT_IO_PORT             = $df
 VIA_IO_PORT             = $f0
 
 ; -------------------------
@@ -229,11 +229,11 @@ kernelMain:
 
         !ifdef HAVE_LCD {
                 jsr lcdDetect
-                bcc @noLcd1
-                        jsr lcdInit
-                        jsr hbc56Delay
-                        jsr lcdDisplayOn
-                        jsr hbc56Delay
+                bcc @noLcd1                
+                jsr lcdInit
+                jsr hbc56Delay
+                jsr lcdDisplayOn
+                jsr hbc56Delay
 @noLcd1:
         }
 
@@ -326,12 +326,12 @@ kernelMain:
 .afterInput
 
         !ifdef HAVE_LCD {
-                jsr lcdDetect
-                bcc @noLcd4
+                ;jsr lcdDetect
+                ;bcc @noLcd4
+                jsr lcdInit
                 !ifdef HAVE_GRAPHICS_LCD {
                         jsr lcdTextMode
                 }
-                jsr lcdInit
                 jsr lcdClear
                 jsr lcdHome
 @noLcd4:

@@ -10,10 +10,16 @@
 ;  - hbc56.asm
 
 
-!macro kbBranchIfNotPressed .buttonMask, addr {
+!macro kbBranchIfNotPressed .scancode, .addr {
+        ldx #.scancode
         jsr kbReadAscii
-        cmp #.buttonMask
-        bne addr
+        beq .addr
+}
+
+!macro kbBranchIfPressed .scancode, .addr {
+        ldx #.scancode
+        jsr kbIsPressed
+        bne .addr
 }
 
 !macro kbSetEventHandlerPressed .cb {

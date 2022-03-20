@@ -12,7 +12,7 @@ ROOT_PATH=../
 
 default: breakout
 
-DISABLE_KERNEL_MODULES = LCD
+#DISABLE_KERNEL_MODULES = LCD
 
 include $(ROOT_PATH)makefile
 

@@ -58,10 +58,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
+      <OmitFramePointers>false</OmitFramePointers>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -73,13 +76,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,7 +110,11 @@
     <ClInclude Include="..\src\devices\tms9918_device.h" />
     <ClInclude Include="..\src\devices\uart_device.h" />
     <ClInclude Include="..\src\hbc56emu.h" />
-    <ClInclude Include="..\src\window.h" />
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl.h" />
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.h" />
+    <ClInclude Include="..\thirdparty\imgui\imconfig.h" />
+    <ClInclude Include="..\thirdparty\imgui\imgui.h" />
+    <ClInclude Include="..\thirdparty\imgui\imgui_internal.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -123,8 +130,7 @@
     <ClCompile Include="..\modules\tms9918\src\vrEmuTms9918.c" />
     <ClCompile Include="..\modules\tms9918\src\vrEmuTms9918Util.c" />
     <ClCompile Include="..\src\audio.c" />
-    <ClCompile Include="..\src\debugger\debugger.c" />
-    <ClCompile Include="..\src\debugger\font.c" />
+    <ClCompile Include="..\src\debugger\debugger.cpp" />
     <ClCompile Include="..\src\devices\6502_device.c" />
     <ClCompile Include="..\src\devices\ay38910_device.c" />
     <ClCompile Include="..\src\devices\device.c" />
@@ -134,8 +140,14 @@
     <ClCompile Include="..\src\devices\nes_device.c" />
     <ClCompile Include="..\src\devices\tms9918_device.c" />
     <ClCompile Include="..\src\devices\uart_device.c" />
-    <ClCompile Include="..\src\hbc56emu.c" />
-    <ClCompile Include="..\src\window.c" />
+    <ClCompile Include="..\src\hbc56emu.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\imgui.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\thirdparty\sdl\VisualC\SDLmain\SDLmain.vcxproj">

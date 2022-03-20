@@ -16,22 +16,22 @@ Pin 2 = !int2;
 Pin 3 = !int3;
 Pin 4 = !int4;
 Pin 5 = !int5;
-Pin 6 = ce1;
-Pin 7 = ce2;
-Pin 8 = ce3;
-Pin 9 = ce4;
+Pin 6 = ce1;  /* A3 */
+Pin 7 = ce2;  /* A7 */
+Pin 8 = ce3;  /* A6 */
+Pin 9 = !ce4;  /* A5 */
 
 /*
  * Output pins
  */
-Pin 11 = !ce5;
-Pin 12 = int5Out;
-Pin 13 = int4Out;
+Pin 11 = ce5; /* A4 */
+Pin 12 = int1Out;
+Pin 13 = int2Out;
 Pin 14 = int3Out;
-Pin 15 = int2Out;
-Pin 16 = int1Out;
-Pin 17 = !ce6;
-Pin 18 = !ce7;
+Pin 15 = int4Out;
+Pin 16 = int5Out;
+Pin 17 = !ce6;  /* /R  */
+Pin 18 = !ce7;  /* /IO */
 Pin 19 = !intOut;
 
 /*
