@@ -341,8 +341,8 @@ static void aboutDialog(bool *aboutOpen)
     ImGui::Separator();
     ImGui::Text("HBC-56 Emulator is licensed under the MIT License,\nsee LICENSE for more information.\n\n");
     ImGui::Text("https://github.com/visrealm/hbc-56");
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 
@@ -441,9 +441,6 @@ static void doRender()
     }
     ImGui::EndMenuBar();
   }
-
-
-  //ImGui::ShowDemoWindow();
 
   for (size_t i = 0; i < deviceCount; ++i)
   {

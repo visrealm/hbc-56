@@ -226,9 +226,8 @@ void debuggerRegistersView(bool* show)
 
       ImGui::EndTable();
     }
-
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 void debuggerStackView(bool* show)
@@ -251,8 +250,8 @@ void debuggerStackView(bool* show)
       ++sp;
     }
     ImGui::PopStyleColor();
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 void debuggerDisassemblyView(bool* show)
@@ -317,61 +316,11 @@ void debuggerDisassemblyView(bool* show)
 
       ImGui::TextUnformatted(instructionBuffer);
 
-      /*
-      if (refAddr && (mouseCharY == (i + disassemblyVpos)))
-      {
-        if (mouseCharX >= 10 && mouseCharX <= xPos)
-        {
-          int yPos = mouseCharY - 2;
-          bgColor = 0xffffff00;
-          fgColor = 0x00000000;
-          uint8_t value = hbc56MemRead(refAddr, true);
-
-          int labelWidth = 0;
-          if (labelMap[refAddr]) labelWidth = (int)SDL_strlen(labelMap[refAddr]) + 2;
-          int valueDecWidth = value < 10 ? 1 : (value < 100 ? 2 : 3);
-
-          int boxWidthChars = (labelWidth + valueDecWidth) + 13;
-          xPos = mouseCharX - (boxWidthChars / 2);
-          if (xPos < 1) xPos = 1;
-          if (xPos + boxWidthChars > 50) xPos = 50 - boxWidthChars;
-
-          debuggerOutputRect(xPos * DEBUGGER_CHAR_W - 4, yPos * DEBUGGER_CHAR_H - 4, boxWidthChars * DEBUGGER_CHAR_W + 8, DEBUGGER_CHAR_H + 8);
-
-          xPos += 1;
-
-          if (labelWidth)
-          {
-            debuggerOutput(labelMap[refAddr], xPos, yPos); xPos += labelWidth - 2;
-            debuggerOutput(": ", xPos, yPos); xPos += 2;
-          }
-
-          debuggerOutput("$", xPos, yPos); xPos += 1;
-          debuggerOutputHex16(refAddr, xPos, yPos); xPos += 4;
-          debuggerOutput(": $", xPos, yPos); xPos += 3;
-          debuggerOutputHex(value, xPos, yPos); xPos += 2;
-          debuggerOutput(" ", xPos, yPos); xPos += 1;
-          debuggerOutput(SDL_itoa(value, buffer, 10), xPos, yPos); xPos += valueDecWidth;
-
-          bgColor = 0x00000000;
-
-          int mouseX, mouseY;
-          int buttons = SDL_GetMouseState(&mouseX, &mouseY);
-          if (buttons & SDL_BUTTON(1)) {
-            highlightAddr = refAddr;
-            debugMemoryAddr = highlightAddr & 0xffc0;
-          }
-
-        }
-      }
-      fgColor = green;
-      */
-
     }
 
     ImGui::PopStyleColor();
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 
@@ -412,9 +361,8 @@ void debuggerMemoryView(bool* show)
     }
 
     ImGui::PopStyleColor();
-
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 
@@ -463,9 +411,8 @@ void debuggerVramMemoryView(bool* show)
     {
       ImGui::Text("TMS9918A not present");
     }
-
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 static std::string tmsColorText(uint8_t c)
@@ -585,7 +532,6 @@ void debuggerTmsRegistersView(bool* show)
     {
       ImGui::Text("TMS9918A not present");
     }
-
-    ImGui::End();
   }
+  ImGui::End();
 }
