@@ -22,11 +22,13 @@ void debuggerInit(VrEmu6502 *cpu6502);
 
 void debuggerInitTms(HBC56Device *tms9918);
 
-void debuggerLoadLabels(const char * labelFileContents);
+void debuggerLoadLabels(const char* labelFileContents);
+void debuggerLoadSource(const char* rptFileContents);
 
 void debuggerRegistersView(bool* show);
 void debuggerStackView(bool* show);
 void debuggerDisassemblyView(bool* show);
+void debuggerSourceView(bool* show);
 void debuggerMemoryView(bool *show);
 void debuggerVramMemoryView(bool* show);
 void debuggerTmsRegistersView(bool* show);

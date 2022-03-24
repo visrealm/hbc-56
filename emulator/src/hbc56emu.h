@@ -64,7 +64,13 @@ int hbc56LoadRom(const uint8_t *romData, int romDataSize);
  * --------------------
  * load labels. labelFileContents is a null terminated string (lmap file contents)
  */
-void hbc56LoadLabels(const char *labelFileContents);
+void hbc56LoadLabels(const char* labelFileContents);
+
+/* Function:  hbc56LoadSource
+ * --------------------
+ * load source. rptFileContents is a null terminated string (rpt file contents)
+ */
+void hbc56LoadSource(const char* rptFileContents);
 
 /* Function:  hbc56ToggleDebugger
  * --------------------

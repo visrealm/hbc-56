@@ -9,6 +9,9 @@
  *
  */
 
+#define _CRT_SECURE_NO_WARNINGS
+
+
 #include "debugger.h"
 #include "../devices/tms9918_device.h"
 #include "vrEmuTms9918Util.h"
@@ -20,6 +23,11 @@
 #include <string.h>
 #include <string>
 #include <bitset>
+#include <vector>
+#include <map>
+#include <set>
+#include <memory>
+
 
 extern "C" uint8_t hbc56MemRead(uint16_t addr, bool dbg);
 
@@ -32,6 +40,12 @@ static char *labelMap[0x10000] = {NULL};
 static HBC56Device* tms9918 = NULL;
 
 static char tmpBuffer[256] = {0};
+
+static std::map<std::string, int> constants;
+
+static uint16_t highlightAddr = 0;
+
+static std::set<char> operators = {'!','^','-','/','%','+','<','>','=','&','|','(',')'};
 
 static int isProbablyConstant(const char* str)
 {
@@ -53,7 +67,7 @@ void debuggerLoadLabels(const char* labelFileContents)
 
   if (labelFileContents)
   {
-    char lineBuffer[256];
+    char lineBuffer[1024];
 
     char *p = (char*)labelFileContents;
 
@@ -69,7 +83,8 @@ void debuggerLoadLabels(const char* labelFileContents)
       size_t labelStart = (size_t )-1, labelEnd = (size_t)-1, valueStart = (size_t)-1, valueEnd = (size_t)-1;
 
       int i = 0;
-      for (i = 0; i < sizeof(lineBuffer); ++i)
+      int len = strlen(lineBuffer);
+      for (i = 0; i < len; ++i)
       {
         char c = lineBuffer[i];
         if (c == 0) break;
@@ -118,6 +133,8 @@ void debuggerLoadLabels(const char* labelFileContents)
 
       bool isUnused = SDL_strstr(lineBuffer, "; unused") != NULL;
 
+      constants[std::string(lineBuffer + labelStart, labelEnd - labelStart)] = addr;
+
       if (!labelMap[addr] || (isProbablyConstant(labelMap[addr]) && !isUnused))
       {
         char* label = (char*)malloc((labelEnd - labelStart) + 1);
@@ -127,6 +144,262 @@ void debuggerLoadLabels(const char* labelFileContents)
     }
   }
 }
+
+std::map<std::string, std::vector<std::string> > source;
+std::map<int, std::pair<std::string, int> > addrMap;
+std::set<std::string> opcodes;
+
+
+
+class Token
+{
+public:
+  typedef std::shared_ptr<Token> Ptr;
+
+  typedef enum Type
+  {
+    LINE,
+    WHITESPACE,
+    COMMENT,
+    OPCODE,
+    COMMA,
+    NUMBER,
+    STRING,
+    OPERATOR,
+    IMMEDIATE,
+    MACRO,
+    CONSTANT,
+    LABEL,
+    UNKNOWN
+  };
+
+  static Ptr Create(Token::Type type, const std::string& value)
+  {
+    return Ptr(new Token(type, value));
+  }
+
+  Token::Type type() const { return m_type; }
+  const std::string &value() const { return m_value; }
+  const std::vector<Token::Ptr> &children() const { return m_children; }
+
+  void addChild(Token::Ptr child) { m_children.push_back(child); }
+
+private:
+  Token(Token::Type type, const std::string& value)
+    : m_type(type), m_value(value)
+  {
+
+  }
+
+  Token::Type             m_type;
+  std::string             m_value;
+  std::vector<Token::Ptr> m_children;
+
+};
+
+void parseLine(const std::string& line, size_t from, Token::Ptr parent)
+{
+  for (int i = from; i < line.size(); ++i)
+  {
+    if (line[i] == ';')
+    {
+      parent->addChild(Token::Create(Token::COMMENT, line));
+      return;
+    }
+    else if (line[i] == '\'')
+    {
+      size_t start = i;
+      ++i;
+      for (; i < line.size(); ++i)
+      {
+        if (line[i] == '\'' && line[i - 1] != '\\') break;
+      }
+      parent->addChild(Token::Create(Token::STRING, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == '"')
+    {
+      size_t start = i;
+      ++i;
+      for (; i < line.size(); ++i)
+      {
+        if (line[i] == '"' && line[i - 1] != '\\') break;
+      }
+      parent->addChild(Token::Create(Token::STRING, line.substr(start, i - start)));
+      --i;
+    }
+    else if (isspace(line[i]))
+    {
+      size_t start = i;
+      for (; i < line.size(); ++i)
+      {
+        if (!isspace(line[i])) break;
+      }
+      parent->addChild(Token::Create(Token::WHITESPACE, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == ',')
+    {
+      parent->addChild(Token::Create(Token::COMMA, line.substr(i, 1)));
+    }
+    else if (line[i] == '#')
+    {
+      parent->addChild(Token::Create(Token::IMMEDIATE, line.substr(i, 1)));
+    }
+    else if (line[i] == '+' && (parent->children().empty() || parent->children()[0]->type() == Token::WHITESPACE))
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (!isalnum(line[i]) && line[i] != '_' && line[i] <= 127) break;
+      }
+      parent->addChild(Token::Create(Token::MACRO, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == '.' || line[i] == '@' || isalpha(line[i]))
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (!isalnum(line[i]) && line[i] != '_' && line[i] <= 127) break;
+      }
+
+      Token::Type type = start == 0 ? Token::LABEL : Token::CONSTANT;
+      std::string word = line.substr(start, i - start);
+
+      if (isalpha(line[start]))
+      {
+        if (opcodes.find(word) != opcodes.end())
+        {
+          type = Token::OPCODE;
+        }
+        else if (word == "DIV")
+        {
+          type = Token::OPERATOR;
+        }
+      }
+
+      parent->addChild(Token::Create(type, word));
+      --i;
+    }
+    else if (line[i] == '$' || (line[i] == '0' && line[i+1] == 'x')) // hex
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (!isxdigit(line[i])) break;
+      }
+      parent->addChild(Token::Create(Token::NUMBER, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == '%' && (line[i+1] == '0' || line[i + 1] == '1' || line[i + 1] == '#' || line[i + 1] == '.')) // binary
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (line[i] != '0' && line[i] != '1' && line[i] != '.' && line[i] != '#') break;
+      }
+      parent->addChild(Token::Create(Token::NUMBER, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == '&' && isdigit(line[i+1])) // octal
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (line[i] < '0' || line[i]  > '7') break;
+      }
+      parent->addChild(Token::Create(Token::NUMBER, line.substr(start, i - start)));
+      --i;
+    }
+    else if (isdigit(line[i]))
+    {
+      size_t start = i;
+      for (; i < line.size(); ++i)
+      {
+        if (!isdigit(line[i]) && line[i] != '.') break;
+      }
+      parent->addChild(Token::Create(Token::NUMBER, line.substr(start, i - start)));
+      --i;
+    }
+    else
+    {
+      size_t start = i;
+      if (operators.find(line[i]) != operators.end())
+      {
+        for (; i < line.size(); ++i)
+        {
+          if (operators.find(line[i]) == operators.end()) break;
+        }
+        parent->addChild(Token::Create(Token::OPERATOR, line.substr(start, i - start)));
+        --i;
+      }
+      else
+      {
+        parent->addChild(Token::Create(Token::UNKNOWN, line.substr(i, 1)));
+      }
+    }
+  }
+
+}
+
+
+
+void debuggerLoadSource(const char* rptFileContents)
+{
+  for (int i = 0; i < 256; ++i)
+  {
+    opcodes.insert(vrEmu6502OpcodeToMnemonicStr(cpu6502, i & 0xff));
+  }
+
+  if (rptFileContents)
+  {
+
+    char* p = (char*)rptFileContents;
+    std::string filename = "";
+
+    for (;;)
+    {
+      char* end = SDL_strchr(p, '\n');
+      if (end == NULL)
+        break;
+
+      if (end == p) {++p; continue;}
+
+
+      std::string line(p, end - p);
+      p += end - p;
+      if (line.size() < 2) continue;
+
+      if (line[0] == ';')
+      {
+        filename = line.substr(19);
+        continue;
+      }
+
+      size_t pos = 0;
+        int lineNumber = std::stoi(line, &pos);
+        int address = 0;
+        try
+        {
+          address = std::stoi(line.substr(pos), &pos, 16);
+        }
+        catch (...)
+        {
+
+        }
+
+        source[filename].resize(lineNumber + 1);
+        source[filename][lineNumber] = line.substr(32);
+      
+        if (address)
+        {
+          addrMap[address] = std::make_pair(filename, lineNumber);
+        }
+    }
+  }
+}
+
 
 void debuggerInit(VrEmu6502* cpu6502_)
 {
@@ -145,6 +418,73 @@ static uint8_t printable(uint8_t b)
     return '.';
   }
   return b;
+}
+
+
+void constantTool(const char* name)
+{
+  auto iter = constants.find(name);
+  bool found = iter != constants.end();
+  uint16_t addr = 0;
+  if (!found && name[0] == '$')
+  {
+    found = true;
+    int val = 0;
+    SDL_sscanf(name + 1, "%x", &val);
+    addr = (uint16_t)val;
+  }
+  else if (found)
+  {
+    addr = iter->second;
+  }
+
+  if (found)
+  {
+    ImGui::BeginTooltip();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImGui::TextUnformatted(name);
+    ImGui::PopStyleColor();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    ImGui::Separator();
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::TextUnformatted("Hex: ");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    if (addr < 0x100)
+    {
+      ImGui::Text("$%02x", addr);
+    }
+    else
+    {
+      ImGui::Text("$%04x", addr);
+    }
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::TextUnformatted("Dec: ");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::Text("%d", addr);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::TextUnformatted("Bin: ");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    if (addr & 0xff00)
+      ImGui::TextUnformatted(std::bitset<16>(addr).to_string().c_str());
+    else
+      ImGui::TextUnformatted(std::bitset<8>(addr).to_string().c_str());
+
+    ImGui::PopStyleColor();
+    ImGui::EndTooltip();
+
+    if (ImGui::IsMouseClicked(0))
+    {
+      highlightAddr = addr;
+      debugMemoryAddr = highlightAddr & 0xfff0;
+    }
+  }
+
 }
 
 void registerFlagValue(uint8_t val, uint8_t flag, char name)
@@ -316,9 +656,171 @@ void debuggerDisassemblyView(bool* show)
 
       ImGui::TextUnformatted(instructionBuffer);
 
+      if (refAddr && ImGui::IsItemHovered())
+      {
+        char tmpHex[10] = "$";
+        _itoa(refAddr, tmpHex + 1, 16);
+        constantTool(tmpHex);
+      }
+
     }
 
     ImGui::PopStyleColor();
+  }
+  ImGui::End();
+}
+
+int outputToken(const char *token, const ImVec4 &color, int offset)
+{
+  ImGui::PushStyleColor(ImGuiCol_Text, color);
+  ImGui::SameLine();
+  if (offset > 0)
+  {
+    ImGui::Text("%*c%s", offset, ' ', token);
+  }
+  else
+  {
+    ImGui::TextUnformatted(token);
+  }
+
+  ImGui::PopStyleColor();
+
+  return offset + strlen(token);
+}
+
+
+
+void debuggerSourceView(bool* show)
+{
+  if (ImGui::Begin("Source", show, ImGuiWindowFlags_HorizontalScrollbar))
+  {
+    uint16_t pc = vrEmu6502GetPC(cpu6502);
+
+    //std::map<std::string, std::vector<std::string> > source;
+    //std::map<int, std::pair<std::string, int> > addrMap;
+
+    auto iter = addrMap.lower_bound(pc);
+    if (iter != addrMap.end())
+    {
+      if (iter->first > pc) --iter;
+
+      ImGui::TextUnformatted(iter->second.first.c_str());
+      ImGui::Separator();
+
+      auto &sourceVec = source.find(iter->second.first)->second;
+      
+      int lineNumber = iter->second.second;
+      int highlightLineNumber = lineNumber;
+
+      if (lineNumber > 5)
+      {
+        lineNumber -= 5;
+      }
+      
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+
+      bool firstRow = true;
+
+      uint16_t macroEnd = 0;
+
+      while (ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeightWithSpacing() * 2)
+      {
+        
+        if (lineNumber < sourceVec.size())
+        {
+
+          if (lineNumber == highlightLineNumber)
+          {
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImVec2 max = pos;
+            max.x += 1000;
+            max.y += ImGui::GetTextLineHeightWithSpacing();
+            pos.x -= 4;
+            pos.y -= 1;
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(0, 0, 255, 120));
+            ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 0, 255, 255));
+          }
+
+
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+          ImGui::Text("%-5d",lineNumber);
+          ImGui::PopStyleColor();
+
+          ImGuiStyle& style = ImGui::GetStyle();
+          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, (float)(int)(style.ItemSpacing.y)));
+
+          std::string code = sourceVec[lineNumber];
+          char *token = strtok(&code[0], " \t\r\n");
+          int lastPos = 0;
+
+          std::string currentToken;
+          bool inComment = false;
+          bool firstToken = true;
+
+
+          while (token)
+          {
+            if (token[0] == ';') // comment
+            {
+              outputToken(sourceVec[lineNumber].c_str() + lastPos, ImVec4(0.5f, 1.0f, 0.5f, 1.0f), 0);
+              break;
+            }
+            else if (token == &code[0]) // label
+            {
+              lastPos += outputToken(token, ImVec4(0.5f, 0.5f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
+              if (ImGui::IsItemHovered())
+              {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Label");
+                ImGui::EndTooltip();
+              }
+            }
+            else if (firstToken  && token[0] == '+') // macro
+            {
+              lastPos += outputToken(token, ImVec4(0.5f, 1.0f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
+              auto next = iter;
+              macroEnd = (++next)->first;
+            }
+            else if (token[0] == '#') // immediate
+            {
+              lastPos += outputToken(token, ImVec4(1.0f, 0.5f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
+              if (ImGui::IsItemHovered())
+              {
+                constantTool(token+1);
+              }
+            }
+            else if (opcodes.find(token) != opcodes.end())
+            {
+              lastPos += outputToken(token, ImVec4(1.0f, 0.5f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
+            }
+            else if (constants.find(token) != constants.end())
+            {
+              lastPos += outputToken(token, ImVec4(1.0f, 0.75f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
+              if (ImGui::IsItemHovered())
+              {
+                constantTool(token);
+              }
+            }
+            else
+            {
+              lastPos += outputToken(token, ImVec4(0.5f, 0.5f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
+            }
+
+            firstToken = false;
+            token = strtok(NULL, " \t\r\n");
+          }
+
+          ImGui::PopStyleVar();
+
+          ++lineNumber;
+        }
+        else
+        {
+          break;
+        }
+      }
+      ImGui::PopStyleColor();
+    }
   }
   ImGui::End();
 }
@@ -352,10 +854,24 @@ void debuggerMemoryView(bool* show)
 
       ImGui::SameLine();
 
+      if ((highlightAddr & 0xfff8) == addr)
+      {
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 max = pos;
+        max.y += ImGui::GetTextLineHeightWithSpacing();
+        pos.x += (highlightAddr & 0x07) * 21;
+        max.x = pos.x + 17;
+        pos.x -= 3;
+        pos.y -= 1;
+        ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(255, 255, 0, 120));
+        ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(255, 255, 0, 255));
+      }
+
       ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
         v0, v1, v2, v3, v4, v5, v6, v7,
         printable(v0), printable(v1), printable(v2), printable(v3),
         printable(v4), printable(v5), printable(v6), printable(v7));
+
 
       addr += 8;
     }

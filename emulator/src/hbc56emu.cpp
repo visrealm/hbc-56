@@ -187,6 +187,15 @@ void hbc56LoadLabels(const char* labelFileContents)
   debuggerLoadLabels(labelFileContents);
 }
 
+/* Function:  hbc56LoadSource
+ * --------------------
+ * load labels. rptFileContents is a null terminated string (rpt file contents)
+ */
+void hbc56LoadSource(const char* labelFileContents)
+{
+  debuggerLoadSource(labelFileContents);
+}
+
 /* Function:  hbc56ToggleDebugger
  * --------------------
  * toggle the debugger
@@ -357,6 +366,7 @@ static void doRender()
   static bool showRegisters = true;
   static bool showStack = true;
   static bool showDisassembly = true;
+  static bool showSource = true;
 
   static bool showMemory = true;
   static bool showTms9918Memory = true;
@@ -416,6 +426,7 @@ static void doRender()
         ImGui::MenuItem("Registers", "<Ctrl> + E", &showRegisters);
         ImGui::MenuItem("Stack", "<Ctrl> + S", &showStack);
         ImGui::MenuItem("Disassembly", "<Ctrl> + D", &showDisassembly);
+        ImGui::MenuItem("Source", "<Ctrl> + O", &showSource);
         ImGui::MenuItem("Memory", "<Ctrl> + M", &showMemory);
         ImGui::Separator();
         ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
@@ -480,6 +491,7 @@ static void doRender()
   if (showRegisters) debuggerRegistersView(&showRegisters);
   if (showStack) debuggerStackView(&showStack);
   if (showDisassembly)debuggerDisassemblyView(&showDisassembly);
+  if (showSource) debuggerSourceView(&showSource);
   if (showMemory) debuggerMemoryView(&showMemory);
   if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
@@ -744,9 +756,34 @@ static int loadRom(const char* filename)
 
         char *lblFileContent = (char*)malloc(fsize + 1);
         fread(lblFileContent, fsize, 1, ptr);
+        lblFileContent[fsize] = 0;
         fclose(ptr);
 
         hbc56LoadLabels(lblFileContent);
+        free(lblFileContent);
+      }
+
+      SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
+      ln = SDL_strlen(labelMapFile);
+      SDL_strlcpy(labelMapFile + ln, ".rpt", FILENAME_MAX - ln);
+
+#ifdef __EMSCRIPTEN__
+      ptr = fopen(labelMapFile, "rb");
+#else
+      fopen_s(&ptr, labelMapFile, "rb");
+#endif
+      if (ptr)
+      {
+        fseek(ptr, 0, SEEK_END);
+        long fsize = ftell(ptr);
+        fseek(ptr, 0, SEEK_SET);  /* same as rewind(f); */
+
+        char* lblFileContent = (char*)malloc(fsize + 1);
+        fread(lblFileContent, fsize, 1, ptr);
+        lblFileContent[fsize] = 0;
+        fclose(ptr);
+
+        hbc56LoadSource(lblFileContent);
         free(lblFileContent);
       }
     }
@@ -829,6 +866,9 @@ int main(int argc, char* argv[])
 
   /* add the cpu device */
   cpuDevice = hbc56AddDevice(create6502CpuDevice());
+
+  /* initialise the debugger */
+  debuggerInit(getCpuDevice(cpuDevice));
 
   int romLoaded = 0;
   LCDType lcdType = LCD_GRAPHICS;
@@ -960,9 +1000,6 @@ int main(int argc, char* argv[])
 
   /* reset the machine */
   hbc56Reset();
-
-  /* initialise the debugger */
-  debuggerInit(getCpuDevice(cpuDevice));
 
   if (doBreak)hbc56DebugBreak();
 
