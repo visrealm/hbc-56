@@ -145,11 +145,22 @@ void debuggerLoadLabels(const char* labelFileContents)
   }
 }
 
-std::map<std::string, std::vector<std::string> > source;
+std::map<std::string, std::vector<std::pair<std::string, uint16_t> > > source;
 std::map<int, std::pair<std::string, int> > addrMap;
 std::set<std::string> opcodes;
 
+bool isBranchingOpcode(const std::string& opcode)
+{
+  if (opcode.empty())
+    return false;
 
+  if (opcode[0] == 'b')
+  {
+    return opcode != "brk" && opcode != "bit";
+  }
+
+  return opcode == "jmp" || opcode == "jsr" || opcode == "rts" || opcode == "rti";
+}
 
 class Token
 {
@@ -170,6 +181,7 @@ public:
     MACRO,
     CONSTANT,
     LABEL,
+    PSEUDOOP,
     UNKNOWN
   };
 
@@ -182,6 +194,25 @@ public:
   const std::string &value() const { return m_value; }
   const std::vector<Token::Ptr> &children() const { return m_children; }
 
+  bool contains(Token::Type type) const
+  {
+    for (const auto &node : m_children)
+    {
+      if (node->type() == type)
+        return true;
+    }
+    return false;
+  }
+
+  bool containsOnly(Token::Type type) const
+  {
+    for (const auto& node : m_children)
+    {
+      if (node->type() != type)
+        return false;
+    }
+    return true;
+  }
   void addChild(Token::Ptr child) { m_children.push_back(child); }
 
 private:
@@ -203,7 +234,7 @@ void parseLine(const std::string& line, size_t from, Token::Ptr parent)
   {
     if (line[i] == ';')
     {
-      parent->addChild(Token::Create(Token::COMMENT, line));
+      parent->addChild(Token::Create(Token::COMMENT, line.substr(i)));
       return;
     }
     else if (line[i] == '\'')
@@ -246,17 +277,27 @@ void parseLine(const std::string& line, size_t from, Token::Ptr parent)
     {
       parent->addChild(Token::Create(Token::IMMEDIATE, line.substr(i, 1)));
     }
-    else if (line[i] == '+' && (parent->children().empty() || parent->children()[0]->type() == Token::WHITESPACE))
+    else if (line[i] == '+' && (parent->containsOnly(Token::WHITESPACE)))
     {
       size_t start = i++;
       for (; i < line.size(); ++i)
       {
         if (!isalnum(line[i]) && line[i] != '_' && line[i] <= 127) break;
       }
-      parent->addChild(Token::Create(Token::MACRO, line.substr(start, i - start)));
+      parent->addChild(Token::Create(i - start == 1 ? Token::CONSTANT : Token::MACRO, line.substr(start, i - start)));
       --i;
     }
-    else if (line[i] == '.' || line[i] == '@' || isalpha(line[i]))
+    else if (line[i] == '!' && (parent->containsOnly(Token::WHITESPACE)))
+    {
+      size_t start = i++;
+      for (; i < line.size(); ++i)
+      {
+        if (!isalpha(line[i])) break;
+      }
+      parent->addChild(Token::Create(Token::PSEUDOOP, line.substr(start, i - start)));
+      --i;
+    }
+    else if (line[i] == '.' || line[i] == '@' || line[i] == '_' || isalpha(line[i]))
     {
       size_t start = i++;
       for (; i < line.size(); ++i)
@@ -340,9 +381,7 @@ void parseLine(const std::string& line, size_t from, Token::Ptr parent)
       }
     }
   }
-
 }
-
 
 
 void debuggerLoadSource(const char* rptFileContents)
@@ -390,7 +429,7 @@ void debuggerLoadSource(const char* rptFileContents)
         }
 
         source[filename].resize(lineNumber + 1);
-        source[filename][lineNumber] = line.substr(32);
+        source[filename][lineNumber] = std::make_pair(line.substr(32), address);
       
         if (address)
         {
@@ -440,6 +479,8 @@ void constantTool(const char* name)
 
   if (found)
   {
+    uint8_t memVal = hbc56MemRead(addr, true);
+
     ImGui::BeginTooltip();
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     ImGui::TextUnformatted(name);
@@ -459,12 +500,16 @@ void constantTool(const char* name)
     {
       ImGui::Text("$%04x", addr);
     }
+    ImGui::SameLine();
+    ImGui::Text(" -> $%02x", memVal);
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
     ImGui::TextUnformatted("Dec: ");
     ImGui::PopStyleColor();
     ImGui::SameLine();
     ImGui::Text("%d", addr);
+    ImGui::SameLine();
+    ImGui::Text(" -> %d", memVal);
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
     ImGui::TextUnformatted("Bin: ");
@@ -594,6 +639,104 @@ void debuggerStackView(bool* show)
   ImGui::End();
 }
 
+
+Token::Ptr renderLine(const std::string& src)
+{
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, (float)(int)(style.ItemSpacing.y)));
+  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+
+  auto line = Token::Create(Token::LINE, src);
+
+  parseLine(src, 0, line);
+
+  for (const auto& tok : line->children())
+  {
+    int hasColor = true;
+
+    switch (tok->type())
+    {
+    case Token::COMMENT:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.0f, 1.0f));
+      break;
+    case Token::OPCODE:
+      if (isBranchingOpcode(tok->value()))
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 1.0f, 1.0f));
+      else
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));
+      break;
+    case Token::NUMBER:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.5f, 1.0f));
+      break;
+    case Token::STRING:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 0.5f, 1.0f));
+      break;
+    case Token::OPERATOR:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+      break;
+    case Token::IMMEDIATE:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));
+      break;
+    case Token::MACRO:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.75f, 0.75f, 1.0f, 1.0f));
+      break;
+    case Token::CONSTANT:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      break;
+    case Token::LABEL:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.75f, 1.0f, 1.0f));
+      break;
+    case Token::PSEUDOOP:
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 1.0f, 1.0f));
+      break;
+    default:
+      hasColor = false;
+      break;
+    }
+
+    ImGui::SameLine();
+    ImGui::TextUnformatted(tok->value().c_str());
+    if (ImGui::IsItemHovered())
+    {
+      if (tok->type() == Token::CONSTANT || tok->type() == Token::LABEL || tok->type() == Token::NUMBER)
+      {
+        constantTool(tok->value().c_str());
+      }
+      else
+      {
+        ImGui::BeginTooltip();
+        ImGui::Text("%d", (int)tok->type());
+        ImGui::EndTooltip();
+      }
+    }
+
+
+    if (hasColor)
+    {
+      ImGui::PopStyleColor();
+    }
+  }
+
+  ImGui::PopStyleColor();
+  ImGui::PopStyleVar();
+
+  return line;
+}
+
+void highlightRow()
+{
+  ImVec2 pos = ImGui::GetCursorScreenPos();
+  ImVec2 max = pos;
+  max.x += 1000;
+  max.y += ImGui::GetTextLineHeightWithSpacing();
+  pos.x -= 4;
+  pos.y -= 1;
+  ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(0, 0, 255, 120));
+  ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 0, 255, 255));
+}
+
+
 void debuggerDisassemblyView(bool* show)
 {
   if (ImGui::Begin("Disassembly", show, ImGuiWindowFlags_HorizontalScrollbar))
@@ -619,14 +762,7 @@ void debuggerDisassemblyView(bool* show)
       
       if (firstRow)
       {
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImVec2 max = pos;
-        max.x += ImGui::GetContentRegionAvail().x - 1;
-        max.y += ImGui::GetTextLineHeightWithSpacing();
-        pos.x += 8;
-        pos.y -= 1;
-        ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(0, 0, 255, 120));
-        ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 0, 255, 255));
+        highlightRow();
         firstRow = false;
       }
 
@@ -635,7 +771,7 @@ void debuggerDisassemblyView(bool* show)
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
 
 
-      ImGui::Text("  $%04x", pc);
+      ImGui::Text("  $%04x ", pc);
       ImGui::PopStyleColor();
 
       uint16_t refAddr = 0;
@@ -652,6 +788,9 @@ void debuggerDisassemblyView(bool* show)
       {
         pc = vrEmu6502DisassembleInstruction(cpu6502, pc, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
       }
+
+      renderLine(instructionBuffer);
+      /*
       ImGui::SameLine();
 
       ImGui::TextUnformatted(instructionBuffer);
@@ -662,7 +801,7 @@ void debuggerDisassemblyView(bool* show)
         _itoa(refAddr, tmpHex + 1, 16);
         constantTool(tmpHex);
       }
-
+      */
     }
 
     ImGui::PopStyleColor();
@@ -690,27 +829,67 @@ int outputToken(const char *token, const ImVec4 &color, int offset)
 
 
 
+static bool Items_FileGetter(void* data, int idx, const char** out_text)
+{
+  auto *fileMap = (std::map<std::string, std::vector<std::string> >*)data;
+  auto it = fileMap->begin();
+
+  std::advance(it, idx);
+
+  if (out_text)
+    *out_text = it->first.c_str();
+
+  return true;
+}
+
+
 void debuggerSourceView(bool* show)
 {
   if (ImGui::Begin("Source", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     uint16_t pc = vrEmu6502GetPC(cpu6502);
 
-    //std::map<std::string, std::vector<std::string> > source;
-    //std::map<int, std::pair<std::string, int> > addrMap;
+    //std::map<std::string, std::vector<std::pair<std::string, uint16_t>> > source;   filename, vector of lines/addresses
+    //std::map<int, std::pair<std::string, int> > addrMap;       address, filename, line 
+    static int currentFile = 0;
+    static uint16_t lastPc = pc;
+    static int lastLineNumber = 0;
 
     auto iter = addrMap.lower_bound(pc);
     if (iter != addrMap.end())
     {
       if (iter->first > pc) --iter;
 
-      ImGui::TextUnformatted(iter->second.first.c_str());
-      ImGui::Separator();
-
-      auto &sourceVec = source.find(iter->second.first)->second;
-      
+      auto srcIter = source.find(iter->second.first);
       int lineNumber = iter->second.second;
+
       int highlightLineNumber = lineNumber;
+
+      if (pc != lastPc)
+      {
+        lastPc = pc;
+        lastLineNumber = lineNumber;
+        currentFile = std::distance(source.begin(), srcIter);
+      }
+      if (ImGui::IsWindowHovered()) {
+        lastLineNumber -= ImGui::GetIO().MouseWheel * 3;
+        if (lastLineNumber <= 0) lastLineNumber = 1;
+      }
+
+      lineNumber = lastLineNumber;
+
+      if (ImGui::Combo(" ", &currentFile, Items_FileGetter, &source, source.size(), 8))
+      {
+        lastLineNumber = 1;
+      }
+
+      srcIter = source.begin();
+      std::advance(srcIter, currentFile);
+
+      auto& sourceVec = srcIter->second;
+
+      //ImGui::TextUnformatted(iter->second.first.c_str());
+      ImGui::Separator();
 
       if (lineNumber > 5)
       {
@@ -729,16 +908,12 @@ void debuggerSourceView(bool* show)
         if (lineNumber < sourceVec.size())
         {
 
-          if (lineNumber == highlightLineNumber)
+          bool activeRow = lineNumber == highlightLineNumber &&
+                           currentFile == std::distance(source.begin(), source.find(iter->second.first));
+
+          if (activeRow)
           {
-            ImVec2 pos = ImGui::GetCursorScreenPos();
-            ImVec2 max = pos;
-            max.x += 1000;
-            max.y += ImGui::GetTextLineHeightWithSpacing();
-            pos.x -= 4;
-            pos.y -= 1;
-            ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(0, 0, 255, 120));
-            ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 0, 255, 255));
+            highlightRow();
           }
 
 
@@ -746,71 +921,37 @@ void debuggerSourceView(bool* show)
           ImGui::Text("%-5d",lineNumber);
           ImGui::PopStyleColor();
 
-          ImGuiStyle& style = ImGui::GetStyle();
-          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, (float)(int)(style.ItemSpacing.y)));
+          auto token = renderLine(sourceVec[lineNumber].first);
 
-          std::string code = sourceVec[lineNumber];
-          char *token = strtok(&code[0], " \t\r\n");
-          int lastPos = 0;
-
-          std::string currentToken;
-          bool inComment = false;
-          bool firstToken = true;
-
-
-          while (token)
+          if (activeRow && token->contains(Token::MACRO))
           {
-            if (token[0] == ';') // comment
+            int tmpLineNumber = lineNumber;
+            uint16_t fromAddress = sourceVec[tmpLineNumber].second;
+            uint16_t toAddress = 0;
+            while (toAddress == 0)
             {
-              outputToken(sourceVec[lineNumber].c_str() + lastPos, ImVec4(0.5f, 1.0f, 0.5f, 1.0f), 0);
-              break;
-            }
-            else if (token == &code[0]) // label
-            {
-              lastPos += outputToken(token, ImVec4(0.5f, 0.5f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
-              if (ImGui::IsItemHovered())
-              {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted("Label");
-                ImGui::EndTooltip();
-              }
-            }
-            else if (firstToken  && token[0] == '+') // macro
-            {
-              lastPos += outputToken(token, ImVec4(0.5f, 1.0f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
-              auto next = iter;
-              macroEnd = (++next)->first;
-            }
-            else if (token[0] == '#') // immediate
-            {
-              lastPos += outputToken(token, ImVec4(1.0f, 0.5f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
-              if (ImGui::IsItemHovered())
-              {
-                constantTool(token+1);
-              }
-            }
-            else if (opcodes.find(token) != opcodes.end())
-            {
-              lastPos += outputToken(token, ImVec4(1.0f, 0.5f, 1.0f, 1.0f), (token - &code[0]) - lastPos);
-            }
-            else if (constants.find(token) != constants.end())
-            {
-              lastPos += outputToken(token, ImVec4(1.0f, 0.75f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
-              if (ImGui::IsItemHovered())
-              {
-                constantTool(token);
-              }
-            }
-            else
-            {
-              lastPos += outputToken(token, ImVec4(0.5f, 0.5f, 0.5f, 1.0f), (token - &code[0]) - lastPos);
+              if (tmpLineNumber >= sourceVec.size()) break;
+              toAddress = sourceVec[++tmpLineNumber].second;
             }
 
-            firstToken = false;
-            token = strtok(NULL, " \t\r\n");
+            if (toAddress)
+            {
+              uint16_t tmpAddress = fromAddress;
+              while (tmpAddress < toAddress && ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeightWithSpacing())
+              {
+                uint16_t refAddr = 0;
+                char instructionBuffer[32];
+
+                if (pc == tmpAddress) highlightRow();
+
+                tmpAddress = vrEmu6502DisassembleInstruction(cpu6502, tmpAddress, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
+                ImGui::TextUnformatted("                  ");
+                renderLine(instructionBuffer);
+              }
+            }
+
           }
 
-          ImGui::PopStyleVar();
 
           ++lineNumber;
         }

@@ -409,6 +409,8 @@ static void doRender()
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
+  ImGui::ShowDemoWindow();
+
   if (ImGui::BeginMenuBar())
   {
     if (ImGui::BeginMenu("File"))

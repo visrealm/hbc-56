@@ -168,8 +168,7 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
         {
           if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
           {
-            if (cpuDevice->nmiSignal != INTERRUPT_RELEASE ||
-              cpuDevice->intSignal != INTERRUPT_RELEASE)
+            if (vrEmu6502GetPC(cpuDevice->cpu6502) == (hbc56MemRead(0xfffe, true) | (hbc56MemRead(0xffff, true) << 8)))
             {
               cpuDevice->currentState = CPU_BREAK;
             }
