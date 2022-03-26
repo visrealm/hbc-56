@@ -21,6 +21,7 @@ extern "C" {
 struct vrEmu6502_s;
 typedef struct vrEmu6502_s VrEmu6502;
 
+typedef uint8_t (*IsBreakpointFn)(uint16_t);
 
 typedef enum
 {
@@ -37,7 +38,7 @@ typedef enum
  * --------------------
  * create a 6502 CPU device
  */
-HBC56Device create6502CpuDevice();
+HBC56Device create6502CpuDevice(IsBreakpointFn brkCb);
 
 void interrupt6502(HBC56Device* device, HBC56InterruptType type, HBC56InterruptSignal signal);
 

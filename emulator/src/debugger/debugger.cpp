@@ -44,6 +44,7 @@ static char tmpBuffer[256] = {0};
 static std::map<std::string, int> constants;
 
 static uint16_t highlightAddr = 0;
+static uint16_t hoveredAddr = 0;
 
 static std::set<char> operators = {'!','^','-','/','%','+','<','>','=','&','|','(',')'};
 
@@ -203,6 +204,17 @@ public:
     }
     return false;
   }
+
+  Ptr childOfType(Token::Type type) const
+  {
+    for (const auto& node : m_children)
+    {
+      if (node->type() == type)
+        return node;
+    }
+    return nullptr;
+  }
+
 
   bool containsOnly(Token::Type type) const
   {
@@ -450,6 +462,26 @@ void debuggerInitTms(HBC56Device* tms)
   tms9918 = tms;
 }
 
+std::set<uint16_t> breakpoints;
+
+uint8_t debuggerIsBreakpoint(uint16_t addr)
+{
+  return breakpoints.find(addr) != breakpoints.end();
+}
+
+void toggleBreakpoint(uint16_t addr)
+{
+  auto iter = breakpoints.find(addr);
+  if (iter == breakpoints.end())
+  {
+    breakpoints.insert(addr);
+  }
+  else
+  {
+    breakpoints.erase(iter);
+  }
+}
+
 static uint8_t printable(uint8_t b)
 {
   if (b < 0x20 || b > 0x7e)
@@ -519,6 +551,8 @@ void constantTool(const char* name)
       ImGui::TextUnformatted(std::bitset<16>(addr).to_string().c_str());
     else
       ImGui::TextUnformatted(std::bitset<8>(addr).to_string().c_str());
+
+    hoveredAddr = addr;
 
     ImGui::PopStyleColor();
     ImGui::EndTooltip();
@@ -640,7 +674,7 @@ void debuggerStackView(bool* show)
 }
 
 
-Token::Ptr renderLine(const std::string& src)
+Token::Ptr renderLine(uint16_t addr, const std::string& src)
 {
 
   ImGuiStyle& style = ImGui::GetStyle();
@@ -650,6 +684,13 @@ Token::Ptr renderLine(const std::string& src)
   auto line = Token::Create(Token::LINE, src);
 
   parseLine(src, 0, line);
+
+  auto label = line->childOfType(Token::LABEL);
+
+  if (label && constants.find(label->value()) == constants.end())
+  {
+    constants[label->value()] = addr;
+  }
 
   for (const auto& tok : line->children())
   {
@@ -736,6 +777,31 @@ void highlightRow()
   ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 0, 255, 255));
 }
 
+void highlightRowBreakpoint()
+{
+  ImVec2 pos = ImGui::GetCursorScreenPos();
+  ImVec2 max = pos;
+  max.x += 1000;
+  max.y += ImGui::GetTextLineHeightWithSpacing();
+  pos.x -= 4;
+  pos.y -= 1;
+  ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(255, 0, 0, 120));
+  ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(255, 0, 0, 255));
+}
+
+void highlightRowHovered()
+{
+  ImVec2 pos = ImGui::GetCursorScreenPos();
+  ImVec2 max = pos;
+  max.x += 1000;
+  max.y += ImGui::GetTextLineHeightWithSpacing();
+  pos.x -= 4;
+  pos.y -= 1;
+  ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(0, 255, 0, 120));
+  ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(0, 255, 0, 255));
+}
+
+
 
 void debuggerDisassemblyView(bool* show)
 {
@@ -765,7 +831,14 @@ void debuggerDisassemblyView(bool* show)
         highlightRow();
         firstRow = false;
       }
-
+      else if (debuggerIsBreakpoint(pc))
+      {
+        highlightRowBreakpoint();
+      }
+      else if (hoveredAddr == pc)
+      {
+        highlightRowHovered();
+      }
 
       uint8_t opcode = hbc56MemRead(pc, true);
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
@@ -774,8 +847,14 @@ void debuggerDisassemblyView(bool* show)
       ImGui::Text("  $%04x ", pc);
       ImGui::PopStyleColor();
 
+      if (ImGui::IsItemClicked())
+      {
+        toggleBreakpoint(pc);
+      }
+
       uint16_t refAddr = 0;
       char instructionBuffer[32];
+      uint16_t currentPc = pc;
 
       /* empty rom ? */
       if (opcode == 0xff && hbc56MemRead(pc + 1, true) == 0xff)
@@ -789,7 +868,7 @@ void debuggerDisassemblyView(bool* show)
         pc = vrEmu6502DisassembleInstruction(cpu6502, pc, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
       }
 
-      renderLine(instructionBuffer);
+      renderLine(currentPc, instructionBuffer);
       /*
       ImGui::SameLine();
 
@@ -854,6 +933,7 @@ void debuggerSourceView(bool* show)
     static int currentFile = 0;
     static uint16_t lastPc = pc;
     static int lastLineNumber = 0;
+    static int macroOffset = 0;
 
     auto iter = addrMap.lower_bound(pc);
     if (iter != addrMap.end())
@@ -861,19 +941,19 @@ void debuggerSourceView(bool* show)
       if (iter->first > pc) --iter;
 
       auto srcIter = source.find(iter->second.first);
+
       int lineNumber = iter->second.second;
 
       int highlightLineNumber = lineNumber;
+
+      float scrollPos = -1.0f;
 
       if (pc != lastPc)
       {
         lastPc = pc;
         lastLineNumber = lineNumber;
+        scrollPos = (lastLineNumber + macroOffset) * ImGui::GetTextLineHeightWithSpacing();
         currentFile = std::distance(source.begin(), srcIter);
-      }
-      if (ImGui::IsWindowHovered()) {
-        lastLineNumber -= ImGui::GetIO().MouseWheel * 3;
-        if (lastLineNumber <= 0) lastLineNumber = 1;
       }
 
       lineNumber = lastLineNumber;
@@ -891,42 +971,74 @@ void debuggerSourceView(bool* show)
       //ImGui::TextUnformatted(iter->second.first.c_str());
       ImGui::Separator();
 
-      if (lineNumber > 5)
-      {
-        lineNumber -= 5;
+      ImGui::BeginChild("code", ImVec2(), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+      if (ImGui::IsWindowHovered()) {
+        lastLineNumber -= ImGui::GetIO().MouseWheel * 3;
+        if (lastLineNumber <= 0) lastLineNumber = 1;
       }
-      
+
+      ImGuiListClipper clipper;
+      clipper.Begin(srcIter->second.size());
+
+
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
 
       bool firstRow = true;
 
       uint16_t macroEnd = 0;
 
-      while (ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeightWithSpacing() * 2)
+      while (clipper.Step())
       {
-        
-        if (lineNumber < sourceVec.size())
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
         {
 
+          lineNumber = i;
+
           bool activeRow = lineNumber == highlightLineNumber &&
-                           currentFile == std::distance(source.begin(), source.find(iter->second.first));
+                            currentFile == std::distance(source.begin(), source.find(iter->second.first));
+
+
+          uint16_t addr = sourceVec[lineNumber].second;
+          uint16_t ogAddr = addr;
+          if (addr == 0)
+          {
+            for (int j = lineNumber; j < sourceVec.size(); ++j)
+            {
+              if (addr = sourceVec[j].second) break;
+            }
+          }
 
           if (activeRow)
           {
             highlightRow();
           }
+          
+          if (debuggerIsBreakpoint(addr))
+          {
+            highlightRowBreakpoint();
+          }
 
+          if (ogAddr && hoveredAddr == ogAddr)
+          {
+            highlightRowHovered();
+          }
 
           ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
-          ImGui::Text("%-5d",lineNumber);
+          ImGui::Text(" %-5d",lineNumber);
           ImGui::PopStyleColor();
 
-          auto token = renderLine(sourceVec[lineNumber].first);
+          if (ImGui::IsItemClicked() || (activeRow && ImGui::IsKeyPressed(ImGuiKey_F9)))
+          {
+            toggleBreakpoint(addr);
+          }
+
+          auto token = renderLine(addr, sourceVec[lineNumber].first);
 
           if (activeRow && token->contains(Token::MACRO))
           {
             int tmpLineNumber = lineNumber;
-            uint16_t fromAddress = sourceVec[tmpLineNumber].second;
+            uint16_t fromAddress = addr;
             uint16_t toAddress = 0;
             while (toAddress == 0)
             {
@@ -936,31 +1048,44 @@ void debuggerSourceView(bool* show)
 
             if (toAddress)
             {
+              int macroRow = 1;
               uint16_t tmpAddress = fromAddress;
-              while (tmpAddress < toAddress && ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeightWithSpacing())
+              while (tmpAddress < toAddress)
               {
                 uint16_t refAddr = 0;
                 char instructionBuffer[32];
 
-                if (pc == tmpAddress) highlightRow();
-
+                if (pc == tmpAddress)
+                {
+                  macroOffset = macroRow;
+                  highlightRow();
+                }
+                
+                if (debuggerIsBreakpoint(tmpAddress))
+                {
+                  highlightRowBreakpoint();
+                }
+                
+                uint16_t prevTmpAddress = tmpAddress;
                 tmpAddress = vrEmu6502DisassembleInstruction(cpu6502, tmpAddress, sizeof(instructionBuffer), instructionBuffer, &refAddr, labelMap);
                 ImGui::TextUnformatted("                  ");
-                renderLine(instructionBuffer);
+                renderLine(prevTmpAddress, instructionBuffer);
+                ++macroRow;
               }
             }
-
           }
-
-
-          ++lineNumber;
-        }
-        else
-        {
-          break;
+          else if (activeRow)
+          {
+            macroOffset = 0;
+          }
         }
       }
       ImGui::PopStyleColor();
+      if (scrollPos >= 0.0f)
+      {
+        ImGui::SetScrollY(scrollPos - ImGui::GetWindowHeight() * 0.25f);
+      }
+      ImGui::EndChild();
     }
   }
   ImGui::End();
@@ -1004,9 +1129,23 @@ void debuggerMemoryView(bool* show)
         max.x = pos.x + 17;
         pos.x -= 3;
         pos.y -= 1;
+        ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(000, 255, 0, 120));
+        ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(000, 255, 0, 255));
+      }
+
+      if ((hoveredAddr & 0xfff8) == addr)
+      {
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 max = pos;
+        max.y += ImGui::GetTextLineHeightWithSpacing();
+        pos.x += (hoveredAddr & 0x07) * 21;
+        max.x = pos.x + 17;
+        pos.x -= 3;
+        pos.y -= 1;
         ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(255, 255, 0, 120));
         ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(255, 255, 0, 255));
       }
+
 
       ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
         v0, v1, v2, v3, v4, v5, v6, v7,
@@ -1116,6 +1255,9 @@ static std::string tmsColorText(uint8_t c)
 
 void debuggerTmsRegistersView(bool* show)
 {
+  static int regInput = -1;
+  static char str0[12] = "$00";
+
   if (ImGui::Begin("TMS9918A Reg", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (tms9918)
@@ -1176,12 +1318,30 @@ void debuggerTmsRegistersView(bool* show)
         ImGui::Text("R%d", y);
         ImGui::PopStyleColor();
         ImGui::SameLine();
-        if (addr == 0xffff)
-          ImGui::Text("$%02x %s", r, desc.c_str());
+        if (regInput == y)
+        {
+          if (ImGui::InputText(" ", str0, IM_ARRAYSIZE(str0), ImGuiInputTextFlags_EnterReturnsTrue))
+          {
+            int val = r;
+            SDL_sscanf(str0, "$%x", &val);
+            writeTms9918Reg(tms9918, y, (uint8_t)val);
+            regInput = -1;
+          }
+        }
         else
-          ImGui::Text("$%02x %s: $%04x ", r, desc.c_str(), addr);
-      }
+        {
+          if (addr == 0xffff)
+            ImGui::Text("$%02x %s", r, desc.c_str());
+          else
+            ImGui::Text("$%02x %s: $%04x ", r, desc.c_str(), addr);
+        }
 
+        if (ImGui::IsItemClicked()) {
+          regInput = y;
+          SDL_snprintf(str0, sizeof(str0), "$%02x", r);
+        }
+      }
+      
       ImGui::PopStyleColor();
 
     }

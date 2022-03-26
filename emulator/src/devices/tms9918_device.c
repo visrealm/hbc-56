@@ -327,3 +327,16 @@ uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg)
   }
   return 0;
 }
+
+/* Function:  writeTms9918Reg
+ * --------------------
+ * write a regiter value directly to the tms9918
+ */
+void writeTms9918Reg(HBC56Device* device, uint8_t reg, uint8_t value)
+{
+  TMS9918Device* tmsDevice = getTms9918Device(device);
+  if (tmsDevice)
+  {
+    vrEmuTms9918WriteRegValue(tmsDevice->tms9918, reg, value);
+  }
+}

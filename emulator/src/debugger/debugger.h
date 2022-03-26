@@ -22,6 +22,8 @@ void debuggerInit(VrEmu6502 *cpu6502);
 
 void debuggerInitTms(HBC56Device *tms9918);
 
+uint8_t debuggerIsBreakpoint(uint16_t addr);
+
 void debuggerLoadLabels(const char* labelFileContents);
 void debuggerLoadSource(const char* rptFileContents);
 

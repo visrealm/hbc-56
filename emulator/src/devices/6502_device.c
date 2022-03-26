@@ -41,6 +41,7 @@ struct CPU6502Device
   size_t               callStackPtr;
   uint8_t              breakMode;  /* 0 for match, 1 for not match */
   uint16_t             breakAddr;
+  IsBreakpointFn       isBreakFn;
 };
 typedef struct CPU6502Device CPU6502Device;
 
@@ -51,7 +52,7 @@ void hbc56MemWrite(uint16_t addr, uint8_t val);
   * --------------------
  * create an AY-3-8910 PSG device
   */
-HBC56Device create6502CpuDevice()
+HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
 {
   HBC56Device device = createDevice("6502 CPU");
   CPU6502Device* cpuDevice = (CPU6502Device*)malloc(sizeof(CPU6502Device));
@@ -64,6 +65,7 @@ HBC56Device create6502CpuDevice()
     cpuDevice->callStackPtr = 0;
     cpuDevice->breakMode = 0;
     cpuDevice->breakAddr = 0;
+    cpuDevice->isBreakFn = brkCb;
     device.data = cpuDevice;
 
     device.resetFn = &reset6502CpuDevice;
@@ -145,6 +147,9 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
       deltaTicks = CPU_6502_MAX_TIMESTEP_STEPS;
     }
 
+    uint16_t intVec = (hbc56MemRead(0xfffe, true) | (hbc56MemRead(0xffff, true) << 8));
+    uint16_t nmiVec = (hbc56MemRead(0xfffa, true) | (hbc56MemRead(0xfffb, true) << 8));
+
     while (deltaTicks--)
     {
       /* currently, we disable interrupts while debugging since the tms9918
@@ -164,21 +169,24 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
 
       if (doTick)
       {
-        if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
-        {
-          if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
-          {
-            if (vrEmu6502GetPC(cpuDevice->cpu6502) == (hbc56MemRead(0xfffe, true) | (hbc56MemRead(0xffff, true) << 8)))
-            {
-              cpuDevice->currentState = CPU_BREAK;
-            }
-          }
-        }
-
         vrEmu6502Tick(cpuDevice->cpu6502);
 
         if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
         {
+          if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
+          {
+            if (vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == intVec ||
+                vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == nmiVec)
+            {
+              cpuDevice->currentState = CPU_BREAK;
+            }
+          }
+
+          if (cpuDevice->isBreakFn(vrEmu6502GetPC(cpuDevice->cpu6502)))
+          {
+            cpuDevice->currentState = CPU_BREAK;
+          }
+
           uint8_t nextOpcode = vrEmu6502GetNextOpcode(cpuDevice->cpu6502);
           int isJsr = (nextOpcode == CPU_6502_JSR);
           int isRts = (nextOpcode == CPU_6502_RTS);
@@ -238,7 +246,7 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
         if (cpuDevice->callStackPtr > 1)
         {
           cpuDevice->breakMode = 0;
-          cpuDevice->breakAddr = cpuDevice->callStack[cpuDevice->callStackPtr - 1] + 3;
+          cpuDevice->breakAddr = cpuDevice->callStack[cpuDevice->callStackPtr - 1];// + 3;
           break;
         }
       }

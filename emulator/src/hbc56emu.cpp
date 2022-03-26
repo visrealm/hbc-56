@@ -867,7 +867,7 @@ int main(int argc, char* argv[])
 //  state->window_title = tempBuffer;
 
   /* add the cpu device */
-  cpuDevice = hbc56AddDevice(create6502CpuDevice());
+  cpuDevice = hbc56AddDevice(create6502CpuDevice(debuggerIsBreakpoint));
 
   /* initialise the debugger */
   debuggerInit(getCpuDevice(cpuDevice));

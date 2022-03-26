@@ -40,7 +40,13 @@ uint8_t readTms9918Vram(HBC56Device *device, uint16_t vramAddr);
  * --------------------
  * read a regiter value directly from the tms9918
  */
-uint8_t readTms9918Reg(HBC56Device *device, uint8_t reg);
+uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg);
+
+/* Function:  writeTms9918Reg
+ * --------------------
+ * write a regiter value directly to the tms9918
+ */
+void writeTms9918Reg(HBC56Device* device, uint8_t reg, uint8_t value);
 
 
 #ifdef __cplusplus
