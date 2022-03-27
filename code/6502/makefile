@@ -31,6 +31,7 @@ kernel:
 # Default compile task
 %.o: %.asm kernel makefile $(ROOT_PATH)makefile
 	$(ACME) -o $@ -l $@.lmap -r $@.rpt $<
+	more "$(ROOT_PATH)kernel/kernel.o.rpt" >> $@.rpt
 
 # Hex compile task
 %.hex: %.asm kernel makefile $(ROOT_PATH)makefile

@@ -409,7 +409,7 @@ static void doRender()
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-  ImGui::ShowDemoWindow();
+  //ImGui::ShowDemoWindow();
 
   if (ImGui::BeginMenuBar())
   {
