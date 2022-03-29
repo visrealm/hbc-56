@@ -19,13 +19,13 @@ hbc56Meta:
         +consoleLCDMode
         rts
 
-
 hbc56Main:
         sei
         jsr kbInit
         jsr lcdInit
         jsr lcdDisplayOn
         jsr lcdCursorBlinkOn
+        cli
 
 loop:
         jsr kbReadAscii
