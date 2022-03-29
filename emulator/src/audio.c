@@ -16,13 +16,14 @@
 #include "SDL.h"
 
 static SDL_AudioDeviceID audioDevice = 0;
+static SDL_AudioSpec audioSpec;
 
 void hbc56AudioCallback(
   void* userdata,
   Uint8* stream,
   int    len)
 {
-  int samples = len / (sizeof(float) * 2);
+  int samples = len / (sizeof(float) * audioSpec.channels);
   float* str = (float*)stream;
 
   SDL_memset(stream, 0, len);
@@ -38,15 +39,16 @@ void hbc56Audio(int start)
 {
   if (start && audioDevice == 0)
   {
-    SDL_AudioSpec want, have;
+    SDL_AudioSpec want;
 
     SDL_memset(&want, 0, sizeof(want));
+    SDL_memset(&audioSpec, 0, sizeof(audioSpec));
     want.freq = HBC56_AUDIO_FREQ;
     want.format = AUDIO_F32SYS;
     want.channels = 2;
     want.samples = 1024;
     want.callback = hbc56AudioCallback;
-    if (SDL_OpenAudio(&want, &have) == 0) audioDevice = 1;
+    if (SDL_OpenAudio(&want, &audioSpec) == 0) audioDevice = 1;
 
     SDL_PauseAudioDevice(audioDevice, 0);
 
@@ -67,3 +69,12 @@ void hbc56Audio(int start)
   }
 }
 
+int hbc56AudioChannels()
+{
+  return audioSpec.channels;
+}
+
+int hbc56AudioFreq()
+{
+  return audioSpec.freq;
+}

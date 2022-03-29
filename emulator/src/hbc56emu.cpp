@@ -962,10 +962,8 @@ int main(int argc, char* argv[])
     return 2;
   }
 
-  //if (!SDLCommonInit(state)) {
-//    return 2;
-//  }
-
+  /* randomise */
+  srand((unsigned int)time(NULL));
 
   /* add the various devices */
   hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
@@ -991,10 +989,13 @@ int main(int argc, char* argv[])
   }
 #endif
 
+  /* initialise audio */
+  hbc56Audio(1);
+
 #if HBC56_HAVE_AY_3_8910
-  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
+  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, hbc56AudioFreq(), hbc56AudioChannels()));
   #if HBC56_AY_3_8910_COUNT > 1
-    hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, HBC56_AUDIO_FREQ));
+    hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, hbc56AudioFreq(), hbc56AudioChannels()));
   #endif
 #endif
 
@@ -1004,14 +1005,7 @@ int main(int argc, char* argv[])
 #endif
 #endif
 
-
-  /* randomise */
-  srand((unsigned int)time(NULL));
-
   done = 0;
-
-  /* initialise audio */
-  hbc56Audio(1);
 
   /* reset the machine */
   hbc56Reset();

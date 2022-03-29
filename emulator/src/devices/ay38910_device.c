@@ -36,6 +36,7 @@ struct AY38910Device
 {
   uint16_t       baseAddr;
   uint8_t        regAddr;
+  int            channels;
   PSG           *psg;
   SDL_mutex     *mutex;
 };
@@ -45,7 +46,7 @@ typedef struct AY38910Device AY38910Device;
   * --------------------
  * create an AY-3-8910 PSG device
   */
-HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate)
+HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate, int channels)
 {
   HBC56Device device = createDevice("AY-3-8910 PSG");
   AY38910Device* ayDevice = (AY38910Device*)malloc(sizeof(AY38910Device));
@@ -53,8 +54,8 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
   {
     ayDevice->baseAddr = baseAddr;
     ayDevice->psg = PSG_new(clockFreq, sampleRate);
-    PSG_reset(ayDevice->psg);
     ayDevice->regAddr = 0;
+    ayDevice->channels = channels;
     ayDevice->mutex = SDL_CreateMutex();
 
     device.data = ayDevice;
@@ -122,8 +123,12 @@ static void audioAy38910Device(HBC56Device* device, float* buffer, int numSample
     for (int i = 0; i < numSamples; ++i)
     {
       PSG_calc(ayDevice->psg);
-      buffer[i * 2]     += ((ayDevice->psg->ch_out[0] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
-      buffer[i * 2 + 1] += ((ayDevice->psg->ch_out[1] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
+      buffer[i * ayDevice->channels] += ((ayDevice->psg->ch_out[0] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
+
+      if (ayDevice->channels > 1)
+      {
+        buffer[i * ayDevice->channels + 1] += ((ayDevice->psg->ch_out[1] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
+      }
     }
 
     SDL_UnlockMutex(ayDevice->mutex);

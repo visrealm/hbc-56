@@ -22,7 +22,7 @@ extern "C" {
  * --------------------
  * create an AY-3-8910 PSG device
  */
-HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate);
+HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate, int channels);
 
 #ifdef __cplusplus
 }

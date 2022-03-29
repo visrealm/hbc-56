@@ -18,6 +18,10 @@ extern "C" {
 
 void hbc56Audio(int start);
 
+int hbc56AudioChannels();
+
+int hbc56AudioFreq();
+
 #ifdef __cplusplus
 }
 #endif
