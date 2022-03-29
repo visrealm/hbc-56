@@ -53,6 +53,7 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
   {
     ayDevice->baseAddr = baseAddr;
     ayDevice->psg = PSG_new(clockFreq, sampleRate);
+    PSG_reset(ayDevice->psg);
     ayDevice->regAddr = 0;
     ayDevice->mutex = SDL_CreateMutex();
 

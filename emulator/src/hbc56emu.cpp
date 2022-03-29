@@ -367,6 +367,7 @@ static void doRender()
   static bool showStack = true;
   static bool showDisassembly = true;
   static bool showSource = true;
+  static bool showBreakpoints = true;
 
   static bool showMemory = true;
   static bool showTms9918Memory = true;
@@ -409,8 +410,6 @@ static void doRender()
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-  //ImGui::ShowDemoWindow();
-
   if (ImGui::BeginMenuBar())
   {
     if (ImGui::BeginMenu("File"))
@@ -430,6 +429,7 @@ static void doRender()
         ImGui::MenuItem("Disassembly", "<Ctrl> + D", &showDisassembly);
         ImGui::MenuItem("Source", "<Ctrl> + O", &showSource);
         ImGui::MenuItem("Memory", "<Ctrl> + M", &showMemory);
+        ImGui::MenuItem("Breakpoints", "<Ctrl> + B", &showBreakpoints);
         ImGui::Separator();
         ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
         ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
@@ -495,6 +495,7 @@ static void doRender()
   if (showDisassembly)debuggerDisassemblyView(&showDisassembly);
   if (showSource) debuggerSourceView(&showSource);
   if (showMemory) debuggerMemoryView(&showMemory);
+  if (showBreakpoints) debuggerBreakpointsView(&showBreakpoints);
   if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
 
@@ -815,7 +816,7 @@ int main(int argc, char* argv[])
   }
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  SDL_Window* window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+  SDL_Window* window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, window_flags);
 
   // Setup SDL_Renderer instance
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -828,14 +829,26 @@ int main(int argc, char* argv[])
   //SDL_GetRendererInfo(renderer, &info);
   //SDL_Log("Current SDL_Renderer: %s", info.name);
 
+
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+
+  char *basePath = SDL_GetBasePath();
+
+  char tmpBuf[512];
+  SDL_snprintf(tmpBuf, sizeof(tmpBuf), "%simgui.ini", basePath);
+  SDL_free(basePath);
+
+  ImGui::LoadIniSettingsFromDisk(tmpBuf);
+  ImGui::LoadIniSettingsFromDisk("imgui.ini");
+
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
 
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls

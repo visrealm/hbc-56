@@ -1226,6 +1226,55 @@ void debuggerSourceView(bool* show)
 }
 
 
+void debuggerBreakpointsView(bool* show)
+{
+  if (ImGui::Begin("Breakpoints", show, ImGuiWindowFlags_HorizontalScrollbar))
+  {
+    if (ImGui::BeginTable("BreakpointsTable", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable))
+    {
+      ImGui::TableSetupColumn("File");
+      ImGui::TableSetupColumn("Line");
+      ImGui::TableSetupColumn("Address");
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::TableHeadersRow();
+      ImGui::PopStyleColor();
+
+      for (uint16_t addr : breakpoints)
+      {
+        auto file = source.file(addr);
+        int lineIndex = file.lineIndex(addr);
+        if (lineIndex < 0) continue;
+        auto line = file.line(lineIndex);
+
+        ImGui::TableNextRow();
+
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::SmallButton("..."))
+        {
+          setSourceAddress(addr);
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted(file.filename().c_str());
+        ImGui::PopStyleColor();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%d", lineIndex + 1);
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%04x", addr);
+
+        ImGui::PopStyleColor();
+      }
+      ImGui::EndTable();
+    }
+  }
+  ImGui::End();
+}
+
+
+
 void debuggerMemoryView(bool* show)
 {
   if (ImGui::Begin("Memory", show, ImGuiWindowFlags_HorizontalScrollbar))

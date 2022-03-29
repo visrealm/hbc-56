@@ -32,6 +32,7 @@ void debuggerStackView(bool* show);
 void debuggerDisassemblyView(bool* show);
 void debuggerSourceView(bool* show);
 void debuggerMemoryView(bool *show);
+void debuggerBreakpointsView(bool *show);
 void debuggerVramMemoryView(bool* show);
 void debuggerTmsRegistersView(bool* show);
 
