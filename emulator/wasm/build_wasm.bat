@@ -11,8 +11,9 @@
 :: eg. emsdk activate
 
 emcc -o hbc56.html ^
-  -O0 ^
+  -O0 -sASSERTIONS -g3 ^
   -D __EMSCRIPTEN__ ^
+  -D DEMANGLE_SUPPORT=1 ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
   -D VR_6502_EMU_STATIC=1 ^
@@ -49,6 +50,7 @@ emcc -o hbc56.html ^
   ..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
+  --preload-file "rom.bin.rpt" ^
   --preload-file "imgui.ini" ^
-  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_hbc56ToggleDebugger','_hbc56DebugBreak','_hbc56DebugBreakOnInt','_hbc56DebugRun','_hbc56DebugStepInto','_hbc56DebugStepOver','_hbc56DebugStepOut','_main']" ^
+  -s EXPORTED_FUNCTIONS="['_hbc56Audio','_hbc56Reset','_hbc56LoadRom','_hbc56LoadLabels','_hbc56LoadSource','_hbc56ToggleDebugger','_hbc56DebugBreak','_hbc56DebugBreakOnInt','_hbc56DebugRun','_hbc56DebugStepInto','_hbc56DebugStepOver','_hbc56DebugStepOut','_main']" ^
   -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']"

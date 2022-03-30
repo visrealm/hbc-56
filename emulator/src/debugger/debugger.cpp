@@ -84,7 +84,7 @@ void debuggerLoadLabels(const char* labelFileContents)
       size_t labelStart = (size_t )-1, labelEnd = (size_t)-1, valueStart = (size_t)-1, valueEnd = (size_t)-1;
 
       int i = 0;
-      int len = strlen(lineBuffer);
+      int len = (int)strlen(lineBuffer);
       for (i = 0; i < len; ++i)
       {
         char c = lineBuffer[i];
@@ -169,7 +169,7 @@ class Token
 public:
   typedef std::shared_ptr<Token> Ptr;
 
-  typedef enum Type
+  typedef enum
   {
     WHITESPACE,
     COMMENT,
@@ -184,7 +184,7 @@ public:
     LABEL,
     PSEUDOOP,
     UNKNOWN
-  };
+  } Type;
 
   static Ptr Create(Token::Type type, const std::string& value)
   {
@@ -430,12 +430,12 @@ class SourceFile
 
     void addLine(const std::string& line, uint16_t addr)
     {
-      m_addrMap[addr] = m_lines.size();
+      m_addrMap[addr] = (int)m_lines.size();
       m_lines.push_back(SourceLine(this, line, addr));
 
       if (addr != 0xffff)
       {
-        for (int i = m_lines.size() - 2; i >= 0; --i)
+        for (int i = (int)m_lines.size() - 2; i >= 0; --i)
         {
           if (m_lines[i].address() == 0xffff)
           {
@@ -454,7 +454,6 @@ class SourceFile
               uint16_t fromAddress = m_lines[i].address();
               uint16_t toAddress = addr;
 
-              int macroRow = 1;
               uint16_t tmpAddress = fromAddress;
               char instructionBuffer[32];
               while (tmpAddress < toAddress)
@@ -473,7 +472,7 @@ class SourceFile
 
     const std::string &filename() const { return m_filename; }
 
-    int numLines() const { return m_lines.size(); }
+    int numLines() const { return (int)m_lines.size(); }
     const SourceLine& line(size_t index) const {
       return m_lines[index];
     }
@@ -542,7 +541,7 @@ public:
     return iter->second;
   }
 
-  int numFiles() const { return m_files.size(); }
+  int numFiles() const { return (int)m_files.size(); }
   int index(const std::string& filename)
   {
     int i = 0;
@@ -554,15 +553,25 @@ public:
     return -1;
   }
 
+  void clear()
+  {
+    m_addrMap.clear();
+    m_files.clear();
+  }
+
   private:
     std::map<uint16_t, size_t> m_addrMap;
     std::map<std::string, SourceFile> m_files;
 };
 
 Source source;
+bool sourceLoading = false;
 
 void debuggerLoadSource(const char* rptFileContents)
 {
+  sourceLoading = true;
+  source.clear();
+
   for (int i = 0; i < 256; ++i)
   {
     opcodes.insert(vrEmu6502OpcodeToMnemonicStr(cpu6502, i & 0xff));
@@ -593,21 +602,14 @@ void debuggerLoadSource(const char* rptFileContents)
         continue;
       }
 
-      size_t pos = 0;
-        int lineNumber = std::stoi(line, &pos);
-        int address = 0xffff;
-        try
-        {
-          address = std::stoi(line.substr(pos), &pos, 16);
-        }
-        catch (...)
-        {
+      int lineNumber = 0;
+      int address = 0xffff;
+      SDL_sscanf(line.c_str(), "%6d  %4x", &lineNumber, &address);
 
-        }
-
-        currentFile->addLine(line.substr(32), address);
+      currentFile->addLine(line.substr(32), address & 0xffff);
     }
   }
+  sourceLoading = false;
 }
 
 
@@ -696,7 +698,7 @@ void constantTool(const char* name)
   }
   else if (found)
   {
-    addr = iter->second;
+    addr = (uint16_t)iter->second;
   }
 
   if (found)
@@ -1070,7 +1072,7 @@ int outputToken(const char *token, const ImVec4 &color, int offset)
 
   ImGui::PopStyleColor();
 
-  return offset + strlen(token);
+  return offset + (int)strlen(token);
 }
 
 
@@ -1110,7 +1112,7 @@ void debuggerSourceView(bool* show)
       {
         auto sourceLine = activeFile.line(lastLineNumber - 1);
 
-        macroLines = sourceLine.macroLines().size();
+        macroLines = (int)sourceLine.macroLines().size();
         if (macroLines)
         {
           for (int i = 0; i < macroLines; ++i)
@@ -1145,7 +1147,7 @@ void debuggerSourceView(bool* show)
         ImGui::BeginChild("code", ImVec2(), false, ImGuiWindowFlags_HorizontalScrollbar);
 
         if (ImGui::IsWindowHovered()) {
-          lastLineNumber -= ImGui::GetIO().MouseWheel * 3;
+          lastLineNumber -= (int)(ImGui::GetIO().MouseWheel * 3.0f);
           if (lastLineNumber <= 0) lastLineNumber = 1;
         }
 
@@ -1154,10 +1156,6 @@ void debuggerSourceView(bool* show)
 
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-
-        bool firstRow = true;
-
-        uint16_t macroEnd = 0;
 
         while (clipper.Step())
         {
@@ -1280,7 +1278,7 @@ void debuggerMemoryView(bool* show)
   if (ImGui::Begin("Memory", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (ImGui::IsWindowHovered()) {
-      debugMemoryAddr -= ImGui::GetIO().MouseWheel * 0x40;
+      debugMemoryAddr -= (uint16_t)ImGui::GetIO().MouseWheel * 0x40;
     }
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
@@ -1350,7 +1348,7 @@ void debuggerVramMemoryView(bool* show)
   if (ImGui::Begin("TMS9918A VRAM", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (ImGui::IsWindowHovered()) {
-      debugTmsMemoryAddr -= ImGui::GetIO().MouseWheel * 0x40;
+      debugTmsMemoryAddr -= (uint16_t)ImGui::GetIO().MouseWheel * 0x40;
     }
 
     if (tms9918)

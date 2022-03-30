@@ -168,7 +168,6 @@ static void renderTms9918Device(HBC56Device* device)
 int c = 0;
 static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
 {
-  deltaTicks;
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
   {

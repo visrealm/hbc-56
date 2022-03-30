@@ -1,10 +1,9 @@
       body {
         /*font-family: monospace;*/
-        margin: 10px
-        padding: none;
+        margin: 10px;
       }
 
-      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto;display: block; }
       div.emscripten { text-align: center; }      
       div.emscripten_border { border: 0px solid black; }
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
@@ -96,7 +95,7 @@
 	  
 	  .content {
         margin: auto;
-        width: 1550px;
+        width: 1870px;
         padding: 5px;
 	  }
 	  

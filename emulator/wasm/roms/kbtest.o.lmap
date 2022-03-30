@@ -1,4 +1,4 @@
-	HBC56_RST_VECTOR	= $f0b1	; unused
+	HBC56_RST_VECTOR	= $f0b7	; unused
 	AY_ENV_SHAPE_SAW1	= $8	; unused
 	tmsConsoleBackspace	= $e9c2	; unused
 	NES_RAM_SIZE	= $1	; unused
@@ -37,7 +37,7 @@
 	tmsReg1SetFields	= $e5dd
 	BITMAP_ZP_START	= $1e	; unused
 	JMP_OPCODE	= $4c	; unused
-	hbc56IntHandler	= $f033	; unused
+	hbc56IntHandler	= $f039	; unused
 	TILEMAP_RAM_START	= $7a00	; unused
 	KB_SCANCODE_SCROLL_LOCK	= $7e	; unused
 	KB_RAM_END	= $7c9b	; unused
@@ -58,13 +58,13 @@
 	keyPosX	= $83a4	; ?
 	HBC56_CONSOLE_FLAG_LCD	= $20	; unused
 	TMS_CYAN	= $7	; unused
-	HBC56_TITLE	= $ed4d	; unused
+	HBC56_TITLE	= $ed53	; unused
 	memcpyMultiPage	= $e0bf	; unused
 	KB_SCANCODE_NUM_LOCK	= $77	; unused
 	TILEMAP_RAM_END	= $7b16	; unused
 	KB_BUFFER_TAIL	= $7c64	; unused
 	tmsSetRegister	= $e5b4	; unused
-	hbc56Tms9918Int	= $f05b	; unused
+	hbc56Tms9918Int	= $f061	; unused
 	KB_SCANCODE_NUMPAD_ENTER	= $da	; unused
 	UART_STATUS_TX_REG_EMPTY	= $2	; unused
 	UART_RX_BUFFER_XOFF_SIZE	= $c0	; unused
@@ -132,7 +132,7 @@
 	_tmsSendEmptyPage	= $e6de	; unused
 	KB_BUFFER_SIZE	= $10	; unused
 	KB_SCANCODE_COMMA	= $41	; unused
-	HBC56_TITLE_TEXT	= $ed4d	; unused
+	HBC56_TITLE_TEXT	= $ed53	; unused
 	AY_R10	= $a	; unused
 	AY_IO_PORT	= $40	; unused
 	AY_R11	= $b	; unused
@@ -140,10 +140,10 @@
 	AY_R12	= $c	; unused
 	TMS_R1_DISP_BLANK	= $0	; unused
 	KB_NUM_LOCK	= $10	; unused
-	hbc56LogoPatt	= $edcf	; unused
-	kernelMain	= $f0b1	; unused
+	hbc56LogoPatt	= $edd5	; unused
+	kernelMain	= $f0b7	; unused
 	AY_R13	= $d	; unused
-	hbc56LogoPattEnd	= $ef47	; unused
+	hbc56LogoPattEnd	= $ef4d	; unused
 	ASCII_CR	= $d	; unused
 	AY_R14	= $e	; unused
 	KB_SCANCODE_PAGE_DOWN	= $fa	; unused
@@ -171,7 +171,7 @@
 	NES_DOWN	= $4	; unused
 	tmsReg1ClearFields	= $e5e7
 	NES_SELECT	= $20	; unused
-	hbc56Stop	= $f20d	; unused
+	hbc56Stop	= $f213	; unused
 	UART_RX_BUFFER_SIZE	= $100	; unused
 	KB_BUFFER	= $7c65	; unused
 	DEFAULT_HBC56_NMI_VECTOR	= $ffe0	; unused
@@ -199,9 +199,9 @@
 	KB_SCANCODE_F4	= $c	; unused
 	tmsSetPosTmpAddress	= $e7e5	; unused
 	uartInNoWait	= $ea36	; unused
-	hbc56Reset	= $f20a	; unused
+	hbc56Reset	= $f210	; unused
 	KB_SCANCODE_F5	= $3	; unused
-	hbc56CustomDelayMs	= $f210	; unused
+	hbc56CustomDelayMs	= $f216	; unused
 	_tmsWaitReg	= $e57a
 	i	= $9
 	uartOut	= $ea59	; unused
@@ -280,7 +280,7 @@
 	HAVE_KEYBOARD	= $1	; unused
 	NOTE_FREQ_A4	= $1b8	; unused
 	NOTE_FREQ_E6	= 1318.510000000000218278728425502777	; unused
-	hbc56HighBell	= $f18b	; unused
+	hbc56HighBell	= $f191	; unused
 	NOTE_FREQ_G7	= 3135.960000000000491127138957381248	; unused
 	NOTE_FREQ_C5	= 523.250000000000113686837721616030	; unused
 	tmsConsoleHome	= $e8d9	; unused
@@ -313,7 +313,7 @@
 	TMS_R1_INT_ENABLE	= $20
 	UART_CTL_WORD_8BIT_OPAR_1SB	= $1c	; unused
 	isSpace	= $e049	; unused
-	hbc56BootScreen	= $ef47	; unused
+	hbc56BootScreen	= $ef4d	; unused
 	AY_S1_READ	= $7f46	; unused
 	KB_SCANCODE_END	= $e9	; unused
 	BCD_RAM_SIZE	= $3	; unused
@@ -362,7 +362,7 @@
 	_tmsWaitData	= $e571
 	HAVE_MATH_INC	= $1	; unused
 	KB_SCANCODE_B	= $32	; unused
-	hbc56Bell	= $f1bd	; unused
+	hbc56Bell	= $f1c3	; unused
 	KB_SCANCODE_C	= $21	; unused
 	TMS_TXT_PIXELS_X	= $f0	; unused
 	HBC56_KERNEL_RAM_SIZE	= $2ba	; unused
@@ -391,14 +391,14 @@
 	HBC56_CONSOLE_FLAGS	= $7ca2	; unused
 	AY_ENV_SHAPE	= $d	; unused
 	KB_SCANCODE_H	= $33	; unused
-	kbReadAscii	= $ec43	; unused
+	kbReadAscii	= $ec46	; unused
 	KB_BUFFER_HEAD	= $7c63	; unused
 	KB_SCANCODE_I	= $43	; unused
 	KB_SCANCODE_N	= $31	; unused
 	tmsTileXyAtPixelXy	= $e7a2	; unused
 	UART_CTL_CLOCK_DIV_16	= $1	; unused
 	nesWaitForPress	= $ea7d	; unused
-	hbc56LogoInd	= $ed8d	; unused
+	hbc56LogoInd	= $ed93	; unused
 	KB_SCANCODE_O	= $44	; unused
 	memcpyMultiPagePort	= $e0e1	; unused
 	KB_SCANCODE_L	= $4b	; unused
@@ -483,7 +483,7 @@
 	KB_SCANCODE_NUMPAD_6	= $74	; unused
 	MEMORY_ZP_SIZE	= $6	; unused
 	KB_SCANCODE_NUMPAD_1	= $69	; unused
-	KEY_MAP_SHIFTED	= $eccd	; unused
+	KEY_MAP_SHIFTED	= $ecd3	; unused
 	AY_READ	= $2	; unused
 	KB_SCANCODE_NUMPAD_0	= $70	; unused
 	KB_SCANCODE_NUMPAD_3	= $7a	; unused
@@ -548,7 +548,7 @@
 	AY_ENV_PERIOD_H	= $c	; unused
 	tmsHex8	= $e7af	; unused
 	TILEMAP_ZP_END	= $1e	; unused
-	KEY_MAP	= $ec4d	; unused
+	KEY_MAP	= $ec53	; unused
 	KB_SCANCODE_8	= $3e	; unused
 	KB_RAM_START	= $7c5b	; unused
 	KB_SCANCODE_9	= $46	; unused

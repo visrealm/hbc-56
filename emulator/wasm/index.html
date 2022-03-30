@@ -19,7 +19,6 @@
 		  </div>
 		  </span>
 		  <div class="toolbar">
-			<hr>
 			<button type="button" class="btn btn-danger" onclick="resetHbc56()" title="Reset the HBC-56"><i class="icon-power-off"></i> Reset</button> |			
 			<button type="button" class="btn btn-info" onclick="toggleDebugger()" title="Toggle the debugger"><i class="icon-bug"></i> Debugger</button> |
 			<button type="button" class="btn btn-warning" onclick="debugBreak()" title="Break"><i class="icon-pause"></i> Break</button>
@@ -29,8 +28,8 @@
 			<button type="button" class="btn btn-warning" onclick="debugStepOut()" title="Step out of subroutine"><i class="icon-arrow-up"></i> Step Out</button>
 			<button type="button" class="btn btn-success" onclick="debugContinue()" title="Continue / run"><i class="icon-play"></i> Continue</button> | Drag ROM/Label map file into emulator
 		  </div>
-		  <div style="float:left;border:5px solid #2E75B5;border-radius:5px;" class="emscripten_border">
-			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1 width="1280" height="720"></canvas>
+		  <div style="float:left; margin-bottom: 50px;border:5px solid #2E75B5;border-radius:5px;" class="emscripten_border">
+			 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" ondragenter="romDragEnter(event);" ondragover="romDragEnter(event);" ondrop="romDropHandler(event);" tabindex=-1 width="1600" height="800"></canvas>
 		  </div>
 		  <div style="border:5px solid #2E75B5;padding-left:10px;border-radius:5px;float:right;width:240px;" class="emscripten_border retro">
 			  <table class="tg" style="padding:5px;">
@@ -79,10 +78,14 @@
 				<a href="?rom=mario">MARIO TUNE</a></br>
 				<a href="?rom=nestest">NES TEST</a></br>
 				<a href="?rom=kbtest">KEYBOARD TEST</a></br>
+				<a href="?rom=lcdtype">LCD TYPE</a></br>
+				<a href="?rom=lcd12864gallery">LCD GALLERY</a></br>
+				<a href="?rom=lcd12864gfx">LCD GRAPHICS</a></br>
+				<a href="?rom=lcd12864tilemap">LCD TILEMAP</a></br>
 			</div>
 		</div>
 		
-		<div class="fixed-bottom" style="padding-top:-30px;background:white;text-align:center;font-size:20px;border-top:1px solid black;">HBC-56 Emulator - © 2022 Troy Schrapel - <a href="https://github.com/visrealm/hbc-56">https://github.com/visrealm/hbc-56</a></div>		
+		<div class="fixed-bottom" style="background:white;text-align:center;font-size:20px;border-top:1px solid black;">HBC-56 Emulator - © 2022 Troy Schrapel - <a href="https://github.com/visrealm/hbc-56">https://github.com/visrealm/hbc-56</a></div>		
 	</div>
       <script src="hbc56-frontend.js"></script>
       <script async src="hbc56.js"></script>	

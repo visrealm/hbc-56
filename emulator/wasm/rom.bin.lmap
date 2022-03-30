@@ -1,4 +1,4 @@
-	HBC56_RST_VECTOR	= $f0b1	; unused
+	HBC56_RST_VECTOR	= $f0b7	; unused
 	AY_ENV_SHAPE_SAW1	= $8	; unused
 	tmsConsoleBackspace	= $e9c2	; unused
 	XOAw_l	= $5b
@@ -167,7 +167,7 @@
 	LAB_1B3C	= $9b6d	; ?
 	LAB_1F5A	= $a008	; ?
 	LBB_RSHIFT	= $b37d
-	hbc56IntHandler	= $f033	; unused
+	hbc56IntHandler	= $f039	; unused
 	TILEMAP_RAM_START	= $7a00	; unused
 	TK_BITCLR	= $a8
 	LAB_1B1C	= $9b4b
@@ -208,7 +208,6 @@
 	Usrjpl	= $b	; unused
 	str_ln	= $ac
 	TK_POS	= $c8
-	hbc56Break	= $b860	; ?
 	KB_SCANCODE_SLASH_BACK	= $5d	; unused
 	TK_NEXT	= $82
 	TK_PLUS	= $b6
@@ -246,7 +245,7 @@
 	LAB_1C54	= $9cc9	; ?
 	LAB_20D0	= $a178	; ?
 	LAB_26C2	= $a80b
-	HBC56_TITLE	= $ed4d	; unused
+	HBC56_TITLE	= $ed53	; unused
 	Fvar_h	= $ab	; unused
 	memcpyMultiPage	= $e0bf	; unused
 	KB_SCANCODE_NUM_LOCK	= $77	; unused
@@ -272,7 +271,7 @@
 	LAB_SADD	= $a467
 	LAB_20F5	= $a19f
 	LAB_24D5	= $a646	; ?
-	hbc56Tms9918Int	= $f05b	; unused
+	hbc56Tms9918Int	= $f061	; unused
 	Fvar_l	= $aa	; unused
 	TST_OK	= $add2	; ?
 	NextB1	= $adf5
@@ -451,7 +450,7 @@
 	LAB_2C35	= $ad1c	; ?
 	TAB_ASCW	= $b507	; ?
 	FCError	= $adbb	; ?
-	hbc56Meta	= $b89a
+	hbc56Meta	= $b8b0
 	TMS_GFX_PIXELS_X	= $100	; unused
 	LAB_18F0	= $9912	; ?
 	TAB_ASCV	= $b4fb	; ?
@@ -485,7 +484,7 @@
 	_tmsSendEmptyPage	= $e6de	; unused
 	KB_BUFFER_SIZE	= $10	; unused
 	KB_SCANCODE_COMMA	= $41	; unused
-	HBC56_TITLE_TEXT	= $ed4d	; unused
+	HBC56_TITLE_TEXT	= $ed53	; unused
 	TK_ASC	= $d7
 	LAB_14D4	= $93d9	; ?
 	TAB_ASCP	= $b467	; ?
@@ -509,10 +508,10 @@
 	LAB_152B	= $942e	; ?
 	LAB_DEEK	= $a529
 	LAB_150C	= $940f
-	hbc56LogoPatt	= $edcf	; unused
-	kernelMain	= $f0b1	; unused
+	hbc56LogoPatt	= $edd5	; unused
+	kernelMain	= $f0b7	; unused
 	AY_R13	= $d	; unused
-	hbc56LogoPattEnd	= $ef47	; unused
+	hbc56LogoPattEnd	= $ef4d	; unused
 	TK_OFF	= $b5
 	LAB_16E8	= $9690
 	ASCII_CR	= $d	; unused
@@ -623,7 +622,7 @@
 	LBB_OFF	= $b45f
 	TPos	= $e
 	LBB_UNTIL	= $b4f1
-	hbc56Stop	= $f20d	; unused
+	hbc56Stop	= $f213	; unused
 	TK_BITTST	= $dd
 	LAB_XERR	= $9147
 	LAB_2122	= $a1cc	; ?
@@ -704,14 +703,14 @@
 	LAB_29F7	= $ab2e	; ?
 	tmsSetPosTmpAddress	= $e7e5	; unused
 	uartInNoWait	= $ea36	; unused
-	hbc56Reset	= $f20a	; unused
+	hbc56Reset	= $f210	; unused
 	BG	= $f
 	KB_SCANCODE_F5	= $3	; unused
 	PG2_TABE	= $b10d	; ?
 	LAB_STFA	= $a919
 	LAB_MSZM	= $b13c	; ?
 	LAB_1B13	= $9b42
-	hbc56CustomDelayMs	= $f210	; unused
+	hbc56CustomDelayMs	= $f216	; unused
 	NoShift	= $9da6	; ?
 	LAB_1ABE	= $9af0	; ?
 	LAB_23A8	= $a498	; ?
@@ -886,7 +885,7 @@
 	LAB_2CA1	= $ad6d	; ?
 	NOTE_FREQ_A4	= $1b8	; unused
 	NOTE_FREQ_E6	= 1318.510000000000218278728425502777	; unused
-	hbc56HighBell	= $f18b	; unused
+	hbc56HighBell	= $f191	; unused
 	Astrth	= $ab
 	ERR_CN	= $b7c2	; ?
 	NOTE_FREQ_G7	= 3135.960000000000491127138957381248	; unused
@@ -985,7 +984,7 @@
 	LAB_PI	= $b0eb
 	LBB_FOR	= $b3ed
 	isSpace	= $e049	; unused
-	hbc56BootScreen	= $ef47	; unused
+	hbc56BootScreen	= $ef4d	; unused
 	TK_LT	= $c2
 	LAB_120A	= $9106	; ?
 	TAB_MNUS	= $b373	; ?
@@ -1142,7 +1141,7 @@
 	LAB_1C25	= $9c5b	; ?
 	GetFirst	= $9cf4	; ?
 	KB_SCANCODE_B	= $32	; unused
-	hbc56Bell	= $f1bd
+	hbc56Bell	= $f1c3
 	KB_SCANCODE_C	= $21	; unused
 	Adatal	= $a4
 	LAB_1C24	= $9c58	; unused
@@ -1172,7 +1171,7 @@
 	PLUS_3	= $3
 	LAB_28C7	= $aa0d	; ?
 	KB_SCANCODE_F	= $2b	; unused
-	kbIsPressed	= $ebc1	; unused
+	kbIsPressed	= $ebc1
 	TMS_R0_MODE_TEXT	= $0	; unused
 	TMS_GFX_TILES_X	= $20	; unused
 	PLUS_2	= $2
@@ -1227,7 +1226,7 @@
 	LAB_272B	= $a872	; ?
 	LAB_28C9	= $aa0f	; ?
 	KB_SCANCODE_H	= $33	; unused
-	kbReadAscii	= $ec43
+	kbReadAscii	= $ec46
 	Itemph	= $12
 	LAB_IsByte	= $9856	; ?
 	KB_BUFFER_HEAD	= $7c63	; unused
@@ -1250,7 +1249,7 @@
 	LAB_236F	= $a409	; ?
 	LAB_299C	= $aad3
 	LAB_1FDB	= $a083
-	hbc56LogoInd	= $ed8d	; unused
+	hbc56LogoInd	= $ed93	; unused
 	KB_SCANCODE_O	= $44	; unused
 	LBB_RESTORE	= $b483
 	Sstorl	= $81
@@ -1442,7 +1441,7 @@
 	LAB_2C84	= $b1b1	; ?
 	LBB_PEEK	= $b467
 	KB_SCANCODE_NUMPAD_1	= $69	; unused
-	KEY_MAP_SHIFTED	= $eccd	; unused
+	KEY_MAP_SHIFTED	= $ecd3	; unused
 	TK_LSHIFT	= $bf
 	TK_SGN	= $c3
 	prstk	= $99
@@ -1456,7 +1455,7 @@
 	HBC56_LOGO	= $4	; unused
 	LAB_16F4	= $9686
 	LAB_2A96	= $b1f0	; ?
-	hbc56SetupDisplay	= $b863	; ?
+	hbc56SetupDisplay	= $b879	; ?
 	VIA_IRQ	= $5	; unused
 	LAB_END	= $9532
 	LBB_IRQ	= $b416
@@ -1494,7 +1493,7 @@
 	UART_STATUS_FRAMING_ERROR	= $10	; unused
 	HBC56_BACKGROUND	= $f	; unused
 	LAB_SIN	= $acea
-	hbc56Out	= $b880	; ?
+	hbc56Out	= $b896	; ?
 	AY_ENV_SHAPE_FADE_IN_STOP	= $4	; unused
 	HAVE_UART	= $1	; unused
 	TK_INC	= $95
@@ -1618,7 +1617,7 @@
 	TK_RETIRQ	= $8e
 	LAB_EXP	= $ac11	; ?
 	TILEMAP_ZP_END	= $1e	; unused
-	KEY_MAP	= $ec4d	; unused
+	KEY_MAP	= $ec53	; unused
 	TK_GET	= $a5
 	LAB_BHSS	= $9c9e
 	LAB_BTST	= $adbe

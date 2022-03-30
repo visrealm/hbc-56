@@ -404,8 +404,16 @@ static void doRender()
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
   ImGui::Begin("Workspace", &open, window_flags);
   ImGui::PopStyleVar(2);
-
   ImGui::PopStyleVar(2);
+  /*ImGui::BeginChild("toolbar", ImVec2(0, 30), window_flags);
+  if (ImGui::Button("Continue")) hbc56DebugRun(); ImGui::SameLine();
+  if (ImGui::Button("Break")) hbc56DebugBreak(); ImGui::SameLine();
+  if (ImGui::Button("Break on Int")) hbc56DebugBreakOnInt(); ImGui::SameLine();
+  if (ImGui::Button("Step In")) hbc56DebugStepInto(); ImGui::SameLine();
+  if (ImGui::Button("Step Over")) hbc56DebugStepOver(); ImGui::SameLine();
+  if (ImGui::Button("Step Out")) hbc56DebugStepOut(); ImGui::SameLine();
+  ImGui::EndChild();*/
+
 
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
@@ -416,7 +424,9 @@ static void doRender()
     {
       ImGui::MenuItem("Open...", "<Ctrl> + O");
       if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
+#if !__EMSCRIPTEN__
       if (ImGui::MenuItem("Exit", "Esc")) { done = true; }
+#endif
       ImGui::EndMenu();
     }
 
@@ -823,7 +833,7 @@ int main(int argc, char* argv[])
   if (renderer == NULL)
   {
     SDL_Log("Error creating SDL_Renderer!");
-    return false;
+    return 0;
   }
   //SDL_RendererInfo info;
   //SDL_GetRendererInfo(renderer, &info);
@@ -834,6 +844,7 @@ int main(int argc, char* argv[])
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
+#if !__EMSCRIPTEN__
   char *basePath = SDL_GetBasePath();
 
   char tmpBuf[512];
@@ -842,6 +853,8 @@ int main(int argc, char* argv[])
 
   ImGui::LoadIniSettingsFromDisk(tmpBuf);
   ImGui::LoadIniSettingsFromDisk("imgui.ini");
+#endif
+
 
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls

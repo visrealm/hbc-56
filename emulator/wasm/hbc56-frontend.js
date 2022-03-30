@@ -196,13 +196,27 @@ function loadRomFile(filename)
 
 	var lmapReq = new XMLHttpRequest();
 	lmapReq.open("GET", objFile + ".lmap", true);
-	lmapReq.responseType = "text";
+	lmapReq.responseType = "text/plain";
 
 	lmapReq.onload = function (lmapFile) {
 		Module.ccall("hbc56LoadLabels", "void", ["string"], [lmapReq.responseText]);
+		console.log('Loaded labels "' + objFile + ".lmap" + '"');
 	};
 
 	lmapReq.send(null);
+	
+	var srcReq = new XMLHttpRequest();
+	srcReq.open("GET", objFile + ".rpt", true);
+	srcReq.responseType = "text/plain";
+
+	srcReq.onload = function (srcFile) {
+		Module.ccall("hbc56LoadSource", "void", ["string"], [srcReq.responseText]);
+		console.log('Loaded source "' + objFile + ".rpt" + '"');
+		
+	};
+
+	srcReq.send(null);
+	
 }
 
 function romDropHandler(event)
@@ -229,6 +243,19 @@ function romDropHandler(event)
                     {
                         Module.ccall("hbc56LoadLabels", "void", ["string"], [reader.result]);
                         console.log('Loaded labels: ' + filename);
+                    };
+                }
+                else if (file.name.endsWith(".o.rpt"))
+                {
+                    var filename = file.name.repeat(1);
+                    console.log('Loading source: ' + filename);
+
+                    var reader = new FileReader();
+                    reader.readAsText(event.dataTransfer.items[i].getAsFile());
+                    reader.onload = function()
+                    {
+                        Module.ccall("hbc56LoadSource", "void", ["string"], [reader.result]);
+                        console.log('Loaded source: ' + filename);
                     };
                 }
                 else if (file.name.endsWith(".o"))

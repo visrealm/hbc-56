@@ -1,4 +1,4 @@
-	HBC56_RST_VECTOR	= $f0b1	; unused
+	HBC56_RST_VECTOR	= $f0b7	; unused
 	AY_ENV_SHAPE_SAW1	= $8	; unused
 	tmsConsoleBackspace	= $e9c2	; unused
 	NES_RAM_SIZE	= $1	; unused
@@ -81,7 +81,7 @@
 	BITMAP_ZP_START	= $1e	; unused
 	IP18LT	= $8edb	; unused
 	JMP_OPCODE	= $4c	; unused
-	hbc56IntHandler	= $f033	; unused
+	hbc56IntHandler	= $f039	; unused
 	TILEMAP_RAM_START	= $7a00	; unused
 	PLAYER_POS_Y	= $99
 	KB_SCANCODE_SCROLL_LOCK	= $7e	; unused
@@ -116,7 +116,7 @@
 	UART_CTL_WORD_8BIT_1SB	= $14	; unused
 	HBC56_CONSOLE_FLAG_LCD	= $20	; unused
 	TMS_CYAN	= $7
-	HBC56_TITLE	= $ed4d	; unused
+	HBC56_TITLE	= $ed53	; unused
 	INVADER1_TYPE	= $8e9b	; ?
 	IP88LB	= $9192	; unused
 	memcpyMultiPage	= $e0bf	; unused
@@ -125,7 +125,7 @@
 	KB_BUFFER_TAIL	= $7c64	; unused
 	skipMoveLeft	= $8bb7	; ?
 	tmsSetRegister	= $e5b4	; unused
-	hbc56Tms9918Int	= $f05b	; unused
+	hbc56Tms9918Int	= $f061	; unused
 	KB_SCANCODE_NUMPAD_ENTER	= $da	; unused
 	UART_STATUS_TX_REG_EMPTY	= $2	; unused
 	UART_RX_BUFFER_XOFF_SIZE	= $c0	; unused
@@ -220,7 +220,7 @@
 	_tmsSendEmptyPage	= $e6de	; unused
 	KB_BUFFER_SIZE	= $10	; unused
 	KB_SCANCODE_COMMA	= $41	; unused
-	HBC56_TITLE_TEXT	= $ed4d	; unused
+	HBC56_TITLE_TEXT	= $ed53	; unused
 	IP22L	= $8f0c	; unused
 	IP60L	= $9080	; unused
 	IPB6R	= $929d	; unused
@@ -232,11 +232,11 @@
 	AY_R12	= $c	; unused
 	TMS_R1_DISP_BLANK	= $0	; unused
 	KB_NUM_LOCK	= $10	; unused
-	hbc56LogoPatt	= $edcf	; unused
+	hbc56LogoPatt	= $edd5	; unused
 	pixelToTileXy	= $81be
-	kernelMain	= $f0b1	; unused
+	kernelMain	= $f0b7	; unused
 	AY_R13	= $d	; unused
-	hbc56LogoPattEnd	= $ef47	; unused
+	hbc56LogoPattEnd	= $ef4d	; unused
 	audioAlienHit	= $8453
 	ASCII_CR	= $d	; unused
 	AY_R14	= $e	; unused
@@ -284,7 +284,7 @@
 	IP66R	= $90b8	; unused
 	IPB0L	= $9265	; unused
 	IP38RT	= $8fa5	; unused
-	hbc56Stop	= $f20d	; unused
+	hbc56Stop	= $f213	; unused
 	IP26R	= $8f34	; unused
 	IP64R	= $90a8	; unused
 	IPB2L	= $9275	; unused
@@ -321,9 +321,9 @@
 	KB_SCANCODE_F4	= $c	; unused
 	tmsSetPosTmpAddress	= $e7e5	; unused
 	uartInNoWait	= $ea36	; unused
-	hbc56Reset	= $f20a	; unused
+	hbc56Reset	= $f210	; unused
 	KB_SCANCODE_F5	= $3	; unused
-	hbc56CustomDelayMs	= $f210	; unused
+	hbc56CustomDelayMs	= $f216	; unused
 	_tmsWaitReg	= $e57a
 	uartOut	= $ea59	; unused
 	KB_TMP_X	= $7c5c	; unused
@@ -410,7 +410,7 @@
 	HAVE_KEYBOARD	= $1	; unused
 	NOTE_FREQ_A4	= $1b8	; unused
 	NOTE_FREQ_E6	= 1318.510000000000218278728425502777	; unused
-	hbc56HighBell	= $f18b	; unused
+	hbc56HighBell	= $f191	; unused
 	initialGameField	= $8163
 	NOTE_FREQ_G7	= 3135.960000000000491127138957381248	; unused
 	NOTE_FREQ_C5	= 523.250000000000113686837721616030	; unused
@@ -468,7 +468,7 @@
 	IPA6R	= $923c	; unused
 	UART_CTL_WORD_8BIT_OPAR_1SB	= $1c	; unused
 	isSpace	= $e049	; unused
-	hbc56BootScreen	= $ef47	; unused
+	hbc56BootScreen	= $ef4d	; unused
 	X_DIR	= $3e
 	TONE0_	= $49	; unused
 	AY_S1_READ	= $7f46	; unused
@@ -548,7 +548,7 @@
 	HAVE_MATH_INC	= $1	; unused
 	HIT_TILE_Y	= $44
 	KB_SCANCODE_B	= $32	; unused
-	hbc56Bell	= $f1bd	; unused
+	hbc56Bell	= $f1c3	; unused
 	COLOR_SHIP	= $7	; ?
 	KB_SCANCODE_C	= $21	; unused
 	HIT_TILE_X	= $43
@@ -591,7 +591,7 @@
 	HBC56_CONSOLE_FLAGS	= $7ca2
 	AY_ENV_SHAPE	= $d
 	KB_SCANCODE_H	= $33	; unused
-	kbReadAscii	= $ec43	; unused
+	kbReadAscii	= $ec46	; unused
 	KB_BUFFER_HEAD	= $7c63	; unused
 	KB_SCANCODE_I	= $43	; unused
 	KB_SCANCODE_N	= $31	; unused
@@ -600,7 +600,7 @@
 	tmsTileXyAtPixelXy	= $e7a2	; unused
 	UART_CTL_CLOCK_DIV_16	= $1	; unused
 	nesWaitForPress	= $ea7d	; unused
-	hbc56LogoInd	= $ed8d	; unused
+	hbc56LogoInd	= $ed93	; unused
 	KB_SCANCODE_O	= $44	; unused
 	TONE0	= $47
 	memcpyMultiPagePort	= $e0e1	; unused
@@ -703,7 +703,7 @@
 	IP78LB	= $9131	; unused
 	MEMORY_ZP_SIZE	= $6	; unused
 	KB_SCANCODE_NUMPAD_1	= $69	; unused
-	KEY_MAP_SHIFTED	= $eccd	; unused
+	KEY_MAP_SHIFTED	= $ecd3	; unused
 	IP46L	= $8fee	; unused
 	IP80L	= $9142	; unused
 	INV1_BASE_ADDR_L	= $55
@@ -807,7 +807,7 @@
 	IP40R	= $8fc6	; unused
 	IP86R	= $917a	; unused
 	TILEMAP_ZP_END	= $1e	; unused
-	KEY_MAP	= $ec4d	; unused
+	KEY_MAP	= $ec53	; unused
 	IP46R	= $8ff6	; unused
 	IP80R	= $914a	; unused
 	KB_SCANCODE_8	= $3e	; unused

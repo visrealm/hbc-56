@@ -97,7 +97,7 @@
 	HBC56_CONSOLE_FLAG_LCD	= $20	; unused
 	TMS_CYAN	= $7
 	ASCII_NEWLINE	= $a	; unused
-	HBC56_TITLE	= $f4f3	; unused
+	HBC56_TITLE	= $f4f9	; unused
 	YELLOW_SHADE	= $a0
 	memcpyMultiPage	= $e0bf	; unused
 	LCD_ROWS	= $4	; unused
@@ -233,7 +233,7 @@
 	HAVE_GRAPHICS_LCD	= $1	; unused
 	KB_BUFFER_SIZE	= $10	; unused
 	KB_SCANCODE_COMMA	= $41	; unused
-	HBC56_TITLE_TEXT	= $f4f3	; unused
+	HBC56_TITLE_TEXT	= $f4f9	; unused
 	AY_R10	= $a	; unused
 	BITMAP_TMP1	= $7b1f	; unused
 	LCD_CMD_12864B_EXTENDED	= $4	; unused
@@ -645,7 +645,7 @@
 	AY_ENV_SHAPE	= $d
 	LCD_CMD_ENTRY_MODE_DECREMENT	= $0	; unused
 	KB_SCANCODE_H	= $33	; unused
-	kbReadAscii	= $f3e9	; unused
+	kbReadAscii	= $f3ec	; unused
 	DIRY	= $41
 	block	= $912e	; ?
 	KB_BUFFER_HEAD	= $7c8d	; unused
@@ -777,7 +777,7 @@
 	MEMORY_ZP_SIZE	= $6	; unused
 	tilemapInit	= $f037	; unused
 	KB_SCANCODE_NUMPAD_1	= $69	; unused
-	KEY_MAP_SHIFTED	= $f473	; unused
+	KEY_MAP_SHIFTED	= $f479	; unused
 	AY_READ	= $2
 	KB_SCANCODE_NUMPAD_0	= $70	; unused
 	HBC56_LOGO	= $4	; unused
@@ -856,7 +856,7 @@
 	tmsHex8	= $e7af	; unused
 	GAME_AREA_LEFT	= $8
 	TILEMAP_ZP_END	= $1e	; unused
-	KEY_MAP	= $f3f3	; unused
+	KEY_MAP	= $f3f9	; unused
 	KB_SCANCODE_8	= $3e	; unused
 	KB_RAM_START	= $7c85	; unused
 	KB_SCANCODE_9	= $46	; unused
