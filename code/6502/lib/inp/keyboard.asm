@@ -465,9 +465,11 @@ kbNextScancode:
 ;    A - ascii character
 ; -----------------------------------------------------------------------------
 kbScancodeToAscii:
+        phx
         sta KB_TMP_X
         clc
         bpl +
+        plx        
         rts
 +
         ldx #KB_SHIFT_LEFT_MAP_BYTE
@@ -508,6 +510,7 @@ kbScancodeToAscii:
 +
         lda KB_TMP_X
 @afterAlphaCheck
+        plx
         cmp #$ff
         sec
         bne +
@@ -516,10 +519,13 @@ kbScancodeToAscii:
         rts
 
 kbReadAscii:
+        phx
         jsr kbNextScancode
         beq @noKey
+        plx
         jmp kbScancodeToAscii
 @noKey
+        plx
         clc
         rts
 

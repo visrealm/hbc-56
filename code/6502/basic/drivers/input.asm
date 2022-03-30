@@ -15,18 +15,23 @@
 ;               C - Flag set if key captured, clear if no key pressed
 ; -----------------------------------------------------------------------------
 hbc56In
-        jmp kbReadAscii ; HBC-56 keyboard routine can be used directly
+        phx
+
+        ldx #$21        ; check ctrl+c
+        jsr kbIsPressed
+        beq @notPressed
+        ldx #$14
+        jsr kbIsPressed
+        beq @notPressed
+        plx
+        jsr kbReadAscii
+        lda #$03
+        sec
+        rts
+@notPressed
+        plx
+
+        jsr kbReadAscii ; HBC-56 keyboard routine can be used directly
                         ; we could just use it directly in the vector 
                         ; table, but it's here for clarity
-
-
-
-; -----------------------------------------------------------------------------
-; hbc56Break - EhBASIC Ctrl+C check subroutine (for HBC-56) - must not block
-; -----------------------------------------------------------------------------
-; Outputs:      A - ASCII character captured from keyboard ($03 = Ctrl+C)
-; -----------------------------------------------------------------------------
-hbc56Break:
         rts
-        jmp kbReadAscii         ; F4 (Ctrl+C) will return $03
-        
