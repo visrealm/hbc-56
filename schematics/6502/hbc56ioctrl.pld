@@ -1,0 +1,45 @@
+Name hbc56ioctrl;
+Partno hbc5602;
+Revision 02;
+Date 3/5/2022;
+Designer Troy Schrapel;
+Company Troy Schrapel;
+Location Australia;
+Assembly None;
+Device g16v8;
+
+/*
+ * Input pins
+ */
+Pin 1 = a7;
+Pin 2 = a8;
+Pin 3 = a9;
+Pin 4 = a10;
+Pin 5 = a11;
+Pin 6 = a12;
+Pin 7 = a13;
+Pin 8 = a14;
+Pin 9 = a15;
+Pin 11 = a4;
+Pin 12 = a5;
+Pin 13 = a6;
+Pin 14 = !w;
+
+/*
+ * Output pins
+ */
+Pin 15 = !r;
+Pin 16 = !intc;
+Pin 17 = via;
+Pin 18 = !mrq;
+Pin 19 = !iorq;
+
+io = !a15 & a14 & a13 & a12 & a11 & a10 & a9 & a8;   /* 0x7fxx */
+
+iorq = io;
+mrq = !io;
+
+via = io & a7 & a6 & a5 & a4;      /* 0x7ffx */
+intc = io & a7 & a6 & !a5 & a4;    /* 0x7fdx */
+
+r = !w;

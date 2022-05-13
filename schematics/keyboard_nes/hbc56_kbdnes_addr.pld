@@ -1,0 +1,27 @@
+Name hbc56_kbdnes_addr;
+Partno hbc5602;
+Revision 01;
+Date 10/5/2022;
+Designer Troy Schrapel;
+Company Troy Schrapel;
+Location Australia;
+Assembly None;
+Device g16v8ma;
+
+/*
+ * Input pins
+ */
+Pin 1  = !io;
+Pin 6  = a2;
+Pin 8  = a3;
+Pin 11 = a4;
+Pin 13 = a5;
+Pin 15 = a6;
+Pin 17 = a7;
+
+/*
+ * Output pins
+ */
+Pin 19 = !ce;
+
+ce = io & a7 & !a6 & !a5 & !a4 & !a3 & !a2;

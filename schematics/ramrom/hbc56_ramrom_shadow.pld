@@ -27,12 +27,12 @@ Pin 13 = a14;
 
 Pin 14 = !w;
 
-Pin 17 = !ramCEStep1In;
+Pin 17 = ramCEStep1In;
 
 /*
  * Output pins
  */
-Pin 16 = !ramCEStep1;
+Pin 16 = ramCEStep1;
 Pin 18 = !romCE;
 Pin 19 = !ramCE;
 
@@ -45,8 +45,8 @@ s2  = !a14 &  a13 & !a12 & b2;
 s3  = !a14 &  a13 &  a12 & b3;
 s4  =  a14 & !a13 & !a12 & b4;
 s5  =  a14 & !a13 &  a12 & b5;
-s6  =  a13 &  a14 & !a12 & b6;
-s7  =  a13 &  a14 &  a12 & b7;
+s6  =  a14 &  a13 & !a12 & b6;
+s7  =  a14 &  a13 &  a12 & b7;
 
 bs0 = !a14 & !a13 & !a12 & !b0;
 bs1 = !a14 & !a13 &  a12 & !b1;
@@ -54,13 +54,13 @@ bs2 = !a14 &  a13 & !a12 & !b2;
 bs3 = !a14 &  a13 &  a12 & !b3;
 bs4 =  a14 & !a13 & !a12 & !b4;
 bs5 =  a14 & !a13 &  a12 & !b5;
-bs6 =  a13 &  a14 & !a12 & !b6;
-bs7 =  a13 &  a14 &  a12 & !b7;
+bs6 =  a14 &  a13 & !a12 & !b6;
+bs7 =  a14 &  a13 &  a12 & !b7;
 
 /*
  * Output logic
  */
-romCE = ce & (s0 # s1 # s2 # s3 # s4 # s5 # s6 # s7);
-ramCEStep1 = ce & (bs0 # bs1 # bs2 # bs3 # bs4 # bs5 # bs6 # bs7);
+romCE = !w & ce & (bs0 # bs1 # bs2 # bs3 # bs4 # bs5 # bs6 # bs7);
+ramCEStep1 = ce & (s0 # s1 # s2 # s3 # s4 # s5 # s6 # s7);
 
 ramCE = ramCEStep1In # (ce & w);

@@ -1,0 +1,51 @@
+Name hbc56_ramrom_io;
+Partno hbc5602;
+Revision 01;
+Date 8/5/2022;
+Designer Troy Schrapel;
+Company Troy Schrapel;
+Location Australia;
+Assembly None;
+Device g16v8;
+
+/*
+ * Input pins
+ */
+Pin 1 = !io;
+Pin 2 = !r;
+Pin 3 = a15;
+Pin 4 = !b0;
+Pin 5 = a3;
+Pin 6 = a4;
+Pin 7 = a5;
+Pin 8 = a6;
+Pin 9 = a7;
+Pin 11 = clkin;
+
+/*
+ * Output pins
+ */
+Pin 15 = !cw;
+Pin 16 = a15b;
+Pin 17 = !bre;
+Pin 18 = !b1e;
+Pin 19 = !b0e;
+
+/*
+ * Common logic
+ */
+bankreg = io & !a7 & !a6 & !a5 & !a4 & a3;  /*  $08  */
+
+bank1en = !b0;
+
+w = !r;
+mem = !io;
+
+/*
+ * Output logic
+ */
+cw = clkin & w;
+a15b = !a15;
+bre = w & bankreg;
+b1e = mem & bank1en;
+b0e = mem & !bank1en;
