@@ -19,6 +19,7 @@ VIA_IRQ                = 5      ; Onboard
 TMS9918_IRQ_BIT = (1 << (TMS9918_IRQ - 1))
 KB_IRQ_BIT      = (1 << (KB_IRQ - 1))
 UART_IRQ_BIT    = (1 << (UART_IRQ - 1))
+VIA_IRQ_BIT     = (1 << (VIA_IRQ - 1))
 
 INT_CTRL_ADDRESS    = IO_PORT_BASE_ADDRESS | INT_IO_PORT
 
@@ -48,6 +49,12 @@ hbc56IntHandler:
         bra @endIntHandler
 +
 }
+
+        bit #VIA_IRQ_BIT
+        beq +
+        jsr viaIntHandler
+        bra @endIntHandler
++
 
 !ifdef HAVE_KEYBOARD {
         bit #KB_IRQ_BIT

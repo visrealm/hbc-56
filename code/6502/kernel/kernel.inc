@@ -46,6 +46,14 @@
         sta HBC56_VSYNC_CALLBACK + 1
 }
 
+!macro hbc56SetViaCallback .cb {
+        lda #<.cb
+        sta HBC56_VIA_CALLBACK
+        lda #>.cb
+        sta HBC56_VIA_CALLBACK + 1
+}
+
+
 !macro setHbcMetaTitle .titleStr {
         jmp .hbcMetaTitleOut
 .titleStrLabel:

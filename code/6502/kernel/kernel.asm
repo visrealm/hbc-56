@@ -29,6 +29,7 @@ KB_IO_PORT              = $80
 NES_IO_PORT             = $82
 INT_IO_PORT             = $df
 VIA_IO_PORT             = $f0
+ROM_BANK_REG            = $08
 
 ; -------------------------
 ; Kernel Zero Page
@@ -94,8 +95,11 @@ LCD_RAM_END             = LCD_RAM_START + .LCD_RAM_SIZE
 UART_RAM_START            = LCD_RAM_END
 UART_RAM_END              = UART_RAM_START + .UART_RAM_SIZE
 
+VIA_RAM_START             = UART_RAM_END
+VIA_RAM_END               = VIA_RAM_START + 1
+
 !ifdef HBC56_DISABLE_SFXMAN { .SFXMAN_RAM_SIZE = 0 } else { .SFXMAN_RAM_SIZE = 18 }
-SFXMAN_RAM_START        = UART_RAM_END
+SFXMAN_RAM_START        = VIA_RAM_END
 SFXMAN_RAM_END          = SFXMAN_RAM_START + .SFXMAN_RAM_SIZE
 
 BCD_RAM_START           = SFXMAN_RAM_END
@@ -130,9 +134,10 @@ HBC56_META_TITLE_LEN    = HBC56_META_TITLE_END + 1
 
 ; callback function on vsync
 HBC56_VSYNC_CALLBACK = HBC56_META_TITLE_LEN + 1
+HBC56_VIA_CALLBACK   = HBC56_VSYNC_CALLBACK + 2
 
 
-HBC56_KERNEL_RAM_END    = HBC56_VSYNC_CALLBACK + 2
+HBC56_KERNEL_RAM_END    = HBC56_VIA_CALLBACK + 2
 HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
 ;!warn "Total RAM used: ",HBC56_KERNEL_RAM_SIZE
 
@@ -175,6 +180,8 @@ HBC56_KERNEL_RAM_SIZE   = HBC56_KERNEL_RAM_END - HBC56_KERNEL_RAM_START
 !ifndef HBC56_DISABLE_KEYBOARD {
         !src "inp/keyboard.asm"
 }
+
+!src "io/via.asm"
 
 +hbc56Title "github.com/visrealm/hbc-56"
 
@@ -223,9 +230,13 @@ kernelMain:
         !ifdef HAVE_TMS9918 {
                 jsr tmsInit
 
+                +tmsDisableOutput
+
                 ; dummy callback
                 +hbc56SetVsyncCallback .nullCallbackFunction
         }
+
+        +hbc56SetViaCallback .nullCallbackFunction
 
         !ifdef HAVE_LCD {
                 jsr lcdDetect
