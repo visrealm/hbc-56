@@ -72,6 +72,18 @@ void hbc56LoadLabels(const char* labelFileContents);
  */
 void hbc56LoadSource(const char* rptFileContents);
 
+/* Function:  hbc56LoadLayout
+ * --------------------
+ * load the ui layout. layoutFile is a null terminated string (imgui.ini contents)
+ */
+void hbc56LoadLayout(const char* layoutFile);
+
+/* Function:  hbc56GetLayout
+ * --------------------
+ * get the ui layout.
+ */
+const char *hbc56GetLayout();
+
 /* Function:  hbc56ToggleDebugger
  * --------------------
  * toggle the debugger

@@ -28,7 +28,7 @@ static uint8_t readLcdDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeLcdDevice(HBC56Device*, uint16_t, uint8_t);
 
 /* lcd constants */
-#define LCD_PIXEL_SCALE     7
+#define LCD_PIXEL_SCALE     5
 #define LCD_BORDER_X        5
 #define LCD_BORDER_Y        5
 
@@ -44,7 +44,7 @@ typedef enum
 static const uint32_t lcdPal[] = {
   0x7dbe00ff, /* no pixel  */
   0x5fa900ff, /* pixel off */
-  0x1c1400ff  /* pixel on  */
+  0x000000ff  /* pixel on  */
 };
 
 /* lcd device data */
@@ -129,9 +129,7 @@ HBC56Device createLcdDevice(LCDType type, uint16_t dataAddr, uint16_t cmdAddr, S
 
       lcdDevice->hiddenOutput = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                           lcdDevice->pixelsX, lcdDevice->pixelsY);
-#ifndef __EMSCRIPTEN__
       SDL_SetTextureScaleMode(lcdDevice->hiddenOutput, SDL_ScaleModeBest);
-#endif
     }
   }
   else

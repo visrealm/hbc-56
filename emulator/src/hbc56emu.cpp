@@ -196,6 +196,31 @@ void hbc56LoadSource(const char* labelFileContents)
   debuggerLoadSource(labelFileContents);
 }
 
+/* Function:  hbc56LoadLayout
+ * --------------------
+ * load the ui layout. layoutFile is a null terminated string (imgui.ini contents)
+ */
+void hbc56LoadLayout(const char* layoutFile)
+{
+  if (layoutFile[0] == 0)
+  {
+    ImGui::LoadIniSettingsFromDisk("imgui.ini");
+    return;
+  }
+
+  ImGui::LoadIniSettingsFromMemory(layoutFile);
+}
+
+/* Function:  hbc56GetLayout
+ * --------------------
+ * get the ui layout.
+ */
+const char* hbc56GetLayout()
+{
+  return ImGui::SaveIniSettingsToMemory(0);
+}
+
+
 /* Function:  hbc56ToggleDebugger
  * --------------------
  * toggle the debugger
@@ -417,6 +442,10 @@ static void doRender()
 
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+#if !__EMSCRIPTEN__
+  //ImGui::ShowDemoWindow();
+#endif
 
   if (ImGui::BeginMenuBar())
   {
@@ -875,6 +904,7 @@ int main(int argc, char* argv[])
   {
     style.WindowRounding = 0.0f;
     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    style.WindowMenuButtonPosition = ImGuiDir_Right;
   }
 
 

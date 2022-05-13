@@ -195,7 +195,7 @@ var Module = typeof Module != 'undefined' ? Module : {};
     }
 
     }
-    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 82145}, {"filename": "/rom.bin.rpt", "start": 82145, "end": 1056809}, {"filename": "/imgui.ini", "start": 1056809, "end": 1059612}], "remote_package_size": 1059612, "package_uuid": "d4e8b8d8-e459-47ba-8154-7905903eb117"});
+    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 82145}, {"filename": "/rom.bin.rpt", "start": 82145, "end": 1056809}, {"filename": "/imgui.ini", "start": 1056809, "end": 1059612}], "remote_package_size": 1059612, "package_uuid": "8c86fef8-427e-4bff-892e-a16be19baccc"});
 
   })();
 
@@ -9224,6 +9224,12 @@ var _hbc56LoadLabels = Module["_hbc56LoadLabels"] = createExportWrapper("hbc56Lo
 
 /** @type {function(...*):?} */
 var _hbc56LoadSource = Module["_hbc56LoadSource"] = createExportWrapper("hbc56LoadSource");
+
+/** @type {function(...*):?} */
+var _hbc56LoadLayout = Module["_hbc56LoadLayout"] = createExportWrapper("hbc56LoadLayout");
+
+/** @type {function(...*):?} */
+var _hbc56GetLayout = Module["_hbc56GetLayout"] = createExportWrapper("hbc56GetLayout");
 
 /** @type {function(...*):?} */
 var _hbc56ToggleDebugger = Module["_hbc56ToggleDebugger"] = createExportWrapper("hbc56ToggleDebugger");

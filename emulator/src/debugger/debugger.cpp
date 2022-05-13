@@ -1183,7 +1183,7 @@ void debuggerSourceView(bool* show)
             }
 
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
-            ImGui::Text(" %-5d",lineNumber);
+            ImGui::Text(" %-5d", lineNumber);
             ImGui::PopStyleColor();
 
             if (ImGui::IsItemClicked() || (activeRow && ImGui::IsKeyPressed(ImGuiKey_F9)))
@@ -1275,68 +1275,78 @@ void debuggerBreakpointsView(bool* show)
 
 void debuggerMemoryView(bool* show)
 {
+  static int lastDebugMemoryAddr = 0;
+
   if (ImGui::Begin("Memory", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
-    if (ImGui::IsWindowHovered()) {
-      debugMemoryAddr -= (uint16_t)ImGui::GetIO().MouseWheel * 0x40;
+    const int numLines = 0x10000 >> 3;
+
+    ImGuiListClipper clipper;
+    clipper.Begin(numLines);
+
+    if (lastDebugMemoryAddr != debugMemoryAddr)
+    {
+      int scrollPos = (debugMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
+      ImGui::SetScrollY(scrollPos);
+      lastDebugMemoryAddr = debugMemoryAddr;
     }
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
 
-    uint16_t addr = debugMemoryAddr;
-    while (ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeight())
+    while (clipper.Step())
     {
-      uint8_t v0 = hbc56MemRead(addr, true);
-      uint8_t v1 = hbc56MemRead(addr + 1, true);
-      uint8_t v2 = hbc56MemRead(addr + 2, true);
-      uint8_t v3 = hbc56MemRead(addr + 3, true);
-      uint8_t v4 = hbc56MemRead(addr + 4, true);
-      uint8_t v5 = hbc56MemRead(addr + 5, true);
-      uint8_t v6 = hbc56MemRead(addr + 6, true);
-      uint8_t v7 = hbc56MemRead(addr + 7, true);
-
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
-      ImGui::Text("$%04x", addr);
-      ImGui::PopStyleColor();
-
-      ImGui::SameLine();
-
-      if ((highlightAddr & 0xfff8) == addr)
+      for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
       {
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImVec2 max = pos;
-        max.y += ImGui::GetTextLineHeightWithSpacing();
-        pos.x += (highlightAddr & 0x07) * 21;
-        max.x = pos.x + 17;
-        pos.x -= 3;
-        pos.y -= 1;
-        ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(000, 255, 0, 120));
-        ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(000, 255, 0, 255));
+        uint16_t addr = (i * 8) & 0xffff;
+
+        uint8_t v0 = hbc56MemRead(addr, true);
+        uint8_t v1 = hbc56MemRead(addr + 1, true);
+        uint8_t v2 = hbc56MemRead(addr + 2, true);
+        uint8_t v3 = hbc56MemRead(addr + 3, true);
+        uint8_t v4 = hbc56MemRead(addr + 4, true);
+        uint8_t v5 = hbc56MemRead(addr + 5, true);
+        uint8_t v6 = hbc56MemRead(addr + 6, true);
+        uint8_t v7 = hbc56MemRead(addr + 7, true);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+        ImGui::Text("$%04x", addr);
+        ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+
+        if ((highlightAddr & 0xfff8) == addr)
+        {
+          ImVec2 pos = ImGui::GetCursorScreenPos();
+          ImVec2 max = pos;
+          max.y += ImGui::GetTextLineHeightWithSpacing();
+          pos.x += (highlightAddr & 0x07) * 21;
+          max.x = pos.x + 17;
+          pos.x -= 3;
+          pos.y -= 1;
+          ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(000, 255, 0, 120));
+          ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(000, 255, 0, 255));
+        }
+
+        if ((hoveredAddr & 0xfff8) == addr)
+        {
+          ImVec2 pos = ImGui::GetCursorScreenPos();
+          ImVec2 max = pos;
+          max.y += ImGui::GetTextLineHeightWithSpacing();
+          pos.x += (hoveredAddr & 0x07) * 21;
+          max.x = pos.x + 17;
+          pos.x -= 3;
+          pos.y -= 1;
+          ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(255, 255, 0, 120));
+          ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(255, 255, 0, 255));
+        }
+
+
+        ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
+          v0, v1, v2, v3, v4, v5, v6, v7,
+          printable(v0), printable(v1), printable(v2), printable(v3),
+          printable(v4), printable(v5), printable(v6), printable(v7));
       }
-
-      if ((hoveredAddr & 0xfff8) == addr)
-      {
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImVec2 max = pos;
-        max.y += ImGui::GetTextLineHeightWithSpacing();
-        pos.x += (hoveredAddr & 0x07) * 21;
-        max.x = pos.x + 17;
-        pos.x -= 3;
-        pos.y -= 1;
-        ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(255, 255, 0, 120));
-        ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(255, 255, 0, 255));
-      }
-
-
-      ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
-        v0, v1, v2, v3, v4, v5, v6, v7,
-        printable(v0), printable(v1), printable(v2), printable(v3),
-        printable(v4), printable(v5), printable(v6), printable(v7));
-
-
-      addr += 8;
     }
-
     ImGui::PopStyleColor();
   }
   ImGui::End();
@@ -1345,44 +1355,54 @@ void debuggerMemoryView(bool* show)
 
 void debuggerVramMemoryView(bool* show)
 {
+  static int lastDebugMemoryAddr = 0;
+
   if (ImGui::Begin("TMS9918A VRAM", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
-    if (ImGui::IsWindowHovered()) {
-      debugTmsMemoryAddr -= (uint16_t)ImGui::GetIO().MouseWheel * 0x40;
-    }
-
     if (tms9918)
     {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+      const int numLines = 0x4000 >> 3;
 
-      uint16_t addr = debugTmsMemoryAddr & 0x3fff;
-      while (ImGui::GetContentRegionAvail().y > ImGui::GetTextLineHeight())
+      ImGuiListClipper clipper;
+      clipper.Begin(numLines);
+
+      if (lastDebugMemoryAddr != debugTmsMemoryAddr)
       {
-        uint8_t v0 = readTms9918Vram(tms9918, addr);
-        uint8_t v1 = readTms9918Vram(tms9918, (addr + 1) & 0x3fff);
-        uint8_t v2 = readTms9918Vram(tms9918, (addr + 2) & 0x3fff);
-        uint8_t v3 = readTms9918Vram(tms9918, (addr + 3) & 0x3fff);
-        uint8_t v4 = readTms9918Vram(tms9918, (addr + 4) & 0x3fff);
-        uint8_t v5 = readTms9918Vram(tms9918, (addr + 5) & 0x3fff);
-        uint8_t v6 = readTms9918Vram(tms9918, (addr + 6) & 0x3fff);
-        uint8_t v7 = readTms9918Vram(tms9918, (addr + 7) & 0x3fff);
-
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
-        ImGui::Text("$%04x", addr);
-        ImGui::PopStyleColor();
-
-        ImGui::SameLine();
-
-        ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
-          v0, v1, v2, v3, v4, v5, v6, v7,
-          printable(v0), printable(v1), printable(v2), printable(v3),
-          printable(v4), printable(v5), printable(v6), printable(v7));
-
-        addr += 8;
+        int scrollPos = (debugTmsMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
+        ImGui::SetScrollY(scrollPos);
+        lastDebugMemoryAddr = debugTmsMemoryAddr;
       }
 
-      ImGui::PopStyleColor();
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
 
+      while (clipper.Step())
+      {
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+        {
+          uint16_t addr = (i * 8) & 0x3fff;
+
+          uint8_t v0 = readTms9918Vram(tms9918, addr);
+          uint8_t v1 = readTms9918Vram(tms9918, (addr + 1) & 0x3fff);
+          uint8_t v2 = readTms9918Vram(tms9918, (addr + 2) & 0x3fff);
+          uint8_t v3 = readTms9918Vram(tms9918, (addr + 3) & 0x3fff);
+          uint8_t v4 = readTms9918Vram(tms9918, (addr + 4) & 0x3fff);
+          uint8_t v5 = readTms9918Vram(tms9918, (addr + 5) & 0x3fff);
+          uint8_t v6 = readTms9918Vram(tms9918, (addr + 6) & 0x3fff);
+          uint8_t v7 = readTms9918Vram(tms9918, (addr + 7) & 0x3fff);
+
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+          ImGui::Text("$%04x", addr);
+          ImGui::PopStyleColor();
+
+          ImGui::SameLine();
+
+          ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
+            v0, v1, v2, v3, v4, v5, v6, v7,
+            printable(v0), printable(v1), printable(v2), printable(v3),
+            printable(v4), printable(v5), printable(v6), printable(v7));
+        }
+      }
+      ImGui::PopStyleColor();
     }
     else
     {

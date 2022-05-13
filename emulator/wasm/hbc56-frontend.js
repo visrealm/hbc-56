@@ -59,6 +59,8 @@ var Module = {
 		{
 			loadRomFile(rom);
 		}
+		
+		setTimeout(loadLayout, 100);
 	},
     setStatus: function(text)
     {
@@ -162,8 +164,31 @@ function toggleAudio()
     canvas.focus();
 }
 
+function loadLayout()
+{
+	const layout = localStorage.getItem('hbc56EmuLayout');
+	if (layout)
+	{	
+		Module.ccall("hbc56LoadLayout", "void", ["string"], [layout]);
+	}
+}
+
+function resetLayout()
+{
+	Module.ccall("hbc56LoadLayout", "void", ["string"], [""]);
+}
+
+
+function saveLayout()
+{
+	var layoutText = Module.ccall("hbc56GetLayout", "string", ["void"], []);
+	console.log(layoutText);
+	localStorage.setItem('hbc56EmuLayout', layoutText);
+}
+
 function resetHbc56()
 {
+	saveLayout();
     Module.ccall("hbc56Reset", "void", ["void"], []);	
 }
 
@@ -308,6 +333,7 @@ function toggleDebugger()
 
 function debugBreak()
 {
+	resetLayout();
     Module.ccall("hbc56DebugBreak", "void", ["void"], []);
 }
 function debugBreakOnInterrupt()
