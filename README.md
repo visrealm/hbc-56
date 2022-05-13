@@ -48,11 +48,11 @@ For each path ([basic](code/6502/basic), [invaders](code/6502/invaders), [tests/
  * Type `make <basefile>` (filename without extension) to build and run a specific demo eg:
  
 ```
-cd code/6502/tests/tms
-make tms9918gfx2test
+cd code/6502/tests/inp
+make kbtest
 ```
 
-<img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode2demo.gif" alt="HBC-56 Emulator" width="800px">
+<img src="img/kb_nes_tests.gif" alt="HBC-56 Emulator" width="800px">
 
 #### Manually building a demo (without MAKE)
 Example: invaders
@@ -66,11 +66,16 @@ Example: invaders
 cd code\6502\invaders
 ..\..\..\emulator\bin\Hbc56Emu.exe --rom invaders.o
 ```
+
+<img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="800px">
+
 Example: basic
 ```
 cd code\6502\basic
 ..\..\..\emulator\bin\Hbc56Emu.exe --rom basic_tms.o
 ```
+
+<img src="img/basic.gif" alt="HBC-56 Emulator" width="800px">
 
 ## Memory map
 
