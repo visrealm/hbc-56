@@ -745,6 +745,8 @@ lcdReadLine:
 lcdScrollUp:
 	pha
 
+	jsr lcdCursorOff
+
 	lda #<.LCD_BUFFER_ADDR
 	sta STR_ADDR_L
 	lda #>.LCD_BUFFER_ADDR
@@ -790,6 +792,9 @@ lcdScrollUp:
 } else {
 	jsr lcdLineTwo
 }
+
+	jsr lcdCursorBlinkOn
+
 	pla
 	rts
 
