@@ -9,7 +9,7 @@
 ;
 
 
-!ifndef BCD_RAM_START { BCD_RAM_START = $10
+!ifndef BCD_RAM_START { BCD_RAM_START = $7810
         !warn "BCD_RAM_START not provided. Defaulting to ", BCD_RAM_START
 }
 
@@ -19,10 +19,9 @@
 BCD_TMP1	= BCD_RAM_START
 BCD_TMP2	= BCD_RAM_START + 1
 BCD_TMP3	= BCD_RAM_START + 2
-BCD_RAM_SIZE	= 3
+.BCD_RAM_SIZE	= 3
 
-
-!if BCD_RAM_END < (BCD_RAM_START + BCD_RAM_SIZE) {
+!if BCD_RAM_END < (BCD_RAM_START + .BCD_RAM_SIZE) {
 	!error "BCD_RAM requires ",BCD_RAM_SIZE," bytes. Allocated ",BCD_RAM_END - BCD_RAM_START
 }
 

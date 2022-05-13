@@ -61,9 +61,9 @@
 
 
 		lda #<.cnt
-		sta MEMCPY_LEN
+		sta MEM_LEN
 		lda #>.cnt
-		sta MEMCPY_LEN + 1
+		sta MEM_LEN + 1
 		jsr memcpyMultiPage
 	}
 }
@@ -136,9 +136,9 @@
 		jsr memcpySinglePagePort
 	} else {
 		lda #<.cnt
-		sta MEMCPY_LEN
+		sta MEM_LEN
 		lda #>.cnt
-		sta MEMCPY_LEN + 1
+		sta MEM_LEN + 1
 		jsr memcpyMultiPagePort
 	}
 }

@@ -1,4 +1,4 @@
-# Troy's HBC-56 - TMS9918 tests makefile
+# Troy's HBC-56 - Input tests makefile
 #
 # Copyright (c) 2021 Troy Schrapel
 #
