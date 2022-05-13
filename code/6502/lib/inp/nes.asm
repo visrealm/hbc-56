@@ -78,7 +78,7 @@ nes1Pressed:
 ; Outputs:
 ;   Carry set if pressed, Carry clear if not
 nes2Pressed:
-        bit NES1_IO_ADDR
+        bit NES2_IO_ADDR
         clc
         bne +
         sec
