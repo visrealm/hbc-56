@@ -17,6 +17,12 @@ All [source code](code/6502) and [schematics](schematics) are available in this 
 
 <img src="img/hbc56_spin.gif" alt="HBC-56" width="640px">
 
+The hand-wired cards are currently being replaced by custom PCB's thanks to the support of [PCBWay](https://www.pcbway.com).
+
+See [schematics/6502](schematics/6502) for the first example.
+
+![New 65C02 CPU card](/img/hbc56_cpu_card.png)
+
 ## Emulator
 I have also included an emulator for this system. The emulator supports:
 
@@ -99,8 +105,15 @@ The RAM and ROM is further divided by the HBC-56 Kernel:
 | $8000 | $dfff | 24 kilobytes | User ROM |
 | $e000 | $ffff | 8 kilobytes | Kernel ROM |
 
+### Thanks
+
+Thanks to PCBWay for supporting this project.
+
+[![PCBWay](/img/pcbway_sm.png)](https://www.pcbway.com/)
 
 ## Videos
+[![Backplane 6502 + TMS9918: Breakout](https://img.visualrealmsoftware.com/youtube/thumb/4C_1yekWGg4)](https://www.youtube.com/watch?v=4C_1yekWGg4 "Backplane 6502 + TMS9918: Breakout")
+
 [![Backplane 6502 + TMS9918: Invaders](https://img.visualrealmsoftware.com/youtube/thumb/Ug6Ppz-NF2Q)](https://www.youtube.com/watch?v=Ug6Ppz-NF2Q "Backplane 6502 + TMS9918: Invaders")
 
 [![6502 8-bit homebrew with backplane. Troy's HBC-56 project preview.](https://img.visualrealmsoftware.com/youtube/thumb/x4IN8i7_U_4?t=3)](https://www.youtube.com/watch?v=x4IN8i7_U_4 "6502 8-bit homebrew with backplane. Troy's HBC-56 project preview.")
