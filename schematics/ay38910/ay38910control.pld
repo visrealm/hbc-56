@@ -6,31 +6,31 @@ Designer Troy Schrapel;
 Company Troy Schrapel;
 Location Australia;
 Assembly None;
-Device g16v8a;
+Device g16v8;
 
 /*
  * Input pins
  */
-Pin 1 = !ior;
-Pin 2 = !w;
-Pin 3 = a0;
-Pin 4 = a1;
-Pin 5 = a2;
-Pin 6 = !a3;
-Pin 7 = !a4;
-Pin 8 = !a5;
-Pin 9 = a6;
-Pin 11 = !a7;
+Pin 1 = a0;
+Pin 2 = a1;
+Pin 3 = a2;
+Pin 4 = !a3;
+Pin 5 = !a4;
+Pin 6 = !a5;
+Pin 7 = a6;
+Pin 8 = !a7;
+Pin 9 = !ior;
+Pin 11 = !w;
 
 
 /*
  * Output pins
  */
-Pin 16 = bc1;
-Pin 17 = dir1;
+Pin 19 = bc1;
+Pin 18 = dir1;
 
-Pin 18 = bc2;
-Pin 19 = dir2;
+Pin 17 = bc2;
+Pin 16 = dir2;
 
 /*
  * Common logic
