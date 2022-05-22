@@ -30,7 +30,7 @@ Revision 1.0 of this board does has minor issues which will be recfified in v1.1
 
 Video covering the high-level design, ordering, assembly, diagnosis and repair of the v1.0 card:
 
-[![HBC-56: New 65C02 CPU card](https://img.visualrealmsoftware.com/youtube/thumb/EApdkxBf2yo)](https://www.youtube.com/watch?v=EApdkxBf2yo "HBC-56: New 65C02 CPU card")
+[![HBC-56: New 65C02 CPU card](https://img.visualrealmsoftware.com/youtube/thumb/EApdkxBf2yo?v=2)](https://www.youtube.com/watch?v=EApdkxBf2yo "HBC-56: New 65C02 CPU card")
 
 ## Thanks
 
