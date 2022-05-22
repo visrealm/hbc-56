@@ -24,7 +24,7 @@ The emulator includes full support for this TMS9918 card using my [vrEmuTms9918 
 
 Video covering the high-level design, ordering, assembly and test of the v1.0 card:
 
-[![HBC-56: New TMS9918A graphics card](https://img.visualrealmsoftware.com/youtube/thumb/oR_TiEgSD2k)](https://youtu.be/oR_TiEgSD2k "HBC-56: New TMS9918A graphics card")
+[![HBC-56: New TMS9918A graphics card](https://img.visualrealmsoftware.com/youtube/thumb/oR_TiEgSD2k?v=2)](https://youtu.be/oR_TiEgSD2k "HBC-56: New TMS9918A graphics card")
 
 ## Thanks
 
