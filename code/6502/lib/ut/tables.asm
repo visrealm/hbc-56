@@ -16,3 +16,5 @@ tableBitFromRight:
 !byte $01,$02,$04,$08,$10,$20,$40,$80
 tableInvBitFromRight:
 !byte $fe,$fd,$fb,$f7,$ef,$df,$bf,$7f
+tableBitsFromLeft:
+!byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
