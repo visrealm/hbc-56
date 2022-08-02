@@ -2,7 +2,7 @@ CC = clang
 
 CFLAGS = -lm -g -lstdc++ -lSDL2
 
-VARS = -D DEMANGLE_SUPPORT=1 -D VR_LCD_EMU_STATIC=1 -D VR_TMS9918_EMU_STATIC=1 -D VR_6502_EMU_STATIC=1 -D __CLANG__
+VARS = -D DEMANGLE_SUPPORT=1 -D VR_LCD_EMU_STATIC=1 -D VR_TMS9918_EMU_STATIC=1 -D VR_6502_EMU_STATIC=1 -D HAVE_FOPEN_S
 
 ## user may need to change this to where their SDL2 includes files are located (you may need to install libsdl2-dev)
 SDL2 = -I /usr/include/SDL2

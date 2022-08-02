@@ -762,7 +762,7 @@ static int loadRom(const char* filename)
   FILE* ptr = NULL;
   int romLoaded = 0;
 
-#if defined __EMSCRIPTEN__ || defined __CLANG__
+#ifdef HAVE_FOPEN_S
   ptr = fopen(filename, "rb");
 #else
   fopen_s(&ptr, filename, "rb");
@@ -785,7 +785,7 @@ static int loadRom(const char* filename)
       size_t ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".lmap", FILENAME_MAX - ln);
 
-#if defined __EMSCRIPTEN__ || defined __CLANG__
+#ifdef HAVE_FOPEN_S
       ptr = fopen(labelMapFile, "rb");
 #else
       fopen_s(&ptr, labelMapFile, "rb");
@@ -809,7 +809,7 @@ static int loadRom(const char* filename)
       ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".rpt", FILENAME_MAX - ln);
 
-#if defined __EMSCRIPTEN__ || defined __CLANG__
+#ifdef HAVE_FOPEN_S
       ptr = fopen(labelMapFile, "rb");
 #else
       fopen_s(&ptr, labelMapFile, "rb");
