@@ -1,0 +1,4 @@
+*.d64
+*.prg
+build
+deploy

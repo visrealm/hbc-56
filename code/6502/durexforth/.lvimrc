@@ -1,0 +1,7 @@
+map <F4> :wall!<CR>:make all<CR>
+map <F5> :!x64sc.exe durexforth.d64 &<CR>
+
+set nomodeline
+
+" acme
+set errorformat+=Error\ -\ File\ %f\\,\ line\ %l\ %m
