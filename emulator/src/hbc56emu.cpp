@@ -12,6 +12,8 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#else
+#define HAVE_FOPEN_S 1
 #endif
 
 #include "hbc56emu.h"
@@ -38,6 +40,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <queue>
 
 #define DEFAULT_WINDOW_WIDTH  640
 #define DEFAULT_WINDOW_HEIGHT 480
@@ -49,6 +52,7 @@ static int deviceCount = 0;
 
 static HBC56Device* cpuDevice = NULL;
 static HBC56Device* romDevice = NULL;
+static HBC56Device* kbDevice = NULL;
 
 static char tempBuffer[256];
 
@@ -56,6 +60,8 @@ static char tempBuffer[256];
 static HBC56InterruptSignal irqs[MAX_IRQS];
 
 static SDL_Renderer* renderer = NULL;
+
+static std::queue<SDL_KeyboardEvent> pasteQueue;
 
 
 /* Function:  hbc56Reset
@@ -220,6 +226,94 @@ const char* hbc56GetLayout()
   return ImGui::SaveIniSettingsToMemory(0);
 }
 
+/* Function:  hbc56PasteText
+ * --------------------
+ * paste text (emulates key presses)
+ */
+void hbc56PasteText(const char* text)
+{
+  while (*text)
+  {
+    char c = *(text++);
+    SDL_Scancode sc = SDL_SCANCODE_UNKNOWN;
+    bool shift = false;
+    if (SDL_islower(c)) {
+      sc = (SDL_Scancode)(c - 'a' + SDL_SCANCODE_A);
+    }
+    else if (SDL_isupper(c)) 
+    {
+      sc = (SDL_Scancode)(c - 'A' + SDL_SCANCODE_A);
+      shift = true;
+    }
+    else if (SDL_isdigit(c))
+    {
+      if (c == '0') sc = SDL_SCANCODE_0;
+      else sc = (SDL_Scancode)(c - '1' + SDL_SCANCODE_1);
+    }
+    else
+    {
+      switch (c)
+      {
+        case ' ': sc = SDL_SCANCODE_SPACE; break;
+        case '!': sc = SDL_SCANCODE_1; shift = true; break;
+        case '\"': sc = SDL_SCANCODE_APOSTROPHE; shift = true; break;
+        case '#': sc = SDL_SCANCODE_3; shift = true; break;
+        case '$': sc = SDL_SCANCODE_4; shift = true; break;
+        case '%': sc = SDL_SCANCODE_5; shift = true; break;
+        case '&': sc = SDL_SCANCODE_7; shift = true; break;
+        case '\'': sc = SDL_SCANCODE_APOSTROPHE; break;
+        case '(': sc = SDL_SCANCODE_9; shift = true; break;
+        case ')': sc = SDL_SCANCODE_0; shift = true; break;
+        case '*': sc = SDL_SCANCODE_8; shift = true; break;
+        case '+': sc = SDL_SCANCODE_EQUALS; shift = true; break;
+        case ',': sc = SDL_SCANCODE_COMMA;  break;
+        case '-': sc = SDL_SCANCODE_MINUS;  break;
+        case '.': sc = SDL_SCANCODE_PERIOD;  break;
+        case '/': sc = SDL_SCANCODE_SLASH;  break;
+        case ':': sc = SDL_SCANCODE_SEMICOLON; shift = true; break;
+        case ';': sc = SDL_SCANCODE_SEMICOLON; break;
+        case '<': sc = SDL_SCANCODE_COMMA; shift = true; break;
+        case '=': sc = SDL_SCANCODE_EQUALS;  break;
+        case '>': sc = SDL_SCANCODE_PERIOD; shift = true; break;
+        case '?': sc = SDL_SCANCODE_SLASH; shift = true; break;
+        case '[': sc = SDL_SCANCODE_LEFTBRACKET; break;
+        case '\\': sc = SDL_SCANCODE_BACKSLASH; break;
+        case ']': sc = SDL_SCANCODE_RIGHTBRACKET; break;
+        case '^': sc = SDL_SCANCODE_6; shift = true; break;
+        case '_': sc = SDL_SCANCODE_MINUS; shift = true; break;
+        case '`': sc = SDL_SCANCODE_GRAVE; break;
+        case '{': sc = SDL_SCANCODE_LEFTBRACKET; shift = true; break;
+        case '|': sc = SDL_SCANCODE_BACKSLASH; shift = true; break;
+        case '}': sc = SDL_SCANCODE_RIGHTBRACKET; shift = true; break;
+        case '~': sc = SDL_SCANCODE_GRAVE; shift = true; break;
+        case '\t': sc = SDL_SCANCODE_TAB; break;
+        case '\n': sc = SDL_SCANCODE_RETURN; break;
+      }
+    }
+
+    if (sc != SDL_SCANCODE_UNKNOWN)
+    {
+      SDL_KeyboardEvent ev;
+      ev.type = SDL_KEYDOWN;
+      if (shift)
+      {
+        ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
+        pasteQueue.push(ev);
+      }
+
+      ev.keysym.scancode = sc;
+      pasteQueue.push(ev);
+      ev.type = SDL_KEYUP;
+      pasteQueue.push(ev);
+
+      if (shift)
+      {
+        ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
+        pasteQueue.push(ev);
+      }
+    }    
+  }
+}
 
 /* Function:  hbc56ToggleDebugger
  * --------------------
@@ -554,6 +648,21 @@ static void doRender()
  */
 static void doEvents()
 {
+  if (!pasteQueue.empty()) {
+
+    for (int x = 0; x < 2; ++x) {
+      // output one paste keypress per frame
+      SDL_Event ev;
+      ev.type = pasteQueue.front().type;
+      ev.key = pasteQueue.front();
+      pasteQueue.pop();
+
+      for (size_t i = 0; i < deviceCount; ++i)
+      {
+        eventDevice(&devices[i], &ev);
+      }
+    }
+  }
 
   SDL_Event event;
   while (SDL_PollEvent(&event))
@@ -594,6 +703,18 @@ static void doEvents()
             if (withControl)
             {
               hbc56ToggleDebugger();
+            }
+            break;
+
+          case SDLK_v:
+            if (withControl)
+            {
+              skipProcessing = 1;
+              if (SDL_HasClipboardText()) {
+                char *text = SDL_GetClipboardText();
+                hbc56PasteText(text);
+                SDL_free(text);
+              }
             }
             break;
 
@@ -676,6 +797,10 @@ static void doEvents()
             break;
 
           case SDLK_d:
+            if (withControl) skipProcessing = 1;
+            break;
+
+          case SDLK_v:
             if (withControl) skipProcessing = 1;
             break;
 
@@ -762,7 +887,7 @@ static int loadRom(const char* filename)
   FILE* ptr = NULL;
   int romLoaded = 0;
 
-#ifdef HAVE_FOPEN_S
+#ifndef HAVE_FOPEN_S
   ptr = fopen(filename, "rb");
 #else
   fopen_s(&ptr, filename, "rb");
@@ -785,7 +910,7 @@ static int loadRom(const char* filename)
       size_t ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".lmap", FILENAME_MAX - ln);
 
-#ifdef HAVE_FOPEN_S
+#ifndef HAVE_FOPEN_S
       ptr = fopen(labelMapFile, "rb");
 #else
       fopen_s(&ptr, labelMapFile, "rb");
@@ -809,7 +934,7 @@ static int loadRom(const char* filename)
       ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".rpt", FILENAME_MAX - ln);
 
-#ifdef HAVE_FOPEN_S
+#ifndef HAVE_FOPEN_S
       ptr = fopen(labelMapFile, "rb");
 #else
       fopen_s(&ptr, labelMapFile, "rb");
@@ -1017,7 +1142,7 @@ int main(int argc, char* argv[])
 #endif
 
 #if HBC56_HAVE_KB
-  hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT), HBC56_KB_IRQ));
+  kbDevice = hbc56AddDevice(createKeyboardDevice(HBC56_IO_ADDRESS(HBC56_KB_PORT), HBC56_KB_IRQ));
 #endif
 
 #if HBC56_HAVE_NES

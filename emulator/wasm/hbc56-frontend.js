@@ -114,6 +114,10 @@ var audioContext;
 
 window.addEventListener('load', init, false);
 
+function pasteText(e) {
+	console.log("ASDSA");
+}
+
 function init()
 {
 	window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -305,11 +309,27 @@ function romDropHandler(event)
                         }
                     };
                 }
-                else
+                else if (file.name.endsWith(".txt"))
                 {
+                    var reader = new FileReader();
+                    reader.readAsText(event.dataTransfer.items[i].getAsFile());
+                    reader.onload = function()
+                    {
+						Module.ccall("hbc56PasteText", "void", ["string"], [reader.result]);
+                    };
+
+				}
+				else
+				{
                     alert("Invalid file: '" + file.name + "'. Accepts .o or .o.lmap files only");
-                }
+               }
             }
+			else if (event.dataTransfer.items[i].kind == 'string')
+            {
+				event.dataTransfer.items[i].getAsString((s) => {
+					Module.ccall("hbc56PasteText", "void", ["string"], [s]);
+				});
+			}
         }
     }
     else

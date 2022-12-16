@@ -84,6 +84,12 @@ void hbc56LoadLayout(const char* layoutFile);
  */
 const char *hbc56GetLayout();
 
+/* Function:  hbc56PasteText
+ * --------------------
+ * paste text (emulates key presses)
+ */
+void hbc56PasteText(const char* text);
+
 /* Function:  hbc56ToggleDebugger
  * --------------------
  * toggle the debugger

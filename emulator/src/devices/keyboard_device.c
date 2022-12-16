@@ -24,12 +24,15 @@ static uint64_t sdl2ps2map[232][2];
 #define KB_INT_FLAG 0x02
 #define KB_RDY_FLAG 0x04
 
+#define KB_QUEUE_SIZE 16
+#define KB_QUEUE_MASK (KB_QUEUE_SIZE - 1)
+
 /* keyboard device data */
 struct KeyboardDevice
 {
   uint16_t  addr;
   uint8_t   irq;
-  char      kbQueue[16];
+  char      kbQueue[KB_QUEUE_SIZE];
   int       kbStart;
   int       kbEnd;
 };
@@ -90,7 +93,7 @@ static uint8_t readKeyboardDevice(HBC56Device* device, uint16_t addr, uint8_t *v
         *val = kbDevice->kbQueue[kbDevice->kbStart];
 
         ++kbDevice->kbStart;
-        kbDevice->kbStart &= 0x0f;
+        kbDevice->kbStart &= KB_QUEUE_MASK;
 
         if (kbDevice->kbStart == kbDevice->kbEnd)
         {
@@ -136,7 +139,7 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
           uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
           if (scanCodeByte)
           {
-            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= KB_QUEUE_MASK;
             hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
           }
           ps2ScanCode <<= 8;
@@ -152,7 +155,7 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
           uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
           if (scanCodeByte)
           {
-            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= 0x0f;
+            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= KB_QUEUE_MASK;
             hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
           }
           ps2ScanCode <<= 8;
@@ -162,6 +165,17 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
     }
   }
 }
+
+int keyboardDeviceQueueCap(HBC56Device* device) {
+  KeyboardDevice* kbDevice = getKeyboardDevice(device);
+  if (kbDevice) {
+    int diff = kbDevice->kbEnd - kbDevice->kbStart;
+    if (diff < 0) diff += KB_QUEUE_SIZE;  
+    return KB_QUEUE_SIZE - diff;
+  }
+  return 0;
+}
+
 
 static uint64_t sdl2ps2map[232][2] = {
   {0x00, 0x00},
