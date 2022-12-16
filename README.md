@@ -13,15 +13,9 @@ Current cards:
 * Dual AY-3-8910 sound card
 * PS/2 keyboard and dual NES controller card
 
+<img src="img/hbc56-1-sm.jpg" alt="HBC-56" width="640px">
+
 All [source code](code/6502) and [schematics](schematics) are available in this repository.
-
-<img src="img/hbc56_spin.gif" alt="HBC-56" width="640px">
-
-The hand-wired cards are currently being replaced by custom PCB's thanks to the support of [PCBWay](https://www.pcbway.com).
-
-See [schematics/6502](schematics/6502) for the first example.
-
-![New 65C02 CPU card](/img/hbc56_cpu_card.png)
 
 ## Emulator
 I have also included an emulator for this system. The emulator supports:
@@ -33,6 +27,8 @@ I have also included an emulator for this system. The emulator supports:
 * Support for the dual AY-3-8910 audio, keyboard and NES controller.
 
 The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/emulator/wasm)
+
+<img src="img/breakout_web_sm.gif" alt="HBC-56" width="640px">
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
