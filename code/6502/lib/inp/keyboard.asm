@@ -397,6 +397,11 @@ kbIntHandler:
         rts
 
 
+; -----------------------------------------------------------------------------
+; .kbPopTail: Pop a scancode from the tail of the buffer
+; Inputs:
+;    A - scancode
+; -----------------------------------------------------------------------------
 .kbPopTail:
         lda KB_BUFFER_TAIL
         tax
@@ -414,6 +419,8 @@ kbIntHandler:
 ;    Z - clear if pressed, set if not pressed
 ; -----------------------------------------------------------------------------
 kbIsPressed:
+        php
+        sei
         stx KB_TMP_X
         txa
         +lsr3
@@ -424,6 +431,7 @@ kbIsPressed:
         lda tableBitFromLeft, y
         and KB_PRESSED_MAP, x
         ldx KB_TMP_X
+        plp
         cmp #0
         rts
 
@@ -434,10 +442,18 @@ kbIsPressed:
 ;    A - scancode
 ; -----------------------------------------------------------------------------
 kbWaitForScancode:
+        php
+        sei        
+        sec
         lda KB_BUFFER_HEAD
-        cmp KB_BUFFER_TAIL
+        sbc KB_BUFFER_TAIL
+        plp
+        cmp #0
         beq kbWaitForScancode
+        php
+        sei
         jsr .kbPopTail
+        plp
         rts
 
 ; -----------------------------------------------------------------------------
@@ -446,14 +462,18 @@ kbWaitForScancode:
 ;    A - scancode (or zero)
 ; -----------------------------------------------------------------------------
 kbNextScancode:
+        php
+        sei
         lda KB_BUFFER_HEAD
         cmp KB_BUFFER_TAIL
         beq @noScancode
         jsr .kbPopTail
-        ;!byte $db
+        plp
+        cmp #0
         rts
 
 @noScancode
+        plp
         lda #0
         rts
 
@@ -463,15 +483,18 @@ kbNextScancode:
 ;    A - scancode (or zero)
 ; Returns:
 ;    A - ascii character
+;    C - set if valid character in A
 ; -----------------------------------------------------------------------------
 kbScancodeToAscii:
         phx
         sta KB_TMP_X
         clc
         bpl +
-        plx        
+        plx
         rts
 +
+        php
+        sei
         ldx #KB_SHIFT_LEFT_MAP_BYTE
         lda #KB_SHIFT_LEFT_MAP_BIT
         bit KB_PRESSED_MAP, x
@@ -510,6 +533,7 @@ kbScancodeToAscii:
 +
         lda KB_TMP_X
 @afterAlphaCheck
+        plp
         plx
         cmp #$ff
         sec
@@ -518,14 +542,24 @@ kbScancodeToAscii:
 +        
         rts
 
+; -----------------------------------------------------------------------------
+; kbReadAscii: Read an ASCII caharacter from the keyboard queue
+; Returns:
+;    A - ascii character
+;    C - set if valid character in A
+; -----------------------------------------------------------------------------
 kbReadAscii:
+        php
+        sei
         phx
         jsr kbNextScancode
         beq @noKey
         plx
+        plp
         jmp kbScancodeToAscii
 @noKey
         plx
+        plp
         clc
         rts
 

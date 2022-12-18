@@ -334,7 +334,7 @@ tmsModeReset:
         jsr tmsReg0ClearFields
 
         lda #$18
-        jsr tmsReg0ClearFields
+        jsr tmsReg1ClearFields
 
         ; if we were in Graphics II, then we need to reset
         ; the color and pattern table addresses
