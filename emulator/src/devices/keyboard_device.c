@@ -24,7 +24,7 @@ static uint64_t sdl2ps2map[232][2];
 #define KB_INT_FLAG 0x02
 #define KB_RDY_FLAG 0x04
 
-#define KB_QUEUE_SIZE 16
+#define KB_QUEUE_SIZE 1024
 #define KB_QUEUE_MASK (KB_QUEUE_SIZE - 1)
 
 /* keyboard device data */
@@ -90,9 +90,8 @@ static uint8_t readKeyboardDevice(HBC56Device* device, uint16_t addr, uint8_t *v
 
       if (kbDevice->kbEnd != kbDevice->kbStart)
       {
-        *val = kbDevice->kbQueue[kbDevice->kbStart];
+        *val = kbDevice->kbQueue[kbDevice->kbStart++];
 
-        ++kbDevice->kbStart;
         kbDevice->kbStart &= KB_QUEUE_MASK;
 
         if (kbDevice->kbStart == kbDevice->kbEnd)
@@ -130,38 +129,18 @@ static void eventKeyboardDevice(HBC56Device *device, SDL_Event *event)
   KeyboardDevice* kbDevice = getKeyboardDevice(device);
   if (kbDevice && event)
   {
-    switch (event->type) {
-      case SDL_KEYDOWN:
-      {
-        uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][0];
-        for (int i = 0; i < 8; ++i)
-        {
-          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
-          if (scanCodeByte)
-          {
-            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= KB_QUEUE_MASK;
-            hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
-          }
-          ps2ScanCode <<= 8;
-        }
-      }
-      break;
+    if (event->type != SDL_KEYUP && event->type != SDL_KEYDOWN) return;
 
-      case SDL_KEYUP:
+    uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][event->type == SDL_KEYUP];
+    for (int i = 0; i < 8; ++i)
+    {
+      uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
+      if (scanCodeByte)
       {
-        uint64_t ps2ScanCode = sdl2ps2map[event->key.keysym.scancode][1];
-        for (int i = 0; i < 8; ++i)
-        {
-          uint8_t scanCodeByte = (ps2ScanCode & 0xff00000000000000) >> 56;
-          if (scanCodeByte)
-          {
-            kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= KB_QUEUE_MASK;
-            hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
-          }
-          ps2ScanCode <<= 8;
-        }
+        kbDevice->kbQueue[kbDevice->kbEnd++] = scanCodeByte; kbDevice->kbEnd &= KB_QUEUE_MASK;
+        hbc56Interrupt(kbDevice->irq, INTERRUPT_RAISE);
       }
-      break;
+      ps2ScanCode <<= 8;
     }
   }
 }
@@ -174,6 +153,14 @@ int keyboardDeviceQueueCap(HBC56Device* device) {
     return KB_QUEUE_SIZE - diff;
   }
   return 0;
+}
+
+bool keyboardDeviceQueueEmpty(HBC56Device* device) {
+  KeyboardDevice* kbDevice = getKeyboardDevice(device);
+  if (kbDevice) {
+    return kbDevice->kbEnd == kbDevice->kbStart;
+  }
+  return false;
 }
 
 

@@ -60,8 +60,13 @@ static char tempBuffer[256];
 static HBC56InterruptSignal irqs[MAX_IRQS];
 
 static SDL_Renderer* renderer = NULL;
+SDL_mutex* kbQueueMutex = nullptr;
 
 static std::queue<SDL_KeyboardEvent> pasteQueue;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /* Function:  hbc56Reset
@@ -232,6 +237,7 @@ const char* hbc56GetLayout()
  */
 void hbc56PasteText(const char* text)
 {
+  SDL_LockMutex(kbQueueMutex);
   while (*text)
   {
     char c = *(text++);
@@ -313,6 +319,7 @@ void hbc56PasteText(const char* text)
       }
     }    
   }
+  SDL_UnlockMutex(kbQueueMutex);
 }
 
 /* Function:  hbc56ToggleDebugger
@@ -394,11 +401,13 @@ uint8_t hbc56MemRead(uint16_t addr, bool dbg)
     return val;
   }
 
+  SDL_LockMutex(kbQueueMutex);
   for (size_t i = 0; i < deviceCount; ++i)
   {
     if (readDevice(&devices[i], addr, &val, dbg))
       break;
   }
+  SDL_UnlockMutex(kbQueueMutex);
 
   return val;
 }
@@ -415,6 +424,11 @@ void hbc56MemWrite(uint16_t addr, uint8_t val)
       break;
   }
 }
+
+#ifdef __cplusplus
+}
+#endif
+
 
 
 /* emulator constants */
@@ -648,22 +662,8 @@ static void doRender()
  */
 static void doEvents()
 {
-  if (!pasteQueue.empty()) {
-
-    for (int x = 0; x < 2; ++x) {
-      // output one paste keypress per frame
-      SDL_Event ev;
-      ev.type = pasteQueue.front().type;
-      ev.key = pasteQueue.front();
-      pasteQueue.pop();
-
-      for (size_t i = 0; i < deviceCount; ++i)
-      {
-        eventDevice(&devices[i], &ev);
-      }
-    }
-  }
-
+  SDL_LockMutex(kbQueueMutex);
+    
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
@@ -819,13 +819,36 @@ static void doEvents()
 
     if (!skipProcessing)
     {
-      for (size_t i = 0; i < deviceCount; ++i)
+      if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
-        eventDevice(&devices[i], &event);
+        pasteQueue.push(event.key);
+      }
+      else
+      {
+        for (size_t i = 0; i < deviceCount; ++i)
+        {
+          eventDevice(&devices[i], &event);
+        }
       }
     }
-    //SDLCommonEvent(state, &event, &done);
   }
+
+  if (keyboardDeviceQueueEmpty(kbDevice))
+  {
+    for (int i = 0; i < 2 && !pasteQueue.empty(); ++i)
+    {
+      SDL_Event ev;
+      ev.type = pasteQueue.front().type;
+      ev.key = pasteQueue.front();
+      pasteQueue.pop();
+
+      for (size_t i = 0; i < deviceCount; ++i)
+      {
+        eventDevice(&devices[i], &ev);
+      }
+    }
+  }
+  SDL_UnlockMutex(kbQueueMutex);
 }
 
 /* Function:  loop
@@ -850,6 +873,7 @@ static void loop()
 
     doEvents();
   }
+
 
 
 #ifdef __EMSCRIPTEN__
@@ -978,6 +1002,8 @@ int main(int argc, char* argv[])
     printf("Error: %s\n", SDL_GetError());
     return -1;
   }
+
+  kbQueueMutex = SDL_CreateMutex();
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, window_flags);
@@ -1209,6 +1235,8 @@ int main(int argc, char* argv[])
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
+
+  SDL_DestroyMutex(kbQueueMutex);
 
   return 0;
 }

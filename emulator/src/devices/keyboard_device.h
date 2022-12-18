@@ -24,6 +24,7 @@ extern "C" {
  */
 HBC56Device createKeyboardDevice(uint16_t addr, uint8_t irq);
 
+bool keyboardDeviceQueueEmpty(HBC56Device* device);
 int keyboardDeviceQueueCap(HBC56Device* device);
 
 #ifdef __cplusplus
