@@ -46,7 +46,9 @@ void debug6502State(HBC56Device* device, HBC56CpuState state);
 
 HBC56CpuState getDebug6502State(HBC56Device* device);
 
-VrEmu6502 *getCpuDevice(HBC56Device* device);
+VrEmu6502* getCpuDevice(HBC56Device* device);
+
+float getCpuUtilization(HBC56Device* device);
 
 #ifdef __cplusplus
 }

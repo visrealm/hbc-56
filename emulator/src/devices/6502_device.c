@@ -26,6 +26,7 @@ static void tick6502CpuDevice(HBC56Device*,uint32_t,double);
 #define CPU_6502_MAX_CALL_STACK   128
 #define CPU_6502_JSR              0x20
 #define CPU_6502_RTS              0x60
+#define CPU_6502_WAI              0xcb
 #define CPU_6502_BRK              0xdb
 
 #define CPU_6502_MAX_TIMESTEP_SEC   0.001
@@ -41,6 +42,8 @@ struct CPU6502Device
   size_t               callStackPtr;
   uint8_t              breakMode;  /* 0 for match, 1 for not match */
   uint16_t             breakAddr;
+  uint64_t             ticks;
+  uint64_t             ticksWai;
   IsBreakpointFn       isBreakFn;
 };
 typedef struct CPU6502Device CPU6502Device;
@@ -65,6 +68,7 @@ HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
     cpuDevice->callStackPtr = 0;
     cpuDevice->breakMode = 0;
     cpuDevice->breakAddr = 0;
+    cpuDevice->ticks = cpuDevice->ticksWai = 0L;
     cpuDevice->isBreakFn = brkCb;
     device.data = cpuDevice;
 
@@ -208,6 +212,12 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
           }
         }
       }
+
+      ++cpuDevice->ticks;
+      if (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_WAI)
+      {
+        ++cpuDevice->ticksWai;
+      }
     }
   }
 } 
@@ -294,6 +304,20 @@ HBC56CpuState getDebug6502State(HBC56Device* device)
   }
   return CPU_BREAK;
 }
+
+float getCpuUtilization(HBC56Device* device)
+{
+  float pct = 0.0f;
+
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
+  if (cpuDevice && cpuDevice->ticks)
+  {
+    pct = 1.0f - (float)cpuDevice->ticksWai / (float)cpuDevice->ticks;
+    cpuDevice->ticksWai = cpuDevice->ticks = 0L;
+  }
+  return pct;
+}
+
 
 VrEmu6502* getCpuDevice(HBC56Device* device)
 {

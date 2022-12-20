@@ -54,6 +54,8 @@ static HBC56Device* cpuDevice = NULL;
 static HBC56Device* romDevice = NULL;
 static HBC56Device* kbDevice = NULL;
 
+static SDL_Window* window = NULL;
+
 static char tempBuffer[256];
 
 #define MAX_IRQS 5
@@ -110,8 +112,7 @@ HBC56Device* hbc56Device(size_t deviceNum)
 
 /* Function:  hbc56AddDevice
  * --------------------
- * add a new device
- * returns a pointer to the added device
+ * add a new device * returns a pointer to the added device
  */
 HBC56Device* hbc56AddDevice(HBC56Device device)
 {
@@ -872,8 +873,11 @@ static void loop()
     tickCount = 0;
 
     doEvents();
-  }
 
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %0.6f%%", getCpuUtilization(cpuDevice) * 100.0f);
+    SDL_SetWindowTitle(window, tempBuffer);
+
+  }
 
 
 #ifdef __EMSCRIPTEN__
@@ -918,7 +922,7 @@ static int loadRom(const char* filename)
 #endif
 
   SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %s", filename);
-  //state->window_title = tempBuffer;
+  SDL_SetWindowTitle(window, tempBuffer);
 
   if (ptr)
   {
@@ -1006,7 +1010,7 @@ int main(int argc, char* argv[])
   kbQueueMutex = SDL_CreateMutex();
 
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  SDL_Window* window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, window_flags);
+  window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, window_flags);
 
   // Setup SDL_Renderer instance
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
