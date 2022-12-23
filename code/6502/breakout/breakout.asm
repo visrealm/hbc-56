@@ -73,8 +73,8 @@ INITIAL_BALLS = 4
 ; Paddle constants
 ; -------------------------
 PADDLE_WIDTH       = 32
-PADDLE_SPEED       = 0
-PADDLE_SPEED_SUB   = 100
+PADDLE_SPEED       = 1
+PADDLE_SPEED_SUB   = 0
 PADDLE_L_SPRITE_INDEX = 2
 PADDLE_R_SPRITE_INDEX = 3
 PADDLE_ROW         = 23
@@ -173,7 +173,7 @@ LEVEL_DATA   = $0400
 ; HBC-56 Program Metadata
 ; -----------------------------------------------------------------------------
 hbc56Meta:
-        +setHbcMetaTitle "BREAKOUT"
+        +setHbcMetaTitle "BREAKOUT-56"
         +setHbcMetaNES
         rts
 

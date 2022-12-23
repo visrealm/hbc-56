@@ -15,16 +15,26 @@ BORDER = TMS_DK_BLUE
 ; hbc56SetupDisplay - Setup the display (TMS9918)
 ; -----------------------------------------------------------------------------
 hbc56SetupDisplay:
-        +tmsColorFgBg FG, BORDER
+        php
+        sei
+
+        jsr tmsModeGraphicsI
+
+        +tmsColorFgBg BG, BORDER
         jsr tmsSetBackground
         +tmsColorFgBg FG, BG
         jsr tmsInitEntireColorTable
+
+        jsr tmsInitPattTable
 
         +tmsEnableInterrupts    ; gives us the console cursor, etc.
         +tmsEnableOutput
 
         +consoleEnableCursor
+        plp
+
         rts
+
 
 ; -----------------------------------------------------------------------------
 ; hbc56Out - EhBASIC output subroutine (for HBC-56 TMS9918)

@@ -14,7 +14,7 @@ default: lcdtype
 
 lcdtype: LCD_MODEL = 12864
 
-DISABLE_KERNEL_MODULES = TMS9918
+#DISABLE_KERNEL_MODULES = TMS9918
 
 include $(ROOT_PATH)makefile
 

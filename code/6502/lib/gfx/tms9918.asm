@@ -338,11 +338,11 @@ tmsModeReset:
 
         ; if we were in Graphics II, then we need to reset
         ; the color and pattern table addresses
-        lda #0;(TMS_VRAM_COLOR_ADDRESS >> 6)
+        lda #<(TMS_VRAM_COLOR_ADDRESS >> 6)
         ldx #3
         jsr tmsSetRegister
 
-        lda #TMS_VRAM_PATT_ADDRESS >> 11
+        lda #<(TMS_VRAM_PATT_ADDRESS >> 11)
         ldx #4
         jsr tmsSetRegister
         rts
@@ -918,6 +918,32 @@ tmsSetPosRead:
         jsr tmsSetPosTmpAddress
         jmp tmsSetAddressRead
 
+; -----------------------------------------------------------------------------
+; tmsSetPatternTmpAddress: Set TMS_TMP_ADDRESS for a given mode II pattern definition
+; -----------------------------------------------------------------------------
+; Inputs:
+;   X: X position
+;   Y: Y position
+; -----------------------------------------------------------------------------
+tmsSetPatternTmpAddressII:
+        lda #>TMS_VRAM_PATT_ADDRESS
+        sta TMS_TMP_ADDRESS + 1
+
+        tya
+        +lsr3
+        ora TMS_TMP_ADDRESS + 1
+        sta TMS_TMP_ADDRESS + 1
+
+        txa
+        and #$f8
+        sta TMS_TMP_ADDRESS
+
+        tya
+        and #$07
+        ora TMS_TMP_ADDRESS
+        sta TMS_TMP_ADDRESS
+
+        rts
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPatternTmpAddress: Set TMS_TMP_ADDRESS for a given pattern definition
@@ -940,7 +966,6 @@ tmsSetPatternTmpAddress:
         adc TMS_TMP_ADDRESS + 1
         sta TMS_TMP_ADDRESS + 1
         pla
-        and #$1f
         +mul8
         sta TMS_TMP_ADDRESS
         tya

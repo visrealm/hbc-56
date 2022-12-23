@@ -17,6 +17,7 @@ default: breakout
 include $(ROOT_PATH)makefile
 
 %: %.o
+	copy /Y $<* ..\..\..\emulator\wasm\roms
 	$(HBC56EMU) --rom $<
 
 clean:

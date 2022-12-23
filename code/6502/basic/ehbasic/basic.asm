@@ -321,7 +321,9 @@ TK_SAVE		= TK_LOAD+1		; SAVE token
 TK_DEF		= TK_SAVE+1		; DEF token
 TK_POKE		= TK_DEF+1		; POKE token
 TK_DOKE		= TK_POKE+1		; DOKE token
-TK_CALL		= TK_DOKE+1		; CALL token
+TK_DISPLAY	= TK_DOKE+1		; DISPLAY token
+TK_PLOT		= TK_DISPLAY+1		; PLOT token
+TK_CALL		= TK_PLOT+1		; CALL token
 TK_DO			= TK_CALL+1		; DO token
 TK_LOOP		= TK_DO+1		; LOOP token
 TK_PRINT		= TK_LOOP+1		; PRINT token
@@ -789,8 +791,8 @@ LAB_1269
 ; wait for Basic command
 
 LAB_1274
-					; clear ON IRQ/NMI bytes
-	LDA	#$00			; clear A
+				; clear ON IRQ/NMI bytes
+	LDA	#$00		; clear A
 	STA	IrqBase		; clear enabled byte
 	STA	NmiBase		; clear enabled byte
 	LDA	#<LAB_RMSG		; point to "Ready" message low byte
@@ -1655,6 +1657,9 @@ LAB_164F
 	PLA				; pull return address low
 	PLA				; pull return address high
 LAB_1651
+	php
+	jsr hbc56SetupDisplay
+	plp
 	BCC	LAB_165E		; if was program end just do warm start
 
 					; else ..
@@ -7751,6 +7756,21 @@ LAB_TWOPI
 	LDY	#>LAB_2C7C		; set (2*pi) pointer high byte
 	JMP	LAB_UFAC		; unpack memory (AY) into FAC1 and return
 
+LAB_DISPLAY
+	JSR	LAB_EVNM		; evaluate expression and check is numeric,
+					; else do type mismatch
+	JSR	LAB_F2FX		; save integer part of FAC1 in temporary integer
+	ldx 	Itempl
+	jmp 	basicMode2
+
+LAB_PLOT:
+	jsr LAB_GADB
+	txa
+	tay
+	ldx Itempl
+        
+	jmp doPlot
+
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
 
@@ -7992,6 +8012,8 @@ LAB_CTBL
 	!word	LAB_DEF-1		; DEF
 	!word	LAB_POKE-1		; POKE
 	!word	LAB_DOKE-1		; DOKE		new command
+	!word	LAB_DISPLAY-1		; DISPLAY	HBC-56 command
+	!word	LAB_PLOT-1		; PLOT		HBC-56 command
 	!word	LAB_CALL-1		; CALL		new command
 	!word	LAB_DO-1		; DO			new command
 	!word	LAB_LOOP-1		; LOOP		new command
@@ -8264,6 +8286,8 @@ LBB_DOKE
 	!text	"OKE",TK_DOKE	; DOKE note - "DOKE" must come before "DO"
 LBB_DO
 	!text	"O",TK_DO		; DO
+LBB_DISPLAY
+	!text	"ISPLAY",TK_DISPLAY	; DISPLAY	HBC-56 command
 	!text	$00
 TAB_ASCE
 LBB_ELSE
@@ -8359,6 +8383,8 @@ LBB_PEEK
 	!text	"EEK(",TK_PEEK	; PEEK(
 LBB_PI
 	!text	"I",TK_PI		; PI
+LBB_PLOT
+	!text	"LOT",TK_PLOT		; PLOT
 LBB_POKE
 	!text	"OKE",TK_POKE	; POKE
 LBB_POS
@@ -8512,6 +8538,10 @@ LAB_KEYT
 	!word	LBB_POKE		; POKE
 	!text	4,'D'
 	!word	LBB_DOKE		; DOKE
+	!text	7,'D'
+	!word	LBB_DISPLAY		; DISPLAY
+	!text	4,'P'
+	!word	LBB_PLOT		; PLOT
 	!text	4,'C'
 	!word	LBB_CALL		; CALL
 	!text	2,'D'
