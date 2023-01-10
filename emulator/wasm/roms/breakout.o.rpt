@@ -2501,7 +2501,7 @@
     41  e000 c9619005c97b9002...        !bin "kernel.o"
     42                          
     43                                  *=DEFAULT_HBC56_RST_VECTOR
-    44  8000 4c4d80                     jmp hbc56Main
+    44  8000 4c2d80                     jmp hbc56Main
     45                          
     46                          } else {
     47                          
@@ -2576,8 +2576,8 @@
     73                          ; Paddle constants
     74                          ; -------------------------
     75                          PADDLE_WIDTH       = 32
-    76                          PADDLE_SPEED       = 0
-    77                          PADDLE_SPEED_SUB   = 100
+    76                          PADDLE_SPEED       = 1
+    77                          PADDLE_SPEED_SUB   = 0
     78                          PADDLE_L_SPRITE_INDEX = 2
     79                          PADDLE_R_SPRITE_INDEX = 3
     80                          PADDLE_ROW         = 23
@@ -2676,40 +2676,40 @@
    173                          ; HBC-56 Program Metadata
    174                          ; -----------------------------------------------------------------------------
    175                          hbc56Meta:
-   176  8003 4c0f80425245414b...        +setHbcMetaTitle "BREAKOUT"
-   177  8044 a9400dcd7c8dcd7c           +setHbcMetaNES
-   178  804c 60                         rts
+   176  8003 4c1280425245414b...        +setHbcMetaTitle "BREAKOUT-56"
+   177  8024 a9400dcd7c8dcd7c           +setHbcMetaNES
+   178  802c 60                         rts
    179                          
    180                          ; -----------------------------------------------------------------------------
    181                          ; HBC-56 Program Entry
    182                          ; -----------------------------------------------------------------------------
    183                          hbc56Main:
    184                          
-   185  804d 78                         sei
+   185  802d 78                         sei
    186                          
    187                                  ; go to graphics II mode
-   188  804e 2023e6                     jsr tmsModeGraphicsII
+   188  802e 2023e6                     jsr tmsModeGraphicsII
    189                          
    190                                  ; disable display durint init
-   191  8051 a92020efe5                 +tmsDisableInterrupts
-   192  8056 a94020efe5                 +tmsDisableOutput
+   191  8031 a92020efe5                 +tmsDisableInterrupts
+   192  8036 a94020efe5                 +tmsDisableOutput
    193                          
    194                                  ; set backrground
-   195  805b a9f1                       +tmsColorFgBg TMS_WHITE, TMS_BLACK
-   196  805d 20cfe5                     jsr tmsSetBackground
+   195  803b a9f1                       +tmsColorFgBg TMS_WHITE, TMS_BLACK
+   196  803d 20cfe5                     jsr tmsSetBackground
    197                          
    198                                  ; set up graphics
-   199  8060 206d80                     jsr initVram
+   199  8040 204d80                     jsr initVram
    200                          
    201                                  ; set up audio
-   202  8063 209b87                     jsr initAudio
+   202  8043 207b87                     jsr initAudio
    203                          
    204                                  ; reset the game
-   205  8066 201a89                     jsr resetGame
+   205  8046 20fa88                     jsr resetGame
    206                          
-   207  8069 58                         cli
+   207  8049 58                         cli
    208                          
-   209  806a 4c67fe                     jmp hbc56Stop
+   209  804a 4c67fe                     jmp hbc56Stop
    210                          
    211                          
    212                          ; -----------------------------------------------------------------------------
@@ -2717,51 +2717,51 @@
    214                          ; -----------------------------------------------------------------------------
    215                          initVram:
    216                          
-   217  806d 207d80                     jsr clearVram
+   217  804d 205d80                     jsr clearVram
    218                          
    219                                  ; load the brick graphics
-   220  8070 20ea80                     jsr brickTilesToVram
+   220  8050 20ca80                     jsr brickTilesToVram
    221                          
    222                                  ; load the ui graphics
-   223  8073 208884                     jsr uiTilesToVram
+   223  8053 206884                     jsr uiTilesToVram
    224                          
-   225  8076 200c83                     jsr initSprites
+   225  8056 20ec82                     jsr initSprites
    226                          
-   227  8079 203782                     jsr generatePaddleGlyphs
+   227  8059 201782                     jsr generatePaddleGlyphs
    228                          
-   229  807c 60                         rts
+   229  805c 60                         rts
    230                          
    231                          ; -----------------------------------------------------------------------------
    232                          ; Clear/reset VRAM
    233                          ; -----------------------------------------------------------------------------
    234                          clearVram:
    235                                  ; clear the name table
-   236  807d 0878a9008d117f20...        +tmsSetAddrNameTable
-   237  8090 a900                       lda #0
-   238  8092 20b0e6                     jsr _tmsSendPage        
-   239  8095 20b0e6                     jsr _tmsSendPage
-   240  8098 20b0e6                     jsr _tmsSendPage
+   236  805d 0878a9008d117f20...        +tmsSetAddrNameTable
+   237  8070 a900                       lda #0
+   238  8072 20b0e6                     jsr _tmsSendPage        
+   239  8075 20b0e6                     jsr _tmsSendPage
+   240  8078 20b0e6                     jsr _tmsSendPage
    241                          
    242                                  ; set all color table entries to transparent
-   243  809b 0878a9008d117f20...        +tmsSetAddrColorTable
-   244  80ae a900                       +tmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
-   245  80b0 20a7e6                     jsr _tmsSendKb
-   246  80b3 20a7e6                     jsr _tmsSendKb
-   247  80b6 20a7e6                     jsr _tmsSendKb
-   248  80b9 20a7e6                     jsr _tmsSendKb
-   249  80bc 20a7e6                     jsr _tmsSendKb
-   250  80bf 20a7e6                     jsr _tmsSendKb        
+   243  807b 0878a9008d117f20...        +tmsSetAddrColorTable
+   244  808e a900                       +tmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
+   245  8090 20a7e6                     jsr _tmsSendKb
+   246  8093 20a7e6                     jsr _tmsSendKb
+   247  8096 20a7e6                     jsr _tmsSendKb
+   248  8099 20a7e6                     jsr _tmsSendKb
+   249  809c 20a7e6                     jsr _tmsSendKb
+   250  809f 20a7e6                     jsr _tmsSendKb        
    251                          
    252                                  ; clear the pattern table
-   253  80c2 0878a9008d117f20...        +tmsSetAddrPattTable
-   254  80d5 a900                       lda #0
-   255  80d7 20a7e6                     jsr _tmsSendKb
-   256  80da 20a7e6                     jsr _tmsSendKb
-   257  80dd 20a7e6                     jsr _tmsSendKb
-   258  80e0 20a7e6                     jsr _tmsSendKb
-   259  80e3 20a7e6                     jsr _tmsSendKb
-   260  80e6 20a7e6                     jsr _tmsSendKb
-   261  80e9 60                         rts
+   253  80a2 0878a9008d117f20...        +tmsSetAddrPattTable
+   254  80b5 a900                       lda #0
+   255  80b7 20a7e6                     jsr _tmsSendKb
+   256  80ba 20a7e6                     jsr _tmsSendKb
+   257  80bd 20a7e6                     jsr _tmsSendKb
+   258  80c0 20a7e6                     jsr _tmsSendKb
+   259  80c3 20a7e6                     jsr _tmsSendKb
+   260  80c6 20a7e6                     jsr _tmsSendKb
+   261  80c9 60                         rts
    262                          
    263                          ; -----------------------------------------------------------------------------
    264                          ; Write brick data to VRAM
@@ -2769,193 +2769,193 @@
    266                          brickTilesToVram:
    267                          
    268                                  ; brick patterns (for each bank)
-   269  80ea 0878a9608d117f20...        +tmsSetAddrPattTableIIBank0 BRICKS_TILE_INDEX
-   270  80fd a92e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
+   269  80ca 0878a9608d117f20...        +tmsSetAddrPattTableIIBank0 BRICKS_TILE_INDEX
+   270  80dd a90e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
    271                          
-   272  8119 0878a9608d117f20...        +tmsSetAddrPattTableIIBank1 BRICKS_TILE_INDEX
-   273  812c a92e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
+   272  80f9 0878a9608d117f20...        +tmsSetAddrPattTableIIBank1 BRICKS_TILE_INDEX
+   273  810c a90e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
    274                          
-   275  8148 0878a9608d117f20...        +tmsSetAddrPattTableIIBank2 BRICKS_TILE_INDEX
-   276  815b a92e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
+   275  8128 0878a9608d117f20...        +tmsSetAddrPattTableIIBank2 BRICKS_TILE_INDEX
+   276  813b a90e8524a9918525...        +tmsSendDataRpt block, 8 * BRICKS_WIDTH, BRICK_TYPES
    277                          
    278                                  ; brick colors (for each bank)
-   279  8177 0878a9608d117f20...        +tmsSetAddrColorTableIIBank0 BRICKS_TILE_INDEX
-   280  818a 20ba81                     jsr @sendBlocksPal
+   279  8157 0878a9608d117f20...        +tmsSetAddrColorTableIIBank0 BRICKS_TILE_INDEX
+   280  816a 209a81                     jsr @sendBlocksPal
    281                          
-   282  818d 0878a9608d117f20...        +tmsSetAddrColorTableIIBank1 BRICKS_TILE_INDEX
-   283  81a0 20ba81                     jsr @sendBlocksPal
+   282  816d 0878a9608d117f20...        +tmsSetAddrColorTableIIBank1 BRICKS_TILE_INDEX
+   283  8180 209a81                     jsr @sendBlocksPal
    284                          
-   285  81a3 0878a9608d117f20...        +tmsSetAddrColorTableIIBank2 BRICKS_TILE_INDEX
-   286  81b6 20ba81                     jsr @sendBlocksPal
+   285  8183 0878a9608d117f20...        +tmsSetAddrColorTableIIBank2 BRICKS_TILE_INDEX
+   286  8196 209a81                     jsr @sendBlocksPal
    287                          
-   288  81b9 60                         rts
+   288  8199 60                         rts
    289                          
    290                          @sendBlocksPal:
-   291  81ba a9768524a9918525...        +tmsSendData    redBlockPal, 8
-   292  81c7 a97e8524a9918525...        +tmsSendDataRpt redBlockPal + 8, 8, 2
-   293  81d9 a9668524a9918525...        +tmsSendData    yellowBlockPal, 8
-   294  81e6 a96e8524a9918525...        +tmsSendDataRpt yellowBlockPal + 8, 8, 2
-   295  81f8 a9568524a9918525...        +tmsSendData    greenBlockPal, 8
-   296  8205 a95e8524a9918525...        +tmsSendDataRpt greenBlockPal + 8, 8, 2
-   297  8217 a9468524a9918525...        +tmsSendData    blueBlockPal, 8
-   298  8224 a94e8524a9918525...        +tmsSendDataRpt blueBlockPal + 8, 8, 2
-   299  8236 60                         rts
+   291  819a a9568524a9918525...        +tmsSendData    redBlockPal, 8
+   292  81a7 a95e8524a9918525...        +tmsSendDataRpt redBlockPal + 8, 8, 2
+   293  81b9 a9468524a9918525...        +tmsSendData    yellowBlockPal, 8
+   294  81c6 a94e8524a9918525...        +tmsSendDataRpt yellowBlockPal + 8, 8, 2
+   295  81d8 a9368524a9918525...        +tmsSendData    greenBlockPal, 8
+   296  81e5 a93e8524a9918525...        +tmsSendDataRpt greenBlockPal + 8, 8, 2
+   297  81f7 a9268524a9918525...        +tmsSendData    blueBlockPal, 8
+   298  8204 a92e8524a9918525...        +tmsSendDataRpt blueBlockPal + 8, 8, 2
+   299  8216 60                         rts
    300                          
    301                          ; -----------------------------------------------------------------------------
    302                          ; Generate paddle graphics
    303                          ; -----------------------------------------------------------------------------
    304                          generatePaddleGlyphs:
-   305  8237 0878a9008d117f20...        +tmsSetAddrPattTableIIBank2 256 - 32
+   305  8217 0878a9008d117f20...        +tmsSetAddrPattTableIIBank2 256 - 32
    306                          
    307                                  ; copy paddle left to ram
-   308  824a ad0591854ead0691...        +memcpy TMP, paddlePatt, 8
+   308  822a ade590854eade690...        +memcpy TMP, paddlePatt, 8
    309                          
-   310  8272 a008                       ldy #8
+   310  8252 a008                       ldy #8
    311                          @generateNextPaddleLeft
    312                                  ; store in vram
-   313  8274 5a                         phy
-   314  8275 a94e8524a9008525...        +tmsSendData TMP, 8
-   315  8282 7a                         ply
-   316  8283 a200                       ldx #0
+   313  8254 5a                         phy
+   314  8255 a94e8524a9008525...        +tmsSendData TMP, 8
+   315  8262 7a                         ply
+   316  8263 a200                       ldx #0
    317                          
    318                                  ; shift each row right one pixel
    319                          @nextPaddleRowL
-   320  8285 564e                       lsr TMP, x
-   321  8287 e8                         inx
-   322  8288 e008                       cpx #8
-   323  828a d0f9                       bne @nextPaddleRowL
+   320  8265 564e                       lsr TMP, x
+   321  8267 e8                         inx
+   322  8268 e008                       cpx #8
+   323  826a d0f9                       bne @nextPaddleRowL
    324                          
    325                                  ; next tile?
-   326  828c 88                         dey
-   327  828d d0e5                       bne @generateNextPaddleLeft
+   326  826c 88                         dey
+   327  826d d0e5                       bne @generateNextPaddleLeft
    328                          
    329                                  ; send paddle centre to vram
-   330  828f a90d8524a9918525...        +tmsSendData paddlePatt + 8, 8
+   330  826f a9ed8524a9908525...        +tmsSendData paddlePatt + 8, 8
    331                          
    332                                  ; copy paddle right to ram
-   333  829c ad1591854ead1691...        +memcpy TMP, paddlePatt + 16, 8
+   333  827c adf590854eadf690...        +memcpy TMP, paddlePatt + 16, 8
    334                          
    335                          
-   336  82c4 a008                       ldy #8
+   336  82a4 a008                       ldy #8
    337                          @generateNextPaddleRight
    338                          
    339                                  ; store in vram
-   340  82c6 5a                         phy
-   341  82c7 a94e8524a9008525...        +tmsSendData TMP, 8
-   342  82d4 7a                         ply
-   343  82d5 a200                       ldx #0
+   340  82a6 5a                         phy
+   341  82a7 a94e8524a9008525...        +tmsSendData TMP, 8
+   342  82b4 7a                         ply
+   343  82b5 a200                       ldx #0
    344                          
    345                                  ; shift each row left one pixel
    346                          @nextPaddleRow
-   347  82d7 164e                       asl TMP, x
-   348  82d9 e8                         inx
-   349  82da e008                       cpx #8
-   350  82dc d0f9                       bne @nextPaddleRow
+   347  82b7 164e                       asl TMP, x
+   348  82b9 e8                         inx
+   349  82ba e008                       cpx #8
+   350  82bc d0f9                       bne @nextPaddleRow
    351                          
    352                                  ; next tile?
-   353  82de 88                         dey
-   354  82df d0e5                       bne @generateNextPaddleRight
+   353  82be 88                         dey
+   354  82bf d0e5                       bne @generateNextPaddleRight
    355                          
    356                                  ; set up paddle row colors
-   357  82e1 0878a9008d117f20...        +tmsSetAddrColorTableIIBank2 256 - 32
-   358  82f4 a9ed8524a9908525...        +tmsSendDataRpt paddlePal, 8, 32
-   359  830b 60                         rts
+   357  82c1 0878a9008d117f20...        +tmsSetAddrColorTableIIBank2 256 - 32
+   358  82d4 a9cd8524a9908525...        +tmsSendDataRpt paddlePal, 8, 32
+   359  82eb 60                         rts
    360                          
    361                          ; -----------------------------------------------------------------------------
    362                          ; Initialise sprites
    363                          ; -----------------------------------------------------------------------------
    364                          initSprites:
    365                                  ; create ball pattern
-   366  830c 0878a9008d117f20...        +tmsCreateSpritePattern BALL_SPRITE_INDEX, ballPattern
-   367  832f 0878a9088d117f20...        +tmsCreateSpritePattern BALL_SHADOW_INDEX, ballPattern + 8
+   366  82ec 0878a9008d117f20...        +tmsCreateSpritePattern BALL_SPRITE_INDEX, ballPattern
+   367  830f 0878a9088d117f20...        +tmsCreateSpritePattern BALL_SHADOW_INDEX, ballPattern + 8
    368                          
    369                                  ; create paddle highlight patterns
-   370  8352 0878a9108d117f20...        +tmsCreateSpritePattern PADDLE_L_SPRITE_INDEX, paddleLeftSpr
-   371  8375 0878a9188d117f20...        +tmsCreateSpritePattern PADDLE_R_SPRITE_INDEX, paddleRightSpr
+   370  8332 0878a9108d117f20...        +tmsCreateSpritePattern PADDLE_L_SPRITE_INDEX, paddleLeftSpr
+   371  8355 0878a9188d117f20...        +tmsCreateSpritePattern PADDLE_R_SPRITE_INDEX, paddleRightSpr
    372                                  
    373                                  ; create ball sprites
-   374  8398 0878a9008d117f20...        +tmsCreateSprite 0, 0, 0, $d0, BALL_BASE
-   375  83cb 0878a9048d117f20...        +tmsCreateSprite 1, 1, 0, $d0, BALL_SHADE
+   374  8378 0878a9008d117f20...        +tmsCreateSprite 0, 0, 0, $d0, BALL_BASE
+   375  83ab 0878a9048d117f20...        +tmsCreateSprite 1, 1, 0, $d0, BALL_SHADE
    376                          
    377                                  ; create paddle highlight sprites
-   378  83fe 0878a9088d117f20...        +tmsCreateSprite 2, 2, 0, 0, PADDLE_COLOR_HIGH
-   379  8431 0878a90c8d117f20...        +tmsCreateSprite 3, 3, 0, 0, PADDLE_COLOR_SHADE
+   378  83de 0878a9088d117f20...        +tmsCreateSprite 2, 2, 0, 0, PADDLE_COLOR_HIGH
+   379  8411 0878a90c8d117f20...        +tmsCreateSprite 3, 3, 0, 0, PADDLE_COLOR_SHADE
    380                          
-   381  8464 0878a9108d117f20...        +tmsSetLastSprite 3
-   382  8487 60                         rts
+   381  8444 0878a9108d117f20...        +tmsSetLastSprite 3
+   382  8467 60                         rts
    383                          
    384                          ; -----------------------------------------------------------------------------
    385                          ; Write UI elements to VRAM
    386                          ; -----------------------------------------------------------------------------
    387                          uiTilesToVram:
    388                                  ; border patterns
-   389  8488 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank0 BORDER_TILE_INDEX
-   390  849b a98b8524a9918525...        +tmsSendData borderTL, 10 * 8
-   391  84a8 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank1 BORDER_TILE_INDEX
-   392  84bb a98b8524a9918525...        +tmsSendData borderTL, 10 * 8
-   393  84c8 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank2 BORDER_TILE_INDEX
-   394  84db a98b8524a9918525...        +tmsSendData borderTL, 10 * 8
+   389  8468 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank0 BORDER_TILE_INDEX
+   390  847b a96b8524a9918525...        +tmsSendData borderTL, 10 * 8
+   391  8488 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank1 BORDER_TILE_INDEX
+   392  849b a96b8524a9918525...        +tmsSendData borderTL, 10 * 8
+   393  84a8 0878a9d08d117f20...        +tmsSetAddrPattTableIIBank2 BORDER_TILE_INDEX
+   394  84bb a96b8524a9918525...        +tmsSendData borderTL, 10 * 8
    395                          
    396                                  ; border palette
-   397  84e8 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank0 BORDER_TILE_INDEX
-   398  84fb 205f87                     jsr @sendBorderPal
-   399  84fe 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank1 BORDER_TILE_INDEX
-   400  8511 205f87                     jsr @sendBorderPal
-   401  8514 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank2 BORDER_TILE_INDEX
-   402  8527 205f87                     jsr @sendBorderPal
+   397  84c8 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank0 BORDER_TILE_INDEX
+   398  84db 203f87                     jsr @sendBorderPal
+   399  84de 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank1 BORDER_TILE_INDEX
+   400  84f1 203f87                     jsr @sendBorderPal
+   401  84f4 0878a9d08d117f20...        +tmsSetAddrColorTableIIBank2 BORDER_TILE_INDEX
+   402  8507 203f87                     jsr @sendBorderPal
    403                          
    404                                  ; title data
-   405  852a 0878a9008d117f20...        +tmsSetAddrPattTableIIBank0 TITLE_TILE_INDEX
-   406  853d a9e58524a9918525...        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
+   405  850a 0878a9008d117f20...        +tmsSetAddrPattTableIIBank0 TITLE_TILE_INDEX
+   406  851d a9c58524a9918525...        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
    407                          
-   408  854a 0878a9008d117f20...        +tmsSetAddrPattTableIIBank1 TITLE_TILE_INDEX
-   409  855d a9e58524a9918525...        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
+   408  852a 0878a9008d117f20...        +tmsSetAddrPattTableIIBank1 TITLE_TILE_INDEX
+   409  853d a9c58524a9918525...        +tmsSendData titlePatt, 8 * TITLE_WIDTH * TITLE_HEIGHT
    410                          
-   411  856a 0878a9008d117f20...        +tmsSetAddrColorTableIIBank0 128
-   412  857d a9758524a9928525...        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
-   413  8594 a97d8524a9928525...        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
+   411  854a 0878a9008d117f20...        +tmsSetAddrColorTableIIBank0 128
+   412  855d a9558524a9928525...        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
+   413  8574 a95d8524a9928525...        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
    414                          
-   415  85ab 0878a9008d117f20...        +tmsSetAddrColorTableIIBank1 128
-   416  85be a9758524a9928525...        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
-   417  85d5 a97d8524a9928525...        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
+   415  858b 0878a9008d117f20...        +tmsSetAddrColorTableIIBank1 128
+   416  859e a9558524a9928525...        +tmsSendDataRpt titlePal, 8, TITLE_WIDTH
+   417  85b5 a95d8524a9928525...        +tmsSendDataRpt titlePal + 8, 8, TITLE_WIDTH
    418                          
    419                                  ; label data
-   420  85ec 0878a9908d117f20...        +tmsSetAddrPattTableIIBank0 LEVEL_TILE_INDEX
-   421  85ff a9858524a9928525...        +tmsSendData levelPatt, 8 *LABEL_WIDTH * 3
+   420  85cc 0878a9908d117f20...        +tmsSetAddrPattTableIIBank0 LEVEL_TILE_INDEX
+   421  85df a9658524a9928525...        +tmsSendData levelPatt, 8 *LABEL_WIDTH * 3
    422                          
-   423  860c 0878a9908d117f20...        +tmsSetAddrPattTableIIBank1 LEVEL_TILE_INDEX
-   424  861f a9858524a9928525...        +tmsSendData levelPatt, 8 * LABEL_WIDTH * 3
+   423  85ec 0878a9908d117f20...        +tmsSetAddrPattTableIIBank1 LEVEL_TILE_INDEX
+   424  85ff a9658524a9928525...        +tmsSendData levelPatt, 8 * LABEL_WIDTH * 3
    425                          
-   426  862c 0878a9908d117f20...        +tmsSetAddrColorTableIIBank0 LEVEL_TILE_INDEX
-   427  863f a92d8524a9938525...        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
+   426  860c 0878a9908d117f20...        +tmsSetAddrColorTableIIBank0 LEVEL_TILE_INDEX
+   427  861f a90d8524a9938525...        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
    428                          
-   429  8656 0878a9908d117f20...        +tmsSetAddrColorTableIIBank1 LEVEL_TILE_INDEX
-   430  8669 a92d8524a9938525...        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
+   429  8636 0878a9908d117f20...        +tmsSetAddrColorTableIIBank1 LEVEL_TILE_INDEX
+   430  8649 a90d8524a9938525...        +tmsSendDataRpt labelPal, 8, LABEL_WIDTH * 3
    431                          
    432                                  ; digits data
    433                                  NUM_DIGITS = 10
-   434  8680 0878a9808d117f20...        +tmsSetAddrPattTableIIBank0 '0'
-   435  8693 a9358524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
-   436  86a0 0878a9808d117f20...        +tmsSetAddrPattTableIIBank1 '0'
-   437  86b3 a9358524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
-   438  86c0 0878a9808d117f20...        +tmsSetAddrPattTableIIBank2 '0'
-   439  86d3 a9358524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+   434  8660 0878a9808d117f20...        +tmsSetAddrPattTableIIBank0 '0'
+   435  8673 a9158524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+   436  8680 0878a9808d117f20...        +tmsSetAddrPattTableIIBank1 '0'
+   437  8693 a9158524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
+   438  86a0 0878a9808d117f20...        +tmsSetAddrPattTableIIBank2 '0'
+   439  86b3 a9158524a9938525...        +tmsSendData digitsPatt, 8 * NUM_DIGITS
    440                          
-   441  86e0 0878a9808d117f20...        +tmsSetAddrColorTableIIBank0 '0'
-   442  86f3 a9858524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+   441  86c0 0878a9808d117f20...        +tmsSetAddrColorTableIIBank0 '0'
+   442  86d3 a9658524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
    443                          
-   444  870a 0878a9808d117f20...        +tmsSetAddrColorTableIIBank1 '0'
-   445  871d a9858524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+   444  86ea 0878a9808d117f20...        +tmsSetAddrColorTableIIBank1 '0'
+   445  86fd a9658524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
    446                          
-   447  8734 0878a9808d117f20...        +tmsSetAddrColorTableIIBank2 '0'
-   448  8747 a9858524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
-   449  875e 60                         rts
+   447  8714 0878a9808d117f20...        +tmsSetAddrColorTableIIBank2 '0'
+   448  8727 a9658524a9938525...        +tmsSendDataRpt digitsPal, 8, NUM_DIGITS
+   449  873e 60                         rts
    450                          
    451                          @sendBorderPal
-   452  875f a9dc8524a9918525...        +tmsSendDataRpt borderPal + 1, 8, 3
-   453  8776 a9dd8524a9918525...        +tmsSendDataRpt borderPal + 2, 8, 6
-   454  878d a9db8524a9918525...        +tmsSendDataRpt borderPal,     8, 1
-   455  879a 60                         rts
+   452  873f a9bc8524a9918525...        +tmsSendDataRpt borderPal + 1, 8, 3
+   453  8756 a9bd8524a9918525...        +tmsSendDataRpt borderPal + 2, 8, 6
+   454  876d a9bb8524a9918525...        +tmsSendDataRpt borderPal,     8, 1
+   455  877a 60                         rts
    456                          
    457                          ; -----------------------------------------------------------------------------
    458                          ; Add two subpixel values
@@ -2992,10 +2992,10 @@
    489                          ; Initialise audio
    490                          ; -----------------------------------------------------------------------------
    491                          initAudio:
-   492  879b a9078d407fad427f...        +ayToneEnable AY_PSG0, AY_CHC
-   493  87ad a90a8d407fa9008d...        +aySetVolume AY_PSG0, AY_CHC, $00
-   494  87b7 a90d8d407fa9098d...        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
-   495  87c1 60                         rts
+   492  877b a9078d407fad427f...        +ayToneEnable AY_PSG0, AY_CHC
+   493  878d a90a8d407fa9008d...        +aySetVolume AY_PSG0, AY_CHC, $00
+   494  8797 a90d8d407fa9098d...        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
+   495  87a1 60                         rts
    496                          
    497                          ; -----------------------------------------------------------------------------
    498                          ; Play a note from the notes tables
@@ -3003,23 +3003,23 @@
    500                          ;   X = index into notes tables
    501                          ; -----------------------------------------------------------------------------
    502                          playNote:
-   503  87c2 854e                       sta TMP
+   503  87a2 854e                       sta TMP
    504                          
-   505  87c4 a900                       lda #0
-   506  87c6 a2048e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_L
-   507  87ce a2058e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_H
+   505  87a4 a900                       lda #0
+   506  87a6 a2048e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_L
+   507  87ae a2058e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_H
    508                          
-   509  87d6 a64e                       ldx TMP
-   510  87d8 bd8d93                     lda notesL, x
-   511  87db a2048e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_L
-   512  87e3 bdab93                     lda notesH, x
-   513  87e6 a2058e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_H
+   509  87b6 a64e                       ldx TMP
+   510  87b8 bd6d93                     lda notesL, x
+   511  87bb a2048e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_L
+   512  87c3 bd8b93                     lda notesH, x
+   513  87c6 a2058e407f8d417f           +ayWriteA AY_PSG0, AY_CHC_TONE_H
    514                          
-   515  87ee a90a8d407fa9108d...        +aySetVolumeEnvelope AY_PSG0, AY_CHC
-   516  87f8 a90d8d407fa9098d...        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
-   517  8802 a90b8d407fa9908d...        +aySetEnvelopePeriod AY_PSG0, AUDIO_TONE_PERIOD
+   515  87ce a90a8d407fa9108d...        +aySetVolumeEnvelope AY_PSG0, AY_CHC
+   516  87d8 a90d8d407fa9098d...        +aySetEnvShape AY_PSG0,AY_ENV_SHAPE_FADE_OUT
+   517  87e2 a90b8d407fa9908d...        +aySetEnvelopePeriod AY_PSG0, AUDIO_TONE_PERIOD
    518                          
-   519  8816 60                         rts
+   519  87f6 60                         rts
    520                          
    521                          
    522                          ; -----------------------------------------------------------------------------
@@ -3028,43 +3028,43 @@
    525                          ;   LEVEL = level number to load
    526                          ; -----------------------------------------------------------------------------
    527                          loadLevel:
-   528  8817 a544                       lda LEVEL
-   529  8819 3a                         dec
-   530  881a 2903                       and #$03
-   531  881c 0a                         asl
-   532  881d aa                         tax
+   528  87f7 a544                       lda LEVEL
+   529  87f9 3a                         dec
+   530  87fa 2903                       and #$03
+   531  87fc 0a                         asl
+   532  87fd aa                         tax
    533                          
-   534  881e bdc993                     lda levelMap, x
-   535  8821 8530                       sta MEM_SRC
-   536  8823 e8                         inx
-   537  8824 bdc993                     lda levelMap, X
-   538  8827 8531                       sta MEM_SRC + 1
+   534  87fe bda993                     lda levelMap, x
+   535  8801 8530                       sta MEM_SRC
+   536  8803 e8                         inx
+   537  8804 bda993                     lda levelMap, X
+   538  8807 8531                       sta MEM_SRC + 1
    539                          
-   540  8829 a900852ea904852f           +setMemCpyDst LEVEL_DATA
+   540  8809 a900852ea904852f           +setMemCpyDst LEVEL_DATA
    541                          
-   542  8831 a060                       ldy #LEVEL_SIZE
+   542  8811 a060                       ldy #LEVEL_SIZE
    543                          
-   544  8833 20a3e0                     jsr memcpySinglePage
+   544  8813 20a3e0                     jsr memcpySinglePage
    545                          
-   546  8836 60                         rts
+   546  8816 60                         rts
    547                          
    548                          ; -----------------------------------------------------------------------------
    549                          ; Render the level
    550                          ; -----------------------------------------------------------------------------
    551                          renderLevel:
-   552  8837 644a                       stz BLOCKS_LEFT
+   552  8817 644a                       stz BLOCKS_LEFT
    553                          
-   554  8839 a200                       ldx #0
+   554  8819 a200                       ldx #0
    555                          -
-   556  883b 204b88                     jsr renderBlock
-   557  883e bd0004                     lda LEVEL_DATA, x
-   558  8841 f002                       beq +
-   559  8843 e64a                       inc BLOCKS_LEFT
+   556  881b 202b88                     jsr renderBlock
+   557  881e bd0004                     lda LEVEL_DATA, x
+   558  8821 f002                       beq +
+   559  8823 e64a                       inc BLOCKS_LEFT
    560                          +
-   561  8845 e8                         inx
-   562  8846 e060                       cpx #LEVEL_SIZE
-   563  8848 d0f1                       bne -
-   564  884a 60                         rts
+   561  8825 e8                         inx
+   562  8826 e060                       cpx #LEVEL_SIZE
+   563  8828 d0f1                       bne -
+   564  882a 60                         rts
    565                          
    566                          
    567                          ; -----------------------------------------------------------------------------
@@ -3073,50 +3073,50 @@
    570                          ;   X = level brick index
    571                          ; -----------------------------------------------------------------------------
    572                          renderBlock:
-   573  884b da                         phx
+   573  882b da                         phx
    574                          
    575                                  ; calculate y tile
-   576  884c 864e                       stx TMP
-   577  884e 8a                         txa
-   578  884f 4a4a4a                     +div8   ; divide by level stride
-   579  8852 1a                         inc ; start at row 1
-   580  8853 a8                         tay
+   576  882c 864e                       stx TMP
+   577  882e 8a                         txa
+   578  882f 4a4a4a                     +div8   ; divide by level stride
+   579  8832 1a                         inc ; start at row 1
+   580  8833 a8                         tay
    581                          
    582                                  ; calculate x tile
-   583  8854 a54e                       lda TMP
-   584  8856 2907                       and #$07
-   585  8858 c907                       cmp #LEVEL_WIDTH
-   586  885a b02a                       bcs @endRender
-   587  885c 854e                       sta TMP
-   588  885e 0a                         asl
-   589  885f 38                         sec
-   590  8860 654e                       adc TMP
-   591  8862 aa                         tax
+   583  8834 a54e                       lda TMP
+   584  8836 2907                       and #$07
+   585  8838 c907                       cmp #LEVEL_WIDTH
+   586  883a b02a                       bcs @endRender
+   587  883c 854e                       sta TMP
+   588  883e 0a                         asl
+   589  883f 38                         sec
+   590  8840 654e                       adc TMP
+   591  8842 aa                         tax
    592                          
    593                                  ; set tms address
-   594  8863 20ede7                     jsr tmsSetPosTmpAddress
-   595  8866 2092e5                     jsr tmsSetAddressWrite
+   594  8843 20ede7                     jsr tmsSetPosTmpAddress
+   595  8846 2092e5                     jsr tmsSetAddressWrite
    596                          
-   597  8869 fa                         plx
-   598  886a da                         phx
+   597  8849 fa                         plx
+   598  884a da                         phx
    599                          
    600                                  ; get brick type
-   601  886b bd0004                     lda LEVEL_DATA, x
-   602  886e aa                         tax
+   601  884b bd0004                     lda LEVEL_DATA, x
+   602  884e aa                         tax
    603                          
    604                                  ; get brick tile index
-   605  886f bd8691                     lda tileData, x
+   605  884f bd6691                     lda tileData, x
    606                          
    607                                  ; render the three brick tiles
-   608  8872 8d107f2079e5               +tmsPut
-   609  8878 1a                         inc
-   610  8879 8d107f2079e5               +tmsPut
-   611  887f 1a                         inc
-   612  8880 8d107f2079e5               +tmsPut
+   608  8852 8d107f2079e5               +tmsPut
+   609  8858 1a                         inc
+   610  8859 8d107f2079e5               +tmsPut
+   611  885f 1a                         inc
+   612  8860 8d107f2079e5               +tmsPut
    613                          
    614                          @endRender:
-   615  8886 fa                         plx
-   616  8887 60                         rts
+   615  8866 fa                         plx
+   616  8867 60                         rts
    617                          
    618                          ; -----------------------------------------------------------------------------
    619                          ; Reset paddle and ball - start a round
@@ -3124,82 +3124,82 @@
    621                          resetPaddle:
    622                          
    623                                  ; reset paddle position an dsize
-   624  8888 a94c                       lda #(GAME_AREA_WIDTH - PADDLE_WIDTH) / 2 + GAME_AREA_LEFT
-   625  888a 8542                       sta PADX
-   626  888c a920                       lda #PADDLE_WIDTH
-   627  888e 8543                       sta PADW
+   624  8868 a94c                       lda #(GAME_AREA_WIDTH - PADDLE_WIDTH) / 2 + GAME_AREA_LEFT
+   625  886a 8542                       sta PADX
+   626  886c a920                       lda #PADDLE_WIDTH
+   627  886e 8543                       sta PADW
    628                          
    629                                  ; reset ball position and speed
-   630  8890 6439                       stz POSX_SUB
-   631  8892 643b                       stz POSY_SUB
+   630  8870 6439                       stz POSX_SUB
+   631  8872 643b                       stz POSY_SUB
    632                          
-   633  8894 643c                       stz SPDX
-   634  8896 a902                       lda #2
-   635  8898 853e                       sta SPDY
+   633  8874 643c                       stz SPDX
+   634  8876 a902                       lda #2
+   635  8878 853e                       sta SPDY
    636                          
-   637  889a 643d                       stz SPDX_SUB
-   638  889c 643f                       stz SPDY_SUB
+   637  887a 643d                       stz SPDX_SUB
+   638  887c 643f                       stz SPDY_SUB
    639                          
-   640  889e a901                       lda #1
-   641  88a0 8540                       sta DIRX
-   642  88a2 a9ff                       lda #-1
-   643  88a4 8541                       sta DIRY
+   640  887e a901                       lda #1
+   641  8880 8540                       sta DIRX
+   642  8882 a9ff                       lda #-1
+   643  8884 8541                       sta DIRY
    644                          
-   645  88a6 a959                       lda #GAME_AREA_WIDTH / 2 + GAME_AREA_LEFT - 3
-   646  88a8 8538                       sta POSX
+   645  8886 a959                       lda #GAME_AREA_WIDTH / 2 + GAME_AREA_LEFT - 3
+   646  8888 8538                       sta POSX
    647                          
-   648  88aa a9b5                       lda #PADDLE_SPRITE_Y - 6
-   649  88ac 853a                       sta POSY
+   648  888a a9b5                       lda #PADDLE_SPRITE_Y - 6
+   649  888c 853a                       sta POSY
    650                          
    651                                  ; clear the paddle row
-   652  88ae 0878a9e18d117f20...        +tmsSetPosWrite 1, PADDLE_ROW
-   653  88c1 a215a9008d107f20...        +tmsPutRpt 0, LEVEL_WIDTH * BRICKS_WIDTH
+   652  888e 0878a9e18d117f20...        +tmsSetPosWrite 1, PADDLE_ROW
+   653  88a1 a215a9008d107f20...        +tmsPutRpt 0, LEVEL_WIDTH * BRICKS_WIDTH
    654                          
-   655  88ce 20058d                     jsr renderPaddle
+   655  88ae 20e58c                     jsr renderPaddle
    656                          
    657                                  ; output ball count
-   658  88d1 0878a93a8d117f20...        +tmsSetPosWrite BALLS_X, BALLS_Y
-   659  88e4 a9308d107f2079e5           +tmsPut '0'
-   660  88ec a548                       lda BALLS
-   661  88ee 20098a                     jsr outputBCD
+   658  88b1 0878a93a8d117f20...        +tmsSetPosWrite BALLS_X, BALLS_Y
+   659  88c4 a9308d107f2079e5           +tmsPut '0'
+   660  88cc a548                       lda BALLS
+   661  88ce 20e989                     jsr outputBCD
    662                          
-   663  88f1 60                         rts
+   663  88d1 60                         rts
    664                          
    665                          ; -----------------------------------------------------------------------------
    666                          ; Ball lost
    667                          ; -----------------------------------------------------------------------------
    668                          loseBall:
    669                                  ; reset multiplier
-   670  88f2 a901                       lda #1
-   671  88f4 8549                       sta MULT
+   670  88d2 a901                       lda #1
+   671  88d4 8549                       sta MULT
    672                                  
    673                                  ; lose a ball
-   674  88f6 c648                       dec BALLS
+   674  88d6 c648                       dec BALLS
    675                          
    676                                  ; last ball?
-   677  88f8 3012                       bmi endGame
+   677  88d8 3012                       bmi endGame
    678                          
-   679  88fa 208888                     jsr resetPaddle
+   679  88da 206888                     jsr resetPaddle
    680                          
-   681  88fd a9908de37ca98f8d...        +hbc56SetVsyncCallback gameLoopWaitForStart
+   681  88dd a9708de37ca98f8d...        +hbc56SetVsyncCallback gameLoopWaitForStart
    682                          
-   683  8907 60                         rts
+   683  88e7 60                         rts
    684                          
    685                          ; -----------------------------------------------------------------------------
    686                          ; Advance a level
    687                          ; -----------------------------------------------------------------------------
    688                          nextLevel
-   689  8908 e644                       inc LEVEL
-   690  890a 8026                       bra startGameLevel
+   689  88e8 e644                       inc LEVEL
+   690  88ea 8026                       bra startGameLevel
    691                          
    692                          
    693                          ; -----------------------------------------------------------------------------
    694                          ; End game
    695                          ; -----------------------------------------------------------------------------
    696                          endGame:
-   697  890c 207f8c                     jsr renderEndGameBox
-   698  890f a9d48de37ca98f8d...        +hbc56SetVsyncCallback gameLoopGameOver
-   699  8919 60                         rts
+   697  88ec 205f8c                     jsr renderEndGameBox
+   698  88ef a9b48de37ca98f8d...        +hbc56SetVsyncCallback gameLoopGameOver
+   699  88f9 60                         rts
    700                          
    701                          
    702                          ; -----------------------------------------------------------------------------
@@ -3207,64 +3207,64 @@
    704                          ; -----------------------------------------------------------------------------
    705                          resetGame:
    706                                  ; level 1
-   707  891a a901                       lda #1
-   708  891c 8544                       sta LEVEL
+   707  88fa a901                       lda #1
+   708  88fc 8544                       sta LEVEL
    709                          
    710                                  ; score 0
-   711  891e a900                       lda #0
-   712  8920 8547                       sta SCORE_L
-   713  8922 8546                       sta SCORE_M
-   714  8924 8545                       sta SCORE_H
+   711  88fe a900                       lda #0
+   712  8900 8547                       sta SCORE_L
+   713  8902 8546                       sta SCORE_M
+   714  8904 8545                       sta SCORE_H
    715                          
    716                                  ; ball count
-   717  8926 a904                       lda #INITIAL_BALLS
-   718  8928 8548                       sta BALLS
+   717  8906 a904                       lda #INITIAL_BALLS
+   718  8908 8548                       sta BALLS
    719                          
-   720  892a a900                       lda #PADDLE_SPEED
-   721  892c 854b                       sta PADSPD
-   722  892e a964                       lda #PADDLE_SPEED_SUB
-   723  8930 854c                       sta PADSPD_SUB
+   720  890a a901                       lda #PADDLE_SPEED
+   721  890c 854b                       sta PADSPD
+   722  890e a900                       lda #PADDLE_SPEED_SUB
+   723  8910 854c                       sta PADSPD_SUB
    724                          
    725                          ; -----------------------------------------------------------------------------
    726                          ; Start a new level
    727                          ; -----------------------------------------------------------------------------
    728                          startGameLevel:
    729                          
-   730  8932 a92020efe5                 +tmsDisableInterrupts
-   731  8937 a94020efe5                 +tmsDisableOutput
+   730  8912 a92020efe5                 +tmsDisableInterrupts
+   731  8917 a94020efe5                 +tmsDisableOutput
    732                          
-   733  893c 0878a9008d117f20...        +tmsSpritePos 0, 0, $d0
-   734  895f 0878a9048d117f20...        +tmsSpritePos 1, 0, $d0
+   733  891c 0878a9008d117f20...        +tmsSpritePos 0, 0, $d0
+   734  893f 0878a9048d117f20...        +tmsSpritePos 1, 0, $d0
    735                          
-   736  8982 208888                     jsr resetPaddle
+   736  8962 206888                     jsr resetPaddle
    737                          
-   738  8985 201788                     jsr loadLevel
+   738  8965 20f787                     jsr loadLevel
    739                          
-   740  8988 203788                     jsr renderLevel
+   740  8968 201788                     jsr renderLevel
    741                          
-   742  898b 20248a                     jsr renderBorder
+   742  896b 20048a                     jsr renderBorder
    743                          
-   744  898e 20fb8b                     jsr renderLevelBox
+   744  896e 20db8b                     jsr renderLevelBox
    745                          
    746                                  ; output level number
-   747  8991 0878a9fa8d117f20...        +tmsSetPosWrite LEVEL_X, LEVEL_Y
-   748  89a4 a9308d107f2079e5           +tmsPut '0'
-   749  89ac a544                       lda LEVEL
-   750  89ae 20098a                     jsr outputBCD
+   747  8971 0878a9fa8d117f20...        +tmsSetPosWrite LEVEL_X, LEVEL_Y
+   748  8984 a9308d107f2079e5           +tmsPut '0'
+   749  898c a544                       lda LEVEL
+   750  898e 20e989                     jsr outputBCD
    751                          
-   752  89b1 a900                       lda #0
-   753  89b3 20d089                     jsr addScore
+   752  8991 a900                       lda #0
+   753  8993 20b089                     jsr addScore
    754                          
    755                                  ; set up game loop as vsync callback
-   756  89b6 adca7c                     lda HBC56_SECONDS_L
-   757  89b9 854d                       sta START_TIME
+   756  8996 adca7c                     lda HBC56_SECONDS_L
+   757  8999 854d                       sta START_TIME
    758                          
-   759  89bb a96b8de37ca98f8d...        +hbc56SetVsyncCallback gameLoopNewLevel
+   759  899b a94b8de37ca98f8d...        +hbc56SetVsyncCallback gameLoopNewLevel
    760                          
-   761  89c5 a94020e5e5                 +tmsEnableOutput
-   762  89ca a92020e5e5                 +tmsEnableInterrupts
+   761  89a5 a94020e5e5                 +tmsEnableOutput
+   762  89aa a92020e5e5                 +tmsEnableInterrupts
    763                          
-   764  89cf 60                         rts
+   764  89af 60                         rts
    765                          
    766                          ; -----------------------------------------------------------------------------
    767                          ; Add to the score
@@ -3272,30 +3272,30 @@
    769                          ;   A = BCD encoded points to add
    770                          ; -----------------------------------------------------------------------------
    771                          addScore:
-   772  89d0 f8                         sed
-   773  89d1 6547                       adc SCORE_L
-   774  89d3 8547                       sta SCORE_L
-   775  89d5 900e                       bcc @endAddScore
-   776  89d7 a900                       lda #0
-   777  89d9 6546                       adc SCORE_M
-   778  89db 8546                       sta SCORE_M
-   779  89dd 9006                       bcc @endAddScore
-   780  89df a900                       lda #0
-   781  89e1 6545                       adc SCORE_H
-   782  89e3 8545                       sta SCORE_H
+   772  89b0 f8                         sed
+   773  89b1 6547                       adc SCORE_L
+   774  89b3 8547                       sta SCORE_L
+   775  89b5 900e                       bcc @endAddScore
+   776  89b7 a900                       lda #0
+   777  89b9 6546                       adc SCORE_M
+   778  89bb 8546                       sta SCORE_M
+   779  89bd 9006                       bcc @endAddScore
+   780  89bf a900                       lda #0
+   781  89c1 6545                       adc SCORE_H
+   782  89c3 8545                       sta SCORE_H
    783                          
    784                          @endAddScore
-   785  89e5 d8                         cld
+   785  89c5 d8                         cld
    786                          
    787                                  ; output score
-   788  89e6 0878a9998d117f20...        +tmsSetPosWrite SCORE_X, SCORE_Y
-   789  89f9 a545                       lda SCORE_H
-   790  89fb 20198a                     jsr outputBCDLow
-   791  89fe a546                       lda SCORE_M
-   792  8a00 20098a                     jsr outputBCD
-   793  8a03 a547                       lda SCORE_L
-   794  8a05 20098a                     jsr outputBCD
-   795  8a08 60                         rts
+   788  89c6 0878a9998d117f20...        +tmsSetPosWrite SCORE_X, SCORE_Y
+   789  89d9 a545                       lda SCORE_H
+   790  89db 20f989                     jsr outputBCDLow
+   791  89de a546                       lda SCORE_M
+   792  89e0 20e989                     jsr outputBCD
+   793  89e3 a547                       lda SCORE_L
+   794  89e5 20e989                     jsr outputBCD
+   795  89e8 60                         rts
    796                          
    797                          ; -----------------------------------------------------------------------------
    798                          ; Output two BCD digits to current location
@@ -3303,175 +3303,175 @@
    800                          ;   A = BCD encoded value
    801                          ; -----------------------------------------------------------------------------
    802                          outputBCD:
-   803  8a09 854e                       sta TMP
-   804  8a0b 4a4a4a4a                   +lsr4
-   805  8a0f 0930                       ora #'0'
-   806  8a11 8d107f2079e5               +tmsPut
-   807  8a17 a54e                       lda TMP
+   803  89e9 854e                       sta TMP
+   804  89eb 4a4a4a4a                   +lsr4
+   805  89ef 0930                       ora #'0'
+   806  89f1 8d107f2079e5               +tmsPut
+   807  89f7 a54e                       lda TMP
    808                          outputBCDLow:
-   809  8a19 290f                       and #$0f
-   810  8a1b 0930                       ora #'0'
-   811  8a1d 8d107f2079e5               +tmsPut
-   812  8a23 60                         rts
+   809  89f9 290f                       and #$0f
+   810  89fb 0930                       ora #'0'
+   811  89fd 8d107f2079e5               +tmsPut
+   812  8a03 60                         rts
    813                          
    814                          ; -----------------------------------------------------------------------------
    815                          ; Render the game border and ui
    816                          ; -----------------------------------------------------------------------------
    817                          renderBorder:
    818                                  ; border top
-   819  8a24 0878a9008d117f20...        +tmsSetPosWrite BORDER_X, BORDER_Y
-   820  8a37 a91a8d107f2079e5           +tmsPut BORDER_TL_INDEX
-   821  8a3f a215a91b8d107f20...        +tmsPutRpt BORDER_TOP_INDEX, BORDER_WIDTH - 2
-   822  8a4c a91c8d107f2079e5           +tmsPut BORDER_TR_INDEX
+   819  8a04 0878a9008d117f20...        +tmsSetPosWrite BORDER_X, BORDER_Y
+   820  8a17 a91a8d107f2079e5           +tmsPut BORDER_TL_INDEX
+   821  8a1f a215a91b8d107f20...        +tmsPutRpt BORDER_TOP_INDEX, BORDER_WIDTH - 2
+   822  8a2c a91c8d107f2079e5           +tmsPut BORDER_TR_INDEX
    823                          
    824                                  ; left border
-   825  8a54 a200                       ldx #BORDER_X
-   826  8a56 a001                       ldy #BORDER_Y + 1
-   827  8a58 20ede7                     jsr tmsSetPosTmpAddress
-   828  8a5b 2092e5                     jsr tmsSetAddressWrite
-   829  8a5e a216                       ldx #BORDER_HEIGHT - 2
+   825  8a34 a200                       ldx #BORDER_X
+   826  8a36 a001                       ldy #BORDER_Y + 1
+   827  8a38 20ede7                     jsr tmsSetPosTmpAddress
+   828  8a3b 2092e5                     jsr tmsSetAddressWrite
+   829  8a3e a216                       ldx #BORDER_HEIGHT - 2
    830                          -
-   831  8a60 a91d8d107f2079e5           +tmsPut BORDER_L_INDEX
-   832  8a68 2086e5                     jsr tmsSetAddressNextRow
-   833  8a6b 2092e5                     jsr tmsSetAddressWrite
-   834  8a6e ca                         dex
-   835  8a6f d0ef                       bne -
-   836  8a71 a91f8d107f2079e5           +tmsPut BORDER_LB_INDEX
+   831  8a40 a91d8d107f2079e5           +tmsPut BORDER_L_INDEX
+   832  8a48 2086e5                     jsr tmsSetAddressNextRow
+   833  8a4b 2092e5                     jsr tmsSetAddressWrite
+   834  8a4e ca                         dex
+   835  8a4f d0ef                       bne -
+   836  8a51 a91f8d107f2079e5           +tmsPut BORDER_LB_INDEX
    837                          
    838                                  ; right border
-   839  8a79 a216                       ldx #BORDER_X + BORDER_WIDTH - 1
-   840  8a7b a001                       ldy #BORDER_Y + 1
-   841  8a7d 20ede7                     jsr tmsSetPosTmpAddress
-   842  8a80 2092e5                     jsr tmsSetAddressWrite
-   843  8a83 a216                       ldx #BORDER_HEIGHT - 2
+   839  8a59 a216                       ldx #BORDER_X + BORDER_WIDTH - 1
+   840  8a5b a001                       ldy #BORDER_Y + 1
+   841  8a5d 20ede7                     jsr tmsSetPosTmpAddress
+   842  8a60 2092e5                     jsr tmsSetAddressWrite
+   843  8a63 a216                       ldx #BORDER_HEIGHT - 2
    844                          -
-   845  8a85 a91e8d107f2079e5           +tmsPut BORDER_R_INDEX
-   846  8a8d 2086e5                     jsr tmsSetAddressNextRow
-   847  8a90 2092e5                     jsr tmsSetAddressWrite
-   848  8a93 ca                         dex
-   849  8a94 d0ef                       bne -
-   850  8a96 a9208d107f2079e5           +tmsPut BORDER_RB_INDEX
+   845  8a65 a91e8d107f2079e5           +tmsPut BORDER_R_INDEX
+   846  8a6d 2086e5                     jsr tmsSetAddressNextRow
+   847  8a70 2092e5                     jsr tmsSetAddressWrite
+   848  8a73 ca                         dex
+   849  8a74 d0ef                       bne -
+   850  8a76 a9208d107f2079e5           +tmsPut BORDER_RB_INDEX
    851                          
    852                                  ; render title
-   853  8a9e 0878a9178d117f20...        +tmsSetPosWrite TITLE_X, TITLE_Y
-   854  8ab1 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
-   855  8abe 0878a9378d117f20...        +tmsSetPosWrite TITLE_X, TITLE_Y + 1
-   856  8ad1 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
+   853  8a7e 0878a9178d117f20...        +tmsSetPosWrite TITLE_X, TITLE_Y
+   854  8a91 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+   855  8a9e 0878a9378d117f20...        +tmsSetPosWrite TITLE_X, TITLE_Y + 1
+   856  8ab1 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
    857                          
    858                                  ; render labels
-   859  8ade 0878a9b88d117f20...        +tmsSetPosWrite LEVEL_LABEL_X, LEVEL_LABEL_Y
-   860  8af1 a9928d107f2079e5...        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
+   859  8abe 0878a9b88d117f20...        +tmsSetPosWrite LEVEL_LABEL_X, LEVEL_LABEL_Y
+   860  8ad1 a9928d107f2079e5...        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
    861                          
-   862  8afe 0878a9588d117f20...        +tmsSetPosWrite SCORE_LABEL_X, SCORE_LABEL_Y
-   863  8b11 a9998d107f2079e5...        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
+   862  8ade 0878a9588d117f20...        +tmsSetPosWrite SCORE_LABEL_X, SCORE_LABEL_Y
+   863  8af1 a9998d107f2079e5...        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
    864                          
-   865  8b1e 0878a9f88d117f20...        +tmsSetPosWrite BALLS_LABEL_X, BALLS_LABEL_Y
-   866  8b31 a9a08d107f2079e5...        +tmsPutSeq BALLS_TILE_INDEX, LABEL_WIDTH
+   865  8afe 0878a9f88d117f20...        +tmsSetPosWrite BALLS_LABEL_X, BALLS_LABEL_Y
+   866  8b11 a9a08d107f2079e5...        +tmsPutSeq BALLS_TILE_INDEX, LABEL_WIDTH
    867                          
-   868  8b3e 60                         rts
+   868  8b1e 60                         rts
    869                          
    870                          ; -----------------------------------------------------------------------------
    871                          ; Render dialog box
    872                          ; -----------------------------------------------------------------------------
    873                          renderBox:
    874                                  ; border top
-   875  8b3f 0878a9e48d117f20...        +tmsSetPosWrite BOX_X, BOX_Y
-   876  8b52 a91a8d107f2079e5           +tmsPut BORDER_TL_INDEX
-   877  8b5a a20da91b8d107f20...        +tmsPutRpt BORDER_TOP_INDEX, BOX_W - 2
-   878  8b67 a91c8d107f2079e5           +tmsPut BORDER_TR_INDEX
+   875  8b1f 0878a9e48d117f20...        +tmsSetPosWrite BOX_X, BOX_Y
+   876  8b32 a91a8d107f2079e5           +tmsPut BORDER_TL_INDEX
+   877  8b3a a20da91b8d107f20...        +tmsPutRpt BORDER_TOP_INDEX, BOX_W - 2
+   878  8b47 a91c8d107f2079e5           +tmsPut BORDER_TR_INDEX
    879                          
-   880  8b6f a908                       lda #BOX_H - 2
-   881  8b71 854e                       sta TMP
+   880  8b4f a908                       lda #BOX_H - 2
+   881  8b51 854e                       sta TMP
    882                          
-   883  8b73 a204                       ldx #BOX_X
-   884  8b75 a008                       ldy #BOX_Y + 1
-   885  8b77 20ede7                     jsr tmsSetPosTmpAddress
-   886  8b7a 2092e5                     jsr tmsSetAddressWrite
+   883  8b53 a204                       ldx #BOX_X
+   884  8b55 a008                       ldy #BOX_Y + 1
+   885  8b57 20ede7                     jsr tmsSetPosTmpAddress
+   886  8b5a 2092e5                     jsr tmsSetAddressWrite
    887                          -
-   888  8b7d a91d8d107f2079e5           +tmsPut BORDER_L_INDEX
-   889  8b85 a20da9008d107f20...        +tmsPutRpt 0, BOX_W - 2
-   890  8b92 a91e8d107f2079e5           +tmsPut BORDER_R_INDEX
+   888  8b5d a91d8d107f2079e5           +tmsPut BORDER_L_INDEX
+   889  8b65 a20da9008d107f20...        +tmsPutRpt 0, BOX_W - 2
+   890  8b72 a91e8d107f2079e5           +tmsPut BORDER_R_INDEX
    891                          
-   892  8b9a 2086e5                     jsr tmsSetAddressNextRow
-   893  8b9d 2092e5                     jsr tmsSetAddressWrite
+   892  8b7a 2086e5                     jsr tmsSetAddressNextRow
+   893  8b7d 2092e5                     jsr tmsSetAddressWrite
    894                          
-   895  8ba0 c64e                       dec TMP
-   896  8ba2 d0d9                       bne -
+   895  8b80 c64e                       dec TMP
+   896  8b82 d0d9                       bne -
    897                          
    898                                  ; border bottom
-   899  8ba4 0878a9048d117f20...        +tmsSetPosWrite BOX_X, BOX_Y + BOX_H - 1
-   900  8bb7 a9218d107f2079e5           +tmsPut BORDER_BL_INDEX
-   901  8bbf a20da9238d107f20...        +tmsPutRpt BORDER_B_INDEX, BOX_W - 2
-   902  8bcc a9228d107f2079e5           +tmsPut BORDER_BR_INDEX
-   903  8bd4 60                         rts
+   899  8b84 0878a9048d117f20...        +tmsSetPosWrite BOX_X, BOX_Y + BOX_H - 1
+   900  8b97 a9218d107f2079e5           +tmsPut BORDER_BL_INDEX
+   901  8b9f a20da9238d107f20...        +tmsPutRpt BORDER_B_INDEX, BOX_W - 2
+   902  8bac a9228d107f2079e5           +tmsPut BORDER_BR_INDEX
+   903  8bb4 60                         rts
    904                          
    905                          ; -----------------------------------------------------------------------------
    906                          ; Clear the dialog box
    907                          ; -----------------------------------------------------------------------------
    908                          clearBox:
-   909  8bd5 a90a                       lda #BOX_H
-   910  8bd7 854e                       sta TMP
+   909  8bb5 a90a                       lda #BOX_H
+   910  8bb7 854e                       sta TMP
    911                          
-   912  8bd9 a204                       ldx #BOX_X
-   913  8bdb a007                       ldy #BOX_Y
-   914  8bdd 20ede7                     jsr tmsSetPosTmpAddress
-   915  8be0 2092e5                     jsr tmsSetAddressWrite
+   912  8bb9 a204                       ldx #BOX_X
+   913  8bbb a007                       ldy #BOX_Y
+   914  8bbd 20ede7                     jsr tmsSetPosTmpAddress
+   915  8bc0 2092e5                     jsr tmsSetAddressWrite
    916                          -
-   917  8be3 a20fa9008d107f20...        +tmsPutRpt 0, BOX_W
+   917  8bc3 a20fa9008d107f20...        +tmsPutRpt 0, BOX_W
    918                          
-   919  8bf0 2086e5                     jsr tmsSetAddressNextRow
-   920  8bf3 2092e5                     jsr tmsSetAddressWrite
+   919  8bd0 2086e5                     jsr tmsSetAddressNextRow
+   920  8bd3 2092e5                     jsr tmsSetAddressWrite
    921                          
-   922  8bf6 c64e                       dec TMP
-   923  8bf8 d0e9                       bne -
+   922  8bd6 c64e                       dec TMP
+   923  8bd8 d0e9                       bne -
    924                          
-   925  8bfa 60                         rts
+   925  8bda 60                         rts
    926                          
    927                          ; -----------------------------------------------------------------------------
    928                          ; Render the level dialog box
    929                          ; -----------------------------------------------------------------------------
    930                          renderLevelBox:
-   931  8bfb 203f8b                     jsr renderBox
+   931  8bdb 201f8b                     jsr renderBox
    932                          
-   933  8bfe 0878a9278d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
-   934  8c11 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
-   935  8c1e 0878a9478d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
-   936  8c31 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
+   933  8bde 0878a9278d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
+   934  8bf1 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+   935  8bfe 0878a9478d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
+   936  8c11 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
    937                          
-   938  8c3e 0878a9888d117f20...        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
-   939  8c51 a9928d107f2079e5...        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
+   938  8c1e 0878a9888d117f20...        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
+   939  8c31 a9928d107f2079e5...        +tmsPutSeq LEVEL_TILE_INDEX, LABEL_WIDTH
    940                          
-   941  8c5e 0878a9ca8d117f20...        +tmsSetPosWrite BOX_LABEL_X + 2, BOX_LABEL_Y + 2
-   942  8c71 a9308d107f2079e5           +tmsPut '0'
-   943  8c79 a544                       lda LEVEL
-   944  8c7b 20098a                     jsr outputBCD
+   941  8c3e 0878a9ca8d117f20...        +tmsSetPosWrite BOX_LABEL_X + 2, BOX_LABEL_Y + 2
+   942  8c51 a9308d107f2079e5           +tmsPut '0'
+   943  8c59 a544                       lda LEVEL
+   944  8c5b 20e989                     jsr outputBCD
    945                          
-   946  8c7e 60                         rts
+   946  8c5e 60                         rts
    947                          
    948                          ; -----------------------------------------------------------------------------
    949                          ; Render the end game dialog box
    950                          ; -----------------------------------------------------------------------------
    951                          renderEndGameBox:
-   952  8c7f 203f8b                     jsr renderBox
+   952  8c5f 201f8b                     jsr renderBox
    953                          
-   954  8c82 0878a9278d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
-   955  8c95 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
-   956  8ca2 0878a9478d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
-   957  8cb5 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
+   954  8c62 0878a9278d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y
+   955  8c75 a9808d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX, TITLE_WIDTH
+   956  8c82 0878a9478d117f20...        +tmsSetPosWrite BOX_TITLE_X, BOX_TITLE_Y + 1
+   957  8c95 a9898d107f2079e5...        +tmsPutSeq TITLE_TILE_INDEX + TITLE_WIDTH, TITLE_WIDTH
    958                          
-   959  8cc2 0878a9888d117f20...        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
-   960  8cd5 a9998d107f2079e5...        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
+   959  8ca2 0878a9888d117f20...        +tmsSetPosWrite BOX_LABEL_X, BOX_LABEL_Y
+   960  8cb5 a9998d107f2079e5...        +tmsPutSeq SCORE_TILE_INDEX, LABEL_WIDTH
    961                          
-   962  8ce2 0878a9c98d117f20...        +tmsSetPosWrite BOX_LABEL_X + 1, BOX_LABEL_Y + 2
+   962  8cc2 0878a9c98d117f20...        +tmsSetPosWrite BOX_LABEL_X + 1, BOX_LABEL_Y + 2
    963                          
-   964  8cf5 a545                       lda SCORE_H
-   965  8cf7 20198a                     jsr outputBCDLow
-   966  8cfa a546                       lda SCORE_M
-   967  8cfc 20098a                     jsr outputBCD
-   968  8cff a547                       lda SCORE_L
-   969  8d01 20098a                     jsr outputBCD
+   964  8cd5 a545                       lda SCORE_H
+   965  8cd7 20f989                     jsr outputBCDLow
+   966  8cda a546                       lda SCORE_M
+   967  8cdc 20e989                     jsr outputBCD
+   968  8cdf a547                       lda SCORE_L
+   969  8ce1 20e989                     jsr outputBCD
    970                          
-   971  8d04 60                         rts
+   971  8ce4 60                         rts
    972                          
    973                          ; -----------------------------------------------------------------------------
    974                          ; Render the paddle
@@ -3479,114 +3479,114 @@
    976                          renderPaddle:
    977                          
    978                                  ; only support paddles > 8 pixels
-   979  8d05 a543                       lda PADW
-   980  8d07 c908                       cmp #8
-   981  8d09 b001                       bcs +
-   982  8d0b 60                         rts
+   979  8ce5 a543                       lda PADW
+   980  8ce7 c908                       cmp #8
+   981  8ce9 b001                       bcs +
+   982  8ceb 60                         rts
    983                          +
    984                          
    985                                  ; find paddle offset tile (x tile)
-   986  8d0c a542                       lda PADX
-   987  8d0e 4a4a4a                     +div8
-   988  8d11 854e                       sta TMP
-   989  8d13 c901                       cmp #1
-   990  8d15 f001                       beq +
-   991  8d17 3a                         dec
+   986  8cec a542                       lda PADX
+   987  8cee 4a4a4a                     +div8
+   988  8cf1 854e                       sta TMP
+   989  8cf3 c901                       cmp #1
+   990  8cf5 f001                       beq +
+   991  8cf7 3a                         dec
    992                          +
    993                                  ; set tms address
-   994  8d18 aa                         tax
-   995  8d19 a017                       ldy #PADDLE_ROW
-   996  8d1b 20ede8                     jsr tmsSetPosWrite
+   994  8cf8 aa                         tax
+   995  8cf9 a017                       ldy #PADDLE_ROW
+   996  8cfb 20ede8                     jsr tmsSetPosWrite
    997                          
    998                                  ; output a blank tile
-   999  8d1e a54e                       lda TMP
-  1000  8d20 c901                       cmp #1
-  1001  8d22 f008                       beq +
-  1002  8d24 a9008d107f2079e5           +tmsPut 0
+   999  8cfe a54e                       lda TMP
+  1000  8d00 c901                       cmp #1
+  1001  8d02 f008                       beq +
+  1002  8d04 a9008d107f2079e5           +tmsPut 0
   1003                          +
   1004                                  ; find paddle pixel offset within the start tile
   1005                                  ; and store in x        
-  1006  8d2c a542                       lda PADX
-  1007  8d2e 2907                       and #$07
-  1008  8d30 aa                         tax
+  1006  8d0c a542                       lda PADX
+  1007  8d0e 2907                       and #$07
+  1008  8d10 aa                         tax
   1009                          
   1010                                  ; store pixels remaining in TMP
-  1011  8d31 18                         clc
-  1012  8d32 6543                       adc PADW
-  1013  8d34 38                         sec
-  1014  8d35 e908                       sbc #8
-  1015  8d37 854e                       sta TMP
+  1011  8d11 18                         clc
+  1012  8d12 6543                       adc PADW
+  1013  8d14 38                         sec
+  1014  8d15 e908                       sbc #8
+  1015  8d17 854e                       sta TMP
   1016                          
   1017                                  ; find the correct tile index
-  1018  8d39 bd1d91                     lda leftPatterns, x
-  1019  8d3c 8d107f2079e5               +tmsPut
+  1018  8d19 bdfd90                     lda leftPatterns, x
+  1019  8d1c 8d107f2079e5               +tmsPut
   1020                          
   1021                          @loop
   1022                                  ; home many pixels left?
-  1023  8d42 a54e                       lda TMP
-  1024  8d44 f01b                       beq @doneDraw
+  1023  8d22 a54e                       lda TMP
+  1024  8d24 f01b                       beq @doneDraw
   1025                          
   1026                                  ; get pixel count for this tile
   1027                                  ; 9 or more? call it 8
-  1028  8d46 c909                       cmp #9
-  1029  8d48 9002                       bcc +
-  1030  8d4a a908                       lda #8
+  1028  8d26 c909                       cmp #9
+  1029  8d28 9002                       bcc +
+  1030  8d2a a908                       lda #8
   1031                          +
   1032                                  ; compute remaining pixels
-  1033  8d4c aa                         tax
-  1034  8d4d a54e                       lda TMP
-  1035  8d4f 864e                       stx TMP
-  1036  8d51 38                         sec
-  1037  8d52 e54e                       sbc TMP
-  1038  8d54 854e                       sta TMP
+  1033  8d2c aa                         tax
+  1034  8d2d a54e                       lda TMP
+  1035  8d2f 864e                       stx TMP
+  1036  8d31 38                         sec
+  1037  8d32 e54e                       sbc TMP
+  1038  8d34 854e                       sta TMP
   1039                          
   1040                                  ; find the correct tile index
-  1041  8d56 bd2591                     lda rightPatterns, x
-  1042  8d59 8d107f2079e5               +tmsPut
-  1043  8d5f 80e1                       bra @loop
+  1041  8d36 bd0591                     lda rightPatterns, x
+  1042  8d39 8d107f2079e5               +tmsPut
+  1043  8d3f 80e1                       bra @loop
   1044                          
   1045                          @doneDraw:
   1046                          
   1047                                  ; output an empty tile
-  1048  8d61 a542                       lda PADX
-  1049  8d63 18                         clc
-  1050  8d64 6543                       adc PADW
-  1051  8d66 c9a8                       cmp #GAME_AREA_RIGHT-8
-  1052  8d68 b008                       bcs +
-  1053  8d6a a9008d107f2079e5           +tmsPut 0
+  1048  8d41 a542                       lda PADX
+  1049  8d43 18                         clc
+  1050  8d44 6543                       adc PADW
+  1051  8d46 c9a8                       cmp #GAME_AREA_RIGHT-8
+  1052  8d48 b008                       bcs +
+  1053  8d4a a9008d107f2079e5           +tmsPut 0
   1054                          +
   1055                          
   1056                                  ; reposition the paddle highlight sprites
-  1057  8d72 a642                       ldx PADX
-  1058  8d74 a0bb                       ldy #PADDLE_SPRITE_Y
-  1059  8d76 0878a9088d117f20...        +tmsSpritePosXYReg PADDLE_L_SPRITE_INDEX
-  1060  8d97 18                         clc
-  1061  8d98 8a                         txa
-  1062  8d99 6543                       adc PADW
-  1063  8d9b 3a                         dec
-  1064  8d9c aa                         tax
-  1065  8d9d 0878a90c8d117f20...        +tmsSpritePosXYReg PADDLE_R_SPRITE_INDEX
-  1066  8dbe 60                         rts
+  1057  8d52 a642                       ldx PADX
+  1058  8d54 a0bb                       ldy #PADDLE_SPRITE_Y
+  1059  8d56 0878a9088d117f20...        +tmsSpritePosXYReg PADDLE_L_SPRITE_INDEX
+  1060  8d77 18                         clc
+  1061  8d78 8a                         txa
+  1062  8d79 6543                       adc PADW
+  1063  8d7b 3a                         dec
+  1064  8d7c aa                         tax
+  1065  8d7d 0878a90c8d117f20...        +tmsSpritePosXYReg PADDLE_R_SPRITE_INDEX
+  1066  8d9e 60                         rts
   1067                          
   1068                          ; -----------------------------------------------------------------------------
   1069                          ; Render the ball
   1070                          ; -----------------------------------------------------------------------------
   1071                          renderBall:
   1072                                  ; get ball pixel position (rounding subpixel)
-  1073  8dbf a638                       ldx POSX
-  1074  8dc1 2439                       bit POSX_SUB
-  1075  8dc3 1001                       bpl +
-  1076  8dc5 e8                         inx
+  1073  8d9f a638                       ldx POSX
+  1074  8da1 2439                       bit POSX_SUB
+  1075  8da3 1001                       bpl +
+  1076  8da5 e8                         inx
   1077                          +
-  1078  8dc6 a43a                       ldy POSY
-  1079  8dc8 243b                       bit POSY_SUB
-  1080  8dca 1001                       bpl +
-  1081  8dcc c8                         iny
+  1078  8da6 a43a                       ldy POSY
+  1079  8da8 243b                       bit POSY_SUB
+  1080  8daa 1001                       bpl +
+  1081  8dac c8                         iny
   1082                          +
   1083                                  ; update ball sprite locations
-  1084  8dcd 0878a9008d117f20...        +tmsSpritePosXYReg BALL_SPRITE_INDEX
-  1085  8dee 0878a9048d117f20...        +tmsSpritePosXYReg BALL_SHADOW_INDEX
-  1086  8e0f 60                         rts
+  1084  8dad 0878a9008d117f20...        +tmsSpritePosXYReg BALL_SPRITE_INDEX
+  1085  8dce 0878a9048d117f20...        +tmsSpritePosXYReg BALL_SHADOW_INDEX
+  1086  8def 60                         rts
   1087                          
   1088                          ; -----------------------------------------------------------------------------
   1089                          ; convert a pixel position to a game brick index
@@ -3599,41 +3599,41 @@
   1096                          posToLevelCell:
   1097                          
   1098                                  ; compute offset for x tile index
-  1099  8e10 8a                         txa
-  1100  8e11 4a4a4a                     +div8
-  1101  8e14 aa                         tax
-  1102  8e15 bd2e8e                     lda @xPosToLevelCell, x
+  1099  8df0 8a                         txa
+  1100  8df1 4a4a4a                     +div8
+  1101  8df4 aa                         tax
+  1102  8df5 bd0e8e                     lda @xPosToLevelCell, x
   1103                          
   1104                                  ; not valid? bail
-  1105  8e18 c9ff                       cmp #NO_BRICK
-  1106  8e1a f011                       beq @outOfBounds
+  1105  8df8 c9ff                       cmp #NO_BRICK
+  1106  8dfa f011                       beq @outOfBounds
   1107                          
-  1108  8e1c 854e                       sta TMP
+  1108  8dfc 854e                       sta TMP
   1109                          
   1110                                  ; compute offset for y tile index
-  1111  8e1e 98                         tya
-  1112  8e1f 4a4a4a                     +div8
-  1113  8e22 a8                         tay
-  1114  8e23 b94a8e                     lda @yPosToLevelCell, y
+  1111  8dfe 98                         tya
+  1112  8dff 4a4a4a                     +div8
+  1113  8e02 a8                         tay
+  1114  8e03 b92a8e                     lda @yPosToLevelCell, y
   1115                          
   1116                                  ; not valid? bail
-  1117  8e26 c9ff                       cmp #NO_BRICK
-  1118  8e28 f003                       beq @outOfBounds
+  1117  8e06 c9ff                       cmp #NO_BRICK
+  1118  8e08 f003                       beq @outOfBounds
   1119                          
   1120                                  ; both valid. sum them to get a level index
-  1121  8e2a 18                         clc
-  1122  8e2b 654e                       adc TMP
+  1121  8e0a 18                         clc
+  1122  8e0b 654e                       adc TMP
   1123                          
   1124                          @outOfBounds:
-  1125  8e2d 60                         rts
+  1125  8e0d 60                         rts
   1126                          
   1127                          ; convert x tile index to level offset
   1128                          @xPosToLevelCell:
-  1129  8e2e ff00000001010102...!byte NO_BRICK, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, NO_BRICK, NO_BRICK, NO_BRICK
+  1129  8e0e ff00000001010102...!byte NO_BRICK, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, NO_BRICK, NO_BRICK, NO_BRICK
   1130                          
   1131                          ; convert y tile index to level offset
   1132                          @yPosToLevelCell:
-  1133  8e4a ff00081018202830...!byte NO_BRICK, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, NO_BRICK        
+  1133  8e2a ff00081018202830...!byte NO_BRICK, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, NO_BRICK        
   1134                          
   1135                          
   1136                          ; -----------------------------------------------------------------------------
@@ -3653,33 +3653,33 @@
   1150                          ;   X = game brick index
   1151                          ; -----------------------------------------------------------------------------
   1152                          hitBrick:
-  1153  8e5b a900                       lda #0
-  1154  8e5d 9d0004                     sta LEVEL_DATA, x
+  1153  8e3b a900                       lda #0
+  1154  8e3d 9d0004                     sta LEVEL_DATA, x
   1155                          
   1156                                  ; clear brick
-  1157  8e60 204b88                     jsr renderBlock
+  1157  8e40 202b88                     jsr renderBlock
   1158                          
   1159                                  ; bounce ball
-  1160  8e63 a54149ff1a8541             +negate DIRY
+  1160  8e43 a54149ff1a8541             +negate DIRY
   1161                          
   1162                                  ; add to score (multiplier times)
-  1163  8e6a a649                       ldx MULT
+  1163  8e4a a649                       ldx MULT
   1164                          -
   1165                                  ; increment score
-  1166  8e6c a925                       lda #$25
-  1167  8e6e 20d089                     jsr addScore
-  1168  8e71 ca                         dex
-  1169  8e72 d0f8                       bne -
+  1166  8e4c a925                       lda #$25
+  1167  8e4e 20b089                     jsr addScore
+  1168  8e51 ca                         dex
+  1169  8e52 d0f8                       bne -
   1170                          
   1171                                  ; increment multiplier
-  1172  8e74 e649                       inc MULT
+  1172  8e54 e649                       inc MULT
   1173                          
   1174                                  ; play a tone based on multiplier
-  1175  8e76 a549                       lda MULT
-  1176  8e78 1a                         inc
-  1177  8e79 1a                         inc
-  1178  8e7a 20c287                     jsr playNote
-  1179  8e7d 60                         rts
+  1175  8e56 a549                       lda MULT
+  1176  8e58 1a                         inc
+  1177  8e59 1a                         inc
+  1178  8e5a 20a287                     jsr playNote
+  1179  8e5d 60                         rts
   1180                          
   1181                          ; -----------------------------------------------------------------------------
   1182                          ; Call when we hit the paddle
@@ -3687,32 +3687,32 @@
   1184                          hitPaddle:
   1185                                  
   1186                                  ; paddle hit
-  1187  8e7e a54149ff1a8541             +negate DIRY
+  1187  8e5e a54149ff1a8541             +negate DIRY
   1188                          
   1189                                  ; accelerate ball
-  1190  8e85 a2eb2075f3d023             +kbBranchIfPressed KB_SCANCODE_ARROW_LEFT, @leftPressed
-  1191  8e8c 48a902203ef268b0...        +nes1BranchIfPressed NES_LEFT, @leftPressed
+  1190  8e65 a2eb2075f3d023             +kbBranchIfPressed KB_SCANCODE_ARROW_LEFT, @leftPressed
+  1191  8e6c 48a902203ef268b0...        +nes1BranchIfPressed NES_LEFT, @leftPressed
   1192                          @doneLeftCheck:
   1193                          
-  1194  8e95 a2f42075f3d018             +kbBranchIfPressed KB_SCANCODE_ARROW_RIGHT, @rightPressed
-  1195  8e9c 48a901203ef268b0...        +nes1BranchIfPressed NES_RIGHT, @rightPressed
+  1194  8e75 a2f42075f3d018             +kbBranchIfPressed KB_SCANCODE_ARROW_RIGHT, @rightPressed
+  1195  8e7c 48a901203ef268b0...        +nes1BranchIfPressed NES_RIGHT, @rightPressed
   1196                          @doneRightCheck:
   1197                          
   1198                                  ; reset multiplier
-  1199  8ea5 a901                       lda #1
-  1200  8ea7 8549                       sta MULT
+  1199  8e85 a901                       lda #1
+  1200  8e87 8549                       sta MULT
   1201                          
-  1202  8ea9 a906                       lda #TONE_PADDLE
-  1203  8eab 20c287                     jsr playNote
-  1204  8eae 60                         rts
+  1202  8e89 a906                       lda #TONE_PADDLE
+  1203  8e8b 20a287                     jsr playNote
+  1204  8e8e 60                         rts
   1205                          
   1206                          @leftPressed:
-  1207  8eaf 20b98e                     jsr @pushLeft
-  1208  8eb2 80e1                       bra @doneLeftCheck
+  1207  8e8f 20998e                     jsr @pushLeft
+  1208  8e92 80e1                       bra @doneLeftCheck
   1209                          
   1210                          @rightPressed:
-  1211  8eb4 20f48e                     jsr @pushRight
-  1212  8eb7 80ec                       bra @doneRightCheck
+  1211  8e94 20d48e                     jsr @pushRight
+  1212  8e97 80ec                       bra @doneRightCheck
   1213                          
   1214                          
   1215                          
@@ -3720,31 +3720,31 @@
   1217                          ; Accelerate ball left based on paddle movement
   1218                          ; -----------------------------------------------------------------------------
   1219                          @pushLeft:
-  1220  8eb9 a9ff                       lda #-1
-  1221  8ebb 854e                       sta TMP
-  1222  8ebd 244e101318a53d65...        +addSubPixel SPDX, PADSPD, TMP
+  1220  8e99 a9ff                       lda #-1
+  1221  8e9b 854e                       sta TMP
+  1222  8e9d 244e101318a53d65...        +addSubPixel SPDX, PADSPD, TMP
   1223                          
-  1224  8ee1 a53c                       lda SPDX
-  1225  8ee3 100e                       bpl +
-  1226  8ee5 a53c49ff1a853c             +negate SPDX
-  1227  8eec a54049ff1a8540             +negate DIRX
+  1224  8ec1 a53c                       lda SPDX
+  1225  8ec3 100e                       bpl +
+  1226  8ec5 a53c49ff1a853c             +negate SPDX
+  1227  8ecc a54049ff1a8540             +negate DIRX
   1228                          +
-  1229  8ef3 60                         rts
+  1229  8ed3 60                         rts
   1230                          
   1231                          ; -----------------------------------------------------------------------------
   1232                          ; Accelerate ball right based on paddle movement
   1233                          ; -----------------------------------------------------------------------------
   1234                          @pushRight:
-  1235  8ef4 a901                       lda #1
-  1236  8ef6 854e                       sta TMP
-  1237  8ef8 244e101318a53d65...        +addSubPixel SPDX, PADSPD, TMP
+  1235  8ed4 a901                       lda #1
+  1236  8ed6 854e                       sta TMP
+  1237  8ed8 244e101318a53d65...        +addSubPixel SPDX, PADSPD, TMP
   1238                          
-  1239  8f1c a53c                       lda SPDX
-  1240  8f1e 100e                       bpl +
-  1241  8f20 a53c49ff1a853c             +negate SPDX
-  1242  8f27 a54049ff1a8540             +negate DIRX
+  1239  8efc a53c                       lda SPDX
+  1240  8efe 100e                       bpl +
+  1241  8f00 a53c49ff1a853c             +negate SPDX
+  1242  8f07 a54049ff1a8540             +negate DIRX
   1243                          +
-  1244  8f2e 60                         rts
+  1244  8f0e 60                         rts
   1245                          
   1246                          ; -----------------------------------------------------------------------------
   1247                          ; Handle paddle input. Affect position
@@ -3752,36 +3752,36 @@
   1249                          handlePaddleInput:
   1250                          
   1251                                  ; left?
-  1252  8f2f a21c2075f3d01a             +kbBranchIfPressed KB_SCANCODE_A, @leftPressed
-  1253  8f36 48a902203ef268b0...        +nes1BranchIfPressed NES_LEFT, @leftPressed
+  1252  8f0f a21c2075f3d01a             +kbBranchIfPressed KB_SCANCODE_A, @leftPressed
+  1253  8f16 48a902203ef268b0...        +nes1BranchIfPressed NES_LEFT, @leftPressed
   1254                          @doneLeftCheck:
   1255                          
   1256                                  ; right?
-  1257  8f3f a2232075f3d016             +kbBranchIfPressed KB_SCANCODE_D, @rightPressed
-  1258  8f46 48a901203ef268b0...        +nes1BranchIfPressed NES_RIGHT, @rightPressed
+  1257  8f1f a2232075f3d016             +kbBranchIfPressed KB_SCANCODE_D, @rightPressed
+  1258  8f26 48a901203ef268b0...        +nes1BranchIfPressed NES_RIGHT, @rightPressed
   1259                          
   1260                          @doneRightCheck:
   1261                          
   1262                          
-  1263  8f4f 60                         rts
+  1263  8f2f 60                         rts
   1264                          
   1265                          @leftPressed:
-  1266  8f50 a542                       lda PADX
-  1267  8f52 c90a                       cmp #GAME_AREA_LEFT + 2
-  1268  8f54 90e9                       bcc @doneLeftCheck
-  1269  8f56 c642                       dec PADX
-  1270  8f58 c642                       dec PADX
-  1271  8f5a 80e3                       bra @doneLeftCheck
+  1266  8f30 a542                       lda PADX
+  1267  8f32 c90a                       cmp #GAME_AREA_LEFT + 2
+  1268  8f34 90e9                       bcc @doneLeftCheck
+  1269  8f36 c642                       dec PADX
+  1270  8f38 c642                       dec PADX
+  1271  8f3a 80e3                       bra @doneLeftCheck
   1272                          
   1273                          @rightPressed:
-  1274  8f5c a542                       lda PADX
-  1275  8f5e 18                         clc
-  1276  8f5f 6543                       adc PADW
-  1277  8f61 c9ae                       cmp #GAME_AREA_RIGHT-2
-  1278  8f63 b0ea                       bcs @doneRightCheck
-  1279  8f65 e642                       inc PADX
-  1280  8f67 e642                       inc PADX
-  1281  8f69 80e4                       bra @doneRightCheck
+  1274  8f3c a542                       lda PADX
+  1275  8f3e 18                         clc
+  1276  8f3f 6543                       adc PADW
+  1277  8f41 c9ae                       cmp #GAME_AREA_RIGHT-2
+  1278  8f43 b0ea                       bcs @doneRightCheck
+  1279  8f45 e642                       inc PADX
+  1280  8f47 e642                       inc PADX
+  1281  8f49 80e4                       bra @doneRightCheck
   1282                          
   1283                          
   1284                          ; -----------------------------------------------------------------------------
@@ -3789,194 +3789,194 @@
   1286                          ; -----------------------------------------------------------------------------
   1287                          gameLoopNewLevel:
   1288                          
-  1289  8f6b a54d                       lda START_TIME
-  1290  8f6d 18                         clc
-  1291  8f6e 6902                       adc #NEW_LEVEL_TIMEOUT
-  1292  8f70 cdca7c                     cmp HBC56_SECONDS_L
-  1293  8f73 d01a                       bne @nextFrame
+  1289  8f4b a54d                       lda START_TIME
+  1290  8f4d 18                         clc
+  1291  8f4e 6902                       adc #NEW_LEVEL_TIMEOUT
+  1292  8f50 cdca7c                     cmp HBC56_SECONDS_L
+  1293  8f53 d01a                       bne @nextFrame
   1294                          
-  1295  8f75 a94020efe5                 +tmsDisableOutput
-  1296  8f7a 20d58b                     jsr clearBox
-  1297  8f7d 203788                     jsr renderLevel
-  1298  8f80 a94020e5e5                 +tmsEnableOutput
+  1295  8f55 a94020efe5                 +tmsDisableOutput
+  1296  8f5a 20b58b                     jsr clearBox
+  1297  8f5d 201788                     jsr renderLevel
+  1298  8f60 a94020e5e5                 +tmsEnableOutput
   1299                          
-  1300  8f85 a9908de37ca98f8d...        +hbc56SetVsyncCallback gameLoopWaitForStart
+  1300  8f65 a9708de37ca98f8d...        +hbc56SetVsyncCallback gameLoopWaitForStart
   1301                          
   1302                          @nextFrame
-  1303  8f8f 60                         rts
+  1303  8f6f 60                         rts
   1304                          
   1305                          ; -----------------------------------------------------------------------------
   1306                          ; Wait for user input (tied to VSYNC interrupt)
   1307                          ; -----------------------------------------------------------------------------
   1308                          gameLoopWaitForStart:
   1309                                  
-  1310  8f90 202f8f                     jsr handlePaddleInput
+  1310  8f70 200f8f                     jsr handlePaddleInput
   1311                          
   1312                                  ; render the paddle
-  1313  8f93 20058d                     jsr renderPaddle
+  1313  8f73 20e58c                     jsr renderPaddle
   1314                          
-  1315  8f96 a543                       lda PADW
-  1316  8f98 4a                         lsr
-  1317  8f99 18                         clc
-  1318  8f9a 6542                       adc PADX
-  1319  8f9c 3a                         dec
-  1320  8f9d 3a                         dec
-  1321  8f9e 8538                       sta POSX        
+  1315  8f76 a543                       lda PADW
+  1316  8f78 4a                         lsr
+  1317  8f79 18                         clc
+  1318  8f7a 6542                       adc PADX
+  1319  8f7c 3a                         dec
+  1320  8f7d 3a                         dec
+  1321  8f7e 8538                       sta POSX        
   1322                          
-  1323  8fa0 20bf8d                     jsr renderBall
+  1323  8f80 209f8d                     jsr renderBall
   1324                          
-  1325  8fa3 a2292075f3d01c             +kbBranchIfPressed KB_SCANCODE_SPACEBAR, @startGame
-  1326  8faa 48a980203ef268b0...        +nes1BranchIfPressed NES_A, @startGame
-  1327  8fb3 48a940203ef268b0...        +nes1BranchIfPressed NES_B, @startGame
-  1328  8fbc 48a910203ef268b0...        +nes1BranchIfPressed NES_START, @startGame
+  1325  8f83 a2292075f3d01c             +kbBranchIfPressed KB_SCANCODE_SPACEBAR, @startGame
+  1326  8f8a 48a980203ef268b0...        +nes1BranchIfPressed NES_A, @startGame
+  1327  8f93 48a940203ef268b0...        +nes1BranchIfPressed NES_B, @startGame
+  1328  8f9c 48a910203ef268b0...        +nes1BranchIfPressed NES_START, @startGame
   1329                          
-  1330  8fc5 60                         rts
+  1330  8fa5 60                         rts
   1331                          
   1332                          @startGame
-  1333  8fc6 207e8e                     jsr hitPaddle
+  1333  8fa6 205e8e                     jsr hitPaddle
   1334                          
-  1335  8fc9 a9fa8de37ca98f8d...        +hbc56SetVsyncCallback gameLoopRunning
+  1335  8fa9 a9da8de37ca98f8d...        +hbc56SetVsyncCallback gameLoopRunning
   1336                          
-  1337  8fd3 60                         rts
+  1337  8fb3 60                         rts
   1338                          
   1339                          
   1340                          ; -----------------------------------------------------------------------------
   1341                          ; Game over - Wait for user input (tied to VSYNC interrupt)
   1342                          ; -----------------------------------------------------------------------------
   1343                          gameLoopGameOver:
-  1344  8fd4 a2292075f3d01c             +kbBranchIfPressed KB_SCANCODE_SPACEBAR,  @nextGame
-  1345  8fdb 48a980203ef268b0...        +nes1BranchIfPressed NES_A, @nextGame
-  1346  8fe4 48a940203ef268b0...        +nes1BranchIfPressed NES_B, @nextGame
-  1347  8fed 48a910203ef268b0...        +nes1BranchIfPressed NES_START, @nextGame
-  1348  8ff6 60                         rts
+  1344  8fb4 a2292075f3d01c             +kbBranchIfPressed KB_SCANCODE_SPACEBAR,  @nextGame
+  1345  8fbb 48a980203ef268b0...        +nes1BranchIfPressed NES_A, @nextGame
+  1346  8fc4 48a940203ef268b0...        +nes1BranchIfPressed NES_B, @nextGame
+  1347  8fcd 48a910203ef268b0...        +nes1BranchIfPressed NES_START, @nextGame
+  1348  8fd6 60                         rts
   1349                          
   1350                          @nextGame
-  1351  8ff7 4c1a89                     jmp resetGame
+  1351  8fd7 4cfa88                     jmp resetGame
   1352                          
   1353                          ; -----------------------------------------------------------------------------
   1354                          ; Main game loop
   1355                          ; -----------------------------------------------------------------------------
   1356                          gameLoopRunning:
-  1357  8ffa a53a                       lda POSY
-  1358  8ffc c960                       cmp #(LEVEL_HEIGHT) * 8
-  1359  8ffe b01f                       bcs @noHit
+  1357  8fda a53a                       lda POSY
+  1358  8fdc c960                       cmp #(LEVEL_HEIGHT) * 8
+  1359  8fde b01f                       bcs @noHit
   1360                          
   1361                                  ; convert ball position to tile x/y
-  1362  9000 a638                       ldx POSX
-  1363  9002 e8                         inx
-  1364  9003 e8                         inx
-  1365  9004 a43a                       ldy POSY
-  1366  9006 c8                         iny
-  1367  9007 c8                         iny
+  1362  8fe0 a638                       ldx POSX
+  1363  8fe2 e8                         inx
+  1364  8fe3 e8                         inx
+  1365  8fe4 a43a                       ldy POSY
+  1366  8fe6 c8                         iny
+  1367  8fe7 c8                         iny
   1368                          
   1369                                  ; convert tile x/y to level index
-  1370  9008 20108e                     jsr posToLevelCell
-  1371  900b c9ff                       cmp #NO_BRICK
-  1372  900d f010                       beq @noHit
+  1370  8fe8 20f08d                     jsr posToLevelCell
+  1371  8feb c9ff                       cmp #NO_BRICK
+  1372  8fed f010                       beq @noHit
   1373                          
   1374                                  ; locate brick type at level index
-  1375  900f aa                         tax
-  1376  9010 bd0004                     lda LEVEL_DATA, x
+  1375  8fef aa                         tax
+  1376  8ff0 bd0004                     lda LEVEL_DATA, x
   1377                          
   1378                                  ; is it empty?
-  1379  9013 f00a                       beq @noHit
+  1379  8ff3 f00a                       beq @noHit
   1380                          
-  1381  9015 205b8e                     jsr hitBrick
+  1381  8ff5 203b8e                     jsr hitBrick
   1382                          
   1383                                  ; any blocks left?
-  1384  9018 c64a                       dec BLOCKS_LEFT
-  1385  901a d003                       bne +
-  1386  901c 4c0889                     jmp nextLevel
+  1384  8ff8 c64a                       dec BLOCKS_LEFT
+  1385  8ffa d003                       bne +
+  1386  8ffc 4ce888                     jmp nextLevel
   1387                          +
   1388                          
   1389                          @noHit:
   1390                          
   1391                                  ; paddle input
-  1392  901f 202f8f                     jsr handlePaddleInput
+  1392  8fff 200f8f                     jsr handlePaddleInput
   1393                          
   1394                                  ; render the paddle
-  1395  9022 20058d                     jsr renderPaddle
+  1395  9002 20e58c                     jsr renderPaddle
   1396                          
   1397                                  ; move the ball
-  1398  9025 2440101318a53965...        +addSubPixel POSX, SPDX, DIRX
-  1399  9049 2441101318a53b65...        +addSubPixel POSY, SPDY, DIRY
+  1398  9005 2440101318a53965...        +addSubPixel POSX, SPDX, DIRX
+  1399  9029 2441101318a53b65...        +addSubPixel POSY, SPDY, DIRY
   1400                          
   1401                                  ; check for ball bounces
-  1402  906d 2440                       bit DIRX
-  1403  906f 3014                       bmi @checkLeft
+  1402  904d 2440                       bit DIRX
+  1403  904f 3014                       bmi @checkLeft
   1404                          
   1405                                  ; check right wall
-  1406  9071 a538                       lda POSX
-  1407  9073 c9ab                       cmp #GAME_AREA_RIGHT-5
-  1408  9075 9020                       bcc @doneXCheck
+  1406  9051 a538                       lda POSX
+  1407  9053 c9ab                       cmp #GAME_AREA_RIGHT-5
+  1408  9055 9020                       bcc @doneXCheck
   1409                          
-  1410  9077 a54049ff1a8540             +negate DIRX
-  1411  907e a902                       lda #TONE_WALL
-  1412  9080 20c287                     jsr playNote
+  1410  9057 a54049ff1a8540             +negate DIRX
+  1411  905e a902                       lda #TONE_WALL
+  1412  9060 20a287                     jsr playNote
   1413                          
-  1414  9083 8012                       bra @doneXCheck
+  1414  9063 8012                       bra @doneXCheck
   1415                          
   1416                                  ; check left wall
   1417                          @checkLeft
-  1418  9085 a538                       lda POSX
-  1419  9087 c908                       cmp #GAME_AREA_LEFT
-  1420  9089 b00c                       bcs @doneXCheck
+  1418  9065 a538                       lda POSX
+  1419  9067 c908                       cmp #GAME_AREA_LEFT
+  1420  9069 b00c                       bcs @doneXCheck
   1421                          
-  1422  908b a54049ff1a8540             +negate DIRX
-  1423  9092 a902                       lda #TONE_WALL
-  1424  9094 20c287                     jsr playNote
+  1422  906b a54049ff1a8540             +negate DIRX
+  1423  9072 a902                       lda #TONE_WALL
+  1424  9074 20a287                     jsr playNote
   1425                          
   1426                          @doneXCheck
   1427                          
-  1428  9097 2441                       bit DIRY
-  1429  9099 302c                       bmi @checkTop
+  1428  9077 2441                       bit DIRY
+  1429  9079 302c                       bmi @checkTop
   1430                          
   1431                                  ; check paddle
-  1432  909b a53a                       lda POSY
-  1433  909d c9bb                       cmp #PADDLE_SPRITE_Y
-  1434  909f 9007                       bcc @checkPaddle
+  1432  907b a53a                       lda POSY
+  1433  907d c9bb                       cmp #PADDLE_SPRITE_Y
+  1434  907f 9007                       bcc @checkPaddle
   1435                          
   1436                                  ; check out of bounds
-  1437  90a1 c9f0                       cmp #240
-  1438  90a3 9034                       bcc @doneYCheck
-  1439  90a5 4cf288                     jmp loseBall
+  1437  9081 c9f0                       cmp #240
+  1438  9083 9034                       bcc @doneYCheck
+  1439  9085 4cd288                     jmp loseBall
   1440                          
   1441                          @checkPaddle
-  1442  90a8 c9b6                       cmp #PADDLE_SPRITE_Y - 5
-  1443  90aa 902d                       bcc  @doneYCheck
+  1442  9088 c9b6                       cmp #PADDLE_SPRITE_Y - 5
+  1443  908a 902d                       bcc  @doneYCheck
   1444                          
-  1445  90ac a542                       lda PADX
-  1446  90ae c906                       cmp #BALL_SIZE
-  1447  90b0 9003                       bcc +
-  1448  90b2 38                         sec
-  1449  90b3 e905                       sbc #BALL_SIZE - 1
+  1445  908c a542                       lda PADX
+  1446  908e c906                       cmp #BALL_SIZE
+  1447  9090 9003                       bcc +
+  1448  9092 38                         sec
+  1449  9093 e905                       sbc #BALL_SIZE - 1
   1450                          +
-  1451  90b5 c538                       cmp POSX
-  1452  90b7 b020                       bcs @doneYCheck
-  1453  90b9 a542                       lda PADX
-  1454  90bb 18                         clc
-  1455  90bc 6543                       adc PADW
-  1456  90be c538                       cmp POSX
-  1457  90c0 9017                       bcc @doneYCheck
+  1451  9095 c538                       cmp POSX
+  1452  9097 b020                       bcs @doneYCheck
+  1453  9099 a542                       lda PADX
+  1454  909b 18                         clc
+  1455  909c 6543                       adc PADW
+  1456  909e c538                       cmp POSX
+  1457  90a0 9017                       bcc @doneYCheck
   1458                          
-  1459  90c2 207e8e                     jsr hitPaddle
+  1459  90a2 205e8e                     jsr hitPaddle
   1460                          
-  1461  90c5 8012                       bra @doneYCheck
+  1461  90a5 8012                       bra @doneYCheck
   1462                          
   1463                                  ; check top wall
   1464                          @checkTop
-  1465  90c7 a53a                       lda POSY
-  1466  90c9 c909                       cmp #9
-  1467  90cb b00c                       bcs @doneYCheck
+  1465  90a7 a53a                       lda POSY
+  1466  90a9 c909                       cmp #9
+  1467  90ab b00c                       bcs @doneYCheck
   1468                          
-  1469  90cd a54149ff1a8541             +negate DIRY
-  1470  90d4 a902                       lda #TONE_WALL
-  1471  90d6 20c287                     jsr playNote
+  1469  90ad a54149ff1a8541             +negate DIRY
+  1470  90b4 a902                       lda #TONE_WALL
+  1471  90b6 20a287                     jsr playNote
   1472                          
   1473                          @doneYCheck
   1474                          
-  1475  90d9 20bf8d                     jsr renderBall
-  1476  90dc 60                         rts
+  1475  90b9 209f8d                     jsr renderBall
+  1476  90bc 60                         rts
   1477                          
   1478                          
   1479                          
@@ -3984,47 +3984,47 @@
   1481                          ; ----------
   1482                          
   1483                          ballPattern:
-  1484  90dd 70f8f8f870000000   !byte $70,$f8,$f8,$f8,$70,$00,$00,$00   ; base
-  1485  90e5 0018285870000000   !byte $00,$18,$28,$58,$70,$00,$00,$00   ; shading
+  1484  90bd 70f8f8f870000000   !byte $70,$f8,$f8,$f8,$70,$00,$00,$00   ; base
+  1485  90c5 0018285870000000   !byte $00,$18,$28,$58,$70,$00,$00,$00   ; shading
   1486                          
   1487                          
   1488                          ; PADDLE
   1489                          ; ----------
   1490                          
   1491                          paddlePal: ; paddle colors
-  1492  90ed 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
-  1493  90ee 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
-  1494  90ef 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
-  1495  90f0 f0                 +byteTmsColorFgBg PADDLE_COLOR_HIGH,  TMS_TRANSPARENT
-  1496  90f1 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
-  1497  90f2 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
-  1498  90f3 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
-  1499  90f4 50                 +byteTmsColorFgBg PADDLE_COLOR_SHADE, TMS_TRANSPARENT
+  1492  90cd 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
+  1493  90ce 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
+  1494  90cf 00                 +byteTmsColorFgBg TMS_TRANSPARENT,    TMS_TRANSPARENT
+  1495  90d0 f0                 +byteTmsColorFgBg PADDLE_COLOR_HIGH,  TMS_TRANSPARENT
+  1496  90d1 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
+  1497  90d2 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
+  1498  90d3 70                 +byteTmsColorFgBg PADDLE_COLOR_BASE,  TMS_TRANSPARENT
+  1499  90d4 50                 +byteTmsColorFgBg PADDLE_COLOR_SHADE, TMS_TRANSPARENT
   1500                          
   1501                          paddleLeftSpr:
-  1502  90f5 c080800000000000   !byte $c0,$80,$80,$00,$00,$00,$00,$00
+  1502  90d5 c080800000000000   !byte $c0,$80,$80,$00,$00,$00,$00,$00
   1503                          paddleRightSpr:
-  1504  90fd 4040c00000000000   !byte $40,$40,$c0,$00,$00,$00,$00,$00
+  1504  90dd 4040c00000000000   !byte $40,$40,$c0,$00,$00,$00,$00,$00
   1505                          paddlePatt:
-  1506  9105 0000007fffffff7f   !byte $00,$00,$00,$7f,$ff,$ff,$ff,$7f   ; left
-  1507  910d 000000ffffffffff   !byte $00,$00,$00,$ff,$ff,$ff,$ff,$ff   ; centre
-  1508  9115 000000fefffffffe   !byte $00,$00,$00,$fe,$ff,$ff,$ff,$fe   ; right
+  1506  90e5 0000007fffffff7f   !byte $00,$00,$00,$7f,$ff,$ff,$ff,$7f   ; left
+  1507  90ed 000000ffffffffff   !byte $00,$00,$00,$ff,$ff,$ff,$ff,$ff   ; centre
+  1508  90f5 000000fefffffffe   !byte $00,$00,$00,$fe,$ff,$ff,$ff,$fe   ; right
   1509                          
   1510                          ; pattern indexes to paddle left/right tiles for a given pixel offset
   1511                          leftPatterns:
-  1512  911d e0e1e2e3e4e5e6e7   !byte 224,225,226,227,228,229,230,231
+  1512  90fd e0e1e2e3e4e5e6e7   !byte 224,225,226,227,228,229,230,231
   1513                          
   1514                          rightPatterns:
-  1515  9125 f0efeeedecebeae9...!byte 240,239,238,237,236,235,234,233,232
+  1515  9105 f0efeeedecebeae9...!byte 240,239,238,237,236,235,234,233,232
   1516                          
   1517                          
   1518                          ; BLOCKS
   1519                          ; ----------
   1520                          
   1521                          block:
-  1522  912e 7f3f7f7f7f7f7f00   !byte $7f,$3f,$7f,$7f,$7f,$7f,$7f,$00   ; left
-  1523  9136 ffffffffffffff00   !byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00   ; centre
-  1524  913e fcfefefefefefc00   !byte $fc,$fe,$fe,$fe,$fe,$fe,$fc,$00   ; right
+  1522  910e 7f3f7f7f7f7f7f00   !byte $7f,$3f,$7f,$7f,$7f,$7f,$7f,$00   ; left
+  1523  9116 ffffffffffffff00   !byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00   ; centre
+  1524  911e fcfefefefefefc00   !byte $fc,$fe,$fe,$fe,$fe,$fe,$fc,$00   ; right
   1525                          
   1526                          BLUE_HIGH       = TMS_CYAN    << 4   | TMS_TRANSPARENT
   1527                          BLUE_BASE       = TMS_LT_BLUE << 4   | TMS_TRANSPARENT
@@ -4048,262 +4048,262 @@
   1545                          
   1546                          ; block palettes. first tile and remaining tiles
   1547                          blueBlockPal:
-  1548  9146 7057575757574000   !byte BLUE_HIGH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_SHADE,TMS_TRANSPARENT
-  1549  914e 7050505050504000   !byte BLUE_HIGH,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_SHADE,TMS_TRANSPARENT
+  1548  9126 7057575757574000   !byte BLUE_HIGH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_BASEH,BLUE_SHADE,TMS_TRANSPARENT
+  1549  912e 7050505050504000   !byte BLUE_HIGH,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_BASE,BLUE_SHADE,TMS_TRANSPARENT
   1550                          
   1551                          greenBlockPal:
-  1552  9156 302323232323c000   !byte GREEN_HIGH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_SHADE,TMS_TRANSPARENT
-  1553  915e 302020202020c000   !byte GREEN_HIGH,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_SHADE,TMS_TRANSPARENT
+  1552  9136 302323232323c000   !byte GREEN_HIGH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_BASEH,GREEN_SHADE,TMS_TRANSPARENT
+  1553  913e 302020202020c000   !byte GREEN_HIGH,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_BASE,GREEN_SHADE,TMS_TRANSPARENT
   1554                          
   1555                          yellowBlockPal:
-  1556  9166 f0bfbfbfbfbfa000   !byte YELLOW_HIGH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_SHADE,TMS_TRANSPARENT
-  1557  916e f0b0b0b0b0b0a000   !byte YELLOW_HIGH,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_SHADE,TMS_TRANSPARENT
+  1556  9146 f0bfbfbfbfbfa000   !byte YELLOW_HIGH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_BASEH,YELLOW_SHADE,TMS_TRANSPARENT
+  1557  914e f0b0b0b0b0b0a000   !byte YELLOW_HIGH,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_BASE,YELLOW_SHADE,TMS_TRANSPARENT
   1558                          
   1559                          redBlockPal:
-  1560  9176 9089898989896000   !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
-  1561  917e 9080808080806000   !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
+  1560  9156 9089898989896000   !byte RED_HIGH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_BASEH,RED_SHADE,TMS_TRANSPARENT
+  1561  915e 9080808080806000   !byte RED_HIGH,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_BASE,RED_SHADE,TMS_TRANSPARENT
   1562                          
   1563                          tileData:
-  1564  9186 000c0f1215         !byte 0,12,15,18,21
+  1564  9166 000c0f1215         !byte 0,12,15,18,21
   1565                          
   1566                          ; BORDER
   1567                          ; ----------
   1568                          
   1569                          borderTL:
-  1570  918b 3f7fffffffffffff   !byte $3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff
+  1570  916b 3f7fffffffffffff   !byte $3f,$7f,$ff,$ff,$ff,$ff,$ff,$ff
   1571                          borderT:
-  1572  9193 ffffffffffffff00   !byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00
+  1572  9173 ffffffffffffff00   !byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$00
   1573                          borderTR:
-  1574  919b f8fcfefefefefefe   !byte $f8,$fc,$fe,$fe,$fe,$fe,$fe,$fe
+  1574  917b f8fcfefefefefefe   !byte $f8,$fc,$fe,$fe,$fe,$fe,$fe,$fe
   1575                          borderL:
-  1576  91a3 fefefefefefefefe   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
+  1576  9183 fefefefefefefefe   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
   1577                          borderR:
-  1578  91ab fefefefefefefefe   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
+  1578  918b fefefefefefefefe   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fe,$fe
   1579                          borderLB:
-  1580  91b3 fefefefefe7c7c38   !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+  1580  9193 fefefefefe7c7c38   !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
   1581                          borderRB:
-  1582  91bb fefefefefe7c7c38   !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
+  1582  919b fefefefefe7c7c38   !byte $fe,$fe,$fe,$fe,$fe,$7c,$7c,$38
   1583                          borderBL:
-  1584  91c3 ffffffffffff7f3f   !byte $ff,$ff,$ff,$ff,$ff,$ff,$7f,$3f
+  1584  91a3 ffffffffffff7f3f   !byte $ff,$ff,$ff,$ff,$ff,$ff,$7f,$3f
   1585                          borderBR:
-  1586  91cb fefefefefefefcf8   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fc,$f8
+  1586  91ab fefefefefefefcf8   !byte $fe,$fe,$fe,$fe,$fe,$fe,$fc,$f8
   1587                          borderB:
-  1588  91d3 00ffffffffffffff   !byte $00,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+  1588  91b3 00ffffffffffffff   !byte $00,$ff,$ff,$ff,$ff,$ff,$ff,$ff
   1589                          
   1590                          
   1591                          borderPal:
-  1592  91db 00                 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
-  1593  91dc f0                 +byteTmsColorFgBg TMS_WHITE,   TMS_TRANSPARENT
-  1594  91dd d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1595  91de d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1596  91df d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1597  91e0 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1598  91e1 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1599  91e2 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1600  91e3 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
-  1601  91e4 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1592  91bb 00                 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
+  1593  91bc f0                 +byteTmsColorFgBg TMS_WHITE,   TMS_TRANSPARENT
+  1594  91bd d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1595  91be d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1596  91bf d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1597  91c0 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1598  91c1 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1599  91c2 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1600  91c3 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
+  1601  91c4 d0                 +byteTmsColorFgBg TMS_MAGENTA, TMS_TRANSPARENT
   1602                          
   1603                          
   1604                          ; TITLE
   1605                          ; ----------
   1606                          
   1607                          titlePatt:
-  1608  91e5 001e3f7f0301037f...!byte $00,$1e,$3f,$7f,$03,$01,$03,$7f,$00,$0f,$1f,$bf,$81,$80,$81,$bf,$00,$1f,$9f,$df,$d8,$d8,$d8,$df,$00,$e1,$c1,$83,$03,$07,$06,$e6,$00,$86,$86,$c6,$c6,$e6,$66,$67,$00,$18,$39,$33,$63,$67,$c6,$c6,$00,$c3,$e3,$f3,$33,$3b,$1b,$1b,$00,$0c,$0c,$0d,$0c,$0c,$0c,$0c,$00,$7f,$fe,$fc,$30,$30,$30,$30
-  1609  922d 7f7f6361637f7f7f...!byte $7f,$7f,$63,$61,$63,$7f,$7f,$7f,$3f,$bf,$be,$b7,$b3,$b1,$b0,$30,$df,$9f,$18,$18,$98,$df,$df,$df,$c6,$86,$06,$0e,$0c,$ec,$cd,$8d,$67,$67,$66,$76,$36,$36,$f6,$f6,$86,$c6,$c6,$67,$63,$33,$39,$18,$1b,$1b,$1b,$3b,$31,$f1,$e0,$c0,$0c,$0c,$0c,$9c,$98,$f8,$f0,$60,$30,$30,$30,$30,$30,$30,$30,$30
+  1608  91c5 001e3f7f0301037f...!byte $00,$1e,$3f,$7f,$03,$01,$03,$7f,$00,$0f,$1f,$bf,$81,$80,$81,$bf,$00,$1f,$9f,$df,$d8,$d8,$d8,$df,$00,$e1,$c1,$83,$03,$07,$06,$e6,$00,$86,$86,$c6,$c6,$e6,$66,$67,$00,$18,$39,$33,$63,$67,$c6,$c6,$00,$c3,$e3,$f3,$33,$3b,$1b,$1b,$00,$0c,$0c,$0d,$0c,$0c,$0c,$0c,$00,$7f,$fe,$fc,$30,$30,$30,$30
+  1609  920d 7f7f6361637f7f7f...!byte $7f,$7f,$63,$61,$63,$7f,$7f,$7f,$3f,$bf,$be,$b7,$b3,$b1,$b0,$30,$df,$9f,$18,$18,$98,$df,$df,$df,$c6,$86,$06,$0e,$0c,$ec,$cd,$8d,$67,$67,$66,$76,$36,$36,$f6,$f6,$86,$c6,$c6,$67,$63,$33,$39,$18,$1b,$1b,$1b,$3b,$31,$f1,$e0,$c0,$0c,$0c,$0c,$9c,$98,$f8,$f0,$60,$30,$30,$30,$30,$30,$30,$30,$30
   1610                          
   1611                          titlePal:
-  1612  9275 00                 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
-  1613  9276 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1614  9277 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1615  9278 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1616  9279 e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
-  1617  927a e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
-  1618  927b e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
-  1619  927c 80                 +byteTmsColorFgBg TMS_MED_RED, TMS_TRANSPARENT
-  1620  927d b0                 +byteTmsColorFgBg TMS_LT_YELLOW, TMS_TRANSPARENT
-  1621  927e 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
-  1622  927f 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1623  9280 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1624  9281 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1625  9282 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1626  9283 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1627  9284 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
+  1612  9255 00                 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
+  1613  9256 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1614  9257 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1615  9258 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1616  9259 e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
+  1617  925a e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
+  1618  925b e0                 +byteTmsColorFgBg TMS_GREY, TMS_TRANSPARENT
+  1619  925c 80                 +byteTmsColorFgBg TMS_MED_RED, TMS_TRANSPARENT
+  1620  925d b0                 +byteTmsColorFgBg TMS_LT_YELLOW, TMS_TRANSPARENT
+  1621  925e 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
+  1622  925f 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1623  9260 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1624  9261 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1625  9262 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1626  9263 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1627  9264 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
   1628                          
   1629                          ; LABELS
   1630                          ; ----------
   1631                          
   1632                          levelPatt:
-  1633  9285 0c0c0c0c0c0c0f0f...!byte $0c,$0c,$0c,$0c,$0c,$0c,$0f,$0f,$07,$07,$06,$07,$07,$06,$f7,$e7,$fb,$f3,$01,$f9,$f0,$00,$f8,$f0,$01,$83,$83,$c7,$c6,$6c,$7c,$38,$bf,$bf,$30,$3f,$3f,$30,$3f,$3f,$d8,$98,$18,$d8,$98,$18,$df,$9f,$00,$00,$00,$00,$00,$00,$e0,$c0
+  1633  9265 0c0c0c0c0c0c0f0f...!byte $0c,$0c,$0c,$0c,$0c,$0c,$0f,$0f,$07,$07,$06,$07,$07,$06,$f7,$e7,$fb,$f3,$01,$f9,$f0,$00,$f8,$f0,$01,$83,$83,$c7,$c6,$6c,$7c,$38,$bf,$bf,$30,$3f,$3f,$30,$3f,$3f,$d8,$98,$18,$d8,$98,$18,$df,$9f,$00,$00,$00,$00,$00,$00,$e0,$c0
   1634                          scorePatt:
-  1635  92bd 1f3f303f3f001f3f...!byte $1f,$3f,$30,$3f,$3f,$00,$1f,$3f,$e3,$c7,$07,$ce,$ee,$67,$e7,$c3,$fc,$f8,$01,$01,$01,$01,$fc,$f8,$7e,$ff,$c3,$81,$81,$c3,$ff,$7e,$0f,$1f,$80,$80,$9f,$9f,$18,$18,$e3,$f3,$3b,$3b,$f3,$e3,$73,$3b,$fc,$f8,$00,$fc,$f8,$00,$fc,$f8
+  1635  929d 1f3f303f3f001f3f...!byte $1f,$3f,$30,$3f,$3f,$00,$1f,$3f,$e3,$c7,$07,$ce,$ee,$67,$e7,$c3,$fc,$f8,$01,$01,$01,$01,$fc,$f8,$7e,$ff,$c3,$81,$81,$c3,$ff,$7e,$0f,$1f,$80,$80,$9f,$9f,$18,$18,$e3,$f3,$3b,$3b,$f3,$e3,$73,$3b,$fc,$f8,$00,$fc,$f8,$00,$fc,$f8
   1636                          ballsPatt:
-  1637  92f5 0f1f001f1f181f1f...!byte $0f,$1f,$00,$1f,$1f,$18,$1f,$1f,$e0,$f0,$30,$f1,$f3,$33,$f6,$e6,$60,$f0,$f0,$98,$9c,$0c,$7e,$fe,$c0,$c0,$c0,$c0,$c0,$c0,$ff,$fe,$60,$60,$60,$60,$60,$60,$7f,$7f,$1f,$3f,$30,$3f,$3f,$00,$9f,$3f,$e0,$c0,$00,$c0,$e0,$60,$e0,$c0
+  1637  92d5 0f1f001f1f181f1f...!byte $0f,$1f,$00,$1f,$1f,$18,$1f,$1f,$e0,$f0,$30,$f1,$f3,$33,$f6,$e6,$60,$f0,$f0,$98,$9c,$0c,$7e,$fe,$c0,$c0,$c0,$c0,$c0,$c0,$ff,$fe,$60,$60,$60,$60,$60,$60,$7f,$7f,$1f,$3f,$30,$3f,$3f,$00,$9f,$3f,$e0,$c0,$00,$c0,$e0,$60,$e0,$c0
   1638                          
   1639                          labelPal:
-  1640  932d 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
-  1641  932e 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1642  932f 70                 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
-  1643  9330 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1644  9331 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1645  9332 70                 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
-  1646  9333 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
-  1647  9334 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
+  1640  930d 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
+  1641  930e 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1642  930f 70                 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
+  1643  9310 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1644  9311 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1645  9312 70                 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
+  1646  9313 50                 +byteTmsColorFgBg TMS_LT_BLUE, TMS_TRANSPARENT
+  1647  9314 40                 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
   1648                          
   1649                          ; FONT
   1650                          ; ----------
   1651                          
   1652                          digitsPatt:
-  1653  9335 7ccedef6e6c67c00   !byte $7C,$CE,$DE,$F6,$E6,$C6,$7C,$00 ; 0
-  1654  933d 1838181818187e00   !byte $18,$38,$18,$18,$18,$18,$7E,$00 ; 1
-  1655  9345 7cc6067cc0c0fe00   !byte $7C,$C6,$06,$7C,$C0,$C0,$FE,$00 ; 2
-  1656  934d fc06063c0606fc00   !byte $FC,$06,$06,$3C,$06,$06,$FC,$00 ; 3
-  1657  9355 0cccccccfe0c0c00   !byte $0C,$CC,$CC,$CC,$FE,$0C,$0C,$00 ; 4
-  1658  935d fec0fc0606c67c00   !byte $FE,$C0,$FC,$06,$06,$C6,$7C,$00 ; 5
-  1659  9365 7cc0c0fcc6c67c00   !byte $7C,$C0,$C0,$FC,$C6,$C6,$7C,$00 ; 6
-  1660  936d fe06060c18303000   !byte $FE,$06,$06,$0C,$18,$30,$30,$00 ; 7
-  1661  9375 7cc6c67cc6c67c00   !byte $7C,$C6,$C6,$7C,$C6,$C6,$7C,$00 ; 8
-  1662  937d 7cc6c67e06067c00   !byte $7C,$C6,$C6,$7E,$06,$06,$7C,$00 ; 9
+  1653  9315 7ccedef6e6c67c00   !byte $7C,$CE,$DE,$F6,$E6,$C6,$7C,$00 ; 0
+  1654  931d 1838181818187e00   !byte $18,$38,$18,$18,$18,$18,$7E,$00 ; 1
+  1655  9325 7cc6067cc0c0fe00   !byte $7C,$C6,$06,$7C,$C0,$C0,$FE,$00 ; 2
+  1656  932d fc06063c0606fc00   !byte $FC,$06,$06,$3C,$06,$06,$FC,$00 ; 3
+  1657  9335 0cccccccfe0c0c00   !byte $0C,$CC,$CC,$CC,$FE,$0C,$0C,$00 ; 4
+  1658  933d fec0fc0606c67c00   !byte $FE,$C0,$FC,$06,$06,$C6,$7C,$00 ; 5
+  1659  9345 7cc0c0fcc6c67c00   !byte $7C,$C0,$C0,$FC,$C6,$C6,$7C,$00 ; 6
+  1660  934d fe06060c18303000   !byte $FE,$06,$06,$0C,$18,$30,$30,$00 ; 7
+  1661  9355 7cc6c67cc6c67c00   !byte $7C,$C6,$C6,$7C,$C6,$C6,$7C,$00 ; 8
+  1662  935d 7cc6c67e06067c00   !byte $7C,$C6,$C6,$7E,$06,$06,$7C,$00 ; 9
   1663                          
   1664                          digitsPal:
-  1665  9385 c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
-  1666  9386 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
-  1667  9387 30                 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-  1668  9388 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
-  1669  9389 30                 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
-  1670  938a 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
-  1671  938b c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
-  1672  938c c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
+  1665  9365 c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
+  1666  9366 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
+  1667  9367 30                 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
+  1668  9368 f0                 +byteTmsColorFgBg TMS_WHITE, TMS_TRANSPARENT
+  1669  9369 30                 +byteTmsColorFgBg TMS_LT_GREEN, TMS_TRANSPARENT
+  1670  936a 20                 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
+  1671  936b c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
+  1672  936c c0                 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
   1673                          
   1674                          
   1675                          ; AUDIO DATA
   1676                          ; ----------
   1677                          
   1678                          notesL:
-  1679  938d 00                 !byte 0
-  1680  938e a8                 +ayToneByteL NOTE_FREQ_FS4
-  1681  938f 9f                 +ayToneByteL NOTE_FREQ_G4
-  1682  9390 96                 +ayToneByteL NOTE_FREQ_GS4
-  1683  9391 8e                 +ayToneByteL NOTE_FREQ_A4
-  1684  9392 86                 +ayToneByteL NOTE_FREQ_AS4
-  1685  9393 7e                 +ayToneByteL NOTE_FREQ_B4
-  1686  9394 77                 +ayToneByteL NOTE_FREQ_C5
-  1687  9395 70                 +ayToneByteL NOTE_FREQ_CS5
-  1688  9396 6a                 +ayToneByteL NOTE_FREQ_D5
-  1689  9397 64                 +ayToneByteL NOTE_FREQ_DS5
-  1690  9398 5e                 +ayToneByteL NOTE_FREQ_E5
-  1691  9399 59                 +ayToneByteL NOTE_FREQ_F5
-  1692  939a 54                 +ayToneByteL NOTE_FREQ_FS5
-  1693  939b 4f                 +ayToneByteL NOTE_FREQ_G5
-  1694  939c 4b                 +ayToneByteL NOTE_FREQ_GS5
-  1695  939d 47                 +ayToneByteL NOTE_FREQ_A5
-  1696  939e 43                 +ayToneByteL NOTE_FREQ_AS5
-  1697  939f 3f                 +ayToneByteL NOTE_FREQ_B5
-  1698  93a0 3b                 +ayToneByteL NOTE_FREQ_C6
-  1699  93a1 38                 +ayToneByteL NOTE_FREQ_CS6
-  1700  93a2 35                 +ayToneByteL NOTE_FREQ_D6
-  1701  93a3 32                 +ayToneByteL NOTE_FREQ_DS6
-  1702  93a4 2f                 +ayToneByteL NOTE_FREQ_E6
-  1703  93a5 2c                 +ayToneByteL NOTE_FREQ_F6
-  1704  93a6 2a                 +ayToneByteL NOTE_FREQ_FS6
-  1705  93a7 27                 +ayToneByteL NOTE_FREQ_G6
-  1706  93a8 25                 +ayToneByteL NOTE_FREQ_GS6
-  1707  93a9 23                 +ayToneByteL NOTE_FREQ_A6
-  1708  93aa 21                 +ayToneByteL NOTE_FREQ_AS6
+  1679  936d 00                 !byte 0
+  1680  936e a8                 +ayToneByteL NOTE_FREQ_FS4
+  1681  936f 9f                 +ayToneByteL NOTE_FREQ_G4
+  1682  9370 96                 +ayToneByteL NOTE_FREQ_GS4
+  1683  9371 8e                 +ayToneByteL NOTE_FREQ_A4
+  1684  9372 86                 +ayToneByteL NOTE_FREQ_AS4
+  1685  9373 7e                 +ayToneByteL NOTE_FREQ_B4
+  1686  9374 77                 +ayToneByteL NOTE_FREQ_C5
+  1687  9375 70                 +ayToneByteL NOTE_FREQ_CS5
+  1688  9376 6a                 +ayToneByteL NOTE_FREQ_D5
+  1689  9377 64                 +ayToneByteL NOTE_FREQ_DS5
+  1690  9378 5e                 +ayToneByteL NOTE_FREQ_E5
+  1691  9379 59                 +ayToneByteL NOTE_FREQ_F5
+  1692  937a 54                 +ayToneByteL NOTE_FREQ_FS5
+  1693  937b 4f                 +ayToneByteL NOTE_FREQ_G5
+  1694  937c 4b                 +ayToneByteL NOTE_FREQ_GS5
+  1695  937d 47                 +ayToneByteL NOTE_FREQ_A5
+  1696  937e 43                 +ayToneByteL NOTE_FREQ_AS5
+  1697  937f 3f                 +ayToneByteL NOTE_FREQ_B5
+  1698  9380 3b                 +ayToneByteL NOTE_FREQ_C6
+  1699  9381 38                 +ayToneByteL NOTE_FREQ_CS6
+  1700  9382 35                 +ayToneByteL NOTE_FREQ_D6
+  1701  9383 32                 +ayToneByteL NOTE_FREQ_DS6
+  1702  9384 2f                 +ayToneByteL NOTE_FREQ_E6
+  1703  9385 2c                 +ayToneByteL NOTE_FREQ_F6
+  1704  9386 2a                 +ayToneByteL NOTE_FREQ_FS6
+  1705  9387 27                 +ayToneByteL NOTE_FREQ_G6
+  1706  9388 25                 +ayToneByteL NOTE_FREQ_GS6
+  1707  9389 23                 +ayToneByteL NOTE_FREQ_A6
+  1708  938a 21                 +ayToneByteL NOTE_FREQ_AS6
   1709                          
   1710                          notesH:
-  1711  93ab 00                 !byte 0
-  1712  93ac 00                 +ayToneByteH NOTE_FREQ_FS4
-  1713  93ad 00                 +ayToneByteH NOTE_FREQ_G4
-  1714  93ae 00                 +ayToneByteH NOTE_FREQ_GS4
-  1715  93af 00                 +ayToneByteH NOTE_FREQ_A4
-  1716  93b0 00                 +ayToneByteH NOTE_FREQ_AS4
-  1717  93b1 00                 +ayToneByteH NOTE_FREQ_B4
-  1718  93b2 00                 +ayToneByteH NOTE_FREQ_C5
-  1719  93b3 00                 +ayToneByteH NOTE_FREQ_CS5
-  1720  93b4 00                 +ayToneByteH NOTE_FREQ_D5
-  1721  93b5 00                 +ayToneByteH NOTE_FREQ_DS5
-  1722  93b6 00                 +ayToneByteH NOTE_FREQ_E5
-  1723  93b7 00                 +ayToneByteH NOTE_FREQ_F5 
-  1724  93b8 00                 +ayToneByteH NOTE_FREQ_FS5
-  1725  93b9 00                 +ayToneByteH NOTE_FREQ_G5
-  1726  93ba 00                 +ayToneByteH NOTE_FREQ_GS5
-  1727  93bb 00                 +ayToneByteH NOTE_FREQ_A5
-  1728  93bc 00                 +ayToneByteH NOTE_FREQ_AS5
-  1729  93bd 00                 +ayToneByteH NOTE_FREQ_B5
-  1730  93be 00                 +ayToneByteH NOTE_FREQ_C6
-  1731  93bf 00                 +ayToneByteH NOTE_FREQ_CS6
-  1732  93c0 00                 +ayToneByteH NOTE_FREQ_D6
-  1733  93c1 00                 +ayToneByteH NOTE_FREQ_DS6
-  1734  93c2 00                 +ayToneByteH NOTE_FREQ_E6
-  1735  93c3 00                 +ayToneByteH NOTE_FREQ_F6
-  1736  93c4 00                 +ayToneByteH NOTE_FREQ_FS6
-  1737  93c5 00                 +ayToneByteH NOTE_FREQ_G6
-  1738  93c6 00                 +ayToneByteH NOTE_FREQ_GS6
-  1739  93c7 00                 +ayToneByteH NOTE_FREQ_A6
-  1740  93c8 00                 +ayToneByteH NOTE_FREQ_AS6
+  1711  938b 00                 !byte 0
+  1712  938c 00                 +ayToneByteH NOTE_FREQ_FS4
+  1713  938d 00                 +ayToneByteH NOTE_FREQ_G4
+  1714  938e 00                 +ayToneByteH NOTE_FREQ_GS4
+  1715  938f 00                 +ayToneByteH NOTE_FREQ_A4
+  1716  9390 00                 +ayToneByteH NOTE_FREQ_AS4
+  1717  9391 00                 +ayToneByteH NOTE_FREQ_B4
+  1718  9392 00                 +ayToneByteH NOTE_FREQ_C5
+  1719  9393 00                 +ayToneByteH NOTE_FREQ_CS5
+  1720  9394 00                 +ayToneByteH NOTE_FREQ_D5
+  1721  9395 00                 +ayToneByteH NOTE_FREQ_DS5
+  1722  9396 00                 +ayToneByteH NOTE_FREQ_E5
+  1723  9397 00                 +ayToneByteH NOTE_FREQ_F5 
+  1724  9398 00                 +ayToneByteH NOTE_FREQ_FS5
+  1725  9399 00                 +ayToneByteH NOTE_FREQ_G5
+  1726  939a 00                 +ayToneByteH NOTE_FREQ_GS5
+  1727  939b 00                 +ayToneByteH NOTE_FREQ_A5
+  1728  939c 00                 +ayToneByteH NOTE_FREQ_AS5
+  1729  939d 00                 +ayToneByteH NOTE_FREQ_B5
+  1730  939e 00                 +ayToneByteH NOTE_FREQ_C6
+  1731  939f 00                 +ayToneByteH NOTE_FREQ_CS6
+  1732  93a0 00                 +ayToneByteH NOTE_FREQ_D6
+  1733  93a1 00                 +ayToneByteH NOTE_FREQ_DS6
+  1734  93a2 00                 +ayToneByteH NOTE_FREQ_E6
+  1735  93a3 00                 +ayToneByteH NOTE_FREQ_F6
+  1736  93a4 00                 +ayToneByteH NOTE_FREQ_FS6
+  1737  93a5 00                 +ayToneByteH NOTE_FREQ_G6
+  1738  93a6 00                 +ayToneByteH NOTE_FREQ_GS6
+  1739  93a7 00                 +ayToneByteH NOTE_FREQ_A6
+  1740  93a8 00                 +ayToneByteH NOTE_FREQ_AS6
   1741                          
   1742                          ; LEVEL DATA
   1743                          ; ----------
   1744                          
   1745                          levelMap:
-  1746  93c9 d19329948194d994   !word level1, level2, level3, level4
+  1746  93a9 b19309946194b994   !word level1, level2, level3, level4
   1747                          
   1748                          
   1749                          level1: 
-  1750  93d1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1751  93d9 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1752  93e1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1753  93e9 0101010101010100   !byte 1,1,1,1,1,1,1,0
-  1754  93f1 0202020202020200   !byte 2,2,2,2,2,2,2,0
-  1755  93f9 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1756  9401 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1757  9409 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1758  9411 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1759  9419 0303030303030300   !byte 3,3,3,3,3,3,3,0
-  1760  9421 0404040404040400   !byte 4,4,4,4,4,4,4,0
+  1750  93b1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1751  93b9 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1752  93c1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1753  93c9 0101010101010100   !byte 1,1,1,1,1,1,1,0
+  1754  93d1 0202020202020200   !byte 2,2,2,2,2,2,2,0
+  1755  93d9 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1756  93e1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1757  93e9 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1758  93f1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1759  93f9 0303030303030300   !byte 3,3,3,3,3,3,3,0
+  1760  9401 0404040404040400   !byte 4,4,4,4,4,4,4,0
   1761                          
   1762                          
   1763                          level2: 
-  1764  9429 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1765  9431 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1766  9439 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1767  9441 0101010101010100   !byte 1,1,1,1,1,1,1,0
-  1768  9449 0101010101010100   !byte 1,1,1,1,1,1,1,0
-  1769  9451 0202020202020200   !byte 2,2,2,2,2,2,2,0
-  1770  9459 0202020202020200   !byte 2,2,2,2,2,2,2,0
-  1771  9461 0303030303030300   !byte 3,3,3,3,3,3,3,0
-  1772  9469 0303030303030300   !byte 3,3,3,3,3,3,3,0
-  1773  9471 0404040404040400   !byte 4,4,4,4,4,4,4,0
-  1774  9479 0404040404040400   !byte 4,4,4,4,4,4,4,0
+  1764  9409 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1765  9411 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1766  9419 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1767  9421 0101010101010100   !byte 1,1,1,1,1,1,1,0
+  1768  9429 0101010101010100   !byte 1,1,1,1,1,1,1,0
+  1769  9431 0202020202020200   !byte 2,2,2,2,2,2,2,0
+  1770  9439 0202020202020200   !byte 2,2,2,2,2,2,2,0
+  1771  9441 0303030303030300   !byte 3,3,3,3,3,3,3,0
+  1772  9449 0303030303030300   !byte 3,3,3,3,3,3,3,0
+  1773  9451 0404040404040400   !byte 4,4,4,4,4,4,4,0
+  1774  9459 0404040404040400   !byte 4,4,4,4,4,4,4,0
   1775                          
   1776                          
   1777                          level3: 
-  1778  9481 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1779  9489 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1780  9491 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1781  9499 0101010101010100   !byte 1,1,1,1,1,1,1,0
-  1782  94a1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1783  94a9 0202020202020200   !byte 2,2,2,2,2,2,2,0
-  1784  94b1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1785  94b9 0303030303030300   !byte 3,3,3,3,3,3,3,0
-  1786  94c1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1787  94c9 0404040404040400   !byte 4,4,4,4,4,4,4,0
-  1788  94d1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1778  9461 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1779  9469 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1780  9471 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1781  9479 0101010101010100   !byte 1,1,1,1,1,1,1,0
+  1782  9481 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1783  9489 0202020202020200   !byte 2,2,2,2,2,2,2,0
+  1784  9491 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1785  9499 0303030303030300   !byte 3,3,3,3,3,3,3,0
+  1786  94a1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1787  94a9 0404040404040400   !byte 4,4,4,4,4,4,4,0
+  1788  94b1 0000000000000000   !byte 0,0,0,0,0,0,0,0
   1789                          
   1790                          
   1791                          level4: 
-  1792  94d9 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1793  94e1 0000000000000000   !byte 0,0,0,0,0,0,0,0
-  1794  94e9 0000000100000000   !byte 0,0,0,1,0,0,0,0
-  1795  94f1 0000010201000000   !byte 0,0,1,2,1,0,0,0
-  1796  94f9 0001020002010000   !byte 0,1,2,0,2,1,0,0
-  1797  9501 0102000000020100   !byte 1,2,0,0,0,2,1,0
-  1798  9509 0200000300000200   !byte 2,0,0,3,0,0,2,0
-  1799  9511 0000030403000000   !byte 0,0,3,4,3,0,0,0
-  1800  9519 0003040004030000   !byte 0,3,4,0,4,3,0,0
-  1801  9521 0304000000040300   !byte 3,4,0,0,0,4,3,0
-  1802  9529 0400000000000400   !byte 4,0,0,0,0,0,4,0
-  1803  9531 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1792  94b9 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1793  94c1 0000000000000000   !byte 0,0,0,0,0,0,0,0
+  1794  94c9 0000000100000000   !byte 0,0,0,1,0,0,0,0
+  1795  94d1 0000010201000000   !byte 0,0,1,2,1,0,0,0
+  1796  94d9 0001020002010000   !byte 0,1,2,0,2,1,0,0
+  1797  94e1 0102000000020100   !byte 1,2,0,0,0,2,1,0
+  1798  94e9 0200000300000200   !byte 2,0,0,3,0,0,2,0
+  1799  94f1 0000030403000000   !byte 0,0,3,4,3,0,0,0
+  1800  94f9 0003040004030000   !byte 0,3,4,0,4,3,0,0
+  1801  9501 0304000000040300   !byte 3,4,0,0,0,4,3,0
+  1802  9509 0400000000000400   !byte 4,0,0,0,0,0,4,0
+  1803  9511 0000000000000000   !byte 0,0,0,0,0,0,0,0
 
 ; ******** Source: kernel.asm
      1                          ; 6502 - HBC-56 Kernel
