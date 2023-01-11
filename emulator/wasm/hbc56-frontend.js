@@ -324,7 +324,7 @@ function romDropHandler(event)
                     alert("Invalid file: '" + file.name + "'. Accepts .o or .o.lmap files only");
                }
             }
-			else if (event.dataTransfer.items[i].kind == 'string')
+			else if (event.dataTransfer.items[i].kind == 'string' && event.dataTransfer.items[i].type.match('^text/plain'))
             {
 				event.dataTransfer.items[i].getAsString((s) => {
 					Module.ccall("hbc56PasteText", "void", ["string"], [s]);
