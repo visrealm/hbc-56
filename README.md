@@ -18,7 +18,7 @@ Current cards:
 All [source code](code/6502) and [schematics](schematics) are available in this repository.
 
 ## Emulator
-I have also included an emulator for this system. The emulator supports:
+I have also included an emulator for this system. The emulator supports the following:
 
 * Realtime execution of code (at 4MHz).
 * Step through disassembled code with labels.
