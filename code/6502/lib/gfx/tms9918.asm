@@ -364,6 +364,47 @@ tmsModeGraphicsI:
         rts
 
 ; -----------------------------------------------------------------------------
+; tmsModeBitmap: Set up for Graphics II mode and set up name table for bitmap
+; -----------------------------------------------------------------------------
+tmsModeBitmap:
+        php
+        sei
+                ; clear the name table
+        +tmsSetAddrNameTable
+        ldy #3
+        lda #0
+-
+        +tmsPut
+        inc
+        bne -
+        dey
+        bne -
+
+        ; set all color table entries to transparent
+        +tmsSetAddrColorTable
+        +tmsColorFgBg TMS_WHITE, TMS_BLACK
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb        
+
+        ; clear the pattern table
+        +tmsSetAddrPattTable
+        lda #0
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+
+        plp
+        
+        ; flow on through
+
+; -----------------------------------------------------------------------------
 ; tmsModeGraphicsII: Set up for Graphics II mode
 ; -----------------------------------------------------------------------------
 tmsModeGraphicsII:
@@ -567,8 +608,12 @@ tmsInitTextTable:
         +tmsSetAddrNameTable
 
 
+        clc
+        lda TMS9918_CONSOLE_SIZE_X
+        adc TMS9918_CONSOLE_SIZE_X
+        adc TMS9918_CONSOLE_SIZE_X
+        tax
         lda #0
-        ldx #(42 * 3)
         jsr _tmsSendX8
 
         rts
@@ -863,6 +908,13 @@ tmsDecPosConsole:
 ++
         rts
 
+; -----------------------------------------------------------------------------
+; tmsConsoleCls: Clear the screen and reset the console location
+; -----------------------------------------------------------------------------
+tmsConsoleCls:
+        jsr tmsInitTextTable
+
+        ; flow through
 
 ; -----------------------------------------------------------------------------
 ; tmsConsoleHome: Set cursor position top left
@@ -917,6 +969,16 @@ tmsSetPosWriteText:
 tmsSetPosRead:
         jsr tmsSetPosTmpAddress
         jmp tmsSetAddressRead
+; -----------------------------------------------------------------------------
+; tmsSetColorTmpAddressII: Set TMS_TMP_ADDRESS for a given mode II color definition
+; -----------------------------------------------------------------------------
+; Inputs:
+;   X: X position
+;   Y: Y position
+; -----------------------------------------------------------------------------
+tmsSetColorTmpAddressII:
+        lda #>TMS_VRAM_COLOR_ADDRESS
+        bra .addXYToAddress
 
 ; -----------------------------------------------------------------------------
 ; tmsSetPatternTmpAddress: Set TMS_TMP_ADDRESS for a given mode II pattern definition
@@ -927,6 +989,8 @@ tmsSetPosRead:
 ; -----------------------------------------------------------------------------
 tmsSetPatternTmpAddressII:
         lda #>TMS_VRAM_PATT_ADDRESS
+
+.addXYToAddress:
         sta TMS_TMP_ADDRESS + 1
 
         tya
@@ -1083,11 +1147,11 @@ tmsConsoleOut:
 
 .tmsConsoleNewline
         jsr tmsConsoleNewline
-        jmp .endConsoleOut
+        bra .endConsoleOut
 
 .tmsConsoleBackspace
         jsr tmsConsoleBackspace
-        jmp .endConsoleOut
+        bra .endConsoleOut
 
 
 ; -----------------------------------------------------------------------------
