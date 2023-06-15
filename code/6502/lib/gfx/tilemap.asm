@@ -261,7 +261,7 @@ tilemapRenderToLcd:
 	sta TILEMAP_TMP_OUTPUT_ROW
 
 .tilemapRenderFrom
-	ldy TILEMAP_TMP_OUTPUT_ROW
+	ldx TILEMAP_TMP_OUTPUT_ROW
 	jsr lcdGraphicsSetRow
 
 	; iterate over the buffer rows and columns
@@ -329,7 +329,7 @@ tilemapRenderToLcd:
 	sta TILEMAP_TMP_BUF_COL
 	inc TILEMAP_TMP_TILE_ROW
 	inc TILEMAP_TMP_OUTPUT_ROW
-	ldy TILEMAP_TMP_OUTPUT_ROW
+	ldx TILEMAP_TMP_OUTPUT_ROW
 
 	jsr lcdGraphicsSetRow
 

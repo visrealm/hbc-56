@@ -23,6 +23,7 @@ hbc56SetupDisplay:
         +tmsColorFgBg BG, BORDER
         jsr tmsSetBackground
         +tmsColorFgBg FG, BG
+        lda BASIC_COLOR
         jsr tmsInitEntireColorTable
 
         jsr tmsInitPattTable

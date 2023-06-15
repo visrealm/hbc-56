@@ -323,7 +323,8 @@ TK_POKE		= TK_DEF+1		; POKE token
 TK_DOKE		= TK_POKE+1		; DOKE token
 TK_DISPLAY	= TK_DOKE+1		; DISPLAY token
 TK_PLOT		= TK_DISPLAY+1		; PLOT token
-TK_CALL		= TK_PLOT+1		; CALL token
+TK_UNPLOT	= TK_PLOT+1		; UNPLOT token
+TK_CALL		= TK_UNPLOT+1		; CALL token
 TK_DO			= TK_CALL+1		; DO token
 TK_LOOP		= TK_DO+1		; LOOP token
 TK_PRINT		= TK_LOOP+1		; PRINT token
@@ -336,7 +337,9 @@ TK_GET		= TK_WIDTH+1	; GET token
 TK_SWAP		= TK_GET+1		; SWAP token
 TK_BITSET		= TK_SWAP+1		; BITSET token
 TK_BITCLR		= TK_BITSET+1	; BITCLR token
-TK_IRQ		= TK_BITCLR+1	; IRQ token
+TK_CLS                  = TK_BITCLR+1
+TK_COLOR		= TK_CLS+1
+TK_IRQ		= TK_COLOR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
 
 ; secondary command tokens, can't start a statement
@@ -7756,20 +7759,15 @@ LAB_TWOPI
 	LDY	#>LAB_2C7C		; set (2*pi) pointer high byte
 	JMP	LAB_UFAC		; unpack memory (AY) into FAC1 and return
 
-LAB_DISPLAY
-	JSR	LAB_EVNM		; evaluate expression and check is numeric,
-					; else do type mismatch
-	JSR	LAB_F2FX		; save integer part of FAC1 in temporary integer
-	ldx 	Itempl
-	jmp 	basicMode2
 
-LAB_PLOT:
-	jsr LAB_GADB
+; unplot a pixel
+LAB_UNPLOT:
+	jsr LAB_GADB ; get two parameters
 	txa
 	tay
 	ldx Itempl
         
-	jmp doPlot
+	rts;jmp doUnPlot
 
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
@@ -7865,7 +7863,7 @@ LAB_MSZM
 	!text	$0D,$0A,"Memory size ",$00
 
 LAB_SMSG
-	!text	" ",$0A,$0A,"* HBC-56 BASIC *",$00
+	!text	" ",$0A,$0A," ** EhBASIC for HBC-56 v2.22 **",$00
 
 ; numeric constants and series
 
@@ -8012,8 +8010,9 @@ LAB_CTBL
 	!word	LAB_DEF-1		; DEF
 	!word	LAB_POKE-1		; POKE
 	!word	LAB_DOKE-1		; DOKE		new command
-	!word	LAB_DISPLAY-1		; DISPLAY	HBC-56 command
-	!word	LAB_PLOT-1		; PLOT		HBC-56 command
+	!word	basicDisplay-1		; DISPLAY	HBC-56 command
+	!word	basicPlot-1		; PLOT		HBC-56 command
+	!word	LAB_UNPLOT-1		; UNPLOT	HBC-56 command
 	!word	LAB_CALL-1		; CALL		new command
 	!word	LAB_DO-1		; DO			new command
 	!word	LAB_LOOP-1		; LOOP		new command
@@ -8027,6 +8026,8 @@ LAB_CTBL
 	!word	LAB_SWAP-1		; SWAP		new command
 	!word	LAB_BITSET-1	; BITSET		new command
 	!word	LAB_BITCLR-1	; BITCLR		new command
+	!word	tmsConsoleCls-1	; CLS
+	!word	basicColor-1	; COLOR
 	!word	LAB_IRQ-1		; IRQ			new command
 	!word	LAB_NMI-1		; NMI			new command
 
@@ -8266,6 +8267,10 @@ LBB_CHRS
 	!text	"HR$(",TK_CHRS	; CHR$(
 LBB_CLEAR
 	!text	"LEAR",TK_CLEAR	; CLEAR
+LBB_CLS
+	!text	"LS",TK_CLS	; CLS
+LBB_COLOR
+	!text	"OLOR",TK_COLOR	; COLOR
 LBB_CONT
 	!text	"ONT",TK_CONT	; CONT
 LBB_COS
@@ -8452,6 +8457,8 @@ TAB_ASCU
 LBB_UCASES
 	!text	"CASE$(",TK_UCASES
 					; UCASE$(
+LBB_UNPLOT
+	!text	"NPLOT",TK_UNPLOT	; UNPLOT
 LBB_UNTIL
 	!text	"NTIL",TK_UNTIL	; UNTIL
 LBB_USR
@@ -8542,6 +8549,8 @@ LAB_KEYT
 	!word	LBB_DISPLAY		; DISPLAY
 	!text	4,'P'
 	!word	LBB_PLOT		; PLOT
+	!text	6,'U'
+	!word	LBB_UNPLOT		; UNPLOT
 	!text	4,'C'
 	!word	LBB_CALL		; CALL
 	!text	2,'D'
@@ -8568,6 +8577,10 @@ LAB_KEYT
 	!word	LBB_BITSET		; BITSET
 	!text	6,'B'
 	!word	LBB_BITCLR		; BITCLR
+	!text	3,'C'
+	!word	LBB_CLS			; CLS
+	!text	5,'C'
+	!word	LBB_COLOR		; COLOR
 	!text	3,'I'
 	!word	LBB_IRQ		; IRQ
 	!text	3,'N'

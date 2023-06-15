@@ -117,8 +117,6 @@ hbc56Tms9918Int:
         stx HBC56_TMP_X
         sty HBC56_TMP_Y
         jsr tmsSetPosConsole
-        ldx HBC56_TMP_X
-        ldy HBC56_TMP_Y
         lda HBC56_TICKS
         beq +
         lda #' '

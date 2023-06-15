@@ -52,24 +52,24 @@ lcdTextMode:
 
 
 ; -----------------------------------------------------------------------------
-; lcdSetRow: Set LCD address to graphics row
+; lcdGraphicsSetRow: Set LCD address to graphics row
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;  Y: Row of the LCD (0 - 63)
+;  X: Row of the LCD (0 - 63)
 ; -----------------------------------------------------------------------------
 lcdGraphicsSetRow:
 	pha
 
 	; set y address (0 - 31)
 	jsr lcdWait
-	tya
+	txa
 	and #$1f  ; only want 0-31
 	ora #LCD_CMD_EXT_GRAPHICS_ADDR
 	sta LCD_CMD
 
 	; set x address - either 0 or 8
 	jsr lcdWait
-	tya
+	txa
 	and #$20
 	lsr
 	lsr
@@ -96,23 +96,7 @@ lcdImage:
 .imageLoop:
 
 	; x in the range 0-63
-
-	; set y address
-	jsr lcdWait
-	txa
-	and #$1f  ; only want 0-31
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
-	; set x address - either 0 or 8
-	jsr lcdWait
-	txa
-	and #$20
-	lsr
-	lsr
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
+	jsr lcdGraphicsSetRow
 
 	ldy #0
 .imgRowLoop
@@ -159,23 +143,7 @@ lcdImageVflip:
 .imageLoopV:
 
 	; x in the range 0-63
-
-	; set y address
-	jsr lcdWait
-	txa
-	and #$1f  ; only want 0-31
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
-	; set x address - either 0 or 8
-	jsr lcdWait
-	txa
-	and #$20
-	lsr
-	lsr
-	ora #LCD_CMD_EXT_GRAPHICS_ADDR
-	sta LCD_CMD
-
+	jsr lcdGraphicsSetRow
 
 	ldy #0
 .imgRowLoopV
