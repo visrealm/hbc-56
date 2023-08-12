@@ -35,6 +35,7 @@ void debuggerMemoryView(bool *show);
 void debuggerBreakpointsView(bool *show);
 void debuggerVramMemoryView(bool* show);
 void debuggerTmsRegistersView(bool* show);
+void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show);
 
 extern uint16_t debugMemoryAddr;
 extern uint16_t debugTmsMemoryAddr;

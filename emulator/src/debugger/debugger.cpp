@@ -46,6 +46,23 @@ static std::map<std::string, int> constants;
 static uint16_t highlightAddr = 0;
 static uint16_t hoveredAddr = 0;
 
+static const float alpha = 0.85f;
+
+static const ImVec4 white(1.0f, 1.0f, 1.0f, alpha);
+static const ImVec4 green(0.5f, 0.9f, 0.5f, alpha);
+static const ImVec4 yellow(0.9f, 0.9f, 0.5f, alpha);
+static const ImVec4 dkred(0.8f, 0.2f, 0.2f, alpha);
+static const ImVec4 ltblue(0.75f, 0.75f, 1.0f, alpha);
+static const ImVec4 grey(0.25f, 0.25f, 0.25f, alpha);
+static const ImVec4 teal(0.5f, 1.0f, 0.0f, alpha);
+static const ImVec4 purple(1.0f, 0.5f, 1.0f, alpha);
+static const ImVec4 blue(0.5f, 0.5f, 1.0f, alpha);
+static const ImVec4 red(1.0f, 0.5f, 0.5f, alpha);
+static const ImVec4 ltred(1.0f, 0.75f, 0.5f, alpha);
+static const ImVec4 dkteal(0.5f, 0.75f, 1.0f, alpha);
+static const ImVec4 pink(1.0f, 0.75f, 1.0f, alpha);
+static const ImVec4 ltgrey(0.7f, 0.7f, 0.7f, alpha);
+
 static std::set<char> operators = {'!','^','-','/','%','+','<','>','=','&','|','(',')'};
 
 static int isProbablyConstant(const char* str)
@@ -706,13 +723,13 @@ void constantTool(const char* name)
     uint8_t memVal = hbc56MemRead(addr, true);
 
     ImGui::BeginTooltip();
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, white);
     ImGui::TextUnformatted(name);
     ImGui::PopStyleColor();
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, green);
     ImGui::Separator();
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
     ImGui::TextUnformatted("Hex: ");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -727,7 +744,7 @@ void constantTool(const char* name)
     ImGui::SameLine();
     ImGui::Text(" -> $%02x", memVal);
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
     ImGui::TextUnformatted("Dec: ");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -735,7 +752,7 @@ void constantTool(const char* name)
     ImGui::SameLine();
     ImGui::Text(" -> %d", memVal);
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
     ImGui::TextUnformatted("Bin: ");
     ImGui::PopStyleColor();
     ImGui::SameLine();
@@ -768,7 +785,7 @@ void registerFlagValue(uint8_t val, uint8_t flag, char name)
   }
   else
   {
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.70f, 0.2f, 0.2f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, dkred);
     ImGui::Text("%c", tolower(name));
     ImGui::PopStyleColor();
   }
@@ -778,12 +795,12 @@ void registerFlagValue(uint8_t val, uint8_t flag, char name)
 void registersAddRow(const char* label, uint16_t value)
 {
   ImGui::TableNextRow();
-  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_Text, yellow);
   ImGui::TableSetColumnIndex(0);
   ImGui::TextUnformatted(label);
   ImGui::PopStyleColor();
 
-  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_Text, green);
   ImGui::TableSetColumnIndex(1);
   if (value & 0xff00)
     ImGui::Text("$%04x", value);
@@ -826,7 +843,7 @@ void debuggerRegistersView(bool* show)
       ImGui::TableSetupColumn("Hex");
       ImGui::TableSetupColumn("Dec");
       ImGui::TableSetupColumn("Bin");
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
       ImGui::TableHeadersRow();
       ImGui::PopStyleColor();
 
@@ -847,13 +864,13 @@ void debuggerStackView(bool* show)
 {
   if (ImGui::Begin("Stack", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, green);
     uint8_t sp = vrEmu6502GetStackPointer(cpu6502) + 1;
     while (sp != 0)
     {
       uint8_t d = hbc56MemRead(0x100 + sp, true);
 
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
       ImGui::Text("$%04x", 0x100 + sp);
       ImGui::PopStyleColor();
 
@@ -873,7 +890,7 @@ void renderLine(const SourceLine &line)
 
   ImGuiStyle& style = ImGui::GetStyle();
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, (float)(int)(style.ItemSpacing.y)));
-  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_Text, grey);
 
   auto label = line.childOfType(Token::LABEL);
 
@@ -884,37 +901,37 @@ void renderLine(const SourceLine &line)
     switch (tok->type())
     {
     case Token::COMMENT:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, teal);
       break;
     case Token::OPCODE:
       if (isBranchingOpcode(tok->value()))
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, purple);
       else
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, blue);
       break;
     case Token::NUMBER:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, red);
       break;
     case Token::STRING:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, ltred);
       break;
     case Token::OPERATOR:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, green);
       break;
     case Token::IMMEDIATE:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, blue);
       break;
     case Token::MACRO:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.75f, 0.75f, 1.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, ltblue);
       break;
     case Token::CONSTANT:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
       break;
     case Token::LABEL:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.75f, 1.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, dkteal);
       break;
     case Token::PSEUDOOP:
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 1.0f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, pink);
       break;
     default:
       hasColor = false;
@@ -989,7 +1006,7 @@ void debuggerDisassemblyView(bool* show)
   if (ImGui::Begin("Disassembly", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     uint16_t pc = vrEmu6502GetPC(cpu6502);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, green);
 
     bool firstRow = true;
 
@@ -1002,7 +1019,7 @@ void debuggerDisassemblyView(bool* show)
       {
         if (ImGui::GetContentRegionAvail().y < (ImGui::GetTextLineHeightWithSpacing() * 2)) break;
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, blue);
         ImGui::TextUnformatted(labelMap[pc]);
         ImGui::PopStyleColor();
       }
@@ -1022,7 +1039,7 @@ void debuggerDisassemblyView(bool* show)
       }
 
       uint8_t opcode = hbc56MemRead(pc, true);
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
 
 
       ImGui::Text("  $%04x ", pc);
@@ -1155,7 +1172,7 @@ void debuggerSourceView(bool* show)
         clipper.Begin(visibleFile.numLines());
 
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ltgrey);
 
         while (clipper.Step())
         {
@@ -1182,7 +1199,7 @@ void debuggerSourceView(bool* show)
               highlightRowHovered();
             }
 
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, yellow);
             ImGui::Text(" %-5d", lineNumber);
             ImGui::PopStyleColor();
 
@@ -1233,7 +1250,7 @@ void debuggerBreakpointsView(bool* show)
       ImGui::TableSetupColumn("File");
       ImGui::TableSetupColumn("Line");
       ImGui::TableSetupColumn("Address");
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
       ImGui::TableHeadersRow();
       ImGui::PopStyleColor();
 
@@ -1247,7 +1264,7 @@ void debuggerBreakpointsView(bool* show)
         ImGui::TableNextRow();
 
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, yellow);
         ImGui::TableSetColumnIndex(0);
         if (ImGui::SmallButton("..."))
         {
@@ -1257,7 +1274,7 @@ void debuggerBreakpointsView(bool* show)
         ImGui::TextUnformatted(file.filename().c_str());
         ImGui::PopStyleColor();
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, green);
         ImGui::TableSetColumnIndex(1);
         ImGui::Text("%d", lineIndex + 1);
         ImGui::TableSetColumnIndex(2);
@@ -1286,12 +1303,12 @@ void debuggerMemoryView(bool* show)
 
     if (lastDebugMemoryAddr != debugMemoryAddr)
     {
-      int scrollPos = (debugMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
+      scrollPos = (debugMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
       ImGui::SetScrollY(scrollPos);
       lastDebugMemoryAddr = debugMemoryAddr;
     }
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, green);
 
     while (clipper.Step())
     {
@@ -1308,7 +1325,7 @@ void debuggerMemoryView(bool* show)
         uint8_t v6 = hbc56MemRead(addr + 6, true);
         uint8_t v7 = hbc56MemRead(addr + 7, true);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, yellow);
         ImGui::Text("$%04x", addr);
         ImGui::PopStyleColor();
 
@@ -1368,12 +1385,12 @@ void debuggerVramMemoryView(bool* show)
 
       if (lastDebugMemoryAddr != debugTmsMemoryAddr)
       {
-        int scrollPos = (debugTmsMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
+        scrollPos = (debugTmsMemoryAddr >> 3) * ImGui::GetTextLineHeightWithSpacing();
         ImGui::SetScrollY(scrollPos);
         lastDebugMemoryAddr = debugTmsMemoryAddr;
       }
 
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, green);
 
       while (clipper.Step())
       {
@@ -1390,7 +1407,7 @@ void debuggerVramMemoryView(bool* show)
           uint8_t v6 = readTms9918Vram(tms9918, (addr + 6) & 0x3fff);
           uint8_t v7 = readTms9918Vram(tms9918, (addr + 7) & 0x3fff);
 
-          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+          ImGui::PushStyleColor(ImGuiCol_Text, yellow);
           ImGui::Text("$%04x", addr);
           ImGui::PopStyleColor();
 
@@ -1411,6 +1428,117 @@ void debuggerVramMemoryView(bool* show)
   }
   ImGui::End();
 }
+
+void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
+{
+  static SDL_Texture* tex = NULL;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  if (ImGui::Begin("TMS9918A Patterns", show))
+  {
+    if (tms9918)
+    {
+      const int texSize = 256;
+
+      if (tex == NULL)
+      {
+        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, texSize, texSize);
+#ifndef __CLANG__   // this doesn't work under linux
+        SDL_SetTextureScaleMode(tex, SDL_ScaleModeBest);
+#endif
+      }
+
+      uint32_t* pixels = NULL;
+      int pitch = 0;
+      SDL_LockTexture(tex, NULL, (void**) & pixels, &pitch);
+
+
+      vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+
+      uint16_t patternAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_PATTERN_TABLE) & ((mode == TMS_MODE_GRAPHICS_II) ? 0x04 : 0x07)) << 11;
+
+      uint16_t colorAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_COLOR_TABLE) & ((mode == TMS_MODE_GRAPHICS_II) ? 0x80 : 0xff)) << 6;
+
+      ImVec2 uv0(0.0, 0.0);
+      ImVec2 uv1(0.5, 0.5);
+
+      if (mode == TMS_MODE_GRAPHICS_I || mode == TMS_MODE_TEXT)
+      {
+        for (int i = 0; i < (256 * 8); ++i)
+        {
+          uint8_t pattByte = readTms9918Vram(tms9918, (patternAddr + i) & 0x3fff);
+
+          uint8_t colByte = readTms9918Reg(tms9918, TMS_REG_FG_BG_COLOR);
+          if (mode == TMS_MODE_GRAPHICS_I)
+          {
+            colByte = readTms9918Vram(tms9918, (colorAddr + i / 64) & 0x3fff);
+          }
+          uint32_t fg = vrEmuTms9918Palette[colByte >> 4];
+          uint32_t bg = vrEmuTms9918Palette[colByte & 0x0f];
+
+
+          int pixelOffset = ((i & 0x78) >> 3) * 8 + (i & 0x07) * texSize + (i >> 7) * texSize * 8;
+
+          for (int x = 0; x < 8; ++x)
+          {
+            pixels[pixelOffset++] = (pattByte & 0x80) ? fg : bg;
+            pattByte <<= 1;
+          }
+        }
+      }
+      else if (mode == TMS_MODE_GRAPHICS_II)
+      {
+        uv1 = ImVec2(1.0, 0.75);
+
+        for (int i = 0; i < (768 * 8); ++i)
+        {
+          uint8_t pattByte = readTms9918Vram(tms9918, (patternAddr + i) & 0x3fff);
+          uint8_t colByte = readTms9918Vram(tms9918, (colorAddr + i) & 0x3fff);
+          uint32_t fg = vrEmuTms9918Palette[colByte >> 4];
+          uint32_t bg = vrEmuTms9918Palette[colByte & 0x0f];
+
+          int pixelOffset = ((i & 0xf8) >> 3) * 8 + (i & 0x07) * texSize + (i >> 8) * texSize * 8;
+
+          for (int x = 0; x < 8; ++x)
+          {
+            pixels[pixelOffset++] = (pattByte & 0x80) ? fg : bg;
+            pattByte <<= 1;
+          }
+        }
+      }
+
+      SDL_UnlockTexture(tex);
+
+      ImVec2 windowSize = ImGui::GetContentRegionAvail();
+
+      double texSizeX = texSize * uv1.x;
+      double texSizeY = texSize * uv1.y;
+
+      double scaleX = windowSize.x / texSizeX;
+      double scaleY = windowSize.y / texSizeY;
+
+      double scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+      ImVec2 imageSize = windowSize;
+      imageSize.x = (float)(texSizeX * scale);
+      imageSize.y = (float)(texSizeY * scale);
+
+      ImVec2 pos = ImGui::GetCursorPos();
+      pos.x += (windowSize.x - imageSize.x) / 2;
+      pos.y += (windowSize.y - imageSize.y) / 2;
+      ImGui::SetCursorPos(pos);
+
+      ImGui::Image(tex, imageSize, uv0, uv1);
+    }
+    else
+    {
+      ImGui::Text("TMS9918A not present");
+    }
+  }
+  ImGui::End();
+  ImGui::PopStyleVar();
+}
+
 
 static std::string tmsColorText(uint8_t c)
 {
@@ -1463,7 +1591,7 @@ void debuggerTmsRegistersView(bool* show)
   {
     if (tms9918)
     {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, green);
       std::string desc;
 
       for (uint8_t y = 0; y < 8; ++y)
@@ -1515,7 +1643,7 @@ void debuggerTmsRegistersView(bool* show)
         }
 
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.5f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, yellow);
         ImGui::Text("R%d", y);
         ImGui::PopStyleColor();
         ImGui::SameLine();

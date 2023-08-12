@@ -66,6 +66,8 @@ SDL_mutex* kbQueueMutex = nullptr;
 
 static std::queue<SDL_KeyboardEvent> pasteQueue;
 
+static int loadRom(const char* filename);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -239,6 +241,14 @@ const char* hbc56GetLayout()
 void hbc56PasteText(const char* text)
 {
   SDL_LockMutex(kbQueueMutex);
+
+  SDL_KeyboardEvent ev;
+  ev.type = SDL_KEYUP;
+  ev.keysym.scancode = SDL_SCANCODE_LCTRL;
+  pasteQueue.push(ev);
+  ev.keysym.scancode = SDL_SCANCODE_RCTRL;
+  pasteQueue.push(ev);
+
   while (*text)
   {
     char c = *(text++);
@@ -300,7 +310,6 @@ void hbc56PasteText(const char* text)
 
     if (sc != SDL_SCANCODE_UNKNOWN)
     {
-      SDL_KeyboardEvent ev;
       ev.type = SDL_KEYDOWN;
       if (shift)
       {
@@ -506,6 +515,7 @@ static void doRender()
   static bool showMemory = true;
   static bool showTms9918Memory = true;
   static bool showTms9918Registers = true;
+  static bool showTms9918Patterns = true;
 
   ImGui_ImplSDLRenderer_NewFrame();
   ImGui_ImplSDL2_NewFrame();
@@ -536,7 +546,9 @@ static void doRender()
   static bool open = true;
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
   ImGui::Begin("Workspace", &open, window_flags);
+  ImGui::PopStyleColor();
   ImGui::PopStyleVar(2);
   ImGui::PopStyleVar(2);
   /*ImGui::BeginChild("toolbar", ImVec2(0, 30), window_flags);
@@ -550,6 +562,10 @@ static void doRender()
 
 
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
 #if !__EMSCRIPTEN__
@@ -568,6 +584,7 @@ static void doRender()
       ImGui::EndMenu();
     }
 
+    //ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
     if (ImGui::BeginMenu("Window"))
     {
       if (ImGui::BeginMenu("Debugger"))
@@ -581,6 +598,7 @@ static void doRender()
         ImGui::Separator();
         ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
         ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
+        ImGui::MenuItem("TMS9918A Patterns", "<Ctrl> + P", &showTms9918Patterns);
         ImGui::EndMenu();
       }
 
@@ -646,6 +664,9 @@ static void doRender()
   if (showBreakpoints) debuggerBreakpointsView(&showBreakpoints);
   if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
+  if (showTms9918Patterns) debuggerTmsPatternsView(renderer, &showTms9918Registers);
+
+  ImGui::PopStyleColor(4);
 
   ImGui::End();
 
@@ -816,6 +837,15 @@ static void doEvents()
         mouseZ = event.wheel.y;
         break;
       }
+
+      case SDL_DROPFILE:
+      {
+        loadRom(event.drop.file);
+        SDL_free(event.drop.file);
+        hbc56Reset();
+        return;
+      }
+
     }
 
     if (!skipProcessing)
@@ -836,7 +866,7 @@ static void doEvents()
 
   if (keyboardDeviceQueueEmpty(kbDevice))
   {
-    for (int i = 0; i < 2 && !pasteQueue.empty(); ++i)
+    for (int j = 0; j < 2 && !pasteQueue.empty(); ++j)
     {
       SDL_Event ev;
       ev.type = pasteQueue.front().type;

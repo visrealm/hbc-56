@@ -338,3 +338,17 @@ void writeTms9918Reg(HBC56Device* device, uint8_t reg, uint8_t value)
     vrEmuTms9918WriteRegValue(tmsDevice->tms9918, reg, value);
   }
 }
+
+/* Function:  vrEmuTms9918DisplayMode
+  * --------------------
+  * current display mode
+  */
+int getTms9918Mode(HBC56Device* device)
+{
+  TMS9918Device* tmsDevice = getTms9918Device(device);
+  if (tmsDevice)
+  {
+    return vrEmuTms9918DisplayMode(tmsDevice->tms9918);
+  }
+  return 0;
+}

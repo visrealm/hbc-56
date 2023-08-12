@@ -49,6 +49,13 @@ uint8_t readTms9918Reg(HBC56Device* device, uint8_t reg);
 void writeTms9918Reg(HBC56Device* device, uint8_t reg, uint8_t value);
 
 
+/* Function:  getTms9918Mode
+ * --------------------
+ * return tms9918 display mode (vrEmuTms9918Mode)
+ */
+int getTms9918Mode(HBC56Device* device);
+
+
 #ifdef __cplusplus
 }
 #endif
