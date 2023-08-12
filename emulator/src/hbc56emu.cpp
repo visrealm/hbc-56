@@ -516,6 +516,7 @@ static void doRender()
   static bool showTms9918Memory = true;
   static bool showTms9918Registers = true;
   static bool showTms9918Patterns = true;
+  static bool showTms9918Sprites = true;
 
   ImGui_ImplSDLRenderer_NewFrame();
   ImGui_ImplSDL2_NewFrame();
@@ -599,6 +600,7 @@ static void doRender()
         ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
         ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
         ImGui::MenuItem("TMS9918A Patterns", "<Ctrl> + P", &showTms9918Patterns);
+        ImGui::MenuItem("TMS9918A Sprites", "<Ctrl> + I", &showTms9918Sprites);
         ImGui::EndMenu();
       }
 
@@ -665,6 +667,7 @@ static void doRender()
   if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
   if (showTms9918Patterns) debuggerTmsPatternsView(renderer, &showTms9918Registers);
+  if (showTms9918Sprites) debuggerTmsSpritesView(renderer, &showTms9918Registers);
 
   ImGui::PopStyleColor(4);
 

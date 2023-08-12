@@ -46,6 +46,8 @@ static std::map<std::string, int> constants;
 static uint16_t highlightAddr = 0;
 static uint16_t hoveredAddr = 0;
 
+static uint16_t highlightTmsAddr = 0;
+
 static const float alpha = 0.85f;
 
 static const ImVec4 white(1.0f, 1.0f, 1.0f, alpha);
@@ -774,7 +776,15 @@ void constantTool(const char* name)
       setSourceAddress(addr);
     }
   }
+}
 
+void patternTool(int pattIdx, uint16_t addr)
+{
+  if (ImGui::IsMouseClicked(0))
+  {
+    highlightTmsAddr = addr;
+    debugTmsMemoryAddr = highlightTmsAddr & 0xfff0;
+  }
 }
 
 void registerFlagValue(uint8_t val, uint8_t flag, char name)
@@ -1413,10 +1423,24 @@ void debuggerVramMemoryView(bool* show)
 
           ImGui::SameLine();
 
+          if ((highlightTmsAddr & 0xfff8) == addr)
+          {
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImVec2 max = pos;
+            max.y += ImGui::GetTextLineHeightWithSpacing();
+            pos.x += (highlightTmsAddr & 0x07) * 21;
+            max.x = pos.x + 17;
+            pos.x -= 3;
+            pos.y -= 1;
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, max, IM_COL32(000, 255, 0, 120));
+            ImGui::GetWindowDrawList()->AddRect(pos, max, IM_COL32(000, 255, 0, 255));
+          }
+
           ImGui::Text("%02x %02x %02x %02x %02x %02x %02x %02x %c%c%c%c%c%c%c%c",
             v0, v1, v2, v3, v4, v5, v6, v7,
             printable(v0), printable(v1), printable(v2), printable(v3),
             printable(v4), printable(v5), printable(v6), printable(v7));
+
         }
       }
       ImGui::PopStyleColor();
@@ -1432,20 +1456,36 @@ void debuggerVramMemoryView(bool* show)
 void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
 {
   static SDL_Texture* tex = NULL;
+  vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+  int tableColumns = ((mode == TMS_MODE_GRAPHICS_II) ? 33 : 17);
+  int tableRows = ((mode == TMS_MODE_GRAPHICS_II) ? 25 : 17);
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-  if (ImGui::Begin("TMS9918A Patterns", show))
+  ImGui::SetNextWindowContentSize(ImVec2(tableColumns * 26, 0));
+  if (ImGui::Begin("TMS9918A Patterns", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (tms9918)
     {
+
+      ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(1,1));
+      ImGui::BeginTable("PatternsTable", tableColumns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoBordersInBody);
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+      
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TextUnformatted("$");
+
+      for (int i = 1; i < tableColumns; ++i)
+      {
+        ImGui::TableSetColumnIndex(i);
+        ImGui::Text("$%02x", (i - 1) * 8);
+      }
+
+
       const int texSize = 256;
 
       if (tex == NULL)
       {
         tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, texSize, texSize);
-#ifndef __CLANG__   // this doesn't work under linux
-        SDL_SetTextureScaleMode(tex, SDL_ScaleModeBest);
-#endif
       }
 
       uint32_t* pixels = NULL;
@@ -1453,14 +1493,13 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
       SDL_LockTexture(tex, NULL, (void**) & pixels, &pitch);
 
 
-      vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
 
       uint16_t patternAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_PATTERN_TABLE) & ((mode == TMS_MODE_GRAPHICS_II) ? 0x04 : 0x07)) << 11;
 
       uint16_t colorAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_COLOR_TABLE) & ((mode == TMS_MODE_GRAPHICS_II) ? 0x80 : 0xff)) << 6;
 
       ImVec2 uv0(0.0, 0.0);
-      ImVec2 uv1(0.5, 0.5);
+      ImVec2 uv1(0.0, 0.0);
 
       if (mode == TMS_MODE_GRAPHICS_I || mode == TMS_MODE_TEXT)
       {
@@ -1488,8 +1527,6 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
       }
       else if (mode == TMS_MODE_GRAPHICS_II)
       {
-        uv1 = ImVec2(1.0, 0.75);
-
         for (int i = 0; i < (768 * 8); ++i)
         {
           uint8_t pattByte = readTms9918Vram(tms9918, (patternAddr + i) & 0x3fff);
@@ -1509,26 +1546,41 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
 
       SDL_UnlockTexture(tex);
 
-      ImVec2 windowSize = ImGui::GetContentRegionAvail();
+      float size = 1.0f / 32.0f;
 
-      double texSizeX = texSize * uv1.x;
-      double texSizeY = texSize * uv1.y;
+      uv1 = ImVec2(size, size);
+      int pattIdx = 0;
 
-      double scaleX = windowSize.x / texSizeX;
-      double scaleY = windowSize.y / texSizeY;
+      for (int r = 1; r < tableRows; ++r)
+      {
+        uv0.x = 0.0;
+        uv1.x = size;
 
-      double scale = (scaleX < scaleY) ? scaleX : scaleY;
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%04x", (r - 1) * (tableColumns - 1) * 8);
 
-      ImVec2 imageSize = windowSize;
-      imageSize.x = (float)(texSizeX * scale);
-      imageSize.y = (float)(texSizeY * scale);
 
-      ImVec2 pos = ImGui::GetCursorPos();
-      pos.x += (windowSize.x - imageSize.x) / 2;
-      pos.y += (windowSize.y - imageSize.y) / 2;
-      ImGui::SetCursorPos(pos);
+        for (int c = 1; c < tableColumns; ++c)
+        {
+          ImGui::TableSetColumnIndex(c);
+          ImGui::Image(tex, ImVec2(24, 24), uv0, uv1);
+          if (ImGui::IsItemHovered())
+          {
+            patternTool(pattIdx,  patternAddr + pattIdx * 8);
+          }
 
-      ImGui::Image(tex, imageSize, uv0, uv1);
+          uv0.x = uv0.x + size;
+          uv1.x = uv1.x + size;
+          ++pattIdx;
+        }
+
+        uv0.y = uv0.y + size;
+        uv1.y = uv1.y + size;
+      }
+      ImGui::PopStyleColor();
+      ImGui::EndTable();
+      ImGui::PopStyleVar();
     }
     else
     {
@@ -1536,7 +1588,122 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
     }
   }
   ImGui::End();
-  ImGui::PopStyleVar();
+}
+
+
+void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
+{
+  static SDL_Texture* tex = NULL;
+
+  ImGui::SetNextWindowContentSize(ImVec2(200, 0));
+  if (ImGui::Begin("TMS9918A Sprites", show, ImGuiWindowFlags_HorizontalScrollbar))
+  {
+    if (tms9918)
+    {
+      ImGui::BeginTable("SpritesTable", 6, ImGuiTableFlags_SizingFixedFit);
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+
+      ImGui::TableSetupColumn("#");
+      ImGui::TableSetupColumn("X");
+      ImGui::TableSetupColumn("Y");
+      ImGui::TableSetupColumn("Idx");
+      ImGui::TableSetupColumn("Col");
+      ImGui::TableSetupColumn("Pattern");
+      ImGui::TableHeadersRow();
+
+      if (tex == NULL)
+      {
+        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 16, 16 * 32);
+      }
+
+      uint32_t* pixels = NULL;
+      int pitch = 0;
+      SDL_LockTexture(tex, NULL, (void**)&pixels, &pitch);
+      memset(pixels, 0, 16 * 32 * sizeof(uint32_t));
+
+      uint16_t attrAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_ATTR_TABLE) & 0x7f) << 7;
+      uint16_t pattAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_PATT_TABLE) & 0x07) << 11;
+      bool sprite16 = readTms9918Reg(tms9918, TMS_REG_1) & 0x02;
+      int spriteSizePx = sprite16 ? 16 : 8;
+
+      for (int i = 0; i < 32; ++i)
+      {
+        int spriteIndex = readTms9918Vram(tms9918, attrAddr + 2);
+        uint32_t spriteColor = vrEmuTms9918Palette[readTms9918Vram(tms9918, attrAddr + 3) & 0x0f];
+
+        uint16_t sprAddr = pattAddr + spriteIndex * 8;
+
+        for (int y = 0; y < spriteSizePx; ++y)
+        {
+          uint8_t pattByte = readTms9918Vram(tms9918, sprAddr++);
+
+          for (int x = 0; x < 8; ++x)
+          {
+            pixels[y * 16 + x] = (pattByte & 0x80) ? spriteColor : 0;
+            pattByte <<= 1;
+          }
+        }
+
+        if (sprite16)
+        {
+          for (int y = 0; y < spriteSizePx; ++y)
+          {
+            uint8_t pattByte = readTms9918Vram(tms9918, sprAddr++);
+
+            for (int x = 0; x < 8; ++x)
+            {
+              pixels[y * 16 + x + 8] = (pattByte & 0x80) ? spriteColor : 0;
+              pattByte <<= 1;
+            }
+          }
+        }
+        
+        pixels += 16 * 16;
+        attrAddr += 4;
+      }
+
+
+      SDL_UnlockTexture(tex);
+
+      float sizeX = sprite16 ? 1.0f : 0.5f;
+      float sizeY = sizeX / 32.0f;
+      float strideY = 1.0f / 32.0f;
+
+      ImVec2 uv0(0.0f, 0.0f);
+      ImVec2 uv1(sizeX, 0.0f + sizeY);
+      
+      attrAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_ATTR_TABLE) & 0x7f) << 7;
+
+      for (int idx = 0; idx < 32; ++idx)
+      {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("#%02d", idx);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%d", readTms9918Vram(tms9918, attrAddr + 1));
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%d", readTms9918Vram(tms9918, attrAddr + 0));
+        ImGui::TableSetColumnIndex(3);
+        ImGui::Text("%d", readTms9918Vram(tms9918, attrAddr + 2));
+        ImGui::TableSetColumnIndex(4);
+        ImGui::Text("$%02x", readTms9918Vram(tms9918, attrAddr + 3));
+        ImGui::TableSetColumnIndex(5);
+
+        ImGui::Image(tex, ImVec2(64, 64), uv0, uv1);
+
+        uv0.y = uv0.y + strideY;
+        uv1.y = uv1.y + strideY;
+        attrAddr += 4;
+      }
+      ImGui::PopStyleColor();
+      ImGui::EndTable();
+    }
+    else
+    {
+      ImGui::Text("TMS9918A not present");
+    }
+  }
+  ImGui::End();
 }
 
 
@@ -1593,6 +1760,7 @@ void debuggerTmsRegistersView(bool* show)
     {
       ImGui::PushStyleColor(ImGuiCol_Text, green);
       std::string desc;
+      vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
 
       for (uint8_t y = 0; y < 8; ++y)
       {
@@ -1621,11 +1789,11 @@ void debuggerTmsRegistersView(bool* show)
             break;
           case 3:
             desc += "COLOR";
-            addr = r << 6;
+            addr = (r & ((mode == TMS_MODE_GRAPHICS_II) ? 0x80 : 0xff)) << 6;
             break;
           case 4:
             desc += "PATT";
-            addr = r << 11;
+            addr = (r & ((mode == TMS_MODE_GRAPHICS_II) ? 0x04 : 0x07)) << 11;
             break;
           case 5:
             desc += "SPR ATTR";
