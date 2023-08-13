@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -58,7 +58,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -82,7 +82,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -110,8 +111,9 @@
     <ClInclude Include="..\src\devices\tms9918_device.h" />
     <ClInclude Include="..\src\devices\uart_device.h" />
     <ClInclude Include="..\src\hbc56emu.h" />
-    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl.h" />
-    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.h" />
+    <ClInclude Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.h" />
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl2.h" />
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="..\thirdparty\imgui\imconfig.h" />
     <ClInclude Include="..\thirdparty\imgui\imgui.h" />
     <ClInclude Include="..\thirdparty\imgui\imgui_internal.h" />
@@ -141,8 +143,12 @@
     <ClCompile Include="..\src\devices\tms9918_device.c" />
     <ClCompile Include="..\src\devices\uart_device.c" />
     <ClCompile Include="..\src\hbc56emu.cpp" />
-    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl.cpp" />
-    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp" />
+    <ClCompile Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS;VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="..\thirdparty\imgui\imgui.cpp" />
     <ClCompile Include="..\thirdparty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\thirdparty\imgui\imgui_draw.cpp" />

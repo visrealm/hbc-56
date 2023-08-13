@@ -19,8 +19,12 @@
 #include "hbc56emu.h"
 
 #include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_sdlrenderer.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
+
+#if !__EMSCRIPTEN__
+#include "ImGuiFileBrowser.h"
+#endif
 
 #include "audio.h"
 
@@ -67,6 +71,10 @@ SDL_mutex* kbQueueMutex = nullptr;
 static std::queue<SDL_KeyboardEvent> pasteQueue;
 
 static int loadRom(const char* filename);
+
+#if !__EMSCRIPTEN__
+static imgui_addons::ImGuiFileBrowser file_dialog; // As a class member or globally
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -518,7 +526,7 @@ static void doRender()
   static bool showTms9918Patterns = true;
   static bool showTms9918Sprites = true;
 
-  ImGui_ImplSDLRenderer_NewFrame();
+  ImGui_ImplSDLRenderer2_NewFrame();
   ImGui_ImplSDL2_NewFrame();
   ImGui::NewFrame();
 
@@ -573,15 +581,34 @@ static void doRender()
   //ImGui::ShowDemoWindow();
 #endif
 
+  bool fileOpen = false;
+
   if (ImGui::BeginMenuBar())
   {
     if (ImGui::BeginMenu("File"))
     {
-      ImGui::MenuItem("Open...", "<Ctrl> + O");
-      if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
+#if !__EMSCRIPTEN__
+      if (ImGui::MenuItem("Open...", "<Ctrl> + O")) { fileOpen = true; }
+#endif
+        if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
 #if !__EMSCRIPTEN__
       if (ImGui::MenuItem("Exit", "Esc")) { done = true; }
 #endif
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Debug"))
+    {
+      bool isRunning = getDebug6502State(cpuDevice) == CPU_RUNNING;
+
+      if (ImGui::MenuItem("Break", "<F12>", false, isRunning)) { hbc56DebugBreak(); }
+      if (ImGui::MenuItem("Break on Interrupt", "<F7>", false, isRunning)) { hbc56DebugBreakOnInt(); }
+      ImGui::Separator();
+      if (ImGui::MenuItem("Continue", "<F5>", false, !isRunning)) { hbc56DebugRun(); }
+      ImGui::Separator();
+      if (ImGui::MenuItem("Step In", "<F11>", false, !isRunning)) { hbc56DebugStepInto(); }
+      if (ImGui::MenuItem("Step Over", "<F10>", false, !isRunning)) { hbc56DebugStepOver(); }
+      if (ImGui::MenuItem("Step Out", "<Shift> + <F11>", false, !isRunning)) { hbc56DebugStepOut(); }
       ImGui::EndMenu();
     }
 
@@ -622,6 +649,16 @@ static void doRender()
     }
     ImGui::EndMenuBar();
   }
+
+#if !__EMSCRIPTEN__
+  if (fileOpen) ImGui::OpenPopup("Open File");
+
+  if (file_dialog.showFileDialog("Open File", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(700, 310), ".o"))
+  {
+    loadRom(file_dialog.selected_path.c_str());
+  }
+#endif
+
 
   for (size_t i = 0; i < deviceCount; ++i)
   {
@@ -676,7 +713,7 @@ static void doRender()
   ImGui::Render();
   //SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
   SDL_RenderClear(renderer);
-  ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+  ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
   SDL_RenderPresent(renderer);
 }
 
@@ -1098,7 +1135,7 @@ int main(int argc, char* argv[])
 
   // Setup Platform/Renderer backends
   ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-  ImGui_ImplSDLRenderer_Init(renderer);
+  ImGui_ImplSDLRenderer2_Init(renderer);
 
 
   perfFreq = (double)SDL_GetPerformanceFrequency();
@@ -1265,7 +1302,7 @@ int main(int argc, char* argv[])
 
   SDL_AudioQuit();
 
-  ImGui_ImplSDLRenderer_Shutdown();
+  ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
 

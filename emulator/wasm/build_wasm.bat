@@ -46,8 +46,8 @@ emcc -o hbc56.html ^
   ..\thirdparty\imgui\imgui_draw.cpp ^
   ..\thirdparty\imgui\imgui_tables.cpp ^
   ..\thirdparty\imgui\imgui_widgets.cpp ^
-  ..\thirdparty\imgui\backends\imgui_impl_sdl.cpp ^
-  ..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp ^
+  ..\thirdparty\imgui\backends\imgui_impl_sdl2.cpp ^
+  ..\thirdparty\imgui\backends\imgui_impl_sdlrenderer2.cpp ^
   --preload-file "rom.bin" ^
   --preload-file "rom.bin.lmap" ^
   --preload-file "rom.bin.rpt" ^

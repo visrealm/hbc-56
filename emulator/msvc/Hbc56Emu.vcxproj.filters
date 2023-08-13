@@ -106,10 +106,13 @@
     <ClInclude Include="..\thirdparty\imgui\imgui_internal.h">
       <Filter>ui\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl.h">
+    <ClInclude Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl2.h">
       <Filter>ui\imgui\backend</Filter>
     </ClInclude>
-    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.h">
+    <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer2.h">
       <Filter>ui\imgui\backend</Filter>
     </ClInclude>
   </ItemGroup>
@@ -190,10 +193,13 @@
     <ClCompile Include="..\thirdparty\imgui\imgui_widgets.cpp">
       <Filter>ui\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl.cpp">
+    <ClCompile Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdl2.cpp">
       <Filter>ui\imgui\backend</Filter>
     </ClCompile>
-    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer.cpp">
+    <ClCompile Include="..\thirdparty\imgui\backends\imgui_impl_sdlrenderer2.cpp">
       <Filter>ui\imgui\backend</Filter>
     </ClCompile>
   </ItemGroup>

@@ -23,3 +23,6 @@
 	path = emulator/thirdparty/imgui
 	url = https://github.com/visrealm/imgui.git
 	branch = docking
+[submodule "emulator/thirdparty/ImGui-Addons"]
+	path = emulator/thirdparty/ImGui-Addons
+	url = https://github.com/gallickgunner/ImGui-Addons.git
