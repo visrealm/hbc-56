@@ -11,7 +11,7 @@
 :: eg. emsdk activate
 
 emcc -o hbc56.html ^
-  -O0 -sASSERTIONS -g3 ^
+  -O3 -sASSERTIONS -g3 ^
   -D __EMSCRIPTEN__ ^
   -D DEMANGLE_SUPPORT=1 ^
   -D VR_LCD_EMU_STATIC=1 ^
