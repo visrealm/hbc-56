@@ -104,7 +104,7 @@
 	TMS_R1_RAM_16K	= $80	; unused
 	TK_DEC	= $88
 	LAB_188C	= $993e	; ?
-	basicErrorHandler	= $b963	; ?
+	basicErrorHandler	= $b967	; ?
 	Ostrth	= $ab
 	Ibuffe	= $368	; ?
 	LAB_MULTIPLY	= $a753
@@ -1278,7 +1278,7 @@
 	LAB_297B	= $aab9	; ?
 	KB_SCANCODE_I	= $43	; unused
 	viaIntHandler	= $ee0d	; unused
-	modeTable	= $b944
+	modeTable	= $b948
 	KB_SCANCODE_N	= $31	; unused
 	TK_CALL	= $9f
 	LAB_SSLN	= $933b	; ?
@@ -1336,7 +1336,7 @@
 	KB_SCANCODE_Q	= $15	; unused
 	VEC_IN	= $305
 	LAB_go_search	= $958a	; ?
-	basicDisplay	= $b94d	; ?
+	basicDisplay	= $b951	; ?
 	LBB_BITSET	= $b3c0
 	NOTE_FREQ_GS8	= 6644.880000000000109139364212751389	; unused
 	Clinel	= $87
@@ -1475,7 +1475,7 @@
 	LAB_FTPM	= $b287	; ?
 	tmsSetPatternWrite	= $e9d6	; unused
 	LAB_INC	= $97a5
-	basicPlot	= $b967	; ?
+	basicPlot	= $b96b	; ?
 	LBB_SQR	= $b4f5
 	LAB_ADD	= $a5d8	; ?
 	KB_SCANCODE_NUMPAD_7	= $6c	; unused
@@ -1833,7 +1833,7 @@
 	NOTE_FREQ_B8	= 7902.130000000001928128767758607864	; unused
 	LAB_1229	= $9120	; ?
 	LAB_MIDS	= $a3e5
-	doMode	= $b94a
+	doMode	= $b94e
 	LAB_1628	= $956e	; ?
 	LAB_17FB	= $9812	; ?
 	LAB_1609	= $951b	; ?

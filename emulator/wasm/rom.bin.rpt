@@ -2167,8 +2167,7 @@
    105                          
    106                          !macro ayStop .dev, .chan {
    107                                  +ayPlayNote .dev, .chan, 0
-   108                             ;     +ayWrite .dev, (AY_CHA_AMPL + .chan), 0
-   109                          }
+   108                          }
 
 ; ******** Source: ../kernel\hbc56kernel.inc
     24                          
@@ -10373,8 +10372,8 @@
   8010  b258 8aa0               	!word	LAB_DEF-1		; DEF
   8011  b25a 24a5               	!word	LAB_POKE-1		; POKE
   8012  b25c 40a5               	!word	LAB_DOKE-1		; DOKE		new command
-  8013  b25e 4cb9               	!word	basicDisplay-1		; DISPLAY	HBC-56 command
-  8014  b260 66b9               	!word	basicPlot-1		; PLOT		HBC-56 command
+  8013  b25e 50b9               	!word	basicDisplay-1		; DISPLAY	HBC-56 command
+  8014  b260 6ab9               	!word	basicPlot-1		; PLOT		HBC-56 command
   8015  b262 00b1               	!word	LAB_UNPLOT-1		; UNPLOT	HBC-56 command
   8016  b264 8da5               	!word	LAB_CALL-1		; CALL		new command
   8017  b266 cf95               	!word	LAB_DO-1		; DO			new command
@@ -11342,74 +11341,79 @@
     13  b93b 20a3a4                     jsr LAB_GTBY
     14  b93e 8a                         txa
     15  b93f 853c                       sta BASIC_COLOR
-    16  b941 4cd3e7                     jmp tmsInitColorTable
-    17                          
-    18                          modeTable:
-    19  b944 b8e610e623e6       !word tmsModeText,tmsModeGraphicsI,tmsModeBitmap
-    20                          
-    21                          doMode:
-    22  b94a 7c44b9                     jmp (modeTable, x)
-    23                          
-    24                          basicDisplay:
-    25  b94d 08                         php
-    26  b94e 78                         sei
-    27  b94f 20a3a4                     jsr LAB_GTBY
-    28  b952 8a                         txa
-    29  b953 c903                       cmp #3
-    30  b955 b00c                       bcs basicErrorHandler
-    31  b957 0a                         asl
-    32  b958 aa                         tax
-    33  b959 204ab9                     jsr doMode
-    34                          
-    35  b95c a53c                       lda BASIC_COLOR
-    36  b95e 20d3e7                     jsr tmsInitColorTable
-    37  b961 28                         plp
-    38  b962 60                         rts
-    39                                  
-    40                          basicErrorHandler:
-    41  b963 28                         plp
-    42  b964 4c409f                     jmp LAB_FCER
-    43                          
-    44                          basicPlot:
-    45  b967 20efa4                     jsr LAB_GADB
-    46  b96a 863b                       stx BASIC_YPOS
-    47  b96c a611                       ldx Itempl
-    48  b96e 863a                       stx BASIC_XPOS
-    49  b970 a43b                       ldy BASIC_YPOS
-    50                          
-    51  b972 08                         php
-    52  b973 78                         sei
-    53                          
-    54  b974 208ae9                     jsr tmsSetPatternTmpAddressII
-    55  b977 20a8e5                     jsr tmsSetAddressRead
-    56                                  
-    57  b97a a53a                       lda BASIC_XPOS
-    58  b97c 2907                       and #07
-    59  b97e aa                         tax
-    60  b97f ad107f2079e5               +tmsGet
-    61                          
-    62  b985 1d30e1                     ora tableBitFromLeft, x
-    63  b988 48                         pha
-    64  b989 2092e5                     jsr tmsSetAddressWrite
-    65  b98c 68                         pla
-    66  b98d 8d107f2079e5               +tmsPut
-    67                          
-    68  b993 a63a                       ldx BASIC_XPOS
-    69  b995 a43b                       ldy BASIC_YPOS
-    70                          
-    71  b997 2086e9                     jsr tmsSetColorTmpAddressII
-    72  b99a 2092e5                     jsr tmsSetAddressWrite
-    73  b99d a53c                       lda BASIC_COLOR
-    74  b99f 8d107f2079e5               +tmsPut
+    16                                  
+    17  b941 08                         php
+    18  b942 78                         sei
+    19  b943 20d3e7                     jsr tmsInitColorTable
+    20  b946 28                         plp
+    21  b947 60                         rts
+    22                          
+    23                          modeTable:
+    24  b948 b8e610e623e6       !word tmsModeText,tmsModeGraphicsI,tmsModeBitmap
+    25                          
+    26                          doMode:
+    27  b94e 7c48b9                     jmp (modeTable, x)
+    28                          
+    29                          basicDisplay:
+    30  b951 08                         php
+    31  b952 78                         sei
+    32  b953 20a3a4                     jsr LAB_GTBY
+    33  b956 8a                         txa
+    34  b957 c903                       cmp #3
+    35  b959 b00c                       bcs basicErrorHandler
+    36  b95b 0a                         asl
+    37  b95c aa                         tax
+    38  b95d 204eb9                     jsr doMode
+    39                          
+    40  b960 a53c                       lda BASIC_COLOR
+    41  b962 20d3e7                     jsr tmsInitColorTable
+    42  b965 28                         plp
+    43  b966 60                         rts
+    44                                  
+    45                          basicErrorHandler:
+    46  b967 28                         plp
+    47  b968 4c409f                     jmp LAB_FCER
+    48                          
+    49                          basicPlot:
+    50  b96b 20efa4                     jsr LAB_GADB
+    51  b96e 863b                       stx BASIC_YPOS
+    52  b970 a611                       ldx Itempl
+    53  b972 863a                       stx BASIC_XPOS
+    54  b974 a43b                       ldy BASIC_YPOS
+    55                          
+    56  b976 08                         php
+    57  b977 78                         sei
+    58                          
+    59  b978 208ae9                     jsr tmsSetPatternTmpAddressII
+    60  b97b 20a8e5                     jsr tmsSetAddressRead
+    61                                  
+    62  b97e a53a                       lda BASIC_XPOS
+    63  b980 2907                       and #07
+    64  b982 aa                         tax
+    65  b983 ad107f2079e5               +tmsGet
+    66                          
+    67  b989 1d30e1                     ora tableBitFromLeft, x
+    68  b98c 48                         pha
+    69  b98d 2092e5                     jsr tmsSetAddressWrite
+    70  b990 68                         pla
+    71  b991 8d107f2079e5               +tmsPut
+    72                          
+    73  b997 a63a                       ldx BASIC_XPOS
+    74  b999 a43b                       ldy BASIC_YPOS
     75                          
-    76  b9a5 28                         plp
-    77                          
-    78  b9a6 60                         rts
-    79                          
+    76  b99b 2086e9                     jsr tmsSetColorTmpAddressII
+    77  b99e 2092e5                     jsr tmsSetAddressWrite
+    78  b9a1 a53c                       lda BASIC_COLOR
+    79  b9a3 8d107f2079e5               +tmsPut
     80                          
-    81                          
+    81  b9a9 28                         plp
     82                          
-    83                          
+    83  b9aa 60                         rts
+    84                          
+    85                          
+    86                          
+    87                          
+    88                          
 
 ; ******** Source: functions\jump_table.asm
      1                          *=$c000
@@ -12476,8 +12480,7 @@
    105                          
    106                          !macro ayStop .dev, .chan {
    107                                  +ayPlayNote .dev, .chan, 0
-   108                             ;     +ayWrite .dev, (AY_CHA_AMPL + .chan), 0
-   109                          }
+   108                          }
 
 ; ******** Source: ../lib\sfx\ay3891x.asm
     10                          

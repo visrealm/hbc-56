@@ -13,7 +13,12 @@ basicColor:
         jsr LAB_GTBY
         txa
         sta BASIC_COLOR
-        jmp tmsInitColorTable
+        
+        php
+        sei
+        jsr tmsInitColorTable
+        plp
+        rts
 
 modeTable:
 !word tmsModeText,tmsModeGraphicsI,tmsModeBitmap
