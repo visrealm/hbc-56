@@ -560,15 +560,6 @@ static void doRender()
   ImGui::PopStyleColor();
   ImGui::PopStyleVar(2);
   ImGui::PopStyleVar(2);
-  /*ImGui::BeginChild("toolbar", ImVec2(0, 30), window_flags);
-  if (ImGui::Button("Continue")) hbc56DebugRun(); ImGui::SameLine();
-  if (ImGui::Button("Break")) hbc56DebugBreak(); ImGui::SameLine();
-  if (ImGui::Button("Break on Int")) hbc56DebugBreakOnInt(); ImGui::SameLine();
-  if (ImGui::Button("Step In")) hbc56DebugStepInto(); ImGui::SameLine();
-  if (ImGui::Button("Step Over")) hbc56DebugStepOver(); ImGui::SameLine();
-  if (ImGui::Button("Step Out")) hbc56DebugStepOut(); ImGui::SameLine();
-  ImGui::EndChild();*/
-
 
   ImGuiID dockspace_id = ImGui::GetID("Workspace");
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
@@ -576,10 +567,6 @@ static void doRender()
   ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
   ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-
-#if !__EMSCRIPTEN__
-  //ImGui::ShowDemoWindow();
-#endif
 
   bool fileOpen = false;
 
@@ -1079,8 +1066,11 @@ int main(int argc, char* argv[])
 
   kbQueueMutex = SDL_CreateMutex();
 
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, window_flags);
+  int window_flags = 0;
+#if !__EMSCRIPTEN__
+  window_flags |= SDL_WINDOW_RESIZABLE;
+#endif
+  window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, (SDL_WindowFlags)window_flags);
 
   // Setup SDL_Renderer instance
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -1112,17 +1102,12 @@ int main(int argc, char* argv[])
 
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
 
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
-  //ImGui::StyleColorsClassic();
 
   ImGuiStyle& style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -1142,10 +1127,6 @@ int main(int argc, char* argv[])
 
   /* enable standard application logging */
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
-
-  /* window title */
-//  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator");
-//  state->window_title = tempBuffer;
 
   /* add the cpu device */
   cpuDevice = hbc56AddDevice(create6502CpuDevice(debuggerIsBreakpoint));
