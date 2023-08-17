@@ -91,6 +91,18 @@ hbc56Main:
         +tmsCreateSprite 2, 20, 122, -6, TMS_WHITE
         jmp .updateBertSpriteJump
 
+.bertSpriteLeftRest:
+        +tmsCreateSprite 0, 24, 122, 8, TMS_LT_RED
+        +tmsCreateSprite 1, 28, 122, 12, TMS_BLACK
+        +tmsCreateSprite 2, 32, 122, -3, TMS_WHITE
+        jmp .updateBertSpriteRest
+
+.bertSpriteLeftJump
+        +tmsCreateSprite 0, 36, 122, 7, TMS_LT_RED
+        +tmsCreateSprite 1, 40, 122, 10, TMS_BLACK
+        +tmsCreateSprite 2, 44, 122, -6, TMS_WHITE
+        jmp .updateBertSpriteJump
+
 .updateBertSpriteRest
         ldx QBERT_X
         ldy QBERT_Y
@@ -123,20 +135,24 @@ hbc56Main:
         rts
 
 
-.rightPressed:
-        lda #1
-        sta QBERT_STATE
-        jsr .bertSpriteRightJump
-        rts
 
 .updatePos:
 
         ldx QBERT_ANIM
         clc
+
+        lda QBERT_DIR
+        bne +
         lda QBERT_X
         adc .bertJumpAnimX,X
         sta QBERT_X
-
+        bra ++
++
+        sec
+        lda QBERT_X
+        sbc .bertJumpAnimX,X
+        sta QBERT_X
+++
         clc
         lda QBERT_Y
         adc .bertJumpAnimY,X
@@ -148,17 +164,41 @@ hbc56Main:
         inc
         sta QBERT_ANIM
         bit #$10
-        beq +
+        beq ++
         stz QBERT_STATE
         stz QBERT_ANIM
+        lda QBERT_DIR
+        bne +
         jsr .bertSpriteRightRest
+        bra ++
 +
+        jsr .bertSpriteLeftRest
+++
         jmp .afterControl
+
+
+.rightPressed:
+        lda #1
+        sta QBERT_STATE
+        lda #0
+        sta QBERT_DIR
+        jsr .bertSpriteRightJump
+        rts
+
+.leftPressed:
+        lda #1
+        sta QBERT_STATE
+        lda #1
+        sta QBERT_DIR
+        jsr .bertSpriteLeftJump
+        rts
+
 gameLoop:
 
         lda QBERT_STATE
         bne .updatePos
         +nes1BranchIfPressed NES_RIGHT, .rightPressed
+        +nes1BranchIfPressed NES_LEFT, .leftPressed
 
 .afterControl
 
@@ -177,11 +217,6 @@ gameLoop:
         jmp updateColor3
 +
         jmp updateColor4
-
-
-        +nes1BranchIfPressed NES_RIGHT, .rightPressed
-
-
 
         rts
 
@@ -333,7 +368,7 @@ tilesToVram:
 
 
         +tmsSetAddrSpritePattTable
-        +tmsSendData .bertPattR, 8 * 4 * 3 * 2
+        +tmsSendData .bertPattR, 8 * 4 * 3 * 2 * 4
 
         ; text
         +tmsSetAddrPattTableIIBank0 ' '
@@ -477,7 +512,7 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$c0
 
-
+                        ; jump
 !byte $0F,$3F,$7F,$79,$F9,$FF,$FF,$FF   ; red
 !byte $7F,$3F,$1F,$11,$11,$11,$39,$1E
 !byte $00,$C0,$C0,$00,$20,$F8,$FC,$FE
@@ -492,6 +527,104 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$06
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$C0
+
+.bertPattL:             ; squatted
+!byte $00,$00,$00,$03,$00,$00,$07,$1f  ; red
+!byte $3f,$7f,$4d,$48,$30,$00,$03,$0e
+!byte $00,$00,$f0,$fc,$9e,$9f,$ff,$ff
+!byte $ff,$ff,$fe,$fc,$f8,$90,$9c,$78
+
+!byte $03,$03,$00,$00,$00,$00,$30,$30   ; black offset y+4
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $60,$60,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
+!byte $00,$00,$00,$00,$00,$00,$00,$03
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$60
+
+                        ; jump
+!byte $00,$03,$03,$00,$04,$1f,$3f,$7f  ; red
+!byte $4d,$48,$30,$00,$00,$00,$03,$0e
+!byte $f0,$fc,$fe,$9e,$9f,$ff,$ff,$ff
+!byte $fe,$fc,$f8,$88,$88,$88,$9c,$78
+
+!byte $03,$03,$00,$00,$00,$30,$30,$00  ; black offset y+3
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $60,$60,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
+!byte $00,$00,$00,$00,$00,$00,$00,$03
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$60
+
+
+.bertPattUR:           ; squatted
+!byte $00,$00,$0f,$1f,$3f,$3f,$7f,$7f   ; red
+!byte $7f,$7f,$3f,$1f,$0f,$06,$0f,$1c
+!byte $00,$00,$0e,$df,$3f,$3e,$3c,$f8
+!byte $f0,$f0,$f0,$e0,$c0,$e0,$d8,$e0
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; black offset y+5
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $40,$40,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-11
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$c0,$c0,$80
+
+                        ; jump
+!byte $0f,$1f,$3f,$3f,$7f,$7f,$7f,$7f   ; red
+!byte $3f,$1f,$0f,$04,$04,$07,$0e,$18
+!byte $0e,$df,$3f,$3e,$3c,$f8,$f0,$f0
+!byte $f0,$e0,$c0,$80,$c0,$98,$f0,$c0
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; black offset y+3
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $40,$40,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$c0,$c0,$80
+
+
+.bertPattUL:           ; squatted
+!byte $00,$00,$70,$fb,$fc,$7c,$3c,$1f   ; red
+!byte $0f,$0f,$0f,$07,$03,$07,$1b,$07
+!byte $00,$00,$f0,$f8,$fc,$fc,$fe,$fe
+!byte $fe,$fe,$fc,$f8,$f0,$60,$f0,$38
+
+!byte $02,$02,$00,$00,$00,$00,$00,$00  ; black offset y+5
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-11
+!byte $00,$00,$00,$00,$00,$03,$03,$01
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+                        ; jump
+!byte $70,$fb,$fc,$7c,$3c,$1f,$0f,$0f  ; red
+!byte $0f,$07,$03,$01,$03,$19,$0f,$03
+!byte $f0,$f8,$fc,$fc,$fe,$fe,$fe,$fe
+!byte $fc,$f8,$f0,$20,$20,$e0,$70,$18
+
+!byte $02,$02,$00,$00,$00,$00,$00,$00  ; black offset y+3
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
+!byte $00,$00,$00,$00,$00,$03,$03,$01
+!byte $00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00
 
 
 .bertJumpAnimX
