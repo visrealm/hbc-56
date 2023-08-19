@@ -21,6 +21,26 @@ QBERT_ANIM    = ZP0 + 2
 QBERT_X       = ZP0 + 3
 QBERT_Y       = ZP0 + 4
 
+
+
+; actors
+;   - id
+;   - typeid
+;   - state
+;   - facing
+;   - 
+
+
+; cells
+;   - x
+;   - y
+;   - color
+
+; setBlockColors (c1, c2, c3, left, right)
+
+
+
+
 ; -----------------------------------------------------------------------------
 ; HBC-56 Program Metadata
 ; -----------------------------------------------------------------------------
@@ -48,7 +68,7 @@ hbc56Main:
         jsr tmsReg1SetFields
 
         ; set backrground
-        +tmsColorFgBg TMS_WHITE, TMS_BLACK
+        +tmsColorFgBg TMS_WHITE, TMS_BLACK;DK_YELLOW
         jsr tmsSetBackground
 
 
@@ -68,7 +88,7 @@ hbc56Main:
         sta QBERT_DIR
         sta QBERT_ANIM
 
-        lda #122
+        lda #120
         sta QBERT_X
         lda #12
         sta QBERT_Y
@@ -80,33 +100,54 @@ hbc56Main:
         jmp hbc56Stop
 
 .bertSpriteRightRest:
-        +tmsCreateSprite 0, 0, 122, 8, TMS_LT_RED
-        +tmsCreateSprite 1, 4, 122, 12, TMS_BLACK
-        +tmsCreateSprite 2, 8, 122, -3, TMS_WHITE
+
+        lda QBERT_Y
+        cmp #170
+        bcc +
+        lda #120
+        sta QBERT_X
+        lda #12
+        sta QBERT_Y
++
+
+
+        +tmsCreateSprite 0, 0, 120, 8, TMS_DK_RED
+        +tmsCreateSprite 1, 4, 120, 13, TMS_BLACK
+        +tmsCreateSprite 2, 8, 120, -3, TMS_WHITE
         jmp .updateBertSpriteRest
 
 .bertSpriteRightJump
-        +tmsCreateSprite 0, 12, 122, 7, TMS_LT_RED
-        +tmsCreateSprite 1, 16, 122, 10, TMS_BLACK
-        +tmsCreateSprite 2, 20, 122, -6, TMS_WHITE
+        +tmsCreateSprite 0, 12, 120, 7, TMS_DK_RED
+        +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
+        +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
         jmp .updateBertSpriteJump
 
 .bertSpriteLeftRest:
-        +tmsCreateSprite 0, 24, 122, 8, TMS_LT_RED
-        +tmsCreateSprite 1, 28, 122, 12, TMS_BLACK
-        +tmsCreateSprite 2, 32, 122, -3, TMS_WHITE
+        lda QBERT_Y
+        cmp #170
+        bcc +
+        lda #120
+        sta QBERT_X
+        lda #12
+        sta QBERT_Y
++
+
+        +tmsCreateSprite 0, 24, 120, 8, TMS_DK_RED
+        +tmsCreateSprite 1, 28, 120, 13, TMS_BLACK
+        +tmsCreateSprite 2, 32, 120, -3, TMS_WHITE
         jmp .updateBertSpriteRest
 
 .bertSpriteLeftJump
-        +tmsCreateSprite 0, 36, 122, 7, TMS_LT_RED
-        +tmsCreateSprite 1, 40, 122, 10, TMS_BLACK
-        +tmsCreateSprite 2, 44, 122, -6, TMS_WHITE
+        +tmsCreateSprite 0, 36, 120, 7, TMS_DK_RED
+        +tmsCreateSprite 1, 40, 120, 10, TMS_BLACK
+        +tmsCreateSprite 2, 44, 120, -6, TMS_WHITE
         jmp .updateBertSpriteJump
 
 .updateBertSpriteRest
         ldx QBERT_X
         ldy QBERT_Y
         +tmsSpritePosXYReg 1
+        dey
         dey
         dey
         dey
@@ -138,7 +179,12 @@ hbc56Main:
 
 .updatePos:
 
-        ldx QBERT_ANIM
+        lda QBERT_ANIM
+        and #1
+        beq .endAnim
+        lda QBERT_ANIM
+        lsr
+        tax
         clc
 
         lda QBERT_DIR
@@ -159,11 +205,11 @@ hbc56Main:
         sta QBERT_Y
 
         jsr .updateBertSpriteJump
-
+.endAnim
         lda QBERT_ANIM
         inc
         sta QBERT_ANIM
-        bit #$10
+        bit #$20
         beq ++
         stz QBERT_STATE
         stz QBERT_ANIM
@@ -222,46 +268,46 @@ gameLoop:
 
 updateColor1:
         +tmsSetAddrColorTableIIBank0 1
-        +tmsSendData .color1, 8 * 4
+        +tmsSendData .platformPal1, 8 * 4
 
         +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .color1, 8 * 4
+        +tmsSendData .platformPal1, 8 * 4
 
         ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .color1, 8 * 4
+        ;+tmsSendData .platformPal1, 8 * 4
         rts
 
 updateColor2:
         +tmsSetAddrColorTableIIBank0 1
-        +tmsSendData .color2, 8 * 4
+        +tmsSendData .platformPal2, 8 * 4
 
         +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .color2, 8 * 4
+        +tmsSendData .platformPal2, 8 * 4
 
         ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .color2, 8 * 4
+        ;+tmsSendData .platformPal2, 8 * 4
         rts
 
 updateColor3:
         +tmsSetAddrColorTableIIBank0 1
-        +tmsSendData .color3, 8 * 4
+        +tmsSendData .platformPal3, 8 * 4
 
         +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .color3, 8 * 4
+        +tmsSendData .platformPal3, 8 * 4
 
         ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .color3, 8 * 4
+        ;+tmsSendData .platformPal3, 8 * 4
         rts
 
 updateColor4:
         +tmsSetAddrColorTableIIBank0 1
-        +tmsSendData .color4, 8 * 4
+        +tmsSendData .platformPal4, 8 * 4
 
         +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .color4, 8 * 4
+        +tmsSendData .platformPal4, 8 * 4
 
         ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .color4, 8 * 4
+        ;+tmsSendData .platformPal4, 8 * 4
         rts
 
 ; -----------------------------------------------------------------------------
@@ -300,26 +346,30 @@ tilesToVram:
 
         ; brick patterns (for each bank)
         +tmsSetAddrPattTableIIBank0 1
-        +tmsSendData .pattern, 8 * 4
+        +tmsSendData .platformPatt, 8 * 4
         +tmsSendData .bertCharPatt, 8 * 4
 
         +tmsSetAddrPattTableIIBank1 1
-        +tmsSendData .pattern, 8 * 4
+        +tmsSendData .platformPatt, 8 * 4
+        +tmsSendData .bertCharPatt, 8 * 4
 
         +tmsSetAddrPattTableIIBank2 1
-        +tmsSendData .pattern, 8 * 4
+        +tmsSendData .platformPatt, 8 * 4
+        +tmsSendData .bertCharPatt, 8 * 4
 
 
         ; brick colors (for each bank)
         +tmsSetAddrColorTableIIBank0 1
-        +tmsSendData .color2, 8 * 4
+        +tmsSendData .platformPal2, 8 * 4
         +tmsSendData .bertCharColor, 8 * 4
 
         +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .color2, 8 * 4
+        +tmsSendData .platformPal2, 8 * 4
+        +tmsSendData .bertCharColor, 8 * 4
 
         +tmsSetAddrColorTableIIBank2 1
-        +tmsSendData .color2, 8 * 4        
+        +tmsSendData .platformPal2, 8 * 4        
+        +tmsSendData .bertCharColor, 8 * 4
 
         +tmsSetAddrPattTableIIBank0 128
         jsr .buildTopBlocks
@@ -414,9 +464,6 @@ tilesToVram:
         +tmsPutRpt $20, 8 * 4
         +tmsPutRpt $2e, 8 * 2
         +tmsPutRpt $2f, 8 * 2
-        +tmsPutRpt $80, 8 * 4
-        +tmsPutRpt $8e, 8 * 2
-        +tmsPutRpt $8f, 8 * 2
         rts
 
 .buildBottomBlocksColor:
@@ -432,10 +479,6 @@ tilesToVram:
         +tmsPutRpt $e0, 8 * 2
         +tmsPutRpt $2f, 8 * 2
         +tmsPutRpt $2e, 8 * 2
-        +tmsPutRpt $f0, 8 * 2
-        +tmsPutRpt $e0, 8 * 2
-        +tmsPutRpt $8f, 8 * 2
-        +tmsPutRpt $8e, 8 * 2
         rts
 
 .fontPal
@@ -460,23 +503,17 @@ tilesToVram:
 
 
 
-.pattern:
-!byte $00,$00,$00,$07,$3F,$80,$00,$07
-!byte $3F,$FE,$3F,$07,$C0,$F8,$00,$00
-!byte $00,$00,$00,$E0,$FC,$FE,$7F,$F8
-!byte $C0,$01,$03,$1F,$FC,$E0,$00,$00
-
 .bertCharPatt:
 !byte $00,$00,$3e,$7f,$e4,$e4,$ff,$ff
-!byte $ff,$7f,$3f,$22,$22,$22,$33,$19
+!byte $3e,$7f,$3f,$22,$22,$22,$33,$19
 !byte $00,$00,$00,$00,$00,$00,$c0,$e0
 !byte $f0,$c8,$48,$30,$00,$00,$00,$80
 
 .bertCharColor:
-!byte $80,$80,$80,$80,$8f,$81,$80,$80
-!byte $80,$80,$80,$80,$80,$80,$80,$80
-!byte $80,$80,$80,$80,$80,$80,$80,$80
-!byte $80,$80,$80,$80,$80,$80,$80,$80
+!byte $80,$80,$90,$90,$8f,$81,$80,$80
+!byte $86,$60,$60,$60,$60,$60,$80,$80
+!byte $80,$80,$80,$80,$80,$80,$90,$90
+!byte $80,$80,$80,$60,$60,$60,$80,$80
 
 
 .blockPatt:
@@ -502,9 +539,9 @@ tilesToVram:
 !byte $00,$00,$00,$c0,$00,$00,$e0,$f8
 !byte $fc,$fe,$b2,$12,$0c,$00,$c0,$70
 
-!byte $06,$06,$00,$00,$00,$00,$00,$00  ; black offset y+4
+!byte $06,$00,$00,$00,$00,$00,$00,$00 ; black offset y+5
 !byte $00,$00,$00,$00,$00,$00,$00,$00
-!byte $c0,$c0,$00,$00,$00,$00,$0c,$0c
+!byte $c0,$00,$00,$00,$00,$0c,$0c,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 
 !byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
@@ -513,10 +550,10 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$c0
 
                         ; jump
-!byte $0F,$3F,$7F,$79,$F9,$FF,$FF,$FF   ; red
-!byte $7F,$3F,$1F,$11,$11,$11,$39,$1E
-!byte $00,$C0,$C0,$00,$20,$F8,$FC,$FE
-!byte $B2,$12,$0C,$00,$00,$00,$C0,$70
+!byte $0f,$3f,$79,$79,$f9,$ff,$ff,$ff   ; red
+!byte $7f,$3f,$1f,$11,$11,$11,$39,$1e
+!byte $00,$c0,$00,$00,$20,$f8,$fc,$fe
+!byte $b2,$12,$0c,$00,$00,$00,$c0,$70
 
 !byte $06,$06,$00,$00,$00,$00,$00,$00   ; black offset y+3
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -534,9 +571,9 @@ tilesToVram:
 !byte $00,$00,$f0,$fc,$9e,$9f,$ff,$ff
 !byte $ff,$ff,$fe,$fc,$f8,$90,$9c,$78
 
-!byte $03,$03,$00,$00,$00,$00,$30,$30   ; black offset y+4
+!byte $03,$00,$00,$00,$00,$30,$30,$00  ; black offset y+5
 !byte $00,$00,$00,$00,$00,$00,$00,$00
-!byte $60,$60,$00,$00,$00,$00,$00,$00
+!byte $60,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 
 !byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-13
@@ -545,9 +582,9 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$60
 
                         ; jump
-!byte $00,$03,$03,$00,$04,$1f,$3f,$7f  ; red
+!byte $00,$03,$00,$00,$04,$1f,$3f,$7f   ; red
 !byte $4d,$48,$30,$00,$00,$00,$03,$0e
-!byte $f0,$fc,$fe,$9e,$9f,$ff,$ff,$ff
+!byte $f0,$fc,$9e,$9e,$9f,$ff,$ff,$ff
 !byte $fe,$fc,$f8,$88,$88,$88,$9c,$78
 
 !byte $03,$03,$00,$00,$00,$30,$30,$00  ; black offset y+3
@@ -657,18 +694,18 @@ tilesToVram:
 
 
 .gameTable
-!text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
-!text $00,"000000"               ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$03,$00,$00,$00,$00,"ROUND: 1"                     
+!text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
+!text $00,"000000"               ,$00,$00,$00,$00,$00,$00,$00,$00,$02,$04,$00,$01,$03,$00,$00,$00,$00,"ROUND: 1"                     
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$82,$83,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$88,$89,$8a,$8b,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$05,$07,$05,$07,$05,$07
-!byte $00,$00,$ac,$ad,$ae,$af,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$06,$08,$06,$08,$06,$08
+!byte $00,$00,$88,$89,$8a,$8b,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$ac,$ad,$ae,$af,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$a8,$a9,$aa,$ab,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00
@@ -700,7 +737,16 @@ tilesToVram:
 ;TMS_GREY                = $0e
 ;TMS_WHITE               = $0f
 
+.platformPatt:
+!byte $00,$00,$00,$00,$00,$07,$3F,$80
+!byte $00,$07,$3F,$FE,$3F,$07,$C0,$F8
+!byte $00,$00,$00,$00,$00,$E0,$FC,$FE
+!byte $7F,$F8,$C0,$01,$03,$1F,$FC,$E0
+
+
 !macro colorTable c1, c2, c3, c4 {
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
@@ -715,9 +761,18 @@ tilesToVram:
 +byteTmsColorFgBg c3, TMS_CYAN
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_CYAN
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_CYAN
-+byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 
+
+;8, 2, b, 5
+;
+;!byte $00,$00,$00,$00,$80,$80,$02,$02
+;!byte $b2,$b2,$b5,$b7,$b7,$07,$07,$00
+;!byte $00,$00,$00,$00,$80,$80,$80,$82
+;!byte $85,$85,$75,$75,$7b,$70,$70,$00
+
+
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
++byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
@@ -732,16 +787,14 @@ tilesToVram:
 +byteTmsColorFgBg TMS_CYAN, c3
 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_CYAN, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
-+byteTmsColorFgBg TMS_TRANSPARENT, TMS_TRANSPARENT
 }
 
-.color1:
+.platformPal1:
 +colorTable TMS_MED_RED, TMS_MED_GREEN, TMS_LT_YELLOW, TMS_LT_BLUE
-.color2:
+.platformPal2:
 +colorTable TMS_MED_GREEN, TMS_LT_YELLOW, TMS_LT_BLUE, TMS_MED_RED
-.color3:
+.platformPal3:
 +colorTable TMS_LT_YELLOW, TMS_LT_BLUE, TMS_MED_RED, TMS_MED_GREEN
-.color4:
+.platformPal4:
 +colorTable TMS_LT_BLUE, TMS_MED_RED, TMS_MED_GREEN, TMS_LT_YELLOW
 
