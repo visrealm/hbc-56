@@ -20,7 +20,13 @@ QBERT_DIR     = ZP0 + 1
 QBERT_ANIM    = ZP0 + 2
 QBERT_X       = ZP0 + 3
 QBERT_Y       = ZP0 + 4
-
+SCORE_L       = ZP0 + 5
+SCORE_M       = ZP0 + 6
+SCORE_H       = ZP0 + 7
+TMP           = ZP0 + 8
+TMP2          = ZP0 + 9
+CELL_X        = ZP0 + 10
+CELL_Y        = ZP0 + 11
 
 
 ; actors
@@ -87,27 +93,36 @@ hbc56Main:
         sta QBERT_STATE
         sta QBERT_DIR
         sta QBERT_ANIM
+        sta SCORE_L
+        sta SCORE_M
+        sta SCORE_H
 
-        lda #120
-        sta QBERT_X
-        lda #12
-        sta QBERT_Y
+        jsr resetBert
 
-        jsr .bertSpriteRightRest
+        jsr .bertSpriteRestDR
 
         cli
 
         jmp hbc56Stop
 
-.bertSpriteRightRest:
-
-        lda QBERT_Y
-        cmp #170
-        bcc +
+resetBert:
         lda #120
         sta QBERT_X
         lda #12
         sta QBERT_Y
+
+        lda #14
+        sta CELL_X
+        lda #2
+        sta CELL_Y
+        rts
+
+.bertSpriteRestDR:
+
+        lda QBERT_Y
+        cmp #170
+        bcc +
+        jsr resetBert
 +
 
 
@@ -116,20 +131,17 @@ hbc56Main:
         +tmsCreateSprite 2, 8, 120, -3, TMS_WHITE
         jmp .updateBertSpriteRest
 
-.bertSpriteRightJump
+.bertSpriteJumpDR
         +tmsCreateSprite 0, 12, 120, 7, TMS_DK_RED
         +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
         +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
         jmp .updateBertSpriteJump
 
-.bertSpriteLeftRest:
+.bertSpriteRestDL:
         lda QBERT_Y
         cmp #170
         bcc +
-        lda #120
-        sta QBERT_X
-        lda #12
-        sta QBERT_Y
+        jsr resetBert
 +
 
         +tmsCreateSprite 0, 24, 120, 8, TMS_DK_RED
@@ -137,11 +149,40 @@ hbc56Main:
         +tmsCreateSprite 2, 32, 120, -3, TMS_WHITE
         jmp .updateBertSpriteRest
 
-.bertSpriteLeftJump
+.bertSpriteJumpDL
         +tmsCreateSprite 0, 36, 120, 7, TMS_DK_RED
         +tmsCreateSprite 1, 40, 120, 10, TMS_BLACK
         +tmsCreateSprite 2, 44, 120, -6, TMS_WHITE
         jmp .updateBertSpriteJump
+
+
+
+.bertSpriteRestUR:
+        +tmsCreateSprite 0, 48+0, 120, 8, TMS_DK_RED
+        +tmsCreateSprite 1, 48+4, 120, 13, TMS_BLACK
+        +tmsCreateSprite 2, 48+8, 120, -3, TMS_WHITE
+        jmp .updateBertSpriteRest
+
+.bertSpriteJumpUR
+        +tmsCreateSprite 0, 48+12, 120, 7, TMS_DK_RED
+        +tmsCreateSprite 1, 48+16, 120, 10, TMS_BLACK
+        +tmsCreateSprite 2, 48+20, 120, -6, TMS_WHITE
+        jmp .updateBertSpriteJump
+
+
+.bertSpriteRestUL:
+        +tmsCreateSprite 0, 48+24, 120, 8, TMS_DK_RED
+        +tmsCreateSprite 1, 48+28, 120, 13, TMS_BLACK
+        +tmsCreateSprite 2, 48+32, 120, -3, TMS_WHITE
+        jmp .updateBertSpriteRest
+
+.bertSpriteJumpUL
+        +tmsCreateSprite 0, 48+36, 120, 7, TMS_DK_RED
+        +tmsCreateSprite 1, 48+40, 120, 10, TMS_BLACK
+        +tmsCreateSprite 2, 48+44, 120, -6, TMS_WHITE
+        jmp .updateBertSpriteJump
+
+
 
 .updateBertSpriteRest
         ldx QBERT_X
@@ -188,21 +229,38 @@ hbc56Main:
         clc
 
         lda QBERT_DIR
+        bit #1
         bne +
         lda QBERT_X
         adc .bertJumpAnimX,X
         sta QBERT_X
-        bra ++
+        bra @endX
 +
         sec
         lda QBERT_X
         sbc .bertJumpAnimX,X
         sta QBERT_X
-++
+@endX
+        lda QBERT_DIR
+        bit #2
+        bne +
+
         clc
         lda QBERT_Y
         adc .bertJumpAnimY,X
         sta QBERT_Y
+        bra @endY
++
+        stx TMP
+        lda #15
+        sec
+        sbc TMP
+        tax
+        lda QBERT_Y
+        sec
+        sbc .bertJumpAnimY,X
+        sta QBERT_Y
+@endY:
 
         jsr .updateBertSpriteJump
 .endAnim
@@ -210,41 +268,163 @@ hbc56Main:
         inc
         sta QBERT_ANIM
         bit #$20
-        beq ++
+        beq @endUpdate
         stz QBERT_STATE
         stz QBERT_ANIM
+        lda #$00
+        sta TMP
+        lda #$25
+        jsr scoreAdd
         lda QBERT_DIR
         bne +
-        jsr .bertSpriteRightRest
-        bra ++
+        jsr .bertSpriteRestDR
+        bra @endSetRestSprite
 +
-        jsr .bertSpriteLeftRest
-++
+        cmp #1
+        bne +
+        jsr .bertSpriteRestDL
+        bra @endSetRestSprite
++
+        cmp #2
+        bne +
+        jsr .bertSpriteRestUR
+        bra @endSetRestSprite
++
+        jsr .bertSpriteRestUL
+
+@endSetRestSprite
+        jsr .updateCell
+
+@endUpdate
         jmp .afterControl
 
+.updateCell:
+        lda #8
+        sta TMP2
+        ldx CELL_X
+        ldy CELL_Y
+        jsr tmsSetPosRead
+        +tmsGet
+        bmi +
+        rts
++
+        pha
+        cmp #128+16
+        bcc +
+        lda #-8
+        sta TMP2
 
-.rightPressed:
++
+        +tmsGet
+        +tmsGet
+        sta TMP
+        jsr tmsSetAddressWrite
+        pla
+        clc
+        adc TMP2
+        +tmsPut
+        inc
+        +tmsPut
+        
+        clc
+        lda TMP
+        adc TMP2
+        +tmsPut
+        inc
+        +tmsPut
+
+
+        ldx CELL_X
+        ldy CELL_Y
+        iny
+        jsr tmsSetPosRead
+        +tmsGet
+        pha
+        +tmsGet
+        +tmsGet
+        sta TMP
+        jsr tmsSetAddressWrite
+
+        pla
+        clc
+        adc TMP2
+        +tmsPut
+        inc
+        +tmsPut
+        
+        clc
+        lda TMP
+        adc TMP2
+        +tmsPut
+        inc
+        +tmsPut
+
+@endUpdateCell:
+        rts
+
+.moveDR:
         lda #1
         sta QBERT_STATE
         lda #0
         sta QBERT_DIR
-        jsr .bertSpriteRightJump
+        jsr .bertSpriteJumpDR
+        inc CELL_Y
+        inc CELL_Y
+        inc CELL_Y
+        inc CELL_X
+        inc CELL_X
         rts
 
-.leftPressed:
+.moveDL:
         lda #1
         sta QBERT_STATE
         lda #1
         sta QBERT_DIR
-        jsr .bertSpriteLeftJump
+        jsr .bertSpriteJumpDL
+        inc CELL_Y
+        inc CELL_Y
+        inc CELL_Y
+        dec CELL_X
+        dec CELL_X
         rts
+
+.moveUR:
+        lda #1
+        sta QBERT_STATE
+        lda #2
+        sta QBERT_DIR
+        jsr .bertSpriteJumpUR
+        dec CELL_Y
+        dec CELL_Y
+        dec CELL_Y
+        inc CELL_X
+        inc CELL_X        
+        rts
+
+.moveUL:
+        lda #1
+        sta QBERT_STATE
+        lda #3
+        sta QBERT_DIR
+        jsr .bertSpriteJumpUL
+        dec CELL_Y
+        dec CELL_Y
+        dec CELL_Y
+        dec CELL_X
+        dec CELL_X        
+        rts
+
 
 gameLoop:
 
         lda QBERT_STATE
-        bne .updatePos
-        +nes1BranchIfPressed NES_RIGHT, .rightPressed
-        +nes1BranchIfPressed NES_LEFT, .leftPressed
+        beq +
+        jmp .updatePos
++
+        +nes1BranchIfPressed NES_RIGHT, .moveDR
+        +nes1BranchIfPressed NES_DOWN, .moveDL
+        +nes1BranchIfPressed NES_LEFT, .moveUL
+        +nes1BranchIfPressed NES_UP, .moveUR
 
 .afterControl
 
@@ -265,6 +445,50 @@ gameLoop:
         jmp updateColor4
 
         rts
+
+        
+; -----------------------------------------------------------------------------
+; Output two BCD digits to current location
+; Inputs:
+;   A = BCD encoded value
+; -----------------------------------------------------------------------------
+outputBCD:
+        sta TMP
+        +lsr4
+        ora #'0'
+        +tmsPut
+        lda TMP
+outputBCDLow:
+        and #$0f
+        ora #'0'
+        +tmsPut
+        rts
+
+
+; lsb bcd score to add in accumulator, msb score in TMP
+scoreAdd:
+        clc
+        sed
+        adc SCORE_L
+        sta SCORE_L
+        lda TMP
+        adc SCORE_M
+        sta SCORE_M
+        bcc +
+        lda #0
+        adc SCORE_H
+        sta SCORE_H
++
+        cld
+        +tmsSetPosWrite 1, 1
+        lda SCORE_H
+        jsr outputBCD
+        lda SCORE_M
+        jsr outputBCD
+        lda SCORE_L
+        jsr outputBCD
+        rts
+
 
 updateColor1:
         +tmsSetAddrColorTableIIBank0 1
@@ -694,16 +918,16 @@ tilesToVram:
 
 
 .gameTable
-!text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
-!text $00,"000000"               ,$00,$00,$00,$00,$00,$00,$00,$00,$02,$04,$00,$01,$03,$00,$00,$00,$00,"ROUND: 1"                     
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$82,$83,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$88,$89,$8a,$8b,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$ac,$ad,$ae,$af,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$a8,$a9,$aa,$ab,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
+!text $00,"000000"               ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"ROUND: 1"                     
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$90,$93,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$b4,$b7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$a8,$ab,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $06,$08,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
