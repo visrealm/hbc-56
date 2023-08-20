@@ -74,8 +74,7 @@ hbc56Main:
         jsr tmsReg1SetFields
 
         ; set backrground
-        +tmsColorFgBg TMS_WHITE, TMS_BLACK;DK_YELLOW
-        jsr tmsSetBackground
+        +tmsSetColorFgBg TMS_WHITE, TMS_BLACK
 
 
         jsr clearVram
@@ -194,8 +193,13 @@ resetBert:
         dey
         dey
         +tmsSpritePosXYReg 0
-        tya
+        lda QBERT_DIR
+        bit #2
         clc
+        beq +
+        sec
++
+        tya
         adc #-11
         tay
         +tmsSpritePosXYReg 2
@@ -209,8 +213,13 @@ resetBert:
         dey
         dey
         +tmsSpritePosXYReg 0
-        tya
+        lda QBERT_DIR
+        bit #2
         clc
+        beq +
+        sec
++
+        tya
         adc #-13
         tay
         +tmsSpritePosXYReg 2
@@ -219,25 +228,25 @@ resetBert:
 
 
 .updatePos:
+        +tmsSetColorFgBg TMS_WHITE, TMS_DK_GREEN
 
         lda QBERT_ANIM
-        and #1
         beq .endAnim
         lda QBERT_ANIM
-        lsr
+        dec
         tax
-        clc
 
         lda QBERT_DIR
         bit #1
         bne +
         lda QBERT_X
+        clc
         adc .bertJumpAnimX,X
         sta QBERT_X
         bra @endX
 +
-        sec
         lda QBERT_X
+        sec
         sbc .bertJumpAnimX,X
         sta QBERT_X
 @endX
@@ -245,14 +254,14 @@ resetBert:
         bit #2
         bne +
 
-        clc
         lda QBERT_Y
+        clc
         adc .bertJumpAnimY,X
         sta QBERT_Y
         bra @endY
 +
         stx TMP
-        lda #15
+        lda #31
         sec
         sbc TMP
         tax
@@ -264,11 +273,12 @@ resetBert:
 
         jsr .updateBertSpriteJump
 .endAnim
+        inc QBERT_ANIM
         lda QBERT_ANIM
-        inc
-        sta QBERT_ANIM
-        bit #$20
-        beq @endUpdate
+        cmp #33
+        bne @endUpdate
+        +tmsSetColorFgBg TMS_WHITE, TMS_DK_BLUE
+
         stz QBERT_STATE
         stz QBERT_ANIM
         lda #$00
@@ -293,10 +303,10 @@ resetBert:
         jsr .bertSpriteRestUL
 
 @endSetRestSprite
-        jsr .updateCell
+        bra .updateCell
 
 @endUpdate
-        jmp .afterControl
+        rts
 
 .updateCell:
         lda #8
@@ -373,7 +383,7 @@ resetBert:
         inc CELL_Y
         inc CELL_X
         inc CELL_X
-        rts
+        jmp .afterControl
 
 .moveDL:
         lda #1
@@ -386,7 +396,7 @@ resetBert:
         inc CELL_Y
         dec CELL_X
         dec CELL_X
-        rts
+        jmp .afterControl
 
 .moveUR:
         lda #1
@@ -399,7 +409,7 @@ resetBert:
         dec CELL_Y
         inc CELL_X
         inc CELL_X        
-        rts
+        jmp .afterControl
 
 .moveUL:
         lda #1
@@ -412,41 +422,159 @@ resetBert:
         dec CELL_Y
         dec CELL_X
         dec CELL_X        
-        rts
+        jmp .afterControl
 
 
 gameLoop:
+        +tmsSetColorFgBg TMS_WHITE, TMS_DK_YELLOW
 
         lda QBERT_STATE
         beq +
-        jmp .updatePos
+        jsr .updatePos
+        bra .afterControl
 +
-        +nes1BranchIfPressed NES_RIGHT, .moveDR
-        +nes1BranchIfPressed NES_DOWN, .moveDL
-        +nes1BranchIfPressed NES_LEFT, .moveUL
-        +nes1BranchIfPressed NES_UP, .moveUR
+        ; test NES controller
+        lda NES1_IO_ADDR
+        bit #NES_RIGHT
+        beq .moveDR
+        bit #NES_DOWN
+        beq .moveDL
+        bit #NES_LEFT
+        beq .moveUL
+        bit #NES_UP
+        beq .moveUR
 
 .afterControl
 
-        lda HBC56_TICKS
+        jsr .updateChangeArrows
+        jsr .updatePlatformColors
 
-        cmp #15
-        bcs +
-        jmp updateColor1
-+
-        cmp #30
-        bcs +
-        jmp updateColor2
-+
-        cmp #45
-        bcs +
-        jmp updateColor3
-+
-        jmp updateColor4
+        +tmsSetColorFgBg TMS_WHITE, TMS_BLACK
 
         rts
 
+.updatePlatformColors:
+        lda HBC56_TICKS
+        cmp #1
+        bne +
+        jsr .setPlatformColorBank0
+        jsr .updatePlatformColor1
+        rts
++
+        cmp #2
+        bne +
+        jsr .setPlatformColorBank1
+        jsr .updatePlatformColor1
+        rts
++
+        cmp #3
+        bne +
+        jsr .setPlatformColorBank2
+        jsr .updatePlatformColor1
+        rts
++
+        cmp #16
+        bne +
+        jsr .setPlatformColorBank0
+        jsr .updatePlatformColor2
+        rts
++
+        cmp #17
+        bne +
+        jsr .setPlatformColorBank1
+        jsr .updatePlatformColor2
+        rts
++
+        cmp #18
+        bne +
+        jsr .setPlatformColorBank2
+        jsr .updatePlatformColor2
+        rts
++
+        cmp #31
+        bne +
+        jsr .setPlatformColorBank0
+        jsr .updatePlatformColor3
+        rts
++
+        cmp #32
+        bne +
+        jsr .setPlatformColorBank1
+        jsr .updatePlatformColor3
+        rts
++
+        cmp #33
+        bne +
+        jsr .setPlatformColorBank2
+        jsr .updatePlatformColor3
+        rts
++
+        cmp #46
+        bne +
+        jsr .setPlatformColorBank0
+        jsr .updatePlatformColor4
+        rts
++
+        cmp #47
+        bne +
+        jsr .setPlatformColorBank1
+        jsr .updatePlatformColor4
+        rts
++
+        cmp #48
+        bne +
+        jsr .setPlatformColorBank2
+        jsr .updatePlatformColor4
++
+        rts
+
+
+.updateChangeArrows:
+        lda HBC56_TICKS
+        beq @changeArrowsNone
+        cmp #20
+        beq @changeArrowsOne
+        cmp #40
+        beq @changeArrowsTwo
+        rts
+
+@changeArrowsNone
+        jsr .arrowsPosOne
+        lda #0
+        +tmsPut
+        +tmsPut
+        jsr .arrowsPosTwo
+        lda #0
+        +tmsPut
+        +tmsPut
+        rts
+@changeArrowsOne
+        jsr .arrowsPosOne
+        +tmsPut $c6
+        +tmsPut 0
+        jsr .arrowsPosTwo
+        +tmsPut 0
+        +tmsPut $c7
+        rts
+@changeArrowsTwo
+        jsr .arrowsPosOne
+        lda #$c6
+        +tmsPut
+        +tmsPut
+        jsr .arrowsPosTwo
+        lda #$c7
+        +tmsPut
+        +tmsPut
+        rts
         
+.arrowsPosOne
+        +tmsSetPosWrite 1, 5
+        rts
+
+.arrowsPosTwo
+        +tmsSetPosWrite 5, 5
+        rts
+
 ; -----------------------------------------------------------------------------
 ; Output two BCD digits to current location
 ; Inputs:
@@ -490,49 +618,34 @@ scoreAdd:
         rts
 
 
-updateColor1:
+.setPlatformColorBank0
         +tmsSetAddrColorTableIIBank0 1
+        rts
+
+.setPlatformColorBank1
+        +tmsSetAddrColorTableIIBank1 1
+        rts
+
+.setPlatformColorBank2
+        +tmsSetAddrColorTableIIBank2 1
+        rts
+
+.updatePlatformColor1:
         +tmsSendData .platformPal1, 8 * 4
-
-        +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .platformPal1, 8 * 4
-
-        ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .platformPal1, 8 * 4
         rts
 
-updateColor2:
-        +tmsSetAddrColorTableIIBank0 1
+.updatePlatformColor2:
         +tmsSendData .platformPal2, 8 * 4
-
-        +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .platformPal2, 8 * 4
-
-        ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .platformPal2, 8 * 4
         rts
 
-updateColor3:
-        +tmsSetAddrColorTableIIBank0 1
+.updatePlatformColor3:
         +tmsSendData .platformPal3, 8 * 4
-
-        +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .platformPal3, 8 * 4
-
-        ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .platformPal3, 8 * 4
         rts
 
-updateColor4:
-        +tmsSetAddrColorTableIIBank0 1
+.updatePlatformColor4:
         +tmsSendData .platformPal4, 8 * 4
-
-        +tmsSetAddrColorTableIIBank1 1
-        +tmsSendData .platformPal4, 8 * 4
-
-        ;+tmsSetAddrColorTableIIBank2 1
-        ;+tmsSendData .platformPal4, 8 * 4
         rts
+
 
 ; -----------------------------------------------------------------------------
 ; Clear/reset VRAM
@@ -643,6 +756,13 @@ tilesToVram:
 
         +tmsSetAddrSpritePattTable
         +tmsSendData .bertPattR, 8 * 4 * 3 * 2 * 4
+
+        +tmsSetAddrPattTableIIBank0 192
+        +tmsSendData .changeToPatt, 8 * 8
+        +tmsSetAddrColorTableIIBank0 192
+        +tmsPutRpt $80, 8 * 6
+        +tmsPutRpt $d0, 8 * 2
+
 
         ; text
         +tmsSetAddrPattTableIIBank0 ' '
@@ -833,7 +953,7 @@ tilesToVram:
 !byte $40,$40,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 
-!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-11
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-12
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$c0,$c0,$80
@@ -866,7 +986,7 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 
-!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-11
+!byte $00,$00,$00,$00,$00,$00,$00,$00  ; white offset y-12
 !byte $00,$00,$00,$00,$00,$03,$03,$01
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -889,10 +1009,26 @@ tilesToVram:
 
 
 .bertJumpAnimX
-!byte 0,0,1,1,2,2,2,2,2,1,1,1,1,0,0,0
+!byte 0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,0,0,0,0
 .bertJumpAnimY
-!byte 0,-3,-2,-1,0,1,2,3,3,3,3,3,3,3,3,3
+!byte -2,-1,-2,-1,-1,-1,0,-1,0,0,0,1,0,1,1,1,2,1,2,1,2,1,2,2,2,2,2,2,2,2,2,2
 
+
+;.bertJumpAnimX
+;!byte 0,0,1,1,2,2,2,2,2,1,1,1,1,0,0,0,0,0
+;.bertJumpAnimY
+;!byte -3,-2,-2,-1,0,1,2,3,3,3,3,3,3,3,4,4
+
+
+.changeToPatt
+!byte $00,$00,$f4,$84,$87,$84,$f4,$00
+!byte $00,$00,$99,$a5,$bd,$a5,$a5,$00
+!byte $00,$00,$27,$a8,$6b,$29,$26,$00
+!byte $00,$00,$78,$40,$70,$40,$78,$00
+!byte $00,$00,$3e,$08,$08,$08,$08,$00
+!byte $00,$00,$60,$92,$90,$92,$60,$00
+!byte $10,$18,$fc,$fe,$fc,$18,$10,$00
+!byte $08,$18,$3f,$7f,$3f,$18,$08,$00
 
 
 ; 0-95 - bert (96)
@@ -921,16 +1057,16 @@ tilesToVram:
 !text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
 !text $00,"000000"               ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"ROUND: 1"                     
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$90,$93,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$b4,$b7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$a8,$ab,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
+!byte $00,$c0,$c1,$c2,$c3,$c4,$c5,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$90,$93,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$c6,$c6,$b4,$b7,$c7,$c7,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$a8,$ab,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $05,$07,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
+!byte $06,$08,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00
