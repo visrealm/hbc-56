@@ -14,6 +14,7 @@
 
 #include "debugger.h"
 #include "../devices/tms9918_device.h"
+#include "../devices/via_device.h"
 #include "vrEmuTms9918Util.h"
 #include "vrEmu6502.h"
 #include "imgui.h"
@@ -38,6 +39,7 @@ static VrEmu6502 *cpu6502 = NULL;
 
 static char *labelMap[0x10000] = {NULL};
 static HBC56Device* tms9918 = NULL;
+static HBC56Device* via = NULL;
 
 static char tmpBuffer[256] = {0};
 
@@ -641,6 +643,12 @@ void debuggerInitTms(HBC56Device* tms)
 {
   tms9918 = tms;
 }
+
+void debuggerInitVia(HBC56Device* via6522)
+{
+  via = via6522;
+}
+
 
 std::set<uint16_t> breakpoints;
 
@@ -1460,7 +1468,7 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
   int tableColumns = ((mode == TMS_MODE_GRAPHICS_II) ? 33 : 17);
   int tableRows = ((mode == TMS_MODE_GRAPHICS_II) ? 25 : 17);
 
-  ImGui::SetNextWindowContentSize(ImVec2(tableColumns * 26, 0));
+  ImGui::SetNextWindowContentSize(ImVec2(tableColumns * 26.0f, 0.0f));
   if (ImGui::Begin("TMS9918A Patterns", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (tms9918)
@@ -1549,7 +1557,7 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
       float size = 1.0f / 32.0f;
 
       uv1 = ImVec2(size, size);
-      int pattIdx = 0;
+      uint16_t pattIdx = 0;
 
       for (int r = 1; r < tableRows; ++r)
       {
@@ -1619,7 +1627,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
       uint32_t* pixels = NULL;
       int pitch = 0;
       SDL_LockTexture(tex, NULL, (void**)&pixels, &pitch);
-      memset(pixels, 0, 16 * 32 * sizeof(uint32_t));
+      memset(pixels, 8, 16 * 32 * sizeof(uint32_t));
 
       uint16_t attrAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_ATTR_TABLE) & 0x7f) << 7;
       uint16_t pattAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_PATT_TABLE) & 0x07) << 11;
@@ -1628,7 +1636,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
 
       for (int i = 0; i < 32; ++i)
       {
-        int spriteIndex = readTms9918Vram(tms9918, attrAddr + 2);
+        uint8_t spriteIndex = readTms9918Vram(tms9918, attrAddr + 2);
         uint32_t spriteColor = vrEmuTms9918Palette[readTms9918Vram(tms9918, attrAddr + 3) & 0x0f];
 
         uint16_t sprAddr = pattAddr + spriteIndex * 8;
@@ -1639,7 +1647,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
 
           for (int x = 0; x < 8; ++x)
           {
-            pixels[y * 16 + x] = (pattByte & 0x80) ? spriteColor : 0;
+            pixels[y * 16 + x] = (pattByte & 0x80) ? spriteColor : 0x181818ff;
             pattByte <<= 1;
           }
         }
@@ -1652,7 +1660,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
 
             for (int x = 0; x < 8; ++x)
             {
-              pixels[y * 16 + x + 8] = (pattByte & 0x80) ? spriteColor : 0;
+              pixels[y * 16 + x + 8] = (pattByte & 0x80) ? spriteColor : 0x181818ff;
               pattByte <<= 1;
             }
           }
@@ -1845,6 +1853,60 @@ void debuggerTmsRegistersView(bool* show)
     else
     {
       ImGui::Text("TMS9918A not present");
+    }
+  }
+  ImGui::End();
+}
+
+
+
+void debuggerVia6522View(bool* show)
+{
+  if (ImGui::Begin("65C02 VIA", show, ImGuiWindowFlags_HorizontalScrollbar))
+  {
+    if (via)
+    {
+      ImGui::PushStyleColor(ImGuiCol_Text, green);
+      std::string desc;
+
+      for (uint8_t y = 0; y < 16; ++y)
+      {
+        uint8_t r = readVia6522Reg(via, y);
+
+        desc.clear();
+        switch (y)
+        {
+          case 0: desc = "PORT B"; break;
+          case 1: desc = "PORT A"; break;
+          case 2: desc = "DDR B"; break;
+          case 3: desc = "DDR A"; break;
+          case 4: desc = "T1CL"; break;
+          case 5: desc = "T1CH"; break;
+          case 6: desc = "T1LL"; break;
+          case 7: desc = "T1LH"; break;
+          case 8: desc = "T2CL"; break;
+          case 9: desc = "T2CH"; break;
+          case 10: desc = "SR"; break;
+          case 11: desc = "ACR"; break;
+          case 12: desc = "PCR"; break;
+          case 13: desc = "IFR"; break;
+          case 14: desc = "IER"; break;
+          case 15: desc = "PORT_Ax"; break;
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+        ImGui::Text("R%d", y);
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        ImGui::Text("%s: $%02x", desc.c_str(), r);
+      }
+
+      ImGui::PopStyleColor();
+
+    }
+    else
+    {
+      ImGui::Text("VIA not present");
     }
   }
   ImGui::End();

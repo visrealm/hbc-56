@@ -56,9 +56,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;VR_6522_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c22\src;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -80,9 +80,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;VR_6522_EMU_STATIC=1;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\imgui;..\thirdparty\ImGui-Addons\FileBrowser;..\thirdparty\imgui\backends;..\thirdparty\sdl\include;..\modules\65c22\src;..\modules\65c02\src;..\modules\tms9918\src;..\modules\lcd\src;..\modules\ay38910</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
@@ -94,6 +94,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\65c02\src\vrEmu6502.h" />
+    <ClInclude Include="..\modules\65c22\src\vrEmu6522.h" />
     <ClInclude Include="..\modules\ay38910\emu2149.h" />
     <ClInclude Include="..\modules\lcd\src\vrEmuLcd.h" />
     <ClInclude Include="..\modules\tms9918\src\vrEmuTms9918.h" />
@@ -110,6 +111,7 @@
     <ClInclude Include="..\src\devices\nes_device.h" />
     <ClInclude Include="..\src\devices\tms9918_device.h" />
     <ClInclude Include="..\src\devices\uart_device.h" />
+    <ClInclude Include="..\src\devices\via_device.h" />
     <ClInclude Include="..\src\hbc56emu.h" />
     <ClInclude Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.h" />
     <ClInclude Include="..\thirdparty\imgui\backends\imgui_impl_sdl2.h" />
@@ -127,6 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\modules\65c02\src\vrEmu6502.c" />
+    <ClCompile Include="..\modules\65c22\src\vrEmu6522.c" />
     <ClCompile Include="..\modules\ay38910\emu2149.c" />
     <ClCompile Include="..\modules\lcd\src\vrEmuLcd.c" />
     <ClCompile Include="..\modules\tms9918\src\vrEmuTms9918.c" />
@@ -142,6 +145,7 @@
     <ClCompile Include="..\src\devices\nes_device.c" />
     <ClCompile Include="..\src\devices\tms9918_device.c" />
     <ClCompile Include="..\src\devices\uart_device.c" />
+    <ClCompile Include="..\src\devices\via_device.c" />
     <ClCompile Include="..\src\hbc56emu.cpp" />
     <ClCompile Include="..\thirdparty\ImGui-Addons\FileBrowser\ImGuiFileBrowser.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS;VR_LCD_EMU_STATIC=1;VR_TMS9918_EMU_STATIC=1;VR_6502_EMU_STATIC=1;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>

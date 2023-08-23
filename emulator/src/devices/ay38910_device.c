@@ -16,36 +16,43 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <Windows.h>
 
 #include "SDL.h"
-
-extern void cpu6502_irq(void);
 
 static void resetAy38910Device(HBC56Device*);
 static void destroyAy38910Device(HBC56Device*);
 static void audioAy38910Device(HBC56Device* device, float* buffer, int numSamples);
 static uint8_t readAy38910Device(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeAy38910Device(HBC56Device*, uint16_t, uint8_t);
+static void tickAy38910Device(HBC56Device*, uint32_t, double);
 
 #define AY3891X_INACTIVE 0x03
 #define AY3891X_READ     0x02
 #define AY3891X_WRITE    0x01
 #define AY3891X_ADDR     0x00
 
+#define BUFFER_MAX_SIZE  4096
+
 struct AY38910Device
 {
   uint16_t       baseAddr;
   uint8_t        regAddr;
   int            channels;
-  PSG           *psg;
-  SDL_mutex     *mutex;
+  float          buffer[BUFFER_MAX_SIZE];
+  int            bufferStart;
+  int            bufferEnd;
+  double         deltaTimeOverFlow;
+  double         timePerSample;
+  PSG* psg;
+  SDL_mutex* mutex;
 };
 typedef struct AY38910Device AY38910Device;
 
- /* Function:  createAy38910Device
-  * --------------------
- * create an AY-3-8910 PSG device
-  */
+/* Function:  createAy38910Device
+ * --------------------
+* create an AY-3-8910 PSG device
+ */
 HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate, int channels)
 {
   HBC56Device device = createDevice("AY-3-8910 PSG");
@@ -54,9 +61,16 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
   {
     ayDevice->baseAddr = baseAddr;
     ayDevice->psg = PSG_new(clockFreq, sampleRate);
+    PSG_setVolumeMode(ayDevice->psg, 2);  // AY-3-8910 mode
     ayDevice->regAddr = 0;
     ayDevice->channels = channels;
     ayDevice->mutex = SDL_CreateMutex();
+    memset(ayDevice->buffer, 0, sizeof(ayDevice->buffer));
+    ayDevice->bufferStart = 0;
+    ayDevice->bufferEnd = 0;
+    ayDevice->deltaTimeOverFlow = 0.0;
+    ayDevice->timePerSample = 1.0 / (double)sampleRate;
+
 
     device.data = ayDevice;
 
@@ -65,6 +79,7 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
     device.readFn = &readAy38910Device;
     device.writeFn = &writeAy38910Device;
     device.audioFn = &audioAy38910Device;
+    device.tickFn = &tickAy38910Device;
   }
   else
   {
@@ -90,27 +105,57 @@ static void resetAy38910Device(HBC56Device* device)
   AY38910Device* ayDevice = getAy38910Device(device);
   if (ayDevice)
   {
-    SDL_LockMutex(ayDevice->mutex);
     PSG_reset(ayDevice->psg);
-    SDL_UnlockMutex(ayDevice->mutex);
   }
 }
 
-static void destroyAy38910Device(HBC56Device *device)
+static void destroyAy38910Device(HBC56Device* device)
 {
-  AY38910Device *ayDevice = getAy38910Device(device);
+  AY38910Device* ayDevice = getAy38910Device(device);
   if (ayDevice)
   {
-    SDL_LockMutex(ayDevice->mutex);
     PSG_delete(ayDevice->psg);
     ayDevice->psg = NULL;
-    SDL_UnlockMutex(ayDevice->mutex);
 
     SDL_DestroyMutex(ayDevice->mutex);
     ayDevice->mutex = NULL;
   }
   free(ayDevice);
   device->data = NULL;
+}
+
+
+static inline void addSampleToBuffer(AY38910Device* ayDevice)
+{
+  PSG_calc(ayDevice->psg);
+
+  ayDevice->buffer[ayDevice->bufferEnd++] = ((ayDevice->psg->ch_out[0] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));
+  ayDevice->bufferEnd &= 0x0fff;
+
+  if (ayDevice->channels > 1)
+  {
+    ayDevice->buffer[ayDevice->bufferEnd++] = ((ayDevice->psg->ch_out[1] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));
+    ayDevice->bufferEnd &= 0x0fff;
+  }
+  ayDevice->deltaTimeOverFlow -= ayDevice->timePerSample;
+}
+
+
+static void tickAy38910Device(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+{
+  AY38910Device* ayDevice = getAy38910Device(device);
+  if (ayDevice)
+  {
+    SDL_LockMutex(ayDevice->mutex);
+
+    ayDevice->deltaTimeOverFlow += deltaTime;
+
+    while (ayDevice->deltaTimeOverFlow > 0.0)
+    {
+      addSampleToBuffer(ayDevice);
+    }
+    SDL_UnlockMutex(ayDevice->mutex);
+  }
 }
 
 static void audioAy38910Device(HBC56Device* device, float* buffer, int numSamples)
@@ -120,31 +165,47 @@ static void audioAy38910Device(HBC56Device* device, float* buffer, int numSample
   {
     SDL_LockMutex(ayDevice->mutex);
 
-    for (int i = 0; i < numSamples; ++i)
-    {
-      PSG_calc(ayDevice->psg);
-      buffer[i * ayDevice->channels] += ((ayDevice->psg->ch_out[0] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
+    int end = ayDevice->bufferEnd;
+    if (end < ayDevice->bufferStart) end += BUFFER_MAX_SIZE;
 
-      if (ayDevice->channels > 1)
+    int size = end - ayDevice->bufferStart;
+
+    // here, if we have less than half the required samples
+    // we need to catch up (synchronise) so we'll skip this
+    // request.
+    if (size > numSamples)
+    {
+      int samples = size >> 1;
+
+      while (samples++ < numSamples)
       {
-        buffer[i * ayDevice->channels + 1] += ((ayDevice->psg->ch_out[1] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));;
+        addSampleToBuffer(ayDevice);
+      }
+
+      for (int i = 0; i < numSamples; ++i)
+      {
+        buffer[i * ayDevice->channels] += ayDevice->buffer[ayDevice->bufferStart++];
+        ayDevice->bufferStart &= 0x0fff;
+
+        if (ayDevice->channels > 1)
+        {
+          buffer[i * ayDevice->channels + 1] += ayDevice->buffer[ayDevice->bufferStart++];
+          ayDevice->bufferStart &= 0x0fff;
+        }
       }
     }
-
     SDL_UnlockMutex(ayDevice->mutex);
   }
 }
 
-static uint8_t readAy38910Device(HBC56Device* device, uint16_t addr, uint8_t *val, uint8_t dbg)
+static uint8_t readAy38910Device(HBC56Device* device, uint16_t addr, uint8_t* val, uint8_t dbg)
 {
   AY38910Device* ayDevice = getAy38910Device(device);
   if (ayDevice && val)
   {
     if (addr == (ayDevice->baseAddr | AY3891X_READ))
     {
-      SDL_LockMutex(ayDevice->mutex);
       *val = PSG_readReg(ayDevice->psg, ayDevice->regAddr);
-      SDL_UnlockMutex(ayDevice->mutex);
       return 1;
     }
   }
@@ -159,16 +220,12 @@ static uint8_t writeAy38910Device(HBC56Device* device, uint16_t addr, uint8_t va
   {
     if (addr == (ayDevice->baseAddr | AY3891X_ADDR))
     {
-      SDL_LockMutex(ayDevice->mutex);
       ayDevice->regAddr = val;
-      SDL_UnlockMutex(ayDevice->mutex);
       return 1;
     }
     else if (addr == (ayDevice->baseAddr | AY3891X_WRITE))
     {
-      SDL_LockMutex(ayDevice->mutex);
       PSG_writeReg(ayDevice->psg, ayDevice->regAddr, val);
-      SDL_UnlockMutex(ayDevice->mutex);
       return 1;
     }
   }
