@@ -1,5 +1,7 @@
 ; Troy's HBC-56 - VIA Test
 ;
+; Tests VIA timer, VIA I/O (PORTA) and tests configurable RAM/ROM banks
+;
 ; Copyright (c) 2022 Troy Schrapel
 ;
 ; This code is licensed under the MIT license
@@ -16,6 +18,7 @@ MS_H = MS_L + 1
 MS_COUNT = MS_H + 1
 
 
+
 hbc56Meta:
         +setHbcMetaTitle "VIA TEST"
         rts
@@ -23,6 +26,8 @@ hbc56Meta:
 hbc56Main:
 
         +memcpy $8000, $8000, $1000
+
+        jsr audioInit
 
         lda #$01
         sta IO_PORT_BASE_ADDRESS | ROM_BANK_REG        
@@ -36,16 +41,20 @@ hbc56Main:
         lda #$c0
         sta  VIA_IO_ADDR_IER
 
+        lda #$aa
+        sta VIA_IO_ADDR_PORT_A
+
         stz MS_L
         stz MS_H
         stz MS_COUNT
 
-        lda #$66
+        lda #$C2;$84
         sta VIA_IO_ADDR_T1C_L
-        lda #$0e
+        lda #$01;$03
         sta VIA_IO_ADDR_T1C_H
 
-        lda #$cc
+
+        lda #$aa
         sta selfmod-1
         lda #0
 
@@ -74,7 +83,7 @@ timerHandler:
 
         inc MS_COUNT
         lda MS_COUNT
-        cmp #33
+        cmp #255
         bne .doneInput
         +nes1BranchIfNotPressed NES_LEFT, +
         jsr rotateLeft
@@ -82,9 +91,23 @@ timerHandler:
         +nes1BranchIfNotPressed NES_RIGHT, +
         jsr rotateRight
 +
+        +nes1BranchIfNotPressed NES_A, +
+        jsr audioJumpInit
++
+        +nes1BranchIfNotPressed NES_B, +
+        jsr audioJumpStop
++
+        +nes1BranchIfNotPressed NES_SELECT, +
+        jsr audioEnvTest
++
         stz MS_COUNT
 
 .doneInput:
+
+        lda #$ff
+        sta VIA_IO_ADDR_IFR
+
+        jsr audioJumpTick
 
         rts
 
@@ -104,3 +127,6 @@ rotateRight:
         sta VIA_IO_ADDR_PORT_A
 +        
         rts
+
+
+!src "audio.asm"
