@@ -39,7 +39,7 @@ AY_S1_READ  = AY_S1 | AY_READ
 AY_S1_WRITE = AY_S1 | AY_WRITE
 AY_S1_ADDR  = AY_S1 | AY_ADDR
 
-; Registers
+; Registers (they're named using Octal values)
 AY_R0 = 0
 AY_R1 = 1
 AY_R2 = 2
@@ -48,16 +48,14 @@ AY_R4 = 4
 AY_R5 = 5
 AY_R6 = 6
 AY_R7 = 7
-AY_R8 = 8
-AY_R9 = 9
-AY_R10 = 10
-AY_R11 = 11
-AY_R12 = 12
-AY_R13 = 13
-AY_R14 = 14
-AY_R15 = 15
-AY_R16 = 16
-AY_R17 = 17
+AY_R10 = 8
+AY_R11 = 9
+AY_R12 = 10
+AY_R13 = 11
+AY_R14 = 12
+AY_R15 = 13
+AY_R16 = 14
+AY_R17 = 15
 
 AY_CHA = 0
 AY_CHB = 1
@@ -72,14 +70,14 @@ AY_CHC_TONE_L   = AY_R4
 AY_CHC_TONE_H   = AY_R5
 AY_NOISE_GEN    = AY_R6
 AY_ENABLES      = AY_R7
-AY_CHA_AMPL     = AY_R8
-AY_CHB_AMPL     = AY_R9
-AY_CHC_AMPL     = AY_R10
-AY_ENV_PERIOD_L = AY_R11
-AY_ENV_PERIOD_H = AY_R12
-AY_ENV_SHAPE    = AY_R13
-AY_PORTA        = AY_R14
-AY_PORTB        = AY_R15
+AY_CHA_AMPL     = AY_R10
+AY_CHB_AMPL     = AY_R11
+AY_CHC_AMPL     = AY_R12
+AY_ENV_PERIOD_L = AY_R13
+AY_ENV_PERIOD_H = AY_R14
+AY_ENV_SHAPE    = AY_R15
+AY_PORTA        = AY_R16
+AY_PORTB        = AY_R17
 
 AY_ENV_SHAPE_CONTINUE  = $08
 AY_ENV_SHAPE_ATTACK    = $04
@@ -89,6 +87,10 @@ AY_ENV_SHAPE_HOLD      = $01
 ;  /\  /\  /\  /\  /\ 
 ; /  \/  \/  \/  \/  \
 AY_ENV_SHAPE_TRIANGLE     = (AY_ENV_SHAPE_CONTINUE | AY_ENV_SHAPE_ATTACK | AY_ENV_SHAPE_ALTERNATE)
+
+; \  /\  /\  /\  /\  /
+;  \/  \/  \/  \/  \/
+AY_ENV_SHAPE_TRIANGLE2    = (AY_ENV_SHAPE_CONTINUE | AY_ENV_SHAPE_ALTERNATE)
 
 ;  /------------------
 ; /

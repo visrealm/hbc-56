@@ -63,6 +63,12 @@ hbc56IntHandler:
         bra @endIntHandler
 +
 }
+
+        bit #VIA_IRQ_BIT
+        beq +
+        jsr viaIntHandler
+        bra @endIntHandler
++
         
 @endIntHandler:
         ply
