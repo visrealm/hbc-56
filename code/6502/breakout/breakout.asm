@@ -162,7 +162,7 @@ NEW_LEVEL_TIMEOUT = 2
 TONE_PADDLE       = 6
 TONE_WALL         = 2
 TONE_BRICK        = 4
-AUDIO_TONE_PERIOD = 400
+AUDIO_TONE_PERIOD = 1800
 
 ; RAM locations
 ; -------------------------
@@ -184,12 +184,12 @@ hbc56Main:
 
         sei
 
-        ; go to graphics II mode
-        jsr tmsModeGraphicsII
-
         ; disable display durint init
         +tmsDisableInterrupts
         +tmsDisableOutput
+
+        ; go to graphics II mode
+        jsr tmsModeGraphicsII
 
         ; set backrground
         +tmsColorFgBg TMS_WHITE, TMS_BLACK

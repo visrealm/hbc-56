@@ -130,9 +130,28 @@ HAVE_MATH_INC = 1
 !macro cmp16 .left, .right {
   lda .left + 1
   cmp .right + 1
-	bne +
-	lda .left
-	cmp .right
+  bne +
+  lda .left
+  cmp .right
++
+}
+
+; -----------------------------------------------------------------------------
+; +cmp16i: compare a 16-bit values in memory with an immediate value
+; -----------------------------------------------------------------------------
+; Inputs:
+;  .addr: address containing LSB
+;  .imm:  immediate value to compare to
+; Outputs:
+;  C set if right < left
+;  Z set if right == left
+; -----------------------------------------------------------------------------
+!macro cmp16i .addr, .imm {
+  lda .addr + 1
+  cmp #>.imm
+  bne +
+  lda .addr
+  cmp #<.imm
 +
 }
 
@@ -146,9 +165,9 @@ HAVE_MATH_INC = 1
 ; -----------------------------------------------------------------------------
 !macro cmp16xa .value {
   cpx #>.value
-	bne .doneCmpXa
-	cmp #<.value
-.doneCmpXa
+  bne +
+  cmp #<.value
++
 }
 
 ; -----------------------------------------------------------------------------

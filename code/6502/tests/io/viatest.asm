@@ -48,9 +48,9 @@ hbc56Main:
         stz MS_H
         stz MS_COUNT
 
-        lda #$C2;$84
+        lda #$84
         sta VIA_IO_ADDR_T1C_L
-        lda #$01;$03
+        lda #$03
         sta VIA_IO_ADDR_T1C_H
 
 
@@ -103,9 +103,6 @@ timerHandler:
         stz MS_COUNT
 
 .doneInput:
-
-        lda #$ff
-        sta VIA_IO_ADDR_IFR
 
         jsr audioJumpTick
 

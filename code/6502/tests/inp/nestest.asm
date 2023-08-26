@@ -81,7 +81,7 @@ hbc56Main:
 !macro testButton1 .nesBtn, .x, .y, .offInd, .onInd {
         +tmsSetPosWrite .x, .y
         lda #.offInd
-        +nes1BranchIfNotPressed .nesBtn, +
+        +nes1BranchIfNotPressedSafe .nesBtn, +
         lda #.onInd
 +
         +tmsPut
@@ -90,7 +90,7 @@ hbc56Main:
 !macro testButton2 .nesBtn, .x, .y, .offInd, .onInd {
         +tmsSetPosWrite .x, .y
         lda #.offInd
-        +nes2BranchIfNotPressed .nesBtn, +
+        +nes2BranchIfNotPressedSafe .nesBtn, +
         lda #.onInd
 +
         +tmsPut

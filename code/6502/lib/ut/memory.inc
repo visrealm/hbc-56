@@ -14,10 +14,10 @@
 ; store16: Write a 16-bit immediate value to memory
 ; -----------------------------------------------------------------------------
 ; Inputs:
-;	.dst: destination address
+;	.addr: destination address
 ;	.val16: 16-bit value
 ; -----------------------------------------------------------------------------
-!macro store16 .dst, .val16 {
+!macro store16 .addr, .val16 {
         lda #<.val16
         sta .addr
         lda #>.val16
@@ -49,38 +49,21 @@
 	cpx #(.cnt & $ff)	
 	bne -
 } else {
-	lda #<.src
-	sta MEM_SRC
-	lda #>.src
-	sta MEM_SRC + 1
+        +store16 MEM_SRC, .src
+        +store16 MEM_DST, .dst
+        +store16 MEM_LEN, .cnt
 
-	lda #<.dst
-	sta MEM_DST
-	lda #>.dst
-	sta MEM_DST + 1
-
-
-		lda #<.cnt
-		sta MEM_LEN
-		lda #>.cnt
-		sta MEM_LEN + 1
-		jsr memcpyMultiPage
-	}
+        jsr memcpyMultiPage
+}
 }
 }
 
 !macro setMemCpySrc .src {
-	lda #<.src
-	sta MEM_SRC
-	lda #>.src
-	sta MEM_SRC + 1
+        +store16 MEM_SRC, .src
 }
 
 !macro setMemCpyDst .dst {
-	lda #<.dst
-	sta MEM_DST
-	lda #>.dst
-	sta MEM_DST + 1
+        +store16 MEM_DST, .dst
 }
 
 !macro setMemCpySrcInd .srcRef {
@@ -121,24 +104,14 @@
 		!error "memcpyPort: invalid count: ", .cnt
 	}
 	
-	lda #<.src
-	sta MEM_SRC
-	lda #>.src
-	sta MEM_SRC + 1
-
-	lda #<.dst
-	sta MEM_DST
-	lda #>.dst
-	sta MEM_DST + 1
+        +store16 MEM_SRC, .src
+        +store16 MEM_DST, .dst
 
 	!if .cnt <= 256 {
 		ldy #<.cnt					
 		jsr memcpySinglePagePort
 	} else {
-		lda #<.cnt
-		sta MEM_LEN
-		lda #>.cnt
-		sta MEM_LEN + 1
+                +store16 MEM_LEN, .cnt
 		jsr memcpyMultiPagePort
 	}
 }
@@ -170,14 +143,9 @@
 	cpx #0
 	bne -
 } else {
-	lda #<.dst
-	sta MEM_DST
-	lda #>.dst
-	sta MEM_DST + 1
-	lda #<.cnt
-	sta MEM_LEN
-	lda #>.cnt
-	sta MEM_LEN + 1
+        +store16 MEM_DST, .dst
+        +store16 MEM_LEN, .cnt
+        
 	lda #.val
 	jsr memsetMultiPage
 }

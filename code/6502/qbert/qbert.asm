@@ -11,6 +11,7 @@
 
 !src "hbc56kernel.inc"
 
+
 ; Zero page addresses
 ; -------------------------
 ZP0 = HBC56_USER_ZP_START
@@ -27,6 +28,11 @@ TMP           = ZP0 + 8
 TMP2          = ZP0 + 9
 CELL_X        = ZP0 + 10
 CELL_Y        = ZP0 + 11
+
+TONE0                   = ZP0 + 12
+TONE1                   = ZP0 + 13
+TONE0_                  = ZP0 + 14
+TONE1_                  = ZP0 + 25
 
 
 ; actors
@@ -45,6 +51,7 @@ CELL_Y        = ZP0 + 11
 ; setBlockColors (c1, c2, c3, left, right)
 
 
+!src "audio.asm"
 
 
 ; -----------------------------------------------------------------------------
@@ -99,6 +106,8 @@ hbc56Main:
         jsr resetBert
 
         jsr .bertSpriteRestDR
+
+        jsr audioInit
 
         cli
 
@@ -303,9 +312,12 @@ resetBert:
         jsr .bertSpriteRestUL
 
 @endSetRestSprite
+        jsr audioJumpStop
+
         bra .updateCell
 
 @endUpdate
+        jsr audioJumpTick
         rts
 
 .updateCell:
@@ -372,11 +384,16 @@ resetBert:
 @endUpdateCell:
         rts
 
-.moveDR:
+.bertJumpStart:
         lda #1
         sta QBERT_STATE
+
+        jmp audioJumpInit
+
+.moveDR:
         lda #0
         sta QBERT_DIR
+        jsr .bertJumpStart
         jsr .bertSpriteJumpDR
         inc CELL_Y
         inc CELL_Y
@@ -387,9 +404,8 @@ resetBert:
 
 .moveDL:
         lda #1
-        sta QBERT_STATE
-        lda #1
         sta QBERT_DIR
+        jsr .bertJumpStart
         jsr .bertSpriteJumpDL
         inc CELL_Y
         inc CELL_Y
@@ -399,10 +415,9 @@ resetBert:
         jmp .afterControl
 
 .moveUR:
-        lda #1
-        sta QBERT_STATE
         lda #2
         sta QBERT_DIR
+        jsr .bertJumpStart
         jsr .bertSpriteJumpUR
         dec CELL_Y
         dec CELL_Y
@@ -412,10 +427,9 @@ resetBert:
         jmp .afterControl
 
 .moveUL:
-        lda #1
-        sta QBERT_STATE
         lda #3
         sta QBERT_DIR
+        jsr .bertJumpStart
         jsr .bertSpriteJumpUL
         dec CELL_Y
         dec CELL_Y
