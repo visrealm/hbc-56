@@ -14,7 +14,7 @@
 ; tmsWaitReg: Not sure how much delay we need so make a macro for now
 ; -----------------------------------------------------------------------------
 !macro tmsWaitReg {
-        jsr _tmsWaitReg
+        ;jsr _tmsWaitReg
 }
 
 ; -----------------------------------------------------------------------------

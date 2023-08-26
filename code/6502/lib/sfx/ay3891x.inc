@@ -39,22 +39,26 @@
         !if .freq <= 0 {
                 .val = 0
         } else {
-                .val = AY_CLOCK_FREQ / (32.0 * .freq)
+                .val = AY_CLOCK_FREQ / (16.0 * .freq)
         }
         +ayWrite .dev, AY_CHA_TONE_L + (.chan * 2), <.val
         +ayWrite .dev, AY_CHA_TONE_H + (.chan * 2), >.val
 }
 
+!macro ayToneWordPeriod .periodHz {
+        !word ((AY_CLOCK_FREQ * .periodHz) / 16.0)
+}
+
 !macro ayToneWord .freq {
-        !word (AY_CLOCK_FREQ / (32.0 * .freq))
+        !word (AY_CLOCK_FREQ / (16.0 * .freq))
 }
 
 !macro ayToneByteL .freq {
-        !byte <(AY_CLOCK_FREQ / (32.0 * .freq))
+        !byte <(AY_CLOCK_FREQ / (16.0 * .freq))
 }
 
 !macro ayToneByteH .freq {
-        !byte >(AY_CLOCK_FREQ / (32.0 * .freq))
+        !byte >(AY_CLOCK_FREQ / (16.0 * .freq))
 }
 
 

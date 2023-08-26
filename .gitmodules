@@ -26,3 +26,6 @@
 [submodule "emulator/thirdparty/ImGui-Addons"]
 	path = emulator/thirdparty/ImGui-Addons
 	url = https://github.com/gallickgunner/ImGui-Addons.git
+[submodule "emulator/modules/65c22"]
+	path = emulator/modules/65c22
+	url = git@github.com:visrealm/vrEmu6522.git

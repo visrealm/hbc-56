@@ -20,7 +20,8 @@ typedef struct vrEmu6502_s VrEmu6502;
 
 void debuggerInit(VrEmu6502 *cpu6502);
 
-void debuggerInitTms(HBC56Device *tms9918);
+void debuggerInitTms(HBC56Device* tms9918);
+void debuggerInitVia(HBC56Device* via6522);
 
 uint8_t debuggerIsBreakpoint(uint16_t addr);
 
@@ -37,6 +38,7 @@ void debuggerVramMemoryView(bool* show);
 void debuggerTmsRegistersView(bool* show);
 void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show);
 void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show);
+void debuggerVia6522View(bool* show);
 
 extern uint16_t debugMemoryAddr;
 extern uint16_t debugTmsMemoryAddr;

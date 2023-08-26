@@ -113,7 +113,7 @@ static uint8_t readNESDevice(HBC56Device* device, uint16_t addr, uint8_t *val, u
       {
         *val |= NES_SELECT;
       }
-      if (keystate[SDL_SCANCODE_SPACE] || keystate[SDL_SCANCODE_RETURN])
+      if (keystate[SDL_SCANCODE_SPACE] || keystate[SDL_SCANCODE_RETURN] || keystate[SDL_SCANCODE_KP_ENTER])
       {
         *val |= NES_START;
       }

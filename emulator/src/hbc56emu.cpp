@@ -38,6 +38,7 @@
 #include "devices/nes_device.h"
 #include "devices/ay38910_device.h"
 #include "devices/uart_device.h"
+#include "devices/via_device.h"
 
 
 #include <stdlib.h>
@@ -525,6 +526,7 @@ static void doRender()
   static bool showTms9918Registers = true;
   static bool showTms9918Patterns = true;
   static bool showTms9918Sprites = true;
+  static bool showVia6522 = true;
 
   ImGui_ImplSDLRenderer2_NewFrame();
   ImGui_ImplSDL2_NewFrame();
@@ -611,10 +613,12 @@ static void doRender()
         ImGui::MenuItem("Memory", "<Ctrl> + M", &showMemory);
         ImGui::MenuItem("Breakpoints", "<Ctrl> + B", &showBreakpoints);
         ImGui::Separator();
-        ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + V", &showTms9918Memory);
+        ImGui::MenuItem("TMS9918A VRAM", "<Ctrl> + G", &showTms9918Memory);
         ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
         ImGui::MenuItem("TMS9918A Patterns", "<Ctrl> + P", &showTms9918Patterns);
         ImGui::MenuItem("TMS9918A Sprites", "<Ctrl> + I", &showTms9918Sprites);
+        ImGui::Separator();
+        ImGui::MenuItem("65C22 VIA", "<Ctrl> + V", &showVia6522);
         ImGui::EndMenu();
       }
 
@@ -692,6 +696,7 @@ static void doRender()
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
   if (showTms9918Patterns) debuggerTmsPatternsView(renderer, &showTms9918Registers);
   if (showTms9918Sprites) debuggerTmsSpritesView(renderer, &showTms9918Registers);
+  if (showVia6522) debuggerVia6522View(&showVia6522);
 
   ImGui::PopStyleColor(4);
 
@@ -1236,6 +1241,10 @@ int main(int argc, char* argv[])
   {
     hbc56AddDevice(createLcdDevice(lcdType, HBC56_IO_ADDRESS(HBC56_LCD_DAT_PORT), HBC56_IO_ADDRESS(HBC56_LCD_CMD_PORT), renderer));
   }
+#endif
+
+#if HBC56_HAVE_VIA
+  debuggerInitVia(hbc56AddDevice(create65C22ViaDevice(HBC56_IO_ADDRESS(HBC56_VIA_PORT), HBC56_VIA_IRQ)));
 #endif
 
   /* initialise audio */

@@ -10,7 +10,9 @@
 ;  - hbc56.asm
 
 
-!macro nes1BranchIfPressed .buttonMask, .addr {
+;  Safe versions of NES pressed macros (preserves accumulator)
+
+!macro nes1BranchIfPressedSafe .buttonMask, .addr {
         pha
         lda #(.buttonMask)
         jsr nes1Pressed
@@ -18,7 +20,7 @@
         bcs .addr
 }
 
-!macro nes1BranchIfNotPressed .buttonMask, .addr {
+!macro nes1BranchIfNotPressedSafe .buttonMask, .addr {
         pha
         lda #(.buttonMask)
         jsr nes1Pressed
@@ -26,7 +28,7 @@
         bcc .addr
 }
 
-!macro nes2BranchIfPressed .buttonMask, addr {
+!macro nes2BranchIfPressedSafe .buttonMask, addr {
         pha
         lda #(.buttonMask)
         jsr nes2Pressed
@@ -34,10 +36,36 @@
         bcs addr
 }
 
-!macro nes2BranchIfNotPressed .buttonMask, addr {
+!macro nes2BranchIfNotPressedSafe .buttonMask, addr {
         pha
         lda #(.buttonMask)
         jsr nes2Pressed
         pla
         bcc addr
+}
+
+;  NES pressed macros which stomp accumulator
+
+!macro nes1BranchIfPressed .buttonMask, .addr {
+        lda #(.buttonMask)
+        bit NES1_IO_ADDR
+        beq .addr
+}
+
+!macro nes1BranchIfNotPressed .buttonMask, .addr {
+        lda #(.buttonMask)
+        bit NES1_IO_ADDR
+        bne .addr
+}
+
+!macro nes2BranchIfPressed .buttonMask, addr {
+        lda #(.buttonMask)
+        bit NES2_IO_ADDR
+        beq addr
+}
+
+!macro nes2BranchIfNotPressed .buttonMask, addr {
+        lda #(.buttonMask)
+        bit NES2_IO_ADDR
+        bne addr
 }

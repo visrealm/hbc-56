@@ -18,7 +18,7 @@
   -------------------------------------------------------------------------- */
 #define HBC56_HAVE_THREADS      0
 
-#define HBC56_CLOCK_FREQ        3686400   /* half of 7.3728*/
+#define HBC56_CLOCK_FREQ        3686400   /* half of 7.3728 */
 #define HBC56_AUDIO_FREQ        48000
 #define HBC56_MAX_DEVICES       16
 
@@ -58,6 +58,10 @@
 #define HBC56_AY38910_A_PORT    0x40
 #define HBC56_AY38910_B_PORT    0x44
 #define HBC56_AY38910_CLOCK     2000000
+
+#define HBC56_HAVE_VIA          1
+#define HBC56_VIA_PORT          0xf0
+#define HBC56_VIA_IRQ           5
 
 #ifdef _WINDOWS
 #define HBC56_HAVE_UART         1

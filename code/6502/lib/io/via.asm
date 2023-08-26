@@ -38,9 +38,13 @@ VIA_REG_T1L_L   = $06
 VIA_REG_T1L_H   = $07
 VIA_REG_T2C_L   = $08
 VIA_REG_T2C_H   = $09
+VIA_REG_SR      = $0a
 VIA_REG_ACR     = $0b
+VIA_REG_PFR     = $0c
 VIA_REG_IFR     = $0d
 VIA_REG_IER     = $0e
+VIA_REG_PORT_Ax = $0f
+
 
 ; IO Ports
 VIA_IO_ADDR     = IO_PORT_BASE_ADDRESS | VIA_IO_PORT
@@ -66,4 +70,5 @@ VIA_DIR_OUTPUT  = $ff
 
 
 viaIntHandler:
+
         jmp (HBC56_VIA_CALLBACK)
