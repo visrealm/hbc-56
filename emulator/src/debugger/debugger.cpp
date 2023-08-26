@@ -1862,18 +1862,15 @@ void debuggerTmsRegistersView(bool* show)
 
 void debuggerVia6522View(bool* show)
 {
-  if (ImGui::Begin("65C02 VIA", show, ImGuiWindowFlags_HorizontalScrollbar))
+  if (ImGui::Begin("65C22 VIA", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     if (via)
     {
       ImGui::PushStyleColor(ImGuiCol_Text, green);
-      std::string desc;
+      const char *desc = NULL;
 
-      for (uint8_t y = 0; y < 16; ++y)
+      for (uint8_t y = 0; y < 15; ++y)
       {
-        uint8_t r = readVia6522Reg(via, y);
-
-        desc.clear();
         switch (y)
         {
           case 0: desc = "PORT B"; break;
@@ -1891,14 +1888,15 @@ void debuggerVia6522View(bool* show)
           case 12: desc = "PCR"; break;
           case 13: desc = "IFR"; break;
           case 14: desc = "IER"; break;
-          case 15: desc = "PORT_Ax"; break;
         }
 
+        uint8_t r = readVia6522Reg(via, y);
+
         ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-        ImGui::Text("R%d", y);
+        ImGui::Text("R%02d", y);
         ImGui::PopStyleColor();
         ImGui::SameLine();
-        ImGui::Text("%s: $%02x", desc.c_str(), r);
+        ImGui::Text("%-6s: $%02x %d", desc, r, r);
       }
 
       ImGui::PopStyleColor();

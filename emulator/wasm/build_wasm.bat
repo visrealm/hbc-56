@@ -21,11 +21,13 @@ emcc -o hbc56.html ^
   -D VR_LCD_EMU_STATIC=1 ^
   -D VR_TMS9918_EMU_STATIC=1 ^
   -D VR_6502_EMU_STATIC=1 ^
+  -D VR_6522_EMU_STATIC=1 ^
   -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 ^
   -s USE_SDL=2 ^
   -s INITIAL_MEMORY=64MB ^
   -I ..\modules\ay38910 ^
   -I ..\modules\65c02\src ^
+  -I ..\modules\65c22\src ^
   -I ..\modules\lcd\src ^
   -I ..\modules\tms9918\src ^
   -I ..\thirdparty\imgui ^
@@ -35,6 +37,7 @@ emcc -o hbc56.html ^
   ..\src\devices\device.c ^
   ..\src\devices\memory_device.c ^
   ..\src\devices\6502_device.c ^
+  ..\src\devices\via_device.c ^
   ..\src\devices\tms9918_device.c ^
   ..\src\devices\nes_device.c ^
   ..\src\devices\keyboard_device.c ^
@@ -43,6 +46,7 @@ emcc -o hbc56.html ^
   ..\src\debugger\debugger.cpp ^
   ..\modules\ay38910\emu2149.c ^
   ..\modules\65c02\src\vrEmu6502.c ^
+  ..\modules\65c22\src\vrEmu6522.c ^
   ..\modules\lcd\src\vrEmuLcd.c ^
   ..\modules\tms9918\src\vrEmuTms9918.c ^
   ..\modules\tms9918\src\vrEmuTms9918Util.c ^

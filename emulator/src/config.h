@@ -18,7 +18,7 @@
   -------------------------------------------------------------------------- */
 #define HBC56_HAVE_THREADS      0
 
-#define HBC56_CLOCK_FREQ        3686400   /* half of 7.3728*/
+#define HBC56_CLOCK_FREQ        3686400   /* half of 7.3728 */
 #define HBC56_AUDIO_FREQ        48000
 #define HBC56_MAX_DEVICES       16
 
