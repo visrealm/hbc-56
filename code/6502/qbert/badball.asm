@@ -1,6 +1,11 @@
 
 BADBALL_PATT_IDX = 96
 
+BADBALL_MAIN_SPRITE_NUMBER      = 3
+BADBALL_HIGHLIGHT_SPRITE_NUMBER = 5
+
+BADBALL_JUMP_DELAY     = 25
+
 BADBALL_START_X = 136
 BADBALL_START_Y = 33
 BADBALL_HIGHLIGH_OFFSET = 8
@@ -19,36 +24,39 @@ badBallInit:
         lda #BADBALL_START_Y
         sta BADBALL_Y
 
-        +tmsCreateSprite 3, BADBALL_PATT_IDX,     BADBALL_START_X, BADBALL_START_Y, TMS_DK_RED
-        +tmsCreateSprite 4, BADBALL_PATT_IDX + 8, BADBALL_START_X, BADBALL_START_Y + BADBALL_HIGHLIGH_OFFSET, TMS_WHITE
+        +tmsCreateSprite BADBALL_MAIN_SPRITE_NUMBER, BADBALL_PATT_IDX,     BADBALL_START_X, BADBALL_START_Y, TMS_DK_RED
+        +tmsCreateSprite BADBALL_HIGHLIGHT_SPRITE_NUMBER, BADBALL_PATT_IDX + 8, BADBALL_START_X, BADBALL_START_Y + BADBALL_HIGHLIGH_OFFSET, TMS_WHITE
 
         jsr .moveBall
-        rts
-
-.initJumpCountdown:
-        lda #30
-        sta BADBALL_STATE
-        rts
-
-.initJump:
-        dec BADBALL_STATE
-        stz BADBALL_ANIM
-        +tmsSpriteIndex 3, BADBALL_PATT_IDX + 4
         rts
 
 .jumpTick:
         ldx BADBALL_ANIM
 
+        lda BADBALL_DIR
+        beq @moveRight
         lda BADBALL_X
         sec
         sbc .bertJumpAnimX,X
         sta BADBALL_X
+        bra @afterMoveX
+
+@moveRight:
+        lda BADBALL_X
+        clc
+        adc .bertJumpAnimX,X
+        sta BADBALL_X
+@afterMoveX:
 
         lda BADBALL_Y
         clc
         adc .bertJumpAnimY,X
         sta BADBALL_Y
-
+        cmp #158
+        bcc +
+        inc BADBALL_Y
+        inc BADBALL_Y
++
         jsr .moveBall
 
         inc BADBALL_ANIM
@@ -58,9 +66,17 @@ badBallInit:
         lda #0
         sta BADBALL_STATE
         +tmsSpriteIndex 3, BADBALL_PATT_IDX
+
+        lda BADBALL_Y
+        cmp #158
+        bcc @postResetCheck
+        lda #BADBALL_START_X
+        sta BADBALL_X
+        lda #BADBALL_START_Y
+        sta BADBALL_Y
+@postResetCheck
         jsr audioPlayBadBallJump
 +
-
         rts
 
 badBallTick:
@@ -71,15 +87,30 @@ badBallTick:
         beq .initJump
         rts
 
+.initJumpCountdown:
+        lda #BADBALL_JUMP_DELAY
+        sta BADBALL_STATE
+        rts
+
+.initJump:
+        dec BADBALL_STATE
+        stz BADBALL_ANIM
+        +tmsSpriteIndex BADBALL_MAIN_SPRITE_NUMBER, BADBALL_PATT_IDX + 4
+        lda RANDOM
+        and #1
+        sta BADBALL_DIR
+        rts
+
+
 .moveBall:
         ldx BADBALL_X
         ldy BADBALL_Y
-        +tmsSpritePosXYReg 3
+        +tmsSpritePosXYReg BADBALL_MAIN_SPRITE_NUMBER
         tya
         clc
         adc #BADBALL_HIGHLIGH_OFFSET
         tay
-        +tmsSpritePosXYReg 4        
+        +tmsSpritePosXYReg BADBALL_HIGHLIGHT_SPRITE_NUMBER
         rts
 
 

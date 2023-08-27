@@ -15,13 +15,13 @@ BLOCKS_RIGHT_PATTERN_INDEX = BLOCKS_LEFT_PATTERN_INDEX + 1
 blocksInit:
         lda #TMS_LT_BLUE
         sta COLOR_TOP1
-        lda #TMS_CYAN
+        lda #TMS_LT_YELLOW
         sta COLOR_TOP2
         lda #TMS_LT_GREEN
         sta COLOR_TOP3
-        lda #TMS_LT_YELLOW
+        lda #TMS_WHITE
         sta COLOR_LEFT
-        lda #TMS_DK_YELLOW
+        lda #TMS_GREY
         sta COLOR_RIGHT
 
         +tmsSetAddrPattTableIIBank0 BLOCKS_PATTERN_INDEX_R1

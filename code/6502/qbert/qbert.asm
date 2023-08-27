@@ -35,17 +35,21 @@ TMP5           = ZP0 + 12
 TMP6           = ZP0 + 13
 CELL_X         = ZP0 + 14
 CELL_Y         = ZP0 + 15
-BADBALL_X      = ZP0 + 16
-BADBALL_Y      = ZP0 + 17
-BADBALL_STATE  = ZP0 + 18
-BADBALL_DIR    = ZP0 + 19
-BADBALL_ANIM   = ZP0 + 20
 
-COILY_X       = ZP0 + 21
-COILY_Y       = ZP0 + 22
-COILY_STATE   = ZP0 + 23
-COILY_DIR     = ZP0 + 24
-COILY_ANIM    = ZP0 + 25
+RANDOM         = ZP0 + 16
+
+
+BADBALL_X      = ZP0 + 32
+BADBALL_Y      = ZP0 + 33
+BADBALL_STATE  = ZP0 + 34
+BADBALL_DIR    = ZP0 + 35
+BADBALL_ANIM   = ZP0 + 36
+
+COILY_X       = ZP0 + 37
+COILY_Y       = ZP0 + 38
+COILY_STATE   = ZP0 + 39
+COILY_DIR     = ZP0 + 40
+COILY_ANIM    = ZP0 + 41
 
 AUDIO_CH0_PCM_STATE = ZP0 + 64
 AUDIO_CH0_PCM_ADDR  = AUDIO_CH0_PCM_STATE + 1
@@ -129,11 +133,6 @@ hbc56Main:
 
         jsr tilesToVram
 
-        +tmsEnableOutput
-
-        +hbc56SetVsyncCallback gameLoop
-        +tmsEnableInterrupts
-
         jsr badBallInit
         jsr coilyInit
 
@@ -141,6 +140,7 @@ hbc56Main:
         +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
         +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
 
+   
         jsr resetBert
 
         jsr .bertSpriteRestDR
@@ -150,6 +150,11 @@ hbc56Main:
         +hbc56SetViaCallback timerHandler
         +timer1SetContinuousHz 4096
 
+        +hbc56SetVsyncCallback gameLoop
+        
+        +tmsEnableOutput
+        +tmsEnableInterrupts
+
         cli
 
         jmp hbc56Stop
@@ -157,6 +162,9 @@ hbc56Main:
 timerHandler:
         bit VIA_IO_ADDR_T1C_L
         jsr audioTick
+        lda NES1_IO_ADDR
+        adc RANDOM
+        sta RANDOM
         rts
 
 resetBert:

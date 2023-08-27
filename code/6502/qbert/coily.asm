@@ -1,6 +1,11 @@
 
 COILY_PATT_IDX = 108
 
+COILY_MAIN_SPRITE_NUMBER      = 4
+COILY_HIGHLIGHT_SPRITE_NUMBER = 6
+
+COILY_JUMP_DELAY     = 33
+
 COILY_START_X = 104
 COILY_START_Y = 33
 COILY_HIGHLIGH_OFFSET = 6
@@ -19,30 +24,50 @@ coilyInit:
         lda #COILY_START_Y
         sta COILY_Y
 
-        +tmsCreateSprite 5, COILY_PATT_IDX,     COILY_START_X, COILY_START_Y, TMS_MAGENTA
-        +tmsCreateSprite 6, COILY_PATT_IDX + 8, COILY_START_X, COILY_START_Y + COILY_HIGHLIGH_OFFSET, TMS_WHITE
+        +tmsCreateSprite COILY_MAIN_SPRITE_NUMBER, COILY_PATT_IDX,     COILY_START_X, COILY_START_Y, TMS_MAGENTA
+        +tmsCreateSprite COILY_HIGHLIGHT_SPRITE_NUMBER, COILY_PATT_IDX + 8, COILY_START_X, COILY_START_Y + COILY_HIGHLIGH_OFFSET, TMS_WHITE
 
         jsr .moveBall
         rts
 
 .initCoilyJumpCountdown:
-        lda #33
+        lda #COILY_JUMP_DELAY
         sta COILY_STATE
         rts
 
 .initCoilyJump:
+        lda COILY_Y
+        cmp #150
+        bcc +
+        inc COILY_STATE
+        rts
++
         dec COILY_STATE
         stz COILY_ANIM
-        +tmsSpriteIndex 5, COILY_PATT_IDX + 4
+        +tmsSpriteIndex COILY_MAIN_SPRITE_NUMBER, COILY_PATT_IDX + 4
+        lda RANDOM
+        and #2
+        sta COILY_DIR
+
         rts
 
 .jumpCoilyTick:
         ldx COILY_ANIM
 
+        lda COILY_DIR
+        beq @moveRight
+        lda COILY_X
+        sec
+        sbc .bertJumpAnimX,X
+        sta COILY_X
+        bra @afterMoveX
+
+@moveRight:
         lda COILY_X
         clc
         adc .bertJumpAnimX,X
         sta COILY_X
+@afterMoveX:
 
         lda COILY_Y
         clc
@@ -58,7 +83,7 @@ coilyInit:
         lda #0
         sta COILY_ANIM
         sta COILY_STATE
-        +tmsSpriteIndex 5, COILY_PATT_IDX
+        +tmsSpriteIndex COILY_MAIN_SPRITE_NUMBER, COILY_PATT_IDX
         jsr .moveCoily
         jsr audioPlayCoilyEggJump
 +
@@ -66,6 +91,7 @@ coilyInit:
         rts
 
 coilyTick:
+
         lda COILY_STATE
         beq .initCoilyJumpCountdown
         bmi .jumpCoilyTick
@@ -76,7 +102,7 @@ coilyTick:
 .moveCoily:
         ldx COILY_X
         ldy COILY_Y
-        +tmsSpritePosXYReg 5
+        +tmsSpritePosXYReg COILY_MAIN_SPRITE_NUMBER
         tya
         clc
         adc #COILY_HIGHLIGH_OFFSET
@@ -85,7 +111,7 @@ coilyTick:
         dec
 +                
         tay
-        +tmsSpritePosXYReg 6        
+        +tmsSpritePosXYReg COILY_HIGHLIGHT_SPRITE_NUMBER
         rts
 
 
