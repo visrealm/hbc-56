@@ -195,7 +195,7 @@ var Module = typeof Module != 'undefined' ? Module : {};
     }
 
     }
-    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 83869}, {"filename": "/rom.bin.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084338}], "remote_package_size": 1084338, "package_uuid": "14adb897-88b4-4b71-ba75-6f7fca18afd4"});
+    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 83869}, {"filename": "/rom.bin.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084338}], "remote_package_size": 1084338, "package_uuid": "54778219-d6a9-4f3f-90c0-6cbb3b8be5c0"});
 
   })();
 
