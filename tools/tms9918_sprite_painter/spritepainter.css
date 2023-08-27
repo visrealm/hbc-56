@@ -1,0 +1,93 @@
+input {
+  text-transform: uppercase; 
+}
+
+table.pixels {
+  margin: -5px -3px -3px 0px;
+  display: inline-block;
+  width: auto;
+  border-spacing: 1px;
+}
+
+table.pixels tr td {
+  height: 15px;
+  width: 15px;
+  padding: 5px;
+}
+
+/*  #00000000, /* transparent */
+/*  #000000ff, /* black */
+/*  #21c942ff, /* medium green */
+/*  #5edc78ff, /* light green */
+/*  #5455edff, /* dark blue */
+/*  #7d75fcff, /* light blue */
+/*  #d3524dff, /* dark red */
+/*  #43ebf6ff, /* cyan */
+/*  #fd5554ff, /* medium red */
+/*  #ff7978ff, /* light red */
+/*  #d3c153ff, /* dark yellow */
+/*  #e5ce80ff, /* light yellow */
+/*  #21b03cff, /* dark green */
+/*  #c95bbaff, /* magenta */
+/*  #ccccccff, /* grey */
+/*  #ffffffff  /* white */
+
+
+.f00 .on, .b00 .off {
+	background-color: #ffffffff;
+	opacity: 1.0;
+	background-size: 5px 5px;
+	background-image: repeating-linear-gradient(45deg, #444cf740 0, #444cf740 1px, #e5e5f720 0px, #e5e5f720 50%);  
+}
+
+.f01 .on, .b01 .off {
+  background-color: black;
+}
+.f02 .on, .b02 .off {
+  background-color: #21c942ff;
+}
+.f03 .on, .b03 .off {
+  background-color: #5edc78ff;
+}
+.f04 .on, .b04 .off {
+  background-color: #5455edff;
+}
+.f05 .on, .b05 .off {
+  background-color: #7d75fcff;
+}
+.f06 .on, .b06 .off {
+  background-color: #d3524dff;
+}
+.f07 .on, .b07 .off {
+  background-color: #43ebf6ff;
+}
+.f08 .on, .b08 .off {
+  background-color: #fd5554ff;
+}
+.f09 .on, .b09 .off {
+  background-color: #ff7978ff;
+}
+.f0a .on, .b0a .off {
+  background-color: #d3c153ff;
+}
+.f0b .on, .b0b .off {
+  background-color: #e5ce80ff;
+}
+.f0c .on, .b0c .off {
+  background-color: #c95bbaff;
+}
+.f0d .on, .b0d .off {
+  background-color: #ccccccff;
+}
+.f0e .on, .b0e .off {
+  background-color: #21c942ff;
+}
+.f0f .on, .b0f .off {
+  background-color: #ffffffff;
+}
+.on {
+  background-color: #000000ff;
+}
+.off {
+  background-color: #ffffffff;
+}

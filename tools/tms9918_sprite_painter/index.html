@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)https://fsf.io/projects/ti994a/spritepainter/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>sprite painter | fsf.io</title>
+<meta name="generator" content="Jekyll v3.9.2">
+<meta property="og:title" content="sprite painter">
+<meta property="og:locale" content="en_US">
+<meta name="description" content="A tool to create sprites and generate their hex values for use in TI-Basic">
+<meta property="og:description" content="A tool to create sprites and generate their hex values for use in TI-Basic">
+<link rel="canonical" href="https://fsf.io/projects/ti994a/spritepainter/">
+<meta property="og:url" content="https://fsf.io/projects/ti994a/spritepainter/">
+<meta property="og:site_name" content="fsf.io">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta property="twitter:title" content="sprite painter">
+<meta name="twitter:site" content="@ffleming">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"A tool to create sprites and generate their hex values for use in TI-Basic","headline":"sprite painter","url":"https://fsf.io/projects/ti994a/spritepainter/"}</script>
+<!-- End Jekyll SEO tag -->
+
+  <link rel="alternate" type="application/rss+xml" title="fsf.io" href="https://fsf.io/feed.xml">
+  <link rel="stylesheet" href="main.css">
+</head>
+
+
+  <body>
+
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">sprite painter</h1>
+  </header>
+
+  <article class="post-content">
+    <script src="jquery.min.js"></script>
+<script src="spritepainter.js"></script>
+<link rel="stylesheet" type="text/css" href="spritepainter.css">
+<p>
+Adapted from <a href="https://fsf.io/projects/ti994a/spritepainter">https://fsf.io/projects/ti994a/spritepainter</a> for use with the <a href="https://github.com/visrealm/hbc-56">HBC-56</a>
+</p>
+<p>
+Click and drag to paint or erase<br>
+If your first click is on an empty cell, you will enter paint mode<br>
+If your first click is on a filled cell, you will enter erase mode
+</p>
+
+<p>
+The relevant code for ACME assembler will appear below  
+</p>
+
+<table>
+<tbody><tr>
+<td>
+<table class="pixels" id="tl">
+  <tbody><tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+</tbody></table>
+</td>
+<td>
+<table class="pixels" id="tr">
+  <tbody><tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td></tr>
+</tbody></table>
+</td>
+</tr>
+<tr>
+<td>
+<table class="pixels" id="bl">
+  <tbody><tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+</tbody></table>
+</td>
+<td>
+<table class="pixels" id="br">
+  <tbody><tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="on"></td><td class="on"></td><td class="on"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+  <tr><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td><td class="off"></td></tr>
+</tbody></table>
+</td>
+</tr>
+</tbody></table>
+
+<button id="loadHex" title="Updated image from code">↑</button>
+<button id="buildHex" title="Update code from image">↓</button>
+<button id="flipH" title="Flip horizontally">↔</button>
+<button id="flipV" title="Flip vertically">↕</button>
+<button id="clear" title="Clear image">clear</button>
+<button id="fill" title="Fill image">fill</button>
+<button id="copy" title="Copy combined code to clipboard">copy</button>
+
+<table id="palette">
+  <tbody><tr>
+    <td>
+      Top Left:
+    </td>
+    <td>
+      <input type="text" id="code_tl" size="32">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Bottom Left:
+    </td>
+    <td>
+      <input type="text" id="code_bl" size="32">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Top Right:
+    </td>
+    <td>
+      <input type="text" id="code_tr" size="32">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Bottom Right:
+    </td>
+    <td>
+      <input type="text" id="code_br" size="32">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Combined:
+    </td>
+    <td>
+      <textarea id="codeAll" style="width:300px;height:70px;"></textarea>
+	  <div>Paste ACME !byte statements above<br/>to update image from code</div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      Palette:
+    </td>
+    <td>
+      <textarea id="paletteAll" style="width:300px;height:70px;"></textarea>
+	  <div>Paste ACME !byte statements above<br/>to update palette from code</div>
+    </td>
+  </tr>
+</tbody></table>
+
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+  <ul>
+    <li>
+      <a title="Email" href="mailto:fsf+website@fsf.io">
+        <i class="fa fa-envelope"></i>
+      </a>
+    </li>
+    <li>
+      <a title="Github" target="_blank" href="https://github.com/ffleming">
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+    <li>
+      <a title="Twitter" target="_blank" href="https://twitter.com/ffleming">
+        <i class="fab fa-twitter"></i>
+      </a>
+    </li>
+    <li>
+      <a title="LinkedIn" target="_blank" href="https://www.linkedin.com/in/fsfleming">
+        <i class="fab fa-linkedin"></i>
+      </a>
+    </li>
+    <li>
+      <a title="PGP Keys" target="_blank" href="https://keybase.io/fsf/key.asc">
+        <i class="fas fa-key-skeleton"></i>
+      </a>
+    </li>
+  </ul>
+</footer>
+
+
+  
+
+
+</body></html>
