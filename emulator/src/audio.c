@@ -46,7 +46,7 @@ void hbc56Audio(int start)
     want.freq = HBC56_AUDIO_FREQ;
     want.format = AUDIO_F32SYS;
     want.channels = 2;
-    want.samples = 1024;
+    want.samples = 256;
     want.callback = hbc56AudioCallback;
     if (SDL_OpenAudio(&want, &audioSpec) == 0) audioDevice = 1;
 

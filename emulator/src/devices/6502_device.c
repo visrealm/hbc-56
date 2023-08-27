@@ -44,6 +44,7 @@ struct CPU6502Device
   uint16_t             breakAddr;
   uint64_t             ticks;
   uint64_t             ticksWai;
+  int                  extraTicks;
   IsBreakpointFn       isBreakFn;
 };
 typedef struct CPU6502Device CPU6502Device;
@@ -69,6 +70,7 @@ HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
     cpuDevice->breakMode = 0;
     cpuDevice->breakAddr = 0;
     cpuDevice->ticks = cpuDevice->ticksWai = 0L;
+    cpuDevice->extraTicks = 0;
     cpuDevice->isBreakFn = brkCb;
     device.data = cpuDevice;
 
@@ -146,15 +148,19 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
   {
     /* introduce a limit to the amount of time we can process in a single step
        to prevent a runaway condition for slow processors */
+    int realDeltaTicks = deltaTicks;
     if (deltaTime > CPU_6502_MAX_TIMESTEP_SEC)
     {
-      deltaTicks = CPU_6502_MAX_TIMESTEP_STEPS;
+      realDeltaTicks = CPU_6502_MAX_TIMESTEP_STEPS;
     }
+
+    realDeltaTicks += cpuDevice->extraTicks;
 
     uint16_t intVec = (hbc56MemRead(0xfffe, true) | (hbc56MemRead(0xffff, true) << 8));
     uint16_t nmiVec = (hbc56MemRead(0xfffa, true) | (hbc56MemRead(0xfffb, true) << 8));
+    uint32_t cycleTicks = 0;
 
-    while (deltaTicks--)
+    while (realDeltaTicks > 0)
     {
       /* currently, we disable interrupts while debugging since the tms9918
          will constantly trigger interrupts which don't allow debugging user code. 
@@ -173,7 +179,7 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
 
       if (doTick)
       {
-        vrEmu6502Tick(cpuDevice->cpu6502);
+        cycleTicks = vrEmu6502InstCycle(cpuDevice->cpu6502);
 
         if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
         {
@@ -212,13 +218,20 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
           }
         }
       }
+      else
+      {
+        break;
+      }
 
-      ++cpuDevice->ticks;
+      cpuDevice->ticks += cycleTicks;
       if (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_WAI)
       {
-        ++cpuDevice->ticksWai;
+        cpuDevice->ticksWai += cycleTicks;
       }
+
+      realDeltaTicks -= cycleTicks;
     }
+    cpuDevice->extraTicks = realDeltaTicks;
   }
 } 
 
