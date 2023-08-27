@@ -13,11 +13,11 @@ BLOCKS_LEFT_PATTERN_INDEX = 254
 BLOCKS_RIGHT_PATTERN_INDEX = BLOCKS_LEFT_PATTERN_INDEX + 1
 
 blocksInit:
-        lda #TMS_DK_BLUE
+        lda #TMS_LT_BLUE
         sta COLOR_TOP1
-        lda #TMS_MAGENTA
+        lda #TMS_CYAN
         sta COLOR_TOP2
-        lda #TMS_DK_GREEN
+        lda #TMS_LT_GREEN
         sta COLOR_TOP3
         lda #TMS_LT_YELLOW
         sta COLOR_LEFT

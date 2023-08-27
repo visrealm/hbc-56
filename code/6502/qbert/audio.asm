@@ -6,101 +6,151 @@
 ;
 ; https://github.com/visrealm/hbc-56
 ;
+; plays 4-bit .pcm files which are generated from RAW 8-bit audio samples
+; using: python ..\..\..\tools\raw2pcm.py *.raw
 ;
 
 ENV_TEST_FREQ = 211.07992
 ENV_TEST_PERIOD = 681*2
 
 
-
-
-
 audioInit:
         jsr ayInit
-        +ayWrite AY_PSG0, AY_CHA_AMPL, $0a
-        +ayWrite AY_PSG0, AY_CHB_AMPL, $0a
+        
+        +ayWrite AY_PSG0, AY_CHA_AMPL, $00
+        +ayWrite AY_PSG0, AY_CHB_AMPL, $00
         +ayWrite AY_PSG0, AY_CHC_AMPL, $00
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, 0
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, 0
-        +ayWrite AY_PSG0, AY_ENV_SHAPE, AY_ENV_SHAPE_SAW1
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, $00
+        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, $00
+        +ayWrite AY_PSG0, AY_ENV_SHAPE, AY_ENV_SHAPE_FADE_OUT
         +ayWrite AY_PSG0, AY_ENABLES, $3e
 
+        +ayWrite AY_PSG1, AY_CHA_AMPL, $00
+        +ayWrite AY_PSG1, AY_CHB_AMPL, $00
         +ayWrite AY_PSG1, AY_CHC_AMPL, $00
         +ayWrite AY_PSG1, AY_ENV_PERIOD_L, $00
-        +ayWrite AY_PSG1, AY_ENV_PERIOD_H, $08
-        +ayWrite AY_PSG1, AY_ENV_SHAPE, $0e
+        +ayWrite AY_PSG1, AY_ENV_PERIOD_H, $00
+        +ayWrite AY_PSG1, AY_ENV_SHAPE, AY_ENV_SHAPE_FADE_OUT
         +ayWrite AY_PSG1, AY_ENABLES, $3e
 
-        +memset AUDIO_PCM_STATE, 0, 16
+        ; clear all AUDIO_* ZP
+        +memset AUDIO_CH0_PCM_STATE, 0, 16
 
         rts
 
-.pcmAudio
-!bin "jump.pcm"
-.pcmAudioEnd
-
-audioJumpInit:
-        lda AUDIO_PCM_STATE
-        beq +
+audioTick:
+        jsr audioTickCh0
+        jsr audioTickCh1
+        jsr audioTickCh2
         rts
-+
-        +ayWrite AY_PSG0, AY_CHC_TONE_L,0
-        +ayWrite AY_PSG0, AY_CHC_TONE_H,0
-        +ayWrite AY_PSG0, AY_ENABLES, $3a
 
-        +store16 AUDIO_CH0_PCM_ADDR_L, .pcmAudio
+
+!macro audioPlayPcm .channel, .start, .size {
+        lda .channel
+        bne .end
+
+!if .channel == AUDIO_CH0_PCM_STATE {
+        +ayToneEnable AY_PSG0, AY_CHC
+}
+!if .channel == AUDIO_CH1_PCM_STATE {
+        +ayToneEnable AY_PSG1, AY_CHC
+}
+!if .channel == AUDIO_CH2_PCM_STATE {
+        +ayToneEnable AY_PSG0, AY_CHA
+}
+        +store16 .channel + 1, .start
+        +store16 .channel + 3, .size
 
         lda #1
-        sta AUDIO_PCM_STATE
-        rts
+        sta .channel
+.end:
+}
 
 
-audioEnvTest:
-        +ayWrite AY_PSG0, AY_CHA_TONE_L, 211
-        +ayWrite AY_PSG0, AY_CHA_TONE_H, 0
-        +ayWrite AY_PSG0, AY_CHA_AMPL, $10
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, <ENV_TEST_PERIOD
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, >ENV_TEST_PERIOD
-        +ayWrite AY_PSG0, AY_ENV_SHAPE, AY_ENV_SHAPE_FADE_OUT
-        +ayWrite AY_PSG0, AY_ENABLES, $3a
-        rts
-
-.loadHighNibble:
-        inc AUDIO_PCM_STATE
-        lda (AUDIO_CH0_PCM_ADDR_L)
-        +lsr4
-        bra .playNibble
-
-.loadLowNibble
-        dec AUDIO_PCM_STATE
-        lda (AUDIO_CH0_PCM_ADDR_L)
-        and #$0f
-        +inc16 AUDIO_CH0_PCM_ADDR_L
-        bra .playNibble
-
-audioJumpTick:
-        lda AUDIO_PCM_STATE
+!macro audioTickSubroutine .ayDev, .ayChan, .qbChanAddr {
+        lda .qbChanAddr
         bne +
         rts
 +
         bit #2
         beq .loadHighNibble
         bra .loadLowNibble
+
+.loadHighNibble:
+        inc .qbChanAddr
+        lda (.qbChanAddr + 1)
+        +lsr4
+        bra .playNibble
+
+.loadLowNibble:
+        dec .qbChanAddr
+        lda (.qbChanAddr + 1)
+        and #$0f
+        pha
+        +inc16 .qbChanAddr + 1
+        +dec16 .qbChanAddr + 3
+        pla
+
 .playNibble
-
-        +ayWriteA AY_PSG0, AY_CHC_AMPL
-
-        +cmp16i AUDIO_CH0_PCM_ADDR_L, .pcmAudioEnd
-        bne +
-        beq audioJumpStop
-+
+        +aySetVolumeAcc .ayDev, .ayChan
+        +beq16 .qbChanAddr + 3, .stop
         rts
 
-audioJumpStop:
+.stop:
         lda #0
-        sta AUDIO_PCM_STATE
-        +ayWrite AY_PSG0, AY_CHC_TONE_L,0
-        +ayWrite AY_PSG0, AY_CHC_TONE_H,0
-        +ayWrite AY_PSG1, AY_CHA_AMPL, $00
-        +ayWrite AY_PSG1, AY_ENABLES, $3e
+        sta .qbChanAddr
+        +ayPlayNote .ayDev, .ayChan, 0
+        +aySetVolumeAcc .ayDev, .ayChan
+        +ayToneDisable .ayDev, .ayChan
         rts
+}
+
+audioPlayJump:
+        +audioPlayPcm AUDIO_CH0_PCM_STATE, .jumpPcmStart, .jumpPcmSize
+        jsr audioTickCh0
+        rts
+
+audioPlayBadBallJump:
+        +audioPlayPcm AUDIO_CH1_PCM_STATE, .jumpBadBallPcmStart, .jumpBadBallPcmSize
+        jsr audioTickCh1
+        rts
+
+audioPlayCoilyEggJump:
+        +audioPlayPcm AUDIO_CH2_PCM_STATE, .jumpCoilyEggPcmStart, .jumpCoilyEggPcmSize
+        jsr audioTickCh1
+        rts
+
+;audioPlayQbertFall:
+        ;+audioPlayPcm AUDIO_CH2_PCM_STATE, .qbertFallPcmStart, .qbertFallPcmSize
+        ;jsr audioTickCh2
+        ;rts
+
+audioTickCh0:
+        +audioTickSubroutine AY_PSG0, AY_CHC, AUDIO_CH0_PCM_STATE
+
+audioTickCh1:
+        +audioTickSubroutine AY_PSG1, AY_CHC, AUDIO_CH1_PCM_STATE
+
+audioTickCh2:
+        +audioTickSubroutine AY_PSG0, AY_CHA, AUDIO_CH2_PCM_STATE
+
+
+.jumpPcmStart
+!bin "jump.pcm"
+.jumpPcmEnd
+.jumpPcmSize = * - .jumpPcmStart
+
+.jumpBadBallPcmStart
+!bin "jump-badball.pcm"
+.jumpBadBallPcmEnd
+.jumpBadBallPcmSize = * - .jumpBadBallPcmStart
+
+.jumpCoilyEggPcmStart
+!bin "jump-coily-egg.pcm"
+.jumpCoilyEggPcmEnd
+.jumpCoilyEggPcmSize = * - .jumpCoilyEggPcmStart
+
+;.qbertFallPcmStart
+;!bin "qbert-fall.pcm"
+;.qbertFallPcmEnd
+;.qbertFallPcmSize = * - .qbertFallPcmStart

@@ -19,40 +19,45 @@ DEBUG=0
 ; -------------------------
 ZP0 = HBC56_USER_ZP_START
 
-QBERT_STATE   = ZP0
-QBERT_DIR     = ZP0 + 1
-QBERT_ANIM    = ZP0 + 2
-QBERT_X       = ZP0 + 3
-QBERT_Y       = ZP0 + 4
-SCORE_L       = ZP0 + 5
-SCORE_M       = ZP0 + 6
-SCORE_H       = ZP0 + 7
-TMP           = ZP0 + 8
-TMP2          = ZP0 + 9
-TMP3          = ZP0 + 10
-TMP4          = ZP0 + 11
-TMP5          = ZP0 + 12
-TMP6          = ZP0 + 13
-CELL_X        = ZP0 + 14
-CELL_Y        = ZP0 + 15
+QBERT_STATE    = ZP0
+QBERT_DIR      = ZP0 + 1
+QBERT_ANIM     = ZP0 + 2
+QBERT_X        = ZP0 + 3
+QBERT_Y        = ZP0 + 4
+SCORE_L        = ZP0 + 5
+SCORE_M        = ZP0 + 6
+SCORE_H        = ZP0 + 7
+TMP            = ZP0 + 8
+TMP2           = ZP0 + 9
+TMP3           = ZP0 + 10
+TMP4           = ZP0 + 11
+TMP5           = ZP0 + 12
+TMP6           = ZP0 + 13
+CELL_X         = ZP0 + 14
+CELL_Y         = ZP0 + 15
+BADBALL_X      = ZP0 + 16
+BADBALL_Y      = ZP0 + 17
+BADBALL_STATE  = ZP0 + 18
+BADBALL_DIR    = ZP0 + 19
+BADBALL_ANIM   = ZP0 + 20
 
+COILY_X       = ZP0 + 21
+COILY_Y       = ZP0 + 22
+COILY_STATE   = ZP0 + 23
+COILY_DIR     = ZP0 + 24
+COILY_ANIM    = ZP0 + 25
 
-AUDIO_PCM_STATE       = ZP0 + 64
+AUDIO_CH0_PCM_STATE = ZP0 + 64
+AUDIO_CH0_PCM_ADDR  = AUDIO_CH0_PCM_STATE + 1
+AUDIO_CH0_PCM_BYTES = AUDIO_CH0_PCM_STATE + 3
 
-AUDIO_CH0_PCM_ADDR_L  = AUDIO_PCM_STATE + 1
-AUDIO_CH0_PCM_ADDR_H  = AUDIO_PCM_STATE + 2
-AUDIO_CH0_PCM_BYTES_L = AUDIO_PCM_STATE + 3
-AUDIO_CH0_PCM_BYTES_H = AUDIO_PCM_STATE + 4
+AUDIO_CH1_PCM_STATE = AUDIO_CH0_PCM_STATE + 5
+AUDIO_CH1_PCM_ADDR  = AUDIO_CH1_PCM_STATE + 1
+AUDIO_CH1_PCM_BYTES = AUDIO_CH1_PCM_STATE + 3
 
-AUDIO_CH1_PCM_ADDR_L  = AUDIO_PCM_STATE + 5
-AUDIO_CH1_PCM_ADDR_H  = AUDIO_PCM_STATE + 6
-AUDIO_CH1_PCM_BYTES_L = AUDIO_PCM_STATE + 7
-AUDIO_CH1_PCM_BYTES_H = AUDIO_PCM_STATE + 8
-
-AUDIO_CH2_PCM_ADDR_L  = AUDIO_PCM_STATE + 9
-AUDIO_CH2_PCM_ADDR_H  = AUDIO_PCM_STATE + 10
-AUDIO_CH2_PCM_BYTES_L = AUDIO_PCM_STATE + 11
-AUDIO_CH2_PCM_BYTES_H = AUDIO_PCM_STATE + 12
+AUDIO_CH2_PCM_STATE = AUDIO_CH1_PCM_STATE + 5
+AUDIO_CH2_PCM_ADDR  = AUDIO_CH2_PCM_STATE + 1
+AUDIO_CH2_PCM_BYTES = AUDIO_CH2_PCM_STATE + 3
 
 
 COLOR_TOP1   = TMP
@@ -129,6 +134,13 @@ hbc56Main:
         +hbc56SetVsyncCallback gameLoop
         +tmsEnableInterrupts
 
+        jsr badBallInit
+        jsr coilyInit
+
+        +tmsCreateSprite 0, 12, 120, 7, TMS_DK_RED
+        +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
+        +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
+
         jsr resetBert
 
         jsr .bertSpriteRestDR
@@ -136,6 +148,7 @@ hbc56Main:
         jsr audioInit
 
         +hbc56SetViaCallback timerHandler
+        +timer1SetContinuousHz 4096
 
         cli
 
@@ -143,11 +156,7 @@ hbc56Main:
 
 timerHandler:
         bit VIA_IO_ADDR_T1C_L
-        jsr audioJumpTick
-        lda AUDIO_PCM_STATE
-        bne +
-        +timer1Stop
-+
+        jsr audioTick
         rts
 
 resetBert:
@@ -170,15 +179,15 @@ resetBert:
         jsr resetBert
 +
 
-        +tmsCreateSprite 0, 0, 120, 8, TMS_DK_RED
-        +tmsCreateSprite 1, 4, 120, 13, TMS_BLACK
-        +tmsCreateSprite 2, 8, 120, -3, TMS_WHITE
+        +tmsSpriteIndex 0, 0
+        +tmsSpriteIndex 1, 4
+        +tmsSpriteIndex 2, 8
         jmp .updateBertSpriteRest
 
 .bertSpriteJumpDR
-        +tmsCreateSprite 0, 12, 120, 7, TMS_DK_RED
-        +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
-        +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
+        +tmsSpriteIndex 0, 12
+        +tmsSpriteIndex 1, 16
+        +tmsSpriteIndex 2, 20
         jmp .updateBertSpriteJump
 
 .bertSpriteRestDL:
@@ -188,42 +197,42 @@ resetBert:
         jsr resetBert
 +
 
-        +tmsCreateSprite 0, 24, 120, 8, TMS_DK_RED
-        +tmsCreateSprite 1, 28, 120, 13, TMS_BLACK
-        +tmsCreateSprite 2, 32, 120, -3, TMS_WHITE
+        +tmsSpriteIndex 0, 24
+        +tmsSpriteIndex 1, 28
+        +tmsSpriteIndex 2, 32
         jmp .updateBertSpriteRest
 
 .bertSpriteJumpDL
-        +tmsCreateSprite 0, 36, 120, 7, TMS_DK_RED
-        +tmsCreateSprite 1, 40, 120, 10, TMS_BLACK
-        +tmsCreateSprite 2, 44, 120, -6, TMS_WHITE
+        +tmsSpriteIndex 0, 36
+        +tmsSpriteIndex 1, 40
+        +tmsSpriteIndex 2, 44
         jmp .updateBertSpriteJump
 
 
 
 .bertSpriteRestUR:
-        +tmsCreateSprite 0, 48+0, 120, 8, TMS_DK_RED
-        +tmsCreateSprite 1, 48+4, 120, 13, TMS_BLACK
-        +tmsCreateSprite 2, 48+8, 120, -3, TMS_WHITE
+        +tmsSpriteIndex 0, 48+0
+        +tmsSpriteIndex 1, 48+4
+        +tmsSpriteIndex 2, 48+8
         jmp .updateBertSpriteRest
 
 .bertSpriteJumpUR
-        +tmsCreateSprite 0, 48+12, 120, 7, TMS_DK_RED
-        +tmsCreateSprite 1, 48+16, 120, 10, TMS_BLACK
-        +tmsCreateSprite 2, 48+20, 120, -6, TMS_WHITE
+        +tmsSpriteIndex 0, 48+12
+        +tmsSpriteIndex 1, 48+16
+        +tmsSpriteIndex 2, 48+20
         jmp .updateBertSpriteJump
 
 
 .bertSpriteRestUL:
-        +tmsCreateSprite 0, 48+24, 120, 8, TMS_DK_RED
-        +tmsCreateSprite 1, 48+28, 120, 13, TMS_BLACK
-        +tmsCreateSprite 2, 48+32, 120, -3, TMS_WHITE
+        +tmsSpriteIndex 0, 48+24
+        +tmsSpriteIndex 1, 48+28
+        +tmsSpriteIndex 2, 48+32
         jmp .updateBertSpriteRest
 
 .bertSpriteJumpUL
-        +tmsCreateSprite 0, 48+36, 120, 7, TMS_DK_RED
-        +tmsCreateSprite 1, 48+40, 120, 10, TMS_BLACK
-        +tmsCreateSprite 2, 48+44, 120, -6, TMS_WHITE
+        +tmsSpriteIndex 0, 48+36
+        +tmsSpriteIndex 1, 48+40
+        +tmsSpriteIndex 2, 48+44
         jmp .updateBertSpriteJump
 
 
@@ -326,8 +335,7 @@ resetBert:
         cmp #33
         bne @endUpdate
 
-        jsr audioJumpInit
-        +timer1SetContinuousHz 4096
+        jsr audioPlayJump
 
 !if DEBUG {
         +tmsSetColorFgBg TMS_WHITE, TMS_DK_BLUE
@@ -504,6 +512,8 @@ gameLoop:
 
         jsr platformsTick
         jsr uiTick
+        jsr badBallTick
+        jsr coilyTick
 
 !if DEBUG {
         +tmsSetColorFgBg TMS_WHITE, TMS_BLACK
@@ -578,6 +588,8 @@ tilesToVram:
 !src "blocks.asm"
 !src "platform.asm"
 !src "player.asm"
+!src "badball.asm"
+!src "coily.asm"
 !src "ui.asm"
 
 
