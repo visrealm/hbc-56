@@ -11,6 +11,8 @@
 
 !src "hbc56kernel.inc"
 
+!src "io/timer.inc"
+
 
 ; Zero page addresses
 ; -------------------------
@@ -109,9 +111,20 @@ hbc56Main:
 
         jsr audioInit
 
+        +hbc56SetViaCallback timerHandler
+
         cli
 
         jmp hbc56Stop
+
+timerHandler:
+        bit VIA_IO_ADDR_T1C_L
+        jsr audioJumpTick
+        lda PCM_PLAYING
+        bne +
+        +timer1Stop
++
+        rts
 
 resetBert:
         lda #120
@@ -132,7 +145,6 @@ resetBert:
         bcc +
         jsr resetBert
 +
-
 
         +tmsCreateSprite 0, 0, 120, 8, TMS_DK_RED
         +tmsCreateSprite 1, 4, 120, 13, TMS_BLACK
@@ -282,10 +294,15 @@ resetBert:
 
         jsr .updateBertSpriteJump
 .endAnim
+
         inc QBERT_ANIM
         lda QBERT_ANIM
         cmp #33
         bne @endUpdate
+
+        jsr audioJumpInit
+        +timer1SetContinuousHz 4096
+
         +tmsSetColorFgBg TMS_WHITE, TMS_DK_BLUE
 
         stz QBERT_STATE
@@ -312,12 +329,10 @@ resetBert:
         jsr .bertSpriteRestUL
 
 @endSetRestSprite
-        jsr audioJumpStop
 
         bra .updateCell
 
 @endUpdate
-        jsr audioJumpTick
         rts
 
 .updateCell:
@@ -387,8 +402,7 @@ resetBert:
 .bertJumpStart:
         lda #1
         sta QBERT_STATE
-
-        jmp audioJumpInit
+        rts
 
 .moveDR:
         lda #0
