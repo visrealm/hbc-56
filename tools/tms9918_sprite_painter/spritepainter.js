@@ -203,6 +203,7 @@ function bindButtons() {
   $("#flipH").click(flipH)
   $("#flipV").click(flipV)
   $("#fill").click(fill)
+  $("#clear").click(clear)
   $("#copy").click(copy)
   $("#codeAll").on("paste", onPaste)
   $("#paletteAll").on("paste", onPastePal)
