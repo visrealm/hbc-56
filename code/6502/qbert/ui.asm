@@ -57,6 +57,16 @@ uiInit:
         +tmsPutRpt (CHANGE_TO_COLOR << 4), 8 * CHANGE_TO_PATTERN_COUNT
         +tmsPutRpt (CHANGE_TO_ARROWS_COLOR << 4), 8 * CHANGE_TO_ARROWS_PATTERN_COUNT
 
+        +tmsSetAddrPattTableIIBank2 CHANGE_TO_PATTERN_INDEX
+        +tmsSendData .levelCirclePatt, 8 * 12
+
+        +tmsSetAddrSpritePattTable 256 - 12
+        +tmsSendData .levelOne, 8 * 4
+
+        +tmsSetAddrColorTableIIBank2 CHANGE_TO_PATTERN_INDEX
+        +tmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
+        +tmsPutAccRpt 8 * 12
+
         +tmsSetPosWrite CHANGE_TO_POS_X, CHANGE_TO_POS_Y
         +tmsPutSeq CHANGE_TO_PATTERN_INDEX, 6
 
@@ -219,7 +229,25 @@ outputScore:
 !byte $10,$18,$fc,$fe,$fc,$18,$10,$00
 !byte $08,$18,$3f,$7f,$3f,$18,$08,$00
 
+.levelCirclePatt:
+!byte $00,$00,$00,$01,$03,$07,$0f,$1e
+!byte $07,$3f,$ff,$f8,$c0,$80,$00,$00
+!byte $e0,$fc,$ff,$1f,$03,$01,$00,$00
+!byte $00,$00,$00,$80,$c0,$e0,$f0,$78
+!byte $3c,$38,$70,$70,$70,$e0,$e0,$e0
+!byte $3c,$1c,$0e,$0e,$0e,$07,$07,$07
+!byte $e0,$e0,$e0,$70,$70,$70,$38,$3c
+!byte $07,$07,$07,$0e,$0e,$0e,$1c,$3c
+!byte $1e,$0f,$07,$03,$01,$00,$00,$00
+!byte $00,$00,$80,$c0,$f8,$ff,$3f,$07
+!byte $00,$00,$01,$03,$1f,$ff,$fc,$e0
+!byte $78,$f0,$e0,$c0,$80,$00,$00,$00
 
+.levelOne:
+!byte $01,$03,$07,$0f,$01,$01,$01,$01
+!byte $01,$01,$01,$01,$01,$01,$01,$01
+!byte $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0
+!byte $e0,$e0,$e0,$e0,$e0,$e0,$e0,$e0
 
 .fontPal
 +byteTmsColorFgBg TMS_DK_BLUE, TMS_TRANSPARENT
@@ -240,3 +268,4 @@ outputScore:
 +byteTmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
 +byteTmsColorFgBg TMS_DK_GREEN, TMS_TRANSPARENT
+

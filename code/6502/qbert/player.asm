@@ -15,6 +15,8 @@ playerInit:
         +tmsSetAddrSpritePattTable
         +tmsSendData .bertPattR, 8 * 4 * 3 * 2 * 4
         
+        +tmsSetAddrSpritePattTable 256 - 8
+        +tmsSendData .speechBubbleL, 8 * 4 * 2
         rts
 
 
@@ -147,6 +149,18 @@ playerInit:
 !byte $00,$00,$00,$00,$00,$03,$03,$01
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
+
+.speechBubbleL
+!byte $00,$03,$1c,$3b,$76,$f5,$f5,$fb
+!byte $7c,$3f,$1f,$03,$00,$00,$00,$00
+!byte $3f,$ff,$df,$5f,$da,$50,$5a,$50
+!byte $fa,$df,$ff,$ff,$3f,$00,$00,$00
+
+.speechBubbleR
+!byte $fc,$ff,$ce,$b5,$f5,$6a,$da,$5d
+!byte $fe,$df,$ff,$ff,$ff,$03,$07,$0c
+!byte $00,$c0,$78,$ac,$6e,$af,$af,$af
+!byte $7e,$ec,$f8,$e0,$c0,$80,$00,$00
 
 
 

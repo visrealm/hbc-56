@@ -108,11 +108,21 @@ audioTick:
 audioPlayJump:
         +audioPlayPcm AUDIO_CH0_PCM_STATE, .jumpPcmStart, .jumpPcmSize
         jsr audioTickCh0
+
+        ldx #2
+        lda #TMS_VRAM_NAME_ADDRESS2 >> 10
+        jsr tmsSetRegister
+
         rts
 
 audioPlayBadBallJump:
         +audioPlayPcm AUDIO_CH1_PCM_STATE, .jumpBadBallPcmStart, .jumpBadBallPcmSize
         jsr audioTickCh1
+
+        ;ldx #2
+        ;lda #TMS_VRAM_NAME_ADDRESS >> 10
+        ;jsr tmsSetRegister
+
         rts
 
 audioPlayCoilyEggJump:
@@ -136,17 +146,17 @@ audioTickCh2:
 
 
 .jumpPcmStart
-!bin "jump.pcm"
+!bin "pcm/jump.pcm"
 .jumpPcmEnd
 .jumpPcmSize = * - .jumpPcmStart
 
 .jumpBadBallPcmStart
-!bin "jump-badball.pcm"
+!bin "pcm/jump-badball.pcm"
 .jumpBadBallPcmEnd
 .jumpBadBallPcmSize = * - .jumpBadBallPcmStart
 
 .jumpCoilyEggPcmStart
-!bin "jump-coily-egg.pcm"
+!bin "pcm/jump-coily-egg.pcm"
 .jumpCoilyEggPcmEnd
 .jumpCoilyEggPcmSize = * - .jumpCoilyEggPcmStart
 

@@ -9,72 +9,151 @@
 
 BLOCKS_PATTERN_INDEX_R1 = 128
 BLOCKS_PATTERN_INDEX_R2 = BLOCKS_PATTERN_INDEX_R1 + 32
-BLOCKS_LEFT_PATTERN_INDEX = 254
+BLOCKS_LEFT_PATTERN_INDEX = 251
 BLOCKS_RIGHT_PATTERN_INDEX = BLOCKS_LEFT_PATTERN_INDEX + 1
 
+BLOCK_COUNT = 28 ; 1 + 2 + 3 + 4 + 5 + 6 + 7
+
+BLOCKS_BLAH = BLOCKS_ADDR
+BLOCKS_BLAH2 = BLOCKS_ADDR + 32
+
+
 blocksInit:
-        lda #TMS_LT_BLUE
+        lda #TMS_DK_BLUE;LT_BLUE
         sta COLOR_TOP1
-        lda #TMS_LT_YELLOW
+        lda #TMS_LT_BLUE;YELLOW
         sta COLOR_TOP2
         lda #TMS_LT_GREEN
         sta COLOR_TOP3
-        lda #TMS_WHITE
+        lda #TMS_LT_YELLOW;WHITE
         sta COLOR_LEFT
-        lda #TMS_GREY
+        lda #TMS_MED_RED;GREY
         sta COLOR_RIGHT
 
+        jsr .buildBlockPatterns
+
+        jsr .buildBlockColors
+
+        rts
+
+blocksTick:
+        lda BLOCKS_BLAH
+        inc 
+        and #$03
+        cmp #3
+        bne +
+        lda #0
++
+        sta BLOCKS_BLAH
+        +asl3
+        sta BLOCKS_BLAH + 1
+
+        +tmsSetPosWrite 14, 2
+        clc
+        lda #$80
+        adc BLOCKS_BLAH + 1
+        +tmsPut
+        inc
+        +tmsPut
+        inc
+        +tmsPut
+        inc
+        +tmsPut
+
+        +tmsSetPosWrite 14, 3
+
+        lda #$a4
+        clc
+        adc BLOCKS_BLAH + 1
+        +tmsPut
+        inc
+        +tmsPut
+        inc
+        +tmsPut
+        inc
+        +tmsPut
+
+        +tmsSetPosWrite 12, 5
+
+
+        rts
+
+.buildBlockPatterns:
         +tmsSetAddrPattTableIIBank0 BLOCKS_PATTERN_INDEX_R1
         jsr .buildTopBlocks
         +tmsSetAddrPattTableIIBank0 BLOCKS_PATTERN_INDEX_R2
         jsr .buildBottomBlocks
-
-        +tmsSetAddrColorTableIIBank0 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocksColor
-        +tmsSetAddrColorTableIIBank0 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocksColor
-
         +tmsSetAddrPattTableIIBank0 BLOCKS_LEFT_PATTERN_INDEX
-        +tmsSendData .clearPatt, 8 * 2
-        +tmsSetAddrColorTableIIBank0 BLOCKS_LEFT_PATTERN_INDEX
-        lda COLOR_LEFT
-        +asl4
-        ora COLOR_RIGHT
-        +tmsPutAccRpt 8 * 2
+        jsr .buildFullBlocks
 
         +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R1
         jsr .buildTopBlocks
         +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R2
         jsr .buildBottomBlocks
-
-        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocksColor
-        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocksColor
-
         +tmsSetAddrPattTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
-        +tmsSendData .clearPatt, 8 * 2
-        +tmsSetAddrColorTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
-        
-        lda COLOR_LEFT
-        +asl4
-        ora COLOR_RIGHT
-        +tmsPutAccRpt 8 * 2
+        jsr .buildFullBlocks
 
         +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R1
         jsr .buildTopBlocks
         +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R2
         jsr .buildBottomBlocks
+        +tmsSetAddrPattTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
+        jsr .buildFullBlocks
+        rts
 
+.buildBlockColors:
+        +tmsSetAddrColorTableIIBank0 BLOCKS_PATTERN_INDEX_R1
+        jsr .buildTopBlocksColor
+        +tmsSetAddrColorTableIIBank0 BLOCKS_PATTERN_INDEX_R2
+        jsr .buildBottomBlocksColor
+        +tmsSetAddrColorTableIIBank0 BLOCKS_LEFT_PATTERN_INDEX
+        jsr .buildFullBlocksColor
+
+
+        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R1
+        jsr .buildTopBlocksColor
+        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R2
+        jsr .buildBottomBlocksColor
+        +tmsSetAddrColorTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
+        jsr .buildFullBlocksColor
+        
         +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R1
         jsr .buildTopBlocksColor
         +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R2
         jsr .buildBottomBlocksColor
-
-        +tmsSetAddrPattTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
-        +tmsSendData .clearPatt, 8 * 2
         +tmsSetAddrColorTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
+        jsr .buildFullBlocksColor
 
+        rts
+
+.buildFullBlocks:
+        ldx #8
+        lda #0
+-
+        sec
+        rol
+        +tmsPut
+        dex
+        bne -
+
+        ldx #8
+        lda #0
+-
+        sec
+        ror
+        +tmsPut
+        dex
+        bne -
+
+        +tmsPutRpt $ff, 16
+        +tmsPutRpt $00, 8
+        rts
+
+.buildFullBlocksColor:
+        lda COLOR_TOP2
+        +tmsPutAccRpt 16
+        +asl4
+        +tmsPutAccRpt 8
         lda COLOR_LEFT
         +asl4
         ora COLOR_RIGHT
@@ -155,8 +234,3 @@ blocksInit:
 !byte $FF,$FF,$FF,$FF,$7F,$1F,$07,$01   
 !byte $FF,$FF,$FF,$FF,$FE,$F8,$E0,$80
 !byte $FE,$F8,$E0,$80,$00,$00,$00,$00
-
-.clearPatt:
-!byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
-!byte $00,$00,$00,$00,$00,$00,$00,$00
-
