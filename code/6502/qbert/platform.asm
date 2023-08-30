@@ -24,11 +24,11 @@ platformsInit:
         +tmsSetAddrPattTableIIBank0 PLATFORM_PATTERN_INDEX
         jsr .platformInitSendPatterns
 
-        +tmsSetAddrPattTableIIBank1 PLATFORM_PATTERN_INDEX
-        jsr .platformInitSendPatterns
+       +tmsSetAddrPattTableIIBank1 PLATFORM_PATTERN_INDEX
+       jsr .platformInitSendPatterns
 
-        +tmsSetAddrPattTableIIBank2 PLATFORM_PATTERN_INDEX
-        jsr .platformInitSendPatterns
+       +tmsSetAddrPattTableIIBank2 PLATFORM_PATTERN_INDEX
+       jsr .platformInitSendPatterns
 
 
         ; platform colors (for each bank)
@@ -126,7 +126,7 @@ platformsTick:
         rts
 
 .setPlatformColorBank1
-        +tmsSetAddrColorTableIIBank1 PLATFORM_PATTERN_INDEX
+       +tmsSetAddrColorTableIIBank1 PLATFORM_PATTERN_INDEX
         rts
 
 .setPlatformColorBank2

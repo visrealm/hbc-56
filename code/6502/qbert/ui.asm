@@ -32,21 +32,38 @@ uiInit:
         +tmsSetAddrPattTableIIBank0 LIFE_PATTERN_INDEX
         jsr .bertInitSendPatterns
 
-        +tmsSetAddrPattTableIIBank1 LIFE_PATTERN_INDEX
-        jsr .bertInitSendPatterns
+       +tmsSetAddrPattTableIIBank1 LIFE_PATTERN_INDEX
+       jsr .bertInitSendPatterns
 
-        +tmsSetAddrPattTableIIBank2 LIFE_PATTERN_INDEX
-        jsr .bertInitSendPatterns
+       +tmsSetAddrPattTableIIBank2 LIFE_PATTERN_INDEX
+       jsr .bertInitSendPatterns
 
         ; platform colors (for each bank)
         +tmsSetAddrColorTableIIBank0 LIFE_PATTERN_INDEX
         jsr .bertInitSendColors
 
-        +tmsSetAddrColorTableIIBank1 LIFE_PATTERN_INDEX
-        jsr .bertInitSendColors
+       +tmsSetAddrColorTableIIBank1 LIFE_PATTERN_INDEX
+       jsr .bertInitSendColors
 
-        +tmsSetAddrColorTableIIBank2 LIFE_PATTERN_INDEX
-        jsr .bertInitSendColors
+       +tmsSetAddrColorTableIIBank2 LIFE_PATTERN_INDEX
+       jsr .bertInitSendColors
+
+        +tmsSetAddrPattTableIIBank2 CHANGE_TO_PATTERN_INDEX
+        +tmsSendData .levelCirclePatt, 8 * 12
+
+        +tmsSetAddrColorTableIIBank2 CHANGE_TO_PATTERN_INDEX
+        +tmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
+        +tmsPutAccRpt 8 * 12
+
+        +tmsSetAddrSpritePattTable 256 - 12
+        +tmsSendData .levelOne, 8 * 4
+
+        rts
+
+uiStartGame:
+
+        +tmsSetAddrColorTableIIBank0 '0'
+        +tmsSendDataRpt .digitsPal, 8, 10
 
         ; "change to" text and arrows
         +tmsSetAddrPattTableIIBank0 CHANGE_TO_PATTERN_INDEX
@@ -56,16 +73,6 @@ uiInit:
         +tmsSetAddrColorTableIIBank0 CHANGE_TO_PATTERN_INDEX
         +tmsPutRpt (CHANGE_TO_COLOR << 4), 8 * CHANGE_TO_PATTERN_COUNT
         +tmsPutRpt (CHANGE_TO_ARROWS_COLOR << 4), 8 * CHANGE_TO_ARROWS_PATTERN_COUNT
-
-        +tmsSetAddrPattTableIIBank2 CHANGE_TO_PATTERN_INDEX
-        +tmsSendData .levelCirclePatt, 8 * 12
-
-        +tmsSetAddrSpritePattTable 256 - 12
-        +tmsSendData .levelOne, 8 * 4
-
-        +tmsSetAddrColorTableIIBank2 CHANGE_TO_PATTERN_INDEX
-        +tmsColorFgBg TMS_MED_GREEN, TMS_TRANSPARENT
-        +tmsPutAccRpt 8 * 12
 
         +tmsSetPosWrite CHANGE_TO_POS_X, CHANGE_TO_POS_Y
         +tmsPutSeq CHANGE_TO_PATTERN_INDEX, 6
@@ -92,8 +99,8 @@ uiInit:
         +tmsSendDataRpt .digitsPal, 8, 10
 
         jsr outputScore
-
         rts
+
 
 uiTick:
         jsr .updateChangeArrows

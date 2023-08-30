@@ -32,21 +32,16 @@ coilyInit:
         +tmsCreateSprite COILY_HIGHLIGHT_SPRITE_NUMBER, COILY_PATT_IDX + 8, COILY_START_X, COILY_START_Y + COILY_HIGHLIGH_OFFSET, TMS_WHITE
 
 
-        +tmsCreateSprite 9, COILY_PATT_IDX + 12, COILY_START_X,      48 + COILY_START_Y, TMS_MAGENTA
-        +tmsCreateSprite 10, COILY_PATT_IDX + 16, COILY_START_X,     48 + COILY_START_Y, TMS_BLACK
-        +tmsCreateSprite 11, COILY_PATT_IDX + 20, COILY_START_X - 9, 48 + COILY_START_Y - 8, TMS_WHITE
+        +tmsCreateSprite 7, COILY_PATT_IDX + 12, COILY_START_X,      48 + COILY_START_Y, TMS_MAGENTA
+        +tmsCreateSprite 8, COILY_PATT_IDX + 16, COILY_START_X,     48 + COILY_START_Y, TMS_BLACK
+        +tmsCreateSprite 9, COILY_PATT_IDX + 20, COILY_START_X - 9, 48 + COILY_START_Y - 8, TMS_WHITE
 
-        +tmsCreateSprite 12, COILY_PATT_IDX + 24, 32+ COILY_START_X,     96 + COILY_START_Y, TMS_MAGENTA
-        +tmsCreateSprite 13, COILY_PATT_IDX + 28, 32+ COILY_START_X,     80 + COILY_START_Y, TMS_MAGENTA
-        +tmsCreateSprite 14, COILY_PATT_IDX + 32, 32+ COILY_START_X - 8, 80 + COILY_START_Y - 13, TMS_BLACK
-        +tmsCreateSprite 15, COILY_PATT_IDX + 20, 32+ COILY_START_X - 9, 80 + COILY_START_Y - 8, TMS_WHITE
+        +tmsCreateSprite 10, COILY_PATT_IDX + 24, 32+ COILY_START_X,     96 + COILY_START_Y, TMS_MAGENTA
+        +tmsCreateSprite 11, COILY_PATT_IDX + 28, 32+ COILY_START_X,     80 + COILY_START_Y, TMS_MAGENTA
+        +tmsCreateSprite 12, COILY_PATT_IDX + 32, 32+ COILY_START_X - 8, 80 + COILY_START_Y - 13, TMS_BLACK
+        +tmsCreateSprite 13, COILY_PATT_IDX + 20, 32+ COILY_START_X - 9, 80 + COILY_START_Y - 8, TMS_WHITE
 
         jsr .moveBall
-        rts
-
-.initCoilyJumpCountdown:
-        lda #COILY_JUMP_DELAY
-        sta COILY_STATE
         rts
 
 .initCoilyJump:
@@ -110,7 +105,14 @@ coilyTick:
         beq .initCoilyJumpCountdown
         bmi .jumpCoilyTick
         dec COILY_STATE
-        beq .initCoilyJump
+        bne +
+        jmp .initCoilyJump
++ 
+        rts
+
+.initCoilyJumpCountdown:
+        lda #COILY_JUMP_DELAY
+        sta COILY_STATE
         rts
 
 .moveCoily:

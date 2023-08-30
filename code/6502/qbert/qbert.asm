@@ -11,7 +11,7 @@
 
 !src "io/timer.inc"
 
-DEBUG=1
+DEBUG=0
 
 ; Zero page addresses
 ; -------------------------
@@ -61,6 +61,7 @@ AUDIO_CH2_PCM_STATE = AUDIO_CH1_PCM_STATE + 5
 AUDIO_CH2_PCM_ADDR  = AUDIO_CH2_PCM_STATE + 1
 AUDIO_CH2_PCM_BYTES = AUDIO_CH2_PCM_STATE + 3
 
+COUNTDOWN_TICKS  = ZP0 + 80
 
 COLOR_TOP1   = TMP
 COLOR_TOP2   = TMP2
@@ -77,6 +78,10 @@ BLOCKS_SIZE = $400
 LEVEL           = BLOCKS_ADDR + BLOCKS_SIZE
 ROUND           = LEVEL + 1
 
+COUNTDOWN_CALL   = ROUND + 1
+COUNTDOWN_CALL_H = COUNTDOWN_CALL + 1
+MOVELOOP_CALL    = ROUND + 3
+MOVELOOP_CALL_H  = MOVELOOP_CALL + 1
 
 
 
@@ -132,32 +137,32 @@ hbc56Main:
         sta SCORE_L
         sta SCORE_M
         sta SCORE_H
+        sta COUNTDOWN_CALL_H
+        sta COUNTDOWN_CALL
+        sta COUNTDOWN_TICKS
 
 
         jsr clearVram
 
         +tmsSetPosWrite 0, 0
-        +tmsSendData .gameTable, 32*24
-
-        +tmsSetAddressWrite TMS_VRAM_NAME_ADDRESS2
         +tmsSendData .levelTable, 32*24
 
+        ;+tmsSetAddressWrite TMS_VRAM_NAME_ADDRESS2
+        ;+tmsSendData .levelTable, 32*24
+
         jsr tilesToVram
+        jsr uiInit
 
-        jsr badBallInit
-        jsr coilyInit
+PLAYER_START_X = 120
+PLAYER_START_Y = 7
 
-        +tmsCreateSprite 0, 12, 120, 7, TMS_DK_RED
-        +tmsCreateSprite 1, 16, 120, 10, TMS_BLACK
-        +tmsCreateSprite 2, 20, 120, -6, TMS_WHITE
+        +tmsCreateSprite 0, 12, PLAYER_START_X, PLAYER_START_Y, TMS_DK_RED
+        +tmsCreateSprite 1, 16, PLAYER_START_X, PLAYER_START_Y + 3, TMS_BLACK
+        +tmsCreateSprite 2, 20, PLAYER_START_X, PLAYER_START_Y - 13, TMS_WHITE
 
-        +tmsCreateSprite 7, 256-8, 124, 13, TMS_WHITE
-        +tmsCreateSprite 8, 256-4, 140, 13, TMS_WHITE
+        ;+tmsCreateSprite 7, 256-8, 124, 13, TMS_WHITE
+        ;+tmsCreateSprite 8, 256-4, 140, 13, TMS_WHITE
 
-        +tmsCreateSprite 16, 256-12, 119, 166, TMS_LT_YELLOW
-        +tmsCreateSprite 17, 256-12, 120, 167, TMS_LT_RED
-
-   
         jsr resetBert
 
         jsr .bertSpriteRestDR
@@ -167,7 +172,13 @@ hbc56Main:
         +hbc56SetViaCallback timerHandler
         +timer1SetContinuousHz 4096
 
-        +hbc56SetVsyncCallback gameLoop
+        +hbc56SetVsyncCallback countdownLoop
+
+        jsr initLevelStart
+        
+        stz HBC56_SECONDS_L
+        stz HBC56_SECONDS_H
+
         
         +tmsEnableOutput
         +tmsEnableInterrupts
@@ -178,6 +189,152 @@ hbc56Main:
         jmp hbc56Stop
 
 ; =============================================================================
+
+!macro onCountdown .ticks, .fn {
+        lda #.ticks
+        sta COUNTDOWN_TICKS
+        lda #<.fn
+        sta COUNTDOWN_CALL
+        lda #>.fn
+        sta COUNTDOWN_CALL_H
+}
+
+!macro timerDelay .ticks {
+        +onCountdown .ticks, .andThen
+        rts
+.andThen:
+}
+
+
+doCountdownFn:
+        jmp (COUNTDOWN_CALL)
+
+countdownLoop:
+        ; handle various countdowns
+        lda COUNTDOWN_CALL_H
+        beq +
+        dec COUNTDOWN_TICKS
+        bne +
+        jsr doCountdownFn
++
+        rts
+
+        ; 1s pause, flash number twice, then number on and start demo jumps
+
+moveLoop:
+        lda QBERT_STATE
+        beq +
+        jsr .updatePos
+        +onCountdown 1, moveLoop
+        rts
++
+        jmp (MOVELOOP_CALL)
+
+!macro doMoveLoop {
+        lda #<.andThen
+        sta MOVELOOP_CALL
+        lda #>.andThen
+        sta MOVELOOP_CALL + 1
+        jmp moveLoop        
+.andThen:
+}
+
+initLevelStart:
+        +timerDelay 60
+        jsr audioPlayLevelStart
+        +tmsCreateSprite 3, 256-12, 119, 166, TMS_LT_YELLOW
+        +tmsCreateSprite 4, 256-12, 120, 167, TMS_LT_RED
+        
+        +timerDelay 20
+        
+        +tmsSpriteColor 3, TMS_TRANSPARENT
+        +tmsSpriteColor 4, TMS_TRANSPARENT
+        
+        +timerDelay 20
+        
+        +tmsSpriteColor 3, TMS_LT_YELLOW
+        +tmsSpriteColor 4, TMS_LT_RED
+        
+        +timerDelay 20
+        
+        +tmsSpriteColor 3, TMS_TRANSPARENT
+        +tmsSpriteColor 4, TMS_TRANSPARENT
+        
+        +timerDelay 20
+        
+        +tmsSpriteColor 3, TMS_LT_YELLOW
+        +tmsSpriteColor 4, TMS_LT_RED
+
+        jsr .doMoveDR
+        +doMoveLoop
+
+        +timerDelay 2
+
+        jsr .doMoveUL
+        +doMoveLoop
+
+        +timerDelay 2
+
+        jsr .doMoveDL
+        +doMoveLoop
+
+        +timerDelay 2
+
+        jsr .doMoveUR
+        +doMoveLoop
+
+        +timerDelay 30
+
+startGame:
+
+        +tmsDisableOutput
+
+        lda #0
+        sta QBERT_STATE
+        sta QBERT_DIR
+        sta QBERT_ANIM
+        sta SCORE_L
+        sta SCORE_M
+        sta SCORE_H
+
+        jsr .bertSpriteRestDR
+
+        +tmsSpriteColor 3, TMS_TRANSPARENT
+        +tmsSpriteColor 4, TMS_TRANSPARENT
+        +tmsSpritePos 0, PLAYER_START_X, $d0
+
+        ; everthing paused for a second or so, then life icon disappears and becomes sprite
+        ; game starts ~0.5s later
+
+        +tmsSetPosWrite 0, 0
+        +tmsSendData .gameTable, 32*24
+
+
+        jsr uiStartGame
+
+        +tmsEnableOutput
+
+        +timerDelay 60
+
+        +tmsSetPosWrite 0, 11
+        lda #0
+        +tmsPut
+        +tmsPut
+        +tmsSetPosWrite 0, 12
+        lda #0
+        +tmsPut
+        +tmsPut
+
+        +tmsSpritePos 0, PLAYER_START_X, PLAYER_START_Y
+
+        +timerDelay 60
+
+        jsr badBallInit
+        jsr coilyInit
+
+        +hbc56SetVsyncCallback gameLoop
+
+        rts
 
 
 timerHandler:
@@ -471,7 +628,7 @@ resetBert:
         sta QBERT_STATE
         rts
 
-.moveDR:
+.doMoveDR:
         lda #0
         sta QBERT_DIR
         jsr .bertJumpStart
@@ -481,9 +638,9 @@ resetBert:
         inc CELL_Y
         inc CELL_X
         inc CELL_X
-        jmp .afterControl
+        rts
 
-.moveDL:
+.doMoveDL:
         lda #1
         sta QBERT_DIR
         jsr .bertJumpStart
@@ -493,9 +650,9 @@ resetBert:
         inc CELL_Y
         dec CELL_X
         dec CELL_X
-        jmp .afterControl
+        rts
 
-.moveUR:
+.doMoveUR:
         lda #2
         sta QBERT_DIR
         jsr .bertJumpStart
@@ -505,9 +662,9 @@ resetBert:
         dec CELL_Y
         inc CELL_X
         inc CELL_X        
-        jmp .afterControl
+        rts
 
-.moveUL:
+.doMoveUL:
         lda #3
         sta QBERT_DIR
         jsr .bertJumpStart
@@ -517,8 +674,24 @@ resetBert:
         dec CELL_Y
         dec CELL_X
         dec CELL_X        
+        rts
+
+
+.moveUL:
+        jsr .doMoveUL
         jmp .afterControl
 
+.moveUR:
+        jsr .doMoveUR
+        jmp .afterControl
+
+.moveDL:
+        jsr .doMoveDL
+        jmp .afterControl
+
+.moveDR:
+        jsr .doMoveDR
+        jmp .afterControl
 
 gameLoop:
 !if DEBUG {
@@ -589,7 +762,6 @@ clearVram:
 
 tilesToVram:
 
-        jsr uiInit
         jsr platformsInit
         jsr blocksInit
 
@@ -632,7 +804,7 @@ tilesToVram:
 .gameTable
 !text "PLAYER 1"                     ,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"LEVEL: 1"                     
 !text $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,"ROUND: 1"                     
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$90,$93,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$b4,$b7,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
@@ -671,12 +843,12 @@ tilesToVram:
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a8,$a9,$aa,$ab,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$88,$89,$fd,$00,$88,$89,$fd,$fd,$fd,$88,$89,$00,$00,$8a,$8b,$fd,$fd,$fd,$8a,$8b,$8a,$8b,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fe,$fe,$fe,$fd,$fe,$fd,$00,$00,$fd,$ff,$fd,$ff,$ff,$ff,$ff,$fd,$ff,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fd,$fd,$fd,$fd,$fe,$fd,$00,$00,$fd,$ff,$fd,$ff,$8a,$8b,$00,$fd,$ff,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fe,$fe,$fd,$fd,$fe,$fd,$8b,$88,$fd,$ff,$fd,$ff,$ff,$ff,$00,$fd,$ff,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$fe,$fd,$fd,$fd,$fe,$fd,$fd,$fd,$fd,$a9,$ac,$ad,$ae,$af,$aa,$fd,$ff,$fd,$8a,$8b,$fd,$ff,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$fe,$fe,$fe,$fb,$fe,$fe,$fe,$fe,$fb,$00,$a8,$a9,$aa,$ab,$00,$fc,$ff,$ff,$ff,$ff,$fc,$ff,$ff,$ff,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fe,$fe,$fe,$fb,$fe,$fd,$00,$00,$fd,$ff,$fd,$ff,$ff,$ff,$ff,$fd,$ff,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fd,$fd,$fd,$00,$fe,$fd,$00,$00,$fd,$ff,$fd,$ff,$8a,$8b,$00,$fd,$ff,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$fe,$fd,$fd,$00,$fe,$fe,$fe,$fb,$00,$fe,$fd,$8b,$88,$fd,$ff,$fd,$ff,$ff,$ff,$00,$fd,$ff,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$fe,$fd,$fd,$fd,$fe,$fd,$fd,$fd,$fd,$fe,$ad,$fd,$fd,$ae,$ff,$fd,$ff,$fd,$8a,$8b,$fd,$ff,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$fe,$fe,$fe,$fb,$fe,$fe,$fe,$fe,$fb,$a8,$a9,$ac,$af,$aa,$ab,$fc,$ff,$ff,$ff,$ff,$fc,$ff,$ff,$ff,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a8,$ab,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$c0,$c1,$c2,$c3,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$c4,$00,$00,$c5,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$c6,$00,$00,$c7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00

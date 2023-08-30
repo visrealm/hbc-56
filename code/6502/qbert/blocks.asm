@@ -19,15 +19,15 @@ BLOCKS_BLAH2 = BLOCKS_ADDR + 32
 
 
 blocksInit:
-        lda #TMS_DK_BLUE;LT_BLUE
+        lda #TMS_LT_BLUE
         sta COLOR_TOP1
-        lda #TMS_LT_BLUE;YELLOW
+        lda #TMS_MED_GREEN
         sta COLOR_TOP2
-        lda #TMS_LT_GREEN
+        lda #TMS_LT_YELLOW
         sta COLOR_TOP3
-        lda #TMS_LT_YELLOW;WHITE
+        lda #TMS_WHITE
         sta COLOR_LEFT
-        lda #TMS_MED_RED;GREY
+        lda #TMS_GREY
         sta COLOR_RIGHT
 
         jsr .buildBlockPatterns
@@ -37,6 +37,8 @@ blocksInit:
         rts
 
 blocksTick:
+        rts
+
         lda BLOCKS_BLAH
         inc 
         and #$03
@@ -86,19 +88,19 @@ blocksTick:
         +tmsSetAddrPattTableIIBank0 BLOCKS_LEFT_PATTERN_INDEX
         jsr .buildFullBlocks
 
-        +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocks
-        +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocks
-        +tmsSetAddrPattTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
-        jsr .buildFullBlocks
+       +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R1
+       jsr .buildTopBlocks
+       +tmsSetAddrPattTableIIBank1 BLOCKS_PATTERN_INDEX_R2
+       jsr .buildBottomBlocks
+       +tmsSetAddrPattTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
+       jsr .buildFullBlocks
 
-        +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocks
-        +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocks
-        +tmsSetAddrPattTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
-        jsr .buildFullBlocks
+       +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R1
+       jsr .buildTopBlocks
+       +tmsSetAddrPattTableIIBank2 BLOCKS_PATTERN_INDEX_R2
+       jsr .buildBottomBlocks
+       +tmsSetAddrPattTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
+       jsr .buildFullBlocks
         rts
 
 .buildBlockColors:
@@ -110,19 +112,19 @@ blocksTick:
         jsr .buildFullBlocksColor
 
 
-        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocksColor
-        +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocksColor
-        +tmsSetAddrColorTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
-        jsr .buildFullBlocksColor
+       +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R1
+       jsr .buildTopBlocksColor
+       +tmsSetAddrColorTableIIBank1 BLOCKS_PATTERN_INDEX_R2
+       jsr .buildBottomBlocksColor
+       +tmsSetAddrColorTableIIBank1 BLOCKS_LEFT_PATTERN_INDEX
+       jsr .buildFullBlocksColor
         
-        +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R1
-        jsr .buildTopBlocksColor
-        +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R2
-        jsr .buildBottomBlocksColor
-        +tmsSetAddrColorTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
-        jsr .buildFullBlocksColor
+       +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R1
+       jsr .buildTopBlocksColor
+       +tmsSetAddrColorTableIIBank2 BLOCKS_PATTERN_INDEX_R2
+       jsr .buildBottomBlocksColor
+       +tmsSetAddrColorTableIIBank2 BLOCKS_LEFT_PATTERN_INDEX
+       jsr .buildFullBlocksColor
 
         rts
 
