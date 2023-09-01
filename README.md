@@ -1,6 +1,6 @@
-![pages-build-deployment-badge](https://github.com/visrealm/hbc-56/actions/workflows/pages/pages-build-deployment/badge.svg)
-
 # HBC-56
+
+![pages-build-deployment-badge](https://github.com/visrealm/hbc-56/actions/workflows/pages/pages-build-deployment/badge.svg)
 
 A homebrew 8-bit computer on a (56 pin) backplane.
 
