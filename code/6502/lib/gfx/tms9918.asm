@@ -73,13 +73,25 @@ TMS9918_REG     = IO_PORT_BASE_ADDRESS | TMS9918_IO_PORT | $01
 
 
 ; -----------------------------------------------------------------------------
-; VRAM addresses
+; VRAM addresses - the addresses below are compatible with all display modes
 ; -----------------------------------------------------------------------------
 TMS_VRAM_NAME_ADDRESS           = $3800
-TMS_VRAM_COLOR_ADDRESS          = $0000
-TMS_VRAM_PATT_ADDRESS           = $2000
+TMS_VRAM_COLOR_ADDRESS          = $2000 ; keep these $0000 or $2000
+TMS_VRAM_PATT_ADDRESS           = $0000 ; for GFXII compatibility
 TMS_VRAM_SPRITE_ATTR_ADDRESS    = $3B00
 TMS_VRAM_SPRITE_PATT_ADDRESS    = $1800
+
+; these addresses can be used at the same time as the above configuration
+; to store alternate copies of the name or sprite attribute tables.
+; this would allow instant switching between two screens by changing the
+; active address in the name and sprite address registers
+; for TEXT or GFXI modes, you could have many more, but these are compatible
+; with all modes including GFXII
+TMS_VRAM_NAME_ADDRESS2          = $3C00 ; optional 2nd name table
+TMS_VRAM_SPRITE_ATTR_ADDRESS2   = $3B80 ; optional 2nd+ sprite attr tables
+TMS_VRAM_SPRITE_ATTR_ADDRESS3   = $3F00
+TMS_VRAM_SPRITE_ATTR_ADDRESS4   = $3F80
+
 
 ; -----------------------------------------------------------------------------
 ; Register values
@@ -171,7 +183,7 @@ TMS_REGISTER_DATA:
 !byte TMS_VRAM_PATT_ADDRESS >> 11
 !byte TMS_VRAM_SPRITE_ATTR_ADDRESS >> 7
 !byte TMS_VRAM_SPRITE_PATT_ADDRESS >> 11
-!byte TMS_BLACK << 4 | TMS_BLACK
+!byte (TMS_BLACK << 4) | TMS_TRANSPARENT
 
 
 ; -----------------------------------------------------------------------------
@@ -185,6 +197,15 @@ TMS_REGISTER_DATA:
 ;  Reg 1 Blank Bit 0     All         2uS             0uS                2uS      
 ;  Active Display Area   Multicolor  2uS          0 - 1.5uS           2 - 3.5uS      
 ; -----------------------------------------------------------------------------
+;
+; nop = 2 cycles
+; jsr = 6 cycles
+; rts = 6 cycles
+;
+; At 3.6864MHz:
+;   * 2uS is equivalent to 7.37  cycles (4 nops)
+;   * 8uS is equivalent to 29.49 cycles (15 nops) or (jsr/rts + 9 nops)
+; -----------------------------------------------------------------------------
 _tmsWaitData:
         nop
         nop
@@ -192,10 +213,6 @@ _tmsWaitData:
         nop
         nop
         nop
-        nop
-        nop
-        nop
-_tmsWaitReg:
         nop
         nop
         nop
@@ -426,13 +443,13 @@ tmsModeGraphicsII:
         ;  $03 = $0000
         ;  $07 = $2000
 
-        ; set color table to $0000
-        lda #$7f
+        ; set color table to $2000
+        lda #$ff
         ldx #3
         jsr tmsSetRegister
 
-        ; set pattern table to $2000
-        lda #$07
+        ; set pattern table to $0000
+        lda #$03
         ldx #4
         jsr tmsSetRegister
 
@@ -564,6 +581,24 @@ tmsSendBytes:
         lda (TMS_TMP_ADDRESS), Y
         +tmsPut
         iny
+        dex
+        bne -
+        rts
+
+; -----------------------------------------------------------------------------
+; tmsSendBytesReverse: Send bytes to the TMS (up to 1 page)
+; -----------------------------------------------------------------------------
+; Inputs:
+;   TMS_TMP_ADDRESS:    Holds source address
+;   X:                  Number of bytes (1 to 256)
+; -----------------------------------------------------------------------------
+tmsSendBytesReverse:
+        txa
+        tay
+-
+        dey
+        lda (TMS_TMP_ADDRESS), Y
+        +tmsPut
         dex
         bne -
         rts
@@ -1103,7 +1138,6 @@ tmsSetPatternRead:
 tmsPrint:
 	ldy #0
 -
-	+tmsWaitData
 	lda (STR_ADDR), y
 	beq +
         +tmsPut 

@@ -14,7 +14,7 @@
 ; tmsWaitReg: Not sure how much delay we need so make a macro for now
 ; -----------------------------------------------------------------------------
 !macro tmsWaitReg {
-        ;jsr _tmsWaitReg
+;        jsr _tmsWaitReg
 }
 
 ; -----------------------------------------------------------------------------
@@ -68,6 +68,22 @@
 ; -----------------------------------------------------------------------------
 !macro tmsPut {
         sta TMS9918_RAM
+        +tmsWaitData
+}
+
+; -----------------------------------------------------------------------------
+; tmsPutX: Send a byte (X) of data to the TMS9918
+; -----------------------------------------------------------------------------
+!macro tmsPutX {
+        stx TMS9918_RAM
+        +tmsWaitData
+}
+
+; -----------------------------------------------------------------------------
+; tmsPutY: Send a byte (Y) of data to the TMS9918
+; -----------------------------------------------------------------------------
+!macro tmsPutY {
+        sty TMS9918_RAM
         +tmsWaitData
 }
 
@@ -199,6 +215,24 @@
 }
 
 ; -----------------------------------------------------------------------------
+; tmsSendDataReverse: Send # bytes from .sourceAddr to tms9918 data port
+; -----------------------------------------------------------------------------
+!macro tmsSendDataReverse .sourceAddr, .numBytes {
+        lda #<.sourceAddr
+        sta TMS_TMP_ADDRESS
+        lda #>.sourceAddr
+        sta TMS_TMP_ADDRESS + 1
+
+        !if .numBytes < 256 {
+                ldx #.numBytes
+                jsr tmsSendBytesReverse
+        } else {
+                !error "tmsSendDataReverse supports <256 bytes only"
+        }
+
+}
+
+; -----------------------------------------------------------------------------
 ; tmsSendDataRpt: Send # bytes from .sourceAddr to tms9918 data port .rpt times
 ; -----------------------------------------------------------------------------
 !macro tmsSendDataRpt .sourceAddr, .numBytes, .rpt {
@@ -223,8 +257,23 @@
                         bne -
                 }
         } else {
-                !error "tmsSendDataRpt supports <256 bytes only"
+                !error "tmsSendDataRpt supports <256 repetitions only"
         }
+}
+
+; -----------------------------------------------------------------------------
+; tmsPutAccRpt: Send accumulator .rpt times
+; -----------------------------------------------------------------------------
+!macro tmsPutAccRpt .rpt {
+!if .rpt < 256 {
+        ldx #.rpt
+-
+        +tmsPut
+        dex
+        bne -
+} else  {
+        !error "tmsPutAccRpt supports < 256 repetitions only"
+}
 }
 
 
@@ -232,12 +281,8 @@
 ; tmsPutRpt: Send value .rpt times
 ; -----------------------------------------------------------------------------
 !macro tmsPutRpt .value, .rpt {
-        ldx #.rpt
         lda #.value
--
-        +tmsPut
-        dex
-        bne -
+        +tmsPutAccRpt .rpt
 }
 
 !macro tmsPutSeq .from, .count {
@@ -509,7 +554,6 @@
 ; -----------------------------------------------------------------------------
 !macro tmsSpritePos .ind, .xPos, .yPos {
         
-
         ; sprite attr table
         +tmsSetAddrSpriteAttrTable .ind
 
@@ -531,14 +575,31 @@
 ; -----------------------------------------------------------------------------
 !macro tmsSpritePosXYReg .ind {
         
-
         ; sprite attr table
         +tmsSetAddrSpriteAttrTable .ind
 
-        tya
-        +tmsPut 
-        txa
-        +tmsPut 
+        +tmsPutY 
+        +tmsPutX
+}
+
+
+; -----------------------------------------------------------------------------
+; tmsSetAddrSpriteIndex: Change a sprite index
+; -----------------------------------------------------------------------------
+!macro tmsSetAddrSpriteIndex .ind {
+
+        ; sprite attr table
+        +tmsSetAddressWrite TMS_VRAM_SPRITE_ATTR_ADDRESS + (.ind * 4) + 2
+}
+
+; -----------------------------------------------------------------------------
+; tmsSpriteIndex: Change a sprite index
+; -----------------------------------------------------------------------------
+!macro tmsSpriteIndex .ind, .pattInd {
+
+        +tmsSetAddrSpriteIndex .ind
+
+        +tmsPut .pattInd
 }
 
 
