@@ -28,4 +28,4 @@
 	url = https://github.com/gallickgunner/ImGui-Addons.git
 [submodule "emulator/modules/65c22"]
 	path = emulator/modules/65c22
-	url = https://github.com/visrealm/vrEmu6522
+	url = https://github.com/visrealm/vrEmu6522.git
