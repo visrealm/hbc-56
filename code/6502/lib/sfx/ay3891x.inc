@@ -90,6 +90,10 @@
         +ayWrite .dev, (AY_CHA_AMPL + .chan), (.vol >> 4)
 }
 
+!macro aySetVolumeAcc .dev, .chan {
+        +ayWriteA .dev, (AY_CHA_AMPL + .chan)
+}
+
 !macro aySetVolumeEnvelope .dev, .chan {
         +ayWrite .dev, (AY_CHA_AMPL + .chan), $10
 }
