@@ -193,9 +193,7 @@ static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double d
     }
 
     /* get the background color for this run of pixels */
-    uint8_t bgColor = (vrEmuTms9918DisplayEnabled(tmsDevice->tms9918)
-                        ? vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_7)
-                        : TMS_BLACK) & 0x0f;
+    uint8_t bgColor = vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_7) & 0x0f;
 
     //bgColor = (++c) & 0x0f;  /* for testing */
     int firstPix = 1;
@@ -230,8 +228,7 @@ static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double d
       /* if we're at the end of the main tms9918 frame, trigger an interrupt */
       if (++tmsDevice->currentFramePixels == (TMS9918_DISPLAY_WIDTH * (TMS9918_DISPLAY_HEIGHT - TMS9918_BORDER_Y)))
       {
-        if (vrEmuTms9918DisplayEnabled(tmsDevice->tms9918) &&
-            (vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20))
+        if (vrEmuTms9918RegValue(tmsDevice->tms9918, TMS_REG_1) & 0x20)
         {
           hbc56Interrupt(tmsDevice->irq, INTERRUPT_RAISE);
         }
