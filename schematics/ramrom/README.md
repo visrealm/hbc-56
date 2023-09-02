@@ -2,10 +2,6 @@
 
 The latest revision of the RAM/ROM card contains up to 64KB of RAM and 32KB of ROM. The mapping of RAM versus ROM can be controlled in software using a single 8-bit register.
 
-## Emulator
-
-The emulator doesn't yet support the configurable RAM/ROM register. This will be added soon.
-
 ### v1.0
 
 * First custom PCB with support for 64KB RAM + 32KB ROM.
