@@ -81,6 +81,9 @@ static imgui_addons::ImGuiFileBrowser file_dialog; // As a class member or globa
 extern "C" {
 #endif
 
+bool fileOpen = false;
+
+
 
 /* Function:  hbc56Reset
  * --------------------
@@ -571,8 +574,6 @@ static void doRender()
   ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-  bool fileOpen = false;
-
   if (ImGui::BeginMenuBar())
   {
     if (ImGui::BeginMenu("File"))
@@ -646,7 +647,7 @@ static void doRender()
 #if !__EMSCRIPTEN__
   if (fileOpen) ImGui::OpenPopup("Open File");
 
-  if (file_dialog.showFileDialog("Open File", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(700, 310), ".o"))
+  if (file_dialog.showFileDialog("Open File", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(700, 310), ".o", &fileOpen))
   {
     loadRom(file_dialog.selected_path.c_str());
   }
@@ -1212,11 +1213,12 @@ int main(int argc, char* argv[])
     //SDLCommonLogUsage(state, argv[0], options);
 
 #ifndef __EMSCRIPTEN__
-    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
+    fileOpen = true;
+    //SDL_snprintf(tempBuffer, sizeof(tempBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
+    //SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
 #endif
 
-    return 2;
+    //return 2;
   }
 
   /* randomise */
