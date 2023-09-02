@@ -26,6 +26,10 @@ CHANGE_TO_POS_Y = 3
 CHANGE_TO_ARROWS_POS_X = 1
 CHANGE_TO_ARROWS_POS_Y = 5
 
+LIVES_NAMETABLE_POS_X       = 0
+LIVES_NAMETABLE_POS_Y       = 6
+LIVES_MAX_VISIBLE = 5
+
 
 uiInit:
         ; platform patterns (for each bank)
@@ -61,6 +65,7 @@ uiInit:
         rts
 
 uiStartGame:
+        jsr uiRenderLives
 
         +tmsSetAddrColorTableIIBank0 '0'
         +tmsSendDataRpt .digitsPal, 8, 10
@@ -99,7 +104,61 @@ uiStartGame:
         +tmsSendDataRpt .digitsPal, 8, 10
 
         jsr outputScore
+
+
         rts
+
+addPlayerLife:
+        inc PLAYER_LIVES
+        bra uiRenderLives
+
+losePlayerLife:
+        dec PLAYER_LIVES
+        ; do something if 0 (or -1?)
+         ; flow on through
+
+uiRenderLives:
+        ldx #LIVES_NAMETABLE_POS_X
+        ldy #LIVES_NAMETABLE_POS_Y
+        jsr tmsSetPosTmpAddress
+        jsr tmsSetAddressWrite
+
+        lda #0
+-
+        inc
+        sta TMP
+
+        lda PLAYER_LIVES
+        cmp TMP
+        bcc @drawEmpty
+
+        +tmsPut LIFE_PATTERN_INDEX
+        +tmsPut LIFE_PATTERN_INDEX + 2
+        +add16Imm TMS_TMP_ADDRESS, 32, TMS_TMP_ADDRESS
+        jsr tmsSetAddressWrite
+        +tmsPut LIFE_PATTERN_INDEX + 1
+        +tmsPut LIFE_PATTERN_INDEX + 3
+        
+.checkNext
+        +add16Imm TMS_TMP_ADDRESS, 32, TMS_TMP_ADDRESS
+        jsr tmsSetAddressWrite
+
+        lda TMP
+        cmp #LIVES_MAX_VISIBLE
+        bcc -
+ 
+        rts
+
+@drawEmpty
+        lda #0
+        +tmsPut
+        +tmsPut
+        +add16Imm TMS_TMP_ADDRESS, 32, TMS_TMP_ADDRESS
+        jsr tmsSetAddressWrite
+        lda #0
+        +tmsPut
+        +tmsPut
+        bra .checkNext
 
 
 uiTick:

@@ -13,7 +13,9 @@ BADBALL_HIGHLIGH_OFFSET = 8
 badBallInit:
         +tmsSetAddrSpritePattTable BADBALL_PATT_IDX
         +tmsSendData .badBallSquatPatt, 8 * 4 * 3
+        rts
 
+badBallCreate:
         lda #0
         sta BADBALL_STATE
         sta BADBALL_DIR

@@ -83,6 +83,11 @@ COUNTDOWN_CALL_H = COUNTDOWN_CALL + 1
 MOVELOOP_CALL    = ROUND + 3
 MOVELOOP_CALL_H  = MOVELOOP_CALL + 1
 
+PLAYER_LIVES     = MOVELOOP_CALL_H + 1
+
+; ======= CONSTANTS =========
+
+INITIAL_LIVES = 3
 
 
 ; actors
@@ -141,6 +146,8 @@ hbc56Main:
         sta COUNTDOWN_CALL
         sta COUNTDOWN_TICKS
 
+        lda #INITIAL_LIVES
+        sta PLAYER_LIVES
 
         jsr clearVram
 
@@ -152,6 +159,9 @@ hbc56Main:
 
         jsr tilesToVram
         jsr uiInit
+
+        jsr badBallInit
+        jsr coilyInit
 
 PLAYER_START_X = 120
 PLAYER_START_Y = 7
@@ -191,6 +201,7 @@ PLAYER_START_Y = 7
 ; =============================================================================
 
 !macro onCountdown .ticks, .fn {
+!if .ticks > 255 or .ticks < 1 { !error ".ticks must be between 1 and 255" }
         lda #.ticks
         sta COUNTDOWN_TICKS
         lda #<.fn
@@ -199,15 +210,11 @@ PLAYER_START_Y = 7
         sta COUNTDOWN_CALL_H
 }
 
-!macro timerDelay .ticks {
+!macro timerDelayFrames .ticks {
         +onCountdown .ticks, .andThen
         rts
 .andThen:
 }
-
-
-doCountdownFn:
-        jmp (COUNTDOWN_CALL)
 
 countdownLoop:
         ; handle various countdowns
@@ -215,11 +222,9 @@ countdownLoop:
         beq +
         dec COUNTDOWN_TICKS
         bne +
-        jsr doCountdownFn
+        jmp (COUNTDOWN_CALL)
 +
         rts
-
-        ; 1s pause, flash number twice, then number on and start demo jumps
 
 moveLoop:
         lda QBERT_STATE
@@ -240,50 +245,55 @@ moveLoop:
 }
 
 initLevelStart:
-        +timerDelay 60
+        ; 1s pause, flash number twice, then number on and start demo jumps
+
+        +timerDelayFrames 60
         jsr audioPlayLevelStart
         +tmsCreateSprite 3, 256-12, 119, 166, TMS_LT_YELLOW
         +tmsCreateSprite 4, 256-12, 120, 167, TMS_LT_RED
-        
-        +timerDelay 20
-        
+
+
+        ; flash the level number twice
+        lda #2
+        sta TMP        
+-        
+        +timerDelayFrames 20
+
         +tmsSpriteColor 3, TMS_TRANSPARENT
         +tmsSpriteColor 4, TMS_TRANSPARENT
         
-        +timerDelay 20
+        +timerDelayFrames 20
         
         +tmsSpriteColor 3, TMS_LT_YELLOW
         +tmsSpriteColor 4, TMS_LT_RED
         
-        +timerDelay 20
-        
-        +tmsSpriteColor 3, TMS_TRANSPARENT
-        +tmsSpriteColor 4, TMS_TRANSPARENT
-        
-        +timerDelay 20
-        
-        +tmsSpriteColor 3, TMS_LT_YELLOW
-        +tmsSpriteColor 4, TMS_LT_RED
+        dec TMP
+        bne -
+
+        ; begin the jump demo 
+        +timerDelayFrames 20
 
         jsr .doMoveDR
         +doMoveLoop
 
-        +timerDelay 2
+        +timerDelayFrames 2
 
         jsr .doMoveUL
         +doMoveLoop
 
-        +timerDelay 2
+        +timerDelayFrames 2
 
         jsr .doMoveDL
         +doMoveLoop
 
-        +timerDelay 2
+        +timerDelayFrames 2
 
         jsr .doMoveUR
         +doMoveLoop
 
-        +timerDelay 30
+        ; jump demo done. brief delay, then load the level
+
+        +timerDelayFrames 30
 
 startGame:
 
@@ -301,10 +311,9 @@ startGame:
 
         +tmsSpriteColor 3, TMS_TRANSPARENT
         +tmsSpriteColor 4, TMS_TRANSPARENT
-        +tmsSpritePos 0, PLAYER_START_X, $d0
 
-        ; everthing paused for a second or so, then life icon disappears and becomes sprite
-        ; game starts ~0.5s later
+        ; hide all sprites
+        +tmsSpritePos 0, PLAYER_START_X, $d0
 
         +tmsSetPosWrite 0, 0
         +tmsSendData .gameTable, 32*24
@@ -312,25 +321,28 @@ startGame:
 
         jsr uiStartGame
 
+        +timerDelayFrames 1     ; delay before enable to enable on vsync
         +tmsEnableOutput
 
-        +timerDelay 60
+        ; everthing paused for a second or so, then life icon disappears and becomes sprite
+        ; game starts ~0.5s later
 
-        +tmsSetPosWrite 0, 11
-        lda #0
-        +tmsPut
-        +tmsPut
-        +tmsSetPosWrite 0, 12
-        lda #0
-        +tmsPut
-        +tmsPut
+        +timerDelayFrames 60
 
+        ; clear one life icon
+        jsr losePlayerLife        
+
+        ; show the player sprite
         +tmsSpritePos 0, PLAYER_START_X, PLAYER_START_Y
 
-        +timerDelay 60
+        ; 1s delay then start play
+        +timerDelayFrames 60
 
-        jsr badBallInit
-        jsr coilyInit
+        jsr badBallCreate
+
+        +timerDelayFrames 1
+
+        jsr coilyCreate
 
         +hbc56SetVsyncCallback gameLoop
 
@@ -809,18 +821,18 @@ tilesToVram:
 !byte $00,$00,$00,$90,$93,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$b4,$b7,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$a8,$ab,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-!byte $05,$07,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
-!byte $06,$08,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$01,$03,$00,$00,$00,$00,$00
+!byte $00,$00,$00,$00,$00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$02,$04,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00
-!byte $00,$00,$00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00
+!byte $00,$01,$03,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00,$00,$00
+!byte $00,$02,$04,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$fe,$fe,$ff,$ff,$00,$00,$00,$00
 !byte $00,$00,$80,$81,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$86,$87,$84,$85,$82,$83,$00,$00
 !byte $00,$00,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$a4,$a5,$a6,$a7,$00,$00
