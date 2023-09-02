@@ -14,6 +14,7 @@ HBC56_RST_VECTOR = kernelMain
 
 HBC56_KERNEL_START = $e000
 HBC56_META_VECTOR  = HBC56_KERNEL_START-4
+HBC56_CLOCK_FREQ   = 3686400    ; half of 7.3728
 
 RTI_OPCODE = $40
 JMP_OPCODE = $4c
@@ -263,6 +264,10 @@ kernelMain:
         jsr hbc56Delay
         dec HBC56_TMP
         bne -
+
+        ; disable all 65C22 VIA interrupts
+        lda #$7f
+        sta VIA_IO_ADDR_IER
        
         !ifdef HAVE_TMS9918 {
                 +tmsEnableInterrupts
@@ -270,6 +275,11 @@ kernelMain:
         cli
 
         jsr hbc56HighBell
+
+        !ifdef HAVE_TMS9918 {
+                +tmsDisableInterrupts
+        }
+        sei
 
         lda #HBC56_CONSOLE_FLAG_NOWAIT
         bit HBC56_CONSOLE_FLAGS
@@ -281,9 +291,9 @@ kernelMain:
 
 
         ; NES input
-        sei
         !ifdef HAVE_TMS9918 {
-                +tmsPrintZ .HBC56_PRESS_ANY_NES_TEXT, (32 - .HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 17
+                +tmsSetPosWrite (32 - .HBC56_PRESS_ANY_NES_TEXT_LEN) / 2, 17
+                +tmsSendData .HBC56_PRESS_ANY_NES_TEXT, .HBC56_PRESS_ANY_NES_TEXT_LEN
         }
 
         !ifdef HAVE_LCD {
@@ -311,7 +321,8 @@ kernelMain:
         ; Keyboard  input
         sei
         !ifdef HAVE_TMS9918 {
-                +tmsPrintZ .HBC56_PRESS_ANY_KEY_TEXT, (32 - .HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 17
+                +tmsSetPosWrite (32 - .HBC56_PRESS_ANY_KEY_TEXT_LEN) / 2, 17
+                +tmsSendData .HBC56_PRESS_ANY_KEY_TEXT, .HBC56_PRESS_ANY_KEY_TEXT_LEN
         }
 
         !ifdef HAVE_LCD {
@@ -349,9 +360,10 @@ kernelMain:
         }
 
         !ifdef HAVE_TMS9918 {
-                jsr tmsInitTextTable ; clear output
                 +tmsDisableOutput
                 +tmsDisableInterrupts
+                
+                jsr tmsInitTextTable ; clear output
         }
         ; no interrupts until the user code says so
         sei
@@ -408,7 +420,7 @@ hbc56Reset:
 ; -----------------------------------------------------------------------------
 hbc56Stop:
         wai
-        jmp hbc56Stop
+        bra hbc56Stop
 
 ; -----------------------------------------------------------------------------
 ; Delay function
@@ -427,5 +439,5 @@ hbc56CustomDelayMs:
 	rts
 
 
-;!warn "Kernel size: ", *-$f000
-;!warn "Bytes remaining: ", DEFAULT_HBC56_INT_VECTOR-*
+!warn "Kernel size: ", *-$e000
+!warn "Bytes remaining: ", DEFAULT_HBC56_INT_VECTOR-*

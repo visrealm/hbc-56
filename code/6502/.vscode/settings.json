@@ -1,22 +1,24 @@
 {
-    "editor.tabSize": 8,
-    "workbench.editorAssociations": {
-        "*.patt": "hexEditor.hexedit",
-        "*.ind": "hexEditor.hexedit",
-        "*.bin": "hexEditor.hexedit"
-    },
-    "files.exclude": {
-        "**/**/*.o": true,
-        "**/**/*.lmap": true,
-        "**/**/*.rpt": true,
-        "kernel/*.conf": true
-    },
-    "search.exclude": {
-        "**/**/*.o": true,
-        "**/**/*.lmap": true,
-        "**/**/*.rpt": true
-    },
-    "files.associations": {
-        "*.inc": "asm"
-    }
+        "editor.tabSize": 8,
+        "workbench.editorAssociations": {
+                "*.patt": "hexEditor.hexedit",
+                "*.ind": "hexEditor.hexedit",
+                "*.bin": "hexEditor.hexedit",
+                "*.pcm": "hexEditor.hexedit",
+                "*.raw": "hexEditor.hexedit"
+        },
+        "files.exclude": {
+                "**/**/*.o": true,
+                "**/**/*.lmap": true,
+                "**/**/*.rpt": true,
+                "kernel/*.conf": true
+        },
+        "search.exclude": {
+                "**/**/*.o": true,
+                "**/**/*.lmap": true,
+                "**/**/*.rpt": true
+        },
+        "files.associations": {
+                "*.inc": "asm"
+        }
 }

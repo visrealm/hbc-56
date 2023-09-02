@@ -56,13 +56,16 @@ hbc56IntHandler:
         bra @endIntHandler
 +
 
-!ifdef HAVE_KEYBOARD {
         bit #KB_IRQ_BIT
         beq +
+!ifdef HAVE_KEYBOARD {
         jsr kbIntHandler
+} else {
+        bit IO_PORT_BASE_ADDRESS | KB_IO_PORT | $01
+        bit IO_PORT_BASE_ADDRESS | KB_IO_PORT
+}
         bra @endIntHandler
 +
-}
 
         bit #VIA_IRQ_BIT
         beq +
