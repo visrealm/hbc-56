@@ -38,6 +38,7 @@ void debuggerVramMemoryView(bool* show);
 void debuggerTmsRegistersView(bool* show);
 void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show);
 void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show);
+void debuggerTmsSpritePatternsView(SDL_Renderer* renderer, bool* show);
 void debuggerVia6522View(bool* show);
 
 extern uint16_t debugMemoryAddr;

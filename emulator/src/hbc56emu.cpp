@@ -526,6 +526,7 @@ static void doRender()
   static bool showTms9918Registers = true;
   static bool showTms9918Patterns = true;
   static bool showTms9918Sprites = true;
+  static bool showTms9918SpritePatterns = true;
   static bool showVia6522 = true;
 
   ImGui_ImplSDLRenderer2_NewFrame();
@@ -617,6 +618,7 @@ static void doRender()
         ImGui::MenuItem("TMS9918A Registers", "<Ctrl> + T", &showTms9918Registers);
         ImGui::MenuItem("TMS9918A Patterns", "<Ctrl> + P", &showTms9918Patterns);
         ImGui::MenuItem("TMS9918A Sprites", "<Ctrl> + I", &showTms9918Sprites);
+        ImGui::MenuItem("TMS9918A Sprite Patterns", "<Ctrl> + A", &showTms9918SpritePatterns);
         ImGui::Separator();
         ImGui::MenuItem("65C22 VIA", "<Ctrl> + V", &showVia6522);
         ImGui::EndMenu();
@@ -694,8 +696,9 @@ static void doRender()
   if (showBreakpoints) debuggerBreakpointsView(&showBreakpoints);
   if (showTms9918Memory) debuggerVramMemoryView(&showTms9918Memory);
   if (showTms9918Registers) debuggerTmsRegistersView(&showTms9918Registers);
-  if (showTms9918Patterns) debuggerTmsPatternsView(renderer, &showTms9918Registers);
-  if (showTms9918Sprites) debuggerTmsSpritesView(renderer, &showTms9918Registers);
+  if (showTms9918Patterns) debuggerTmsPatternsView(renderer, &showTms9918Patterns);
+  if (showTms9918Sprites) debuggerTmsSpritesView(renderer, &showTms9918Sprites);
+  if (showTms9918SpritePatterns) debuggerTmsSpritePatternsView(renderer, &showTms9918SpritePatterns);
   if (showVia6522) debuggerVia6522View(&showVia6522);
 
   ImGui::PopStyleColor(4);

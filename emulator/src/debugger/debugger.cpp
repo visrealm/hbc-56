@@ -786,13 +786,60 @@ void constantTool(const char* name)
   }
 }
 
-void patternTool(int pattIdx, uint16_t addr)
+std::string toStrBinary(uint8_t byte) {
+  std::string out = "0b";
+  for (int i = 0; i < 8; ++i, byte<<=1) {
+    out += (byte & 0x80) ? "1" : "0";
+  }
+  return out;
+}
+
+void patternTool(int pattIdx, uint16_t addr, SDL_Texture*tex, ImVec2 uv0, ImVec2 uv1)
 {
   if (ImGui::IsMouseClicked(0))
   {
     highlightTmsAddr = addr;
     debugTmsMemoryAddr = highlightTmsAddr & 0xfff0;
   }
+
+  ImGui::BeginTooltip();
+  ImGui::PushStyleColor(ImGuiCol_Text, white);
+  ImGui::Text("Index: %d $%02x", pattIdx, pattIdx);
+  ImGui::PopStyleColor();
+  ImGui::SameLine();
+  ImGui::PushStyleColor(ImGuiCol_Text, green);
+  ImGui::Text("Address: $%04x", addr);
+  ImGui::Separator();
+  ImGui::Text("");
+  ImGui::Image(tex, ImVec2(128, 128), uv0, uv1);
+  ImGui::SameLine();
+  ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 20);
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(5, 2));
+  if (ImGui::BeginTable("Values", 4, ImGuiTableFlags_SizingFixedFit))
+  {
+    ImGui::TableSetupColumn("Bin");
+    ImGui::TableSetupColumn("Hex");
+    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+    ImGui::TableHeadersRow();
+    ImGui::PopStyleColor();
+
+    for (int i = 0; i < 8; ++i)
+    {
+      ImGui::TableNextRow();
+      
+      uint8_t pattByte = readTms9918Vram(tms9918, (addr + i) & 0x3fff);
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TextUnformatted(toStrBinary(pattByte).c_str());
+      ImGui::TableSetColumnIndex(1);
+      ImGui::Text("$%02x", pattByte);
+    }
+
+    ImGui::EndTable();
+  }
+  ImGui::PopStyleVar();
+
+  ImGui::PopStyleColor();
+  ImGui::EndTooltip();
 }
 
 void registerFlagValue(uint8_t val, uint8_t flag, char name)
@@ -1575,7 +1622,7 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
           ImGui::Image(tex, ImVec2(24, 24), uv0, uv1);
           if (ImGui::IsItemHovered())
           {
-            patternTool(pattIdx,  patternAddr + pattIdx * 8);
+            patternTool(pattIdx % 256,  patternAddr + pattIdx * 8, tex, uv0, uv1);
           }
 
           uv0.x = uv0.x + size;
@@ -1714,6 +1761,126 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
   ImGui::End();
 }
 
+
+void debuggerTmsSpritePatternsView(SDL_Renderer* renderer, bool* show)
+{
+  static SDL_Texture* tex = NULL;
+  vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+
+  bool sprite16 = readTms9918Reg(tms9918, TMS_REG_1) & 0x02;
+  int spriteSizePx = sprite16 ? 16 : 8;
+
+  int tableColumns = 17;
+  int tableRows = 17;
+
+  ImGui::SetNextWindowContentSize(ImVec2(tableColumns * 26.0f, 0.0f));
+  if (ImGui::Begin("TMS9918A Sprite Patterns", show, ImGuiWindowFlags_HorizontalScrollbar))
+  {
+    if (tms9918)
+    {
+
+      ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(1, 1));
+      ImGui::BeginTable("PatternsTable", tableColumns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoBordersInBody);
+      ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TextUnformatted("$");
+
+      for (int i = 1; i < tableColumns; ++i)
+      {
+        ImGui::TableSetColumnIndex(i);
+        ImGui::Text("$%02x", (i - 1) * 16);
+      }
+
+
+      const int texSize = 128;
+
+      if (tex == NULL)
+      {
+        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, texSize, texSize);
+      }
+
+      uint32_t* pixels = NULL;
+      int pitch = 0;
+      SDL_LockTexture(tex, NULL, (void**)&pixels, &pitch);
+
+      uint16_t patternAddr = ((uint16_t)readTms9918Reg(tms9918, TMS_REG_SPRITE_PATT_TABLE) & 0x07) << 11;
+
+      ImVec2 uv0(0.0, 0.0);
+      ImVec2 uv1(0.0, 0.0);
+
+      for (int i = 0; i < (256 * 8); ++i)
+      {
+        uint8_t pattByte = readTms9918Vram(tms9918, (patternAddr + i) & 0x3fff);
+
+        uint32_t fg = 0xffffffff;
+        uint32_t bg = 0;
+
+        int pattIndex = (i & 0xf0) >> 4;
+        int pattRow = i & 0x07;
+        int cellRow = i >> 8;
+        int oddOffset = ((i & 0x08) >> 3) * 8 * texSize;
+
+        int pixelOffset = oddOffset + cellRow * 16 * texSize + pattIndex * 8 + pattRow * texSize;
+//        int pixelOffset = ((i & 0x78) >> 3) * 8 + (i & 0x07) * texSize + (i >> 7) * texSize * 8;
+
+        for (int x = 0; x < 8; ++x)
+        {
+          pixels[pixelOffset++] = (pattByte & 0x80) ? fg : bg;
+          pattByte <<= 1;
+        }
+      }
+
+      SDL_UnlockTexture(tex);
+
+      float size = 1.0f / 16.0f;
+
+      uv1 = ImVec2(size, size);
+      uint16_t pattIdx = 0;
+
+      for (int r = 1; r < tableRows; ++r)
+      {
+        uv0.x = 0.0;
+        uv1.x = size;
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        if (r & 1)
+        {
+          ImGui::Text("%04x", (r - 1) * (tableColumns - 1) * 8);
+        }
+
+
+        for (int c = 1; c < tableColumns; ++c)
+        {
+          ImGui::TableSetColumnIndex(c);
+          ImGui::Image(tex, ImVec2(24, 24), uv0, uv1);
+          if (ImGui::IsItemHovered())
+          {
+            patternTool(pattIdx, patternAddr + pattIdx * 8, tex, uv0, uv1);
+          }
+
+          uv0.x = uv0.x + size;
+          uv1.x = uv1.x + size;
+          pattIdx += 2;
+        }
+        
+        pattIdx -= (r & 1) ? 31 : 1;
+
+        uv0.y = uv0.y + size;
+        uv1.y = uv1.y + size;
+      }
+      ImGui::PopStyleColor();
+      ImGui::EndTable();
+      ImGui::PopStyleVar();
+    }
+    else
+    {
+      ImGui::Text("TMS9918A not present");
+    }
+  }
+  ImGui::End();
+}
 
 static std::string tmsColorText(uint8_t c)
 {
