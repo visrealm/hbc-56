@@ -193,6 +193,17 @@ static void audioAy38910Device(HBC56Device* device, float* buffer, int numSample
         }
       }
     }
+    else
+    {
+      for (int i = 0; i < numSamples; ++i)
+      {
+        buffer[i * ayDevice->channels] += ayDevice->buffer[ayDevice->bufferStart];
+        if (ayDevice->channels > 1)
+        {
+          buffer[i * ayDevice->channels + 1] += ayDevice->buffer[ayDevice->bufferStart + 1];
+        }
+      }
+    }
     SDL_UnlockMutex(ayDevice->mutex);
   }
 }
