@@ -10,6 +10,8 @@
 :: This batch file must be run in an emscripten environment
 :: eg. emsdk activate
 
+cd /D "%~dp0"
+
 call ..\..\tools\emsdk\emsdk.bat install 3.1.10
 call ..\..\tools\emsdk\emsdk.bat activate 3.1.10
 

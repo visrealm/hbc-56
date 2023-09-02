@@ -24,5 +24,5 @@ jobs:
       run: git submodule update --init --recursive
 
     - name: Build emscripten
-      working-directory: ${{env.GITHUB_WORKSPACE}}emulator/wasm
-      run: build_wasm.bat
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: emulator/wasm/build_wasm.bat
