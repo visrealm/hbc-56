@@ -10,7 +10,7 @@
 #
 #
 
-import os, sys
+import os, sys, glob
 
             
 def convertSample(s):    
@@ -32,49 +32,50 @@ def convertSample(s):
     return 0x0
 
 
-for infile in sys.argv[1:]:
-    f, e = os.path.splitext(infile)
-    try:
-        rawIn = open(infile, "rb")
-        pcmOut = open(f + ".pcm","wb")
-        
-        minVal = 255
-        maxVal = 0
-
-        sample = rawIn.read(1)
-        while sample:
-            sample = float(int.from_bytes(sample))
-            if sample < minVal: minVal = sample
-            if sample > maxVal: maxVal = sample
-            sample = rawIn.read(1)
-        rawIn.seek(0)
-        
-        multiplier = 255.0/(maxVal-minVal)
-
-        print("Range:    ", minVal,"-",maxVal)
-
-        print("Processing:    ", infile)
-        
-        sample = rawIn.read(1)
-        while sample:
-            sample = float(int.from_bytes(sample))
-            sample = (sample - minVal) * multiplier
-            outVal = convertSample(sample / 255.0) <<4
-            sample = rawIn.read(1)
-            if sample:
-                sample = int.from_bytes(sample) - minVal
-                sample = (sample - minVal) * multiplier
-                outVal |= convertSample(sample / 255.0)
+for expr in sys.argv[1:]:
+    for infile in glob.glob(expr):
+        f, e = os.path.splitext(infile)
+        try:
+            rawIn = open(infile, "rb")
+            pcmOut = open(f + ".pcm","wb")
             
-            pcmOut.write(outVal.to_bytes())            
-            sample = rawIn.read(1)
+            minVal = 255
+            maxVal = 0
 
-        rawIn.close()
-        pcmOut.close()
-        
-        print("PCM samples: ", os.path.getsize(f + ".pcm") * 2,"samples")
-        print("PCM size: ", os.path.getsize(f + ".pcm"),"bytes")
-        
-    except IOError:
-        print("cannot convert", infile)
+            sample = rawIn.read(1)
+            while sample:
+                sample = float(int.from_bytes(sample))
+                if sample < minVal: minVal = sample
+                if sample > maxVal: maxVal = sample
+                sample = rawIn.read(1)
+            rawIn.seek(0)
             
+            multiplier = 255.0/(maxVal-minVal)
+
+            print("Range:    ", minVal,"-",maxVal)
+
+            print("Processing:    ", infile)
+            
+            sample = rawIn.read(1)
+            while sample:
+                sample = float(int.from_bytes(sample))
+                sample = (sample) * multiplier - minVal
+                outVal = convertSample(sample / 255.0) <<4
+                sample = rawIn.read(1)
+                if sample:
+                    sample = float(int.from_bytes(sample)) 
+                    sample = (sample) * multiplier - minVal
+                    outVal |= convertSample(sample / 255.0)
+                
+                pcmOut.write(outVal.to_bytes())            
+                sample = rawIn.read(1)
+
+            rawIn.close()
+            pcmOut.close()
+            
+            print("PCM samples: ", os.path.getsize(f + ".pcm") * 2,"samples")
+            print("PCM size: ", os.path.getsize(f + ".pcm"),"bytes")
+            
+        except IOError:
+            print("cannot convert", infile)
+                
