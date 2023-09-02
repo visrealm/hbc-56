@@ -24,7 +24,5 @@ jobs:
       run: git submodule update --init --recursive
 
     - name: Build emscripten
-      working-directory: ${{env.GITHUB_WORKSPACE}}/emulator/wasm
-      # Add additional options to the MSBuild command line here (like platform or verbosity level).
-      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      working-directory: ${{env.GITHUB_WORKSPACE}}emulator/wasm
       run: build_wasm.bat
