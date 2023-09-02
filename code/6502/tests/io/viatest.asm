@@ -11,6 +11,7 @@
 
 
 !src "hbc56kernel.inc"
+!src "io/timer.inc"
 
 MS_L = HBC56_USER_ZP_START
 MS_H = MS_L + 1
@@ -35,12 +36,6 @@ hbc56Main:
         lda #VIA_DIR_OUTPUT
         sta VIA_IO_ADDR_DDR_A
 
-        lda #$40
-        sta  VIA_IO_ADDR_ACR
-
-        lda #$c0
-        sta  VIA_IO_ADDR_IER
-
         lda #$aa
         sta VIA_IO_ADDR_PORT_A
 
@@ -48,11 +43,7 @@ hbc56Main:
         stz MS_H
         stz MS_COUNT
 
-        lda #$84
-        sta VIA_IO_ADDR_T1C_L
-        lda #$03
-        sta VIA_IO_ADDR_T1C_H
-
+        +timer1SetContinuousHz 4096
 
         lda #$aa
         sta selfmod-1

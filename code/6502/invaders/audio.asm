@@ -12,18 +12,6 @@
 
 audioInit:
         jsr ayInit
-        +ayWrite AY_PSG0, AY_CHA_AMPL, $0a
-        +ayWrite AY_PSG0, AY_CHB_AMPL, $0a
-        +ayWrite AY_PSG0, AY_CHC_AMPL, $00
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_L, $00
-        +ayWrite AY_PSG0, AY_ENV_PERIOD_H, $08
-        +ayWrite AY_PSG0, AY_ENV_SHAPE, $09
-        +ayWrite AY_PSG0, AY_ENABLES, $38
-
-        +ayWrite AY_PSG1, AY_CHC_AMPL, $1f
-        +ayWrite AY_PSG1, AY_ENV_PERIOD_L, $00
-        +ayWrite AY_PSG1, AY_ENV_PERIOD_H, $08
-        +ayWrite AY_PSG1, AY_ENV_SHAPE, $0e
         rts
 
 audioAlienToneLeft:
