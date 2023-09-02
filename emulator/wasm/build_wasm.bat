@@ -29,7 +29,6 @@ emcc -o hbc56.html ^
   -s INITIAL_MEMORY=64MB ^
   -I ..\modules\ay38910 ^
   -I ..\modules\65c02\src ^
-  -I ..\modules\65c22\src ^
   -I ..\modules\lcd\src ^
   -I ..\modules\tms9918\src ^
   -I ..\thirdparty\imgui ^
