@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Hbc56Emu)
+project(Hbc56Emu C CXX)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 
