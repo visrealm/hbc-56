@@ -16,10 +16,17 @@
 #include "devices/tms9918_device.h"
 #include "devices/via_device.h"
 
+#ifdef WIN32
 extern "C" {
+#endif
+
 #include "vrEmu6502.h"
 #include "vrEmuTms9918Util.h"
+
+#ifdef WIN32
 }
+#endif
+
 #include "imgui.h"
 
 #include <stdlib.h>

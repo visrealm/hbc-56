@@ -195,7 +195,7 @@ var Module = typeof Module != 'undefined' ? Module : {};
     }
 
     }
-    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 83869}, {"filename": "/rom.bin.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084490}], "remote_package_size": 1084490, "package_uuid": "27f885ec-bd96-489f-adfe-e470764e3e04"});
+    loadPackage({"files": [{"filename": "/rom.bin", "start": 0, "end": 32768}, {"filename": "/rom.bin.lmap", "start": 32768, "end": 83869}, {"filename": "/rom.bin.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084490}], "remote_package_size": 1084490, "package_uuid": "e695435a-6246-4bed-8fb2-b082e51a52b3"});
 
   })();
 
@@ -1883,22 +1883,22 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  151232: function($0) {var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return allocate(intArrayFromString(reply), 'i8', ALLOC_NORMAL);},  
- 151457: function() {if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false;},  
- 151604: function() {if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false;},  
- 151838: function($0) {if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { autoResumeAudioContext(SDL2.audioContext); } } return SDL2.audioContext === undefined ? -1 : 0;},  
- 152331: function() {var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate;},  
- 152399: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.silenceTimer = setTimeout(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); }},  
- 154051: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vi', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']);},  
- 154461: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } }},  
- 155066: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[$0 + ((j*numChannels + c) << 2) >> 2]; } }},  
- 155546: function($0) {var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } SDL2.capture.stream = undefined; } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); SDL2.capture.scriptProcessorNode = undefined; } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); SDL2.capture.mediaStreamNode = undefined; } if (SDL2.capture.silenceBuffer !== undefined) { SDL2.capture.silenceBuffer = undefined } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); SDL2.audio.scriptProcessorNode = undefined; } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; }},  
- 156718: function($0, $1, $2) {var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Module['createContext'](Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); return 0;},  
- 158197: function($0, $1, $2, $3, $4) {var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf;},  
- 159186: function($0) {if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } return 0;},  
- 159279: function() {if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; }},  
- 159348: function() {return window.innerWidth;},  
- 159378: function() {return window.innerHeight;}
+  151264: function($0) {var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return allocate(intArrayFromString(reply), 'i8', ALLOC_NORMAL);},  
+ 151489: function() {if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false;},  
+ 151636: function() {if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false;},  
+ 151870: function($0) {if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { autoResumeAudioContext(SDL2.audioContext); } } return SDL2.audioContext === undefined ? -1 : 0;},  
+ 152363: function() {var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate;},  
+ 152431: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.silenceTimer = setTimeout(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); }},  
+ 154083: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vi', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']);},  
+ 154493: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } }},  
+ 155098: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[$0 + ((j*numChannels + c) << 2) >> 2]; } }},  
+ 155578: function($0) {var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } SDL2.capture.stream = undefined; } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); SDL2.capture.scriptProcessorNode = undefined; } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); SDL2.capture.mediaStreamNode = undefined; } if (SDL2.capture.silenceBuffer !== undefined) { SDL2.capture.silenceBuffer = undefined } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); SDL2.audio.scriptProcessorNode = undefined; } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; }},  
+ 156750: function($0, $1, $2) {var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Module['createContext'](Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); return 0;},  
+ 158229: function($0, $1, $2, $3, $4) {var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf;},  
+ 159218: function($0) {if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } return 0;},  
+ 159311: function() {if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; }},  
+ 159380: function() {return window.innerWidth;},  
+ 159410: function() {return window.innerHeight;}
 };
 
 
@@ -9266,6 +9266,225 @@ var _free = Module["_free"] = createExportWrapper("free");
 var _memcpy = Module["_memcpy"] = createExportWrapper("memcpy");
 
 /** @type {function(...*):?} */
+var _vrEmu6502New = Module["_vrEmu6502New"] = createExportWrapper("vrEmu6502New");
+
+/** @type {function(...*):?} */
+var _vrEmu6502Reset = Module["_vrEmu6502Reset"] = createExportWrapper("vrEmu6502Reset");
+
+/** @type {function(...*):?} */
+var _vrEmu6502Destroy = Module["_vrEmu6502Destroy"] = createExportWrapper("vrEmu6502Destroy");
+
+/** @type {function(...*):?} */
+var _vrEmu6502Nmi = Module["_vrEmu6502Nmi"] = createExportWrapper("vrEmu6502Nmi");
+
+/** @type {function(...*):?} */
+var _vrEmu6502Int = Module["_vrEmu6502Int"] = createExportWrapper("vrEmu6502Int");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetPC = Module["_vrEmu6502GetPC"] = createExportWrapper("vrEmu6502GetPC");
+
+/** @type {function(...*):?} */
+var _vrEmu6502InstCycle = Module["_vrEmu6502InstCycle"] = createExportWrapper("vrEmu6502InstCycle");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetOpcodeCycle = Module["_vrEmu6502GetOpcodeCycle"] = createExportWrapper("vrEmu6502GetOpcodeCycle");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetCurrentOpcodeAddr = Module["_vrEmu6502GetCurrentOpcodeAddr"] = createExportWrapper("vrEmu6502GetCurrentOpcodeAddr");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetNextOpcode = Module["_vrEmu6502GetNextOpcode"] = createExportWrapper("vrEmu6502GetNextOpcode");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetCurrentOpcode = Module["_vrEmu6502GetCurrentOpcode"] = createExportWrapper("vrEmu6502GetCurrentOpcode");
+
+/** @type {function(...*):?} */
+var _vrEmu6522New = Module["_vrEmu6522New"] = createExportWrapper("vrEmu6522New");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Reset = Module["_vrEmu6522Reset"] = createExportWrapper("vrEmu6522Reset");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Destroy = Module["_vrEmu6522Destroy"] = createExportWrapper("vrEmu6522Destroy");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Read = Module["_vrEmu6522Read"] = createExportWrapper("vrEmu6522Read");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Int = Module["_vrEmu6522Int"] = createExportWrapper("vrEmu6522Int");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Write = Module["_vrEmu6522Write"] = createExportWrapper("vrEmu6522Write");
+
+/** @type {function(...*):?} */
+var _vrEmu6522Tick = Module["_vrEmu6522Tick"] = createExportWrapper("vrEmu6522Tick");
+
+/** @type {function(...*):?} */
+var _vrEmu6522ReadDbg = Module["_vrEmu6522ReadDbg"] = createExportWrapper("vrEmu6522ReadDbg");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918New = Module["_vrEmuTms9918New"] = createExportWrapper("vrEmuTms9918New");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918Reset = Module["_vrEmuTms9918Reset"] = createExportWrapper("vrEmuTms9918Reset");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918Destroy = Module["_vrEmuTms9918Destroy"] = createExportWrapper("vrEmuTms9918Destroy");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918ReadStatus = Module["_vrEmuTms9918ReadStatus"] = createExportWrapper("vrEmuTms9918ReadStatus");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918ReadDataNoInc = Module["_vrEmuTms9918ReadDataNoInc"] = createExportWrapper("vrEmuTms9918ReadDataNoInc");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918ReadData = Module["_vrEmuTms9918ReadData"] = createExportWrapper("vrEmuTms9918ReadData");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918WriteAddr = Module["_vrEmuTms9918WriteAddr"] = createExportWrapper("vrEmuTms9918WriteAddr");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918WriteData = Module["_vrEmuTms9918WriteData"] = createExportWrapper("vrEmuTms9918WriteData");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918RegValue = Module["_vrEmuTms9918RegValue"] = createExportWrapper("vrEmuTms9918RegValue");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918ScanLine = Module["_vrEmuTms9918ScanLine"] = createExportWrapper("vrEmuTms9918ScanLine");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918VramValue = Module["_vrEmuTms9918VramValue"] = createExportWrapper("vrEmuTms9918VramValue");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918WriteRegValue = Module["_vrEmuTms9918WriteRegValue"] = createExportWrapper("vrEmuTms9918WriteRegValue");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918DisplayMode = Module["_vrEmuTms9918DisplayMode"] = createExportWrapper("vrEmuTms9918DisplayMode");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdNew = Module["_vrEmuLcdNew"] = createExportWrapper("vrEmuLcdNew");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdNumPixelsX = Module["_vrEmuLcdNumPixelsX"] = createExportWrapper("vrEmuLcdNumPixelsX");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdNumPixelsY = Module["_vrEmuLcdNumPixelsY"] = createExportWrapper("vrEmuLcdNumPixelsY");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdDestroy = Module["_vrEmuLcdDestroy"] = createExportWrapper("vrEmuLcdDestroy");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdReadAddress = Module["_vrEmuLcdReadAddress"] = createExportWrapper("vrEmuLcdReadAddress");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdReadByteNoInc = Module["_vrEmuLcdReadByteNoInc"] = createExportWrapper("vrEmuLcdReadByteNoInc");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdReadByte = Module["_vrEmuLcdReadByte"] = createExportWrapper("vrEmuLcdReadByte");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdSendCommand = Module["_vrEmuLcdSendCommand"] = createExportWrapper("vrEmuLcdSendCommand");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdWriteByte = Module["_vrEmuLcdWriteByte"] = createExportWrapper("vrEmuLcdWriteByte");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdUpdatePixels = Module["_vrEmuLcdUpdatePixels"] = createExportWrapper("vrEmuLcdUpdatePixels");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdPixelState = Module["_vrEmuLcdPixelState"] = createExportWrapper("vrEmuLcdPixelState");
+
+/** @type {function(...*):?} */
+var _PSG_new = Module["_PSG_new"] = createExportWrapper("PSG_new");
+
+/** @type {function(...*):?} */
+var _PSG_setVolumeMode = Module["_PSG_setVolumeMode"] = createExportWrapper("PSG_setVolumeMode");
+
+/** @type {function(...*):?} */
+var _PSG_reset = Module["_PSG_reset"] = createExportWrapper("PSG_reset");
+
+/** @type {function(...*):?} */
+var _PSG_delete = Module["_PSG_delete"] = createExportWrapper("PSG_delete");
+
+/** @type {function(...*):?} */
+var _PSG_readReg = Module["_PSG_readReg"] = createExportWrapper("PSG_readReg");
+
+/** @type {function(...*):?} */
+var _PSG_writeReg = Module["_PSG_writeReg"] = createExportWrapper("PSG_writeReg");
+
+/** @type {function(...*):?} */
+var _PSG_calc = Module["_PSG_calc"] = createExportWrapper("PSG_calc");
+
+/** @type {function(...*):?} */
+var _vrEmu6502OpcodeToMnemonicStr = Module["_vrEmu6502OpcodeToMnemonicStr"] = createExportWrapper("vrEmu6502OpcodeToMnemonicStr");
+
+/** @type {function(...*):?} */
+var _vrEmu6502DisassembleInstruction = Module["_vrEmu6502DisassembleInstruction"] = createExportWrapper("vrEmu6502DisassembleInstruction");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetAcc = Module["_vrEmu6502GetAcc"] = createExportWrapper("vrEmu6502GetAcc");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetX = Module["_vrEmu6502GetX"] = createExportWrapper("vrEmu6502GetX");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetY = Module["_vrEmu6502GetY"] = createExportWrapper("vrEmu6502GetY");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetStackPointer = Module["_vrEmu6502GetStackPointer"] = createExportWrapper("vrEmu6502GetStackPointer");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetStatus = Module["_vrEmu6502GetStatus"] = createExportWrapper("vrEmu6502GetStatus");
+
+/** @type {function(...*):?} */
+var _PSG_set_rate = Module["_PSG_set_rate"] = createExportWrapper("PSG_set_rate");
+
+/** @type {function(...*):?} */
+var _PSG_set_quality = Module["_PSG_set_quality"] = createExportWrapper("PSG_set_quality");
+
+/** @type {function(...*):?} */
+var _PSG_setMask = Module["_PSG_setMask"] = createExportWrapper("PSG_setMask");
+
+/** @type {function(...*):?} */
+var _PSG_toggleMask = Module["_PSG_toggleMask"] = createExportWrapper("PSG_toggleMask");
+
+/** @type {function(...*):?} */
+var _PSG_readIO = Module["_PSG_readIO"] = createExportWrapper("PSG_readIO");
+
+/** @type {function(...*):?} */
+var _PSG_writeIO = Module["_PSG_writeIO"] = createExportWrapper("PSG_writeIO");
+
+/** @type {function(...*):?} */
+var _vrEmu6502Tick = Module["_vrEmu6502Tick"] = createExportWrapper("vrEmu6502Tick");
+
+/** @type {function(...*):?} */
+var _vrEmu6502SetPC = Module["_vrEmu6502SetPC"] = createExportWrapper("vrEmu6502SetPC");
+
+/** @type {function(...*):?} */
+var _vrEmu6502GetOpcodeAddrMode = Module["_vrEmu6502GetOpcodeAddrMode"] = createExportWrapper("vrEmu6502GetOpcodeAddrMode");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdWriteString = Module["_vrEmuLcdWriteString"] = createExportWrapper("vrEmuLcdWriteString");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdCharBits = Module["_vrEmuLcdCharBits"] = createExportWrapper("vrEmuLcdCharBits");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdGetDataOffset = Module["_vrEmuLcdGetDataOffset"] = createExportWrapper("vrEmuLcdGetDataOffset");
+
+/** @type {function(...*):?} */
+var _vrEmuLcdNumPixels = Module["_vrEmuLcdNumPixels"] = createExportWrapper("vrEmuLcdNumPixels");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918DisplayEnabled = Module["_vrEmuTms9918DisplayEnabled"] = createExportWrapper("vrEmuTms9918DisplayEnabled");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918InitialiseGfxI = Module["_vrEmuTms9918InitialiseGfxI"] = createExportWrapper("vrEmuTms9918InitialiseGfxI");
+
+/** @type {function(...*):?} */
+var _vrEmuTms9918InitialiseGfxII = Module["_vrEmuTms9918InitialiseGfxII"] = createExportWrapper("vrEmuTms9918InitialiseGfxII");
+
+/** @type {function(...*):?} */
 var ___errno_location = Module["___errno_location"] = createExportWrapper("__errno_location");
 
 /** @type {function(...*):?} */
@@ -9315,7 +9534,30 @@ var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
 /** @type {function(...*):?} */
 var dynCall_ji = Module["dynCall_ji"] = createExportWrapper("dynCall_ji");
 
-
+var _LCD_CMD_CLEAR = Module['_LCD_CMD_CLEAR'] = 80656;
+var _LCD_CMD_HOME = Module['_LCD_CMD_HOME'] = 80657;
+var _LCD_CMD_ENTRY_MODE = Module['_LCD_CMD_ENTRY_MODE'] = 80658;
+var _LCD_CMD_ENTRY_MODE_INCREMENT = Module['_LCD_CMD_ENTRY_MODE_INCREMENT'] = 80659;
+var _LCD_CMD_ENTRY_MODE_DECREMENT = Module['_LCD_CMD_ENTRY_MODE_DECREMENT'] = 80660;
+var _LCD_CMD_ENTRY_MODE_SHIFT = Module['_LCD_CMD_ENTRY_MODE_SHIFT'] = 80661;
+var _LCD_CMD_DISPLAY = Module['_LCD_CMD_DISPLAY'] = 80662;
+var _LCD_CMD_DISPLAY_ON = Module['_LCD_CMD_DISPLAY_ON'] = 80663;
+var _LCD_CMD_DISPLAY_CURSOR = Module['_LCD_CMD_DISPLAY_CURSOR'] = 80664;
+var _LCD_CMD_DISPLAY_CURSOR_BLINK = Module['_LCD_CMD_DISPLAY_CURSOR_BLINK'] = 80665;
+var _LCD_CMD_SHIFT = Module['_LCD_CMD_SHIFT'] = 80666;
+var _LCD_CMD_SHIFT_CURSOR = Module['_LCD_CMD_SHIFT_CURSOR'] = 80667;
+var _LCD_CMD_SHIFT_DISPLAY = Module['_LCD_CMD_SHIFT_DISPLAY'] = 80668;
+var _LCD_CMD_SHIFT_LEFT = Module['_LCD_CMD_SHIFT_LEFT'] = 80669;
+var _LCD_CMD_SHIFT_RIGHT = Module['_LCD_CMD_SHIFT_RIGHT'] = 80670;
+var _LCD_CMD_FUNCTION = Module['_LCD_CMD_FUNCTION'] = 80671;
+var _LCD_CMD_FUNCTION_LCD_1LINE = Module['_LCD_CMD_FUNCTION_LCD_1LINE'] = 80672;
+var _LCD_CMD_FUNCTION_LCD_2LINE = Module['_LCD_CMD_FUNCTION_LCD_2LINE'] = 80673;
+var _LCD_CMD_FUNCTION_EXT_MODE = Module['_LCD_CMD_FUNCTION_EXT_MODE'] = 80674;
+var _LCD_CMD_FUNCTION_STD_MODE = Module['_LCD_CMD_FUNCTION_STD_MODE'] = 80675;
+var _LCD_CMD_EXT_FUNCTION_GFX = Module['_LCD_CMD_EXT_FUNCTION_GFX'] = 80676;
+var _LCD_CMD_EXT_FUNCTION_STD = Module['_LCD_CMD_EXT_FUNCTION_STD'] = 80677;
+var _LCD_CMD_SET_CGRAM_ADDR = Module['_LCD_CMD_SET_CGRAM_ADDR'] = 80678;
+var _LCD_CMD_SET_DRAM_ADDR = Module['_LCD_CMD_SET_DRAM_ADDR'] = 80679;
 
 
 

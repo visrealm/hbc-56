@@ -12,7 +12,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#else
+#elif defined WIN32
 #define HAVE_FOPEN_S 1
 #endif
 

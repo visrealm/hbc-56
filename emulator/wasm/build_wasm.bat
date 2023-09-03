@@ -20,13 +20,10 @@ emcc -o hbc56.html ^
   -O3 -sASSERTIONS -g3 ^
   -D __EMSCRIPTEN__ ^
   -D DEMANGLE_SUPPORT=1 ^
-  -D VR_LCD_EMU_STATIC=1 ^
-  -D VR_TMS9918_EMU_STATIC=1 ^
-  -D VR_6502_EMU_STATIC=1 ^
-  -D VR_6522_EMU_STATIC=1 ^
   -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 ^
   -s USE_SDL=2 ^
   -s INITIAL_MEMORY=64MB ^
+  -I ..\src ^
   -I ..\modules\ay38910 ^
   -I ..\modules\65c02\src ^
   -I ..\modules\65c22\src ^
