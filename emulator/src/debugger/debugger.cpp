@@ -13,10 +13,13 @@
 
 
 #include "debugger.h"
-#include "../devices/tms9918_device.h"
-#include "../devices/via_device.h"
-#include "vrEmuTms9918Util.h"
+#include "devices/tms9918_device.h"
+#include "devices/via_device.h"
+
+extern "C" {
 #include "vrEmu6502.h"
+#include "vrEmuTms9918Util.h"
+}
 #include "imgui.h"
 
 #include <stdlib.h>

@@ -15,6 +15,9 @@ videos
 *.userosscache
 *.sln.docstates
 
+*/artifact/*
+*/build/*
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
