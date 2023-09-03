@@ -7,9 +7,9 @@ name: emulator-win64
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 env:
   # Path to the solution file relative to the root of the project.
