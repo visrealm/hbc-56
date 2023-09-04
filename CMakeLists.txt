@@ -20,4 +20,3 @@ include(CTest)
 
 add_subdirectory(tools/acme)
 add_subdirectory(emulator)
-add_subdirectory(code/6502)
