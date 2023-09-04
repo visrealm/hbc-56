@@ -13,7 +13,11 @@ if (DEFINED EMSCRIPTEN)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/)
+
 
 include(CTest)
 
+add_subdirectory(tools/acme)
 add_subdirectory(emulator)
+add_subdirectory(code/6502)

@@ -2,19 +2,31 @@
 
 # HBC-56 Emulator
 
-The HBC-56 emulator allows you to build and test programs on your desktop machine. The source source be platform independent, however I have only built and tested the emulator on Windows.
+The HBC-56 emulator allows you to build and test programs on your desktop machine. The emulator targets Windows, Linux and WebAssembly. The Windows build is the most mature.
 
 <p align="center"><img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="800px"></p>
 
 ## Building the emulator
 
-The repository does include a pre-built Windows executable located in `emulator/bin`. However, if you wish to modify and build the emulator, you can.
-1. Ensure you have checked out the source including all submodules. 
-2. Open `emulator/msvc/Hbc56Emu.sln` in Visual Studio.
-  Unless you are debugging, it is preferred to build the Release version. The Release version is used by all of the code samples to launch after the sample is assembled.
-3. Build the solution.
+The HBC-56 uses the CMake build system.
 
-The output executable will be located at  `emulator/bin`
+1. Ensure you have checked out the source including all submodules. 
+```
+git clone --recurse-submodules https://github.com/visrealm/hbc-56.git
+cd hbc-56
+```
+2. Setup the build
+```
+mkdir build
+cd build
+cmake ..
+```
+3. Build
+```
+cmake --build . --config Release
+```
+
+The output executable will be located at  `build/bin/Hbc56Emu`
 
 ## Command-line options
 
@@ -56,7 +68,7 @@ The emulator includes a debugger you can use to step through your code. The debu
 * **`<Ctrl>+<Shift>+<PgDn>`** - Scroll TMS VRAM view down 0x1000
 
 #### Breakpoints
-At this stage, the only way to set a breakpoint is to insert a special opcode (`$db`) in to your ROM image. When the emulator sees this opcode, it will break and open the debug window. eg:
+One way to set a breakpoint is to insert a special opcode (`$db`) in to your ROM image. When the emulator sees this opcode, it will break and open the debug window. eg:
 ```
 !byte $db
 ```
@@ -64,3 +76,7 @@ At this stage, the only way to set a breakpoint is to insert a special opcode (`
 #### Labels
 
 If the emulator finds a `<romfile>.lmap` file (eg. myrom.o.lmap) it will load this and provide labels in the disassembly view.
+
+#### Source debugging
+
+When using the ACME assembler and you've generated an assembler report file, If the emulator finds a `<romfile>.o.rpt` file (eg. myrom.o.rpt) it will load this and provide full source debugging.

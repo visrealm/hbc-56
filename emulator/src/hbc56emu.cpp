@@ -12,8 +12,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#elif defined WIN32
-#define HAVE_FOPEN_S 1
 #endif
 
 #include "hbc56emu.h"
@@ -81,371 +79,371 @@ static imgui_addons::ImGuiFileBrowser file_dialog; // As a class member or globa
 extern "C" {
 #endif
 
-bool fileOpen = false;
+  bool fileOpen = false;
 
 
 
-/* Function:  hbc56Reset
- * --------------------
- * hardware reset the hbc-56
- */
-void hbc56Reset()
-{
-  for (size_t i = 0; i < deviceCount; ++i)
+  /* Function:  hbc56Reset
+   * --------------------
+   * hardware reset the hbc-56
+   */
+  void hbc56Reset()
   {
-    resetDevice(&devices[i]);
-  }
-
-  for (int i = 0; i < MAX_IRQS; ++i)
-  {
-    irqs[i] = INTERRUPT_RELEASE;
-  }
-  
-  debug6502State(cpuDevice, CPU_RUNNING);
-}
-
-/* Function:  hbc56NumDevices
- * --------------------
- * return the number of devices present
- */
-int hbc56NumDevices()
-{
-  return deviceCount;
-}
-
-/* Function:  hbc56Device
- * --------------------
- * return a pointer to the given device
- */
-HBC56Device* hbc56Device(size_t deviceNum)
-{
-  if (deviceNum < deviceCount)
-    return &devices[deviceNum];
-  return NULL;
-}
-
-/* Function:  hbc56AddDevice
- * --------------------
- * add a new device * returns a pointer to the added device
- */
-HBC56Device* hbc56AddDevice(HBC56Device device)
-{
-  if (deviceCount < (HBC56_MAX_DEVICES - 1))
-  {
-    devices[deviceCount] = device;
-    return &devices[deviceCount++];
-  }
-  return NULL;
-}
-
-/* Function:  hbc56Interrupt
- * --------------------
- raise or release an interrupt (irq# and signal)
- */
-void hbc56Interrupt(uint8_t irq, HBC56InterruptSignal signal)
-{
-  if (irq == 0 || irq > MAX_IRQS) return;
-  irq--;
-
-  irqs[irq] = signal;
-
-  if (cpuDevice)
-  {
-    signal = INTERRUPT_RELEASE;
-
-    for (int i = 0; i < MAX_IRQS;++i)
+    for (size_t i = 0; i < deviceCount; ++i)
     {
-      if (irqs[i] == INTERRUPT_RAISE)
-      {
-        signal = INTERRUPT_RAISE;
-      }
-      else if (irqs[i] == INTERRUPT_TRIGGER)
-      {
-        irqs[i] = INTERRUPT_RELEASE;
-        signal = INTERRUPT_RAISE;
-      }
+      resetDevice(&devices[i]);
     }
 
-    interrupt6502(cpuDevice, INTERRUPT_INT, signal);
-  }
-}
-
-/* Function:  hbc56LoadRom
- * --------------------
- * load rom data. rom data bust be HBC56_ROM_SIZE bytes
- */
-int hbc56LoadRom(const uint8_t* romData, int romDataSize)
-{
-  int status = 1;
-
-  if (romDataSize != HBC56_ROM_SIZE)
-  {
-#ifndef __EMSCRIPTEN__
-    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file must be %d bytes.", HBC56_ROM_SIZE);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
-#endif
-    status = 0;
-  }
-
-  if (status)
-  {
-    debug6502State(cpuDevice, CPU_BREAK);
-    SDL_Delay(1);
-    if (!romDevice)
-    {
-      romDevice = hbc56AddDevice(createRomDevice(HBC56_ROM_START, HBC56_ROM_END, romData));
-    }
-    else
-    {
-      status = setMemoryDeviceContents(romDevice, romData, romDataSize);
-    }
-    hbc56Reset();
-  }
-  return status;
-}
-
-/* Function:  hbc56LoadLabels
- * --------------------
- * load labels. labelFileContents is a null terminated string (lmap file contents)
- */
-void hbc56LoadLabels(const char* labelFileContents)
-{
-  debuggerLoadLabels(labelFileContents);
-}
-
-/* Function:  hbc56LoadSource
- * --------------------
- * load labels. rptFileContents is a null terminated string (rpt file contents)
- */
-void hbc56LoadSource(const char* labelFileContents)
-{
-  debuggerLoadSource(labelFileContents);
-}
-
-/* Function:  hbc56LoadLayout
- * --------------------
- * load the ui layout. layoutFile is a null terminated string (imgui.ini contents)
- */
-void hbc56LoadLayout(const char* layoutFile)
-{
-  if (layoutFile[0] == 0)
-  {
-    ImGui::LoadIniSettingsFromDisk("imgui.ini");
-    return;
-  }
-
-  ImGui::LoadIniSettingsFromMemory(layoutFile);
-}
-
-/* Function:  hbc56GetLayout
- * --------------------
- * get the ui layout.
- */
-const char* hbc56GetLayout()
-{
-  return ImGui::SaveIniSettingsToMemory(0);
-}
-
-/* Function:  hbc56PasteText
- * --------------------
- * paste text (emulates key presses)
- */
-void hbc56PasteText(const char* text)
-{
-  SDL_LockMutex(kbQueueMutex);
-
-  SDL_KeyboardEvent ev;
-  ev.type = SDL_KEYUP;
-  ev.keysym.scancode = SDL_SCANCODE_LCTRL;
-  pasteQueue.push(ev);
-  ev.keysym.scancode = SDL_SCANCODE_RCTRL;
-  pasteQueue.push(ev);
-
-  while (*text)
-  {
-    char c = *(text++);
-    SDL_Scancode sc = SDL_SCANCODE_UNKNOWN;
-    bool shift = false;
-    if (SDL_islower(c)) {
-      sc = (SDL_Scancode)(c - 'a' + SDL_SCANCODE_A);
-    }
-    else if (SDL_isupper(c)) 
-    {
-      sc = (SDL_Scancode)(c - 'A' + SDL_SCANCODE_A);
-      shift = true;
-    }
-    else if (SDL_isdigit(c))
-    {
-      if (c == '0') sc = SDL_SCANCODE_0;
-      else sc = (SDL_Scancode)(c - '1' + SDL_SCANCODE_1);
-    }
-    else
-    {
-      switch (c)
-      {
-        case ' ': sc = SDL_SCANCODE_SPACE; break;
-        case '!': sc = SDL_SCANCODE_1; shift = true; break;
-        case '\"': sc = SDL_SCANCODE_APOSTROPHE; shift = true; break;
-        case '#': sc = SDL_SCANCODE_3; shift = true; break;
-        case '$': sc = SDL_SCANCODE_4; shift = true; break;
-        case '%': sc = SDL_SCANCODE_5; shift = true; break;
-        case '&': sc = SDL_SCANCODE_7; shift = true; break;
-        case '\'': sc = SDL_SCANCODE_APOSTROPHE; break;
-        case '(': sc = SDL_SCANCODE_9; shift = true; break;
-        case ')': sc = SDL_SCANCODE_0; shift = true; break;
-        case '*': sc = SDL_SCANCODE_8; shift = true; break;
-        case '+': sc = SDL_SCANCODE_EQUALS; shift = true; break;
-        case ',': sc = SDL_SCANCODE_COMMA;  break;
-        case '-': sc = SDL_SCANCODE_MINUS;  break;
-        case '.': sc = SDL_SCANCODE_PERIOD;  break;
-        case '/': sc = SDL_SCANCODE_SLASH;  break;
-        case ':': sc = SDL_SCANCODE_SEMICOLON; shift = true; break;
-        case ';': sc = SDL_SCANCODE_SEMICOLON; break;
-        case '<': sc = SDL_SCANCODE_COMMA; shift = true; break;
-        case '=': sc = SDL_SCANCODE_EQUALS;  break;
-        case '>': sc = SDL_SCANCODE_PERIOD; shift = true; break;
-        case '?': sc = SDL_SCANCODE_SLASH; shift = true; break;
-        case '[': sc = SDL_SCANCODE_LEFTBRACKET; break;
-        case '\\': sc = SDL_SCANCODE_BACKSLASH; break;
-        case ']': sc = SDL_SCANCODE_RIGHTBRACKET; break;
-        case '^': sc = SDL_SCANCODE_6; shift = true; break;
-        case '_': sc = SDL_SCANCODE_MINUS; shift = true; break;
-        case '`': sc = SDL_SCANCODE_GRAVE; break;
-        case '{': sc = SDL_SCANCODE_LEFTBRACKET; shift = true; break;
-        case '|': sc = SDL_SCANCODE_BACKSLASH; shift = true; break;
-        case '}': sc = SDL_SCANCODE_RIGHTBRACKET; shift = true; break;
-        case '~': sc = SDL_SCANCODE_GRAVE; shift = true; break;
-        case '\t': sc = SDL_SCANCODE_TAB; break;
-        case '\n': sc = SDL_SCANCODE_RETURN; break;
-      }
-    }
-
-    if (sc != SDL_SCANCODE_UNKNOWN)
-    {
-      ev.type = SDL_KEYDOWN;
-      if (shift)
-      {
-        ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
-        pasteQueue.push(ev);
-      }
-
-      ev.keysym.scancode = sc;
-      pasteQueue.push(ev);
-      ev.type = SDL_KEYUP;
-      pasteQueue.push(ev);
-
-      if (shift)
-      {
-        ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
-        pasteQueue.push(ev);
-      }
-    }    
-  }
-  SDL_UnlockMutex(kbQueueMutex);
-}
-
-/* Function:  hbc56ToggleDebugger
- * --------------------
- * toggle the debugger
- */
-void hbc56ToggleDebugger()
-{
-  debug6502State(cpuDevice, (getDebug6502State(cpuDevice) == CPU_RUNNING) ? CPU_BREAK : CPU_RUNNING);
-}
-
-/* Function:  hbc56DebugBreak
- * --------------------
- * break
- */
-void hbc56DebugBreak()
-{
-  debug6502State(cpuDevice, CPU_BREAK);
-}
-
-/* Function:  hbc56DebugRun
- * --------------------
- * run / continue
- */
-void hbc56DebugRun()
-{
-  debug6502State(cpuDevice, CPU_RUNNING);
-}
-
-/* Function:  hbc56DebugStepInto
- * --------------------
- * step in
- */
-void hbc56DebugStepInto()
-{
-  debug6502State(cpuDevice, CPU_STEP_INTO);
-}
-
-/* Function:  hbc56DebugStepOver
- * --------------------
- * step over
- */
-void hbc56DebugStepOver()
-{
-  debug6502State(cpuDevice, CPU_STEP_OVER);
-}
-
-/* Function:  hbc56DebugStepOut
- * --------------------
- * step out
- */
-void hbc56DebugStepOut()
-{
-  debug6502State(cpuDevice, CPU_STEP_OUT);
-}
-
-/* Function:  hbc56DebugBreakOnInt
- * --------------------
- * break on interrupt
- */
-void hbc56DebugBreakOnInt()
-{
-  debug6502State(cpuDevice, CPU_BREAK_ON_INTERRUPT);
-}
-
-/* Function:  hbc56MemRead
- * --------------------
- * read a value from a device
- */
-uint8_t hbc56MemRead(uint16_t addr, bool dbg)
-{
-  uint8_t val = 0x00;
-  if (addr == 0x7fdf)
-  {
     for (int i = 0; i < MAX_IRQS; ++i)
     {
-      val |= !!irqs[i] << i;
+      irqs[i] = INTERRUPT_RELEASE;
     }
+
+    debug6502State(cpuDevice, CPU_RUNNING);
+  }
+
+  /* Function:  hbc56NumDevices
+   * --------------------
+   * return the number of devices present
+   */
+  int hbc56NumDevices()
+  {
+    return deviceCount;
+  }
+
+  /* Function:  hbc56Device
+   * --------------------
+   * return a pointer to the given device
+   */
+  HBC56Device* hbc56Device(size_t deviceNum)
+  {
+    if (deviceNum < deviceCount)
+      return &devices[deviceNum];
+    return NULL;
+  }
+
+  /* Function:  hbc56AddDevice
+   * --------------------
+   * add a new device * returns a pointer to the added device
+   */
+  HBC56Device* hbc56AddDevice(HBC56Device device)
+  {
+    if (deviceCount < (HBC56_MAX_DEVICES - 1))
+    {
+      devices[deviceCount] = device;
+      return &devices[deviceCount++];
+    }
+    return NULL;
+  }
+
+  /* Function:  hbc56Interrupt
+   * --------------------
+   raise or release an interrupt (irq# and signal)
+   */
+  void hbc56Interrupt(uint8_t irq, HBC56InterruptSignal signal)
+  {
+    if (irq == 0 || irq > MAX_IRQS) return;
+    irq--;
+
+    irqs[irq] = signal;
+
+    if (cpuDevice)
+    {
+      signal = INTERRUPT_RELEASE;
+
+      for (int i = 0; i < MAX_IRQS;++i)
+      {
+        if (irqs[i] == INTERRUPT_RAISE)
+        {
+          signal = INTERRUPT_RAISE;
+        }
+        else if (irqs[i] == INTERRUPT_TRIGGER)
+        {
+          irqs[i] = INTERRUPT_RELEASE;
+          signal = INTERRUPT_RAISE;
+        }
+      }
+
+      interrupt6502(cpuDevice, INTERRUPT_INT, signal);
+    }
+  }
+
+  /* Function:  hbc56LoadRom
+   * --------------------
+   * load rom data. rom data bust be HBC56_ROM_SIZE bytes
+   */
+  int hbc56LoadRom(const uint8_t* romData, int romDataSize)
+  {
+    int status = 1;
+
+    if (romDataSize != HBC56_ROM_SIZE)
+    {
+#ifndef __EMSCRIPTEN__
+      SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file must be %d bytes.", HBC56_ROM_SIZE);
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "HBC-56 Emulator", tempBuffer, NULL);
+#endif
+      status = 0;
+    }
+
+    if (status)
+    {
+      debug6502State(cpuDevice, CPU_BREAK);
+      SDL_Delay(1);
+      if (!romDevice)
+      {
+        romDevice = hbc56AddDevice(createRomDevice(HBC56_ROM_START, HBC56_ROM_END, romData));
+      }
+      else
+      {
+        status = setMemoryDeviceContents(romDevice, romData, romDataSize);
+      }
+      hbc56Reset();
+    }
+    return status;
+  }
+
+  /* Function:  hbc56LoadLabels
+   * --------------------
+   * load labels. labelFileContents is a null terminated string (lmap file contents)
+   */
+  void hbc56LoadLabels(const char* labelFileContents)
+  {
+    debuggerLoadLabels(labelFileContents);
+  }
+
+  /* Function:  hbc56LoadSource
+   * --------------------
+   * load labels. rptFileContents is a null terminated string (rpt file contents)
+   */
+  void hbc56LoadSource(const char* labelFileContents)
+  {
+    debuggerLoadSource(labelFileContents);
+  }
+
+  /* Function:  hbc56LoadLayout
+   * --------------------
+   * load the ui layout. layoutFile is a null terminated string (imgui.ini contents)
+   */
+  void hbc56LoadLayout(const char* layoutFile)
+  {
+    if (layoutFile[0] == 0)
+    {
+      ImGui::LoadIniSettingsFromDisk("imgui.ini");
+      return;
+    }
+
+    ImGui::LoadIniSettingsFromMemory(layoutFile);
+  }
+
+  /* Function:  hbc56GetLayout
+   * --------------------
+   * get the ui layout.
+   */
+  const char* hbc56GetLayout()
+  {
+    return ImGui::SaveIniSettingsToMemory(0);
+  }
+
+  /* Function:  hbc56PasteText
+   * --------------------
+   * paste text (emulates key presses)
+   */
+  void hbc56PasteText(const char* text)
+  {
+    SDL_LockMutex(kbQueueMutex);
+
+    SDL_KeyboardEvent ev;
+    ev.type = SDL_KEYUP;
+    ev.keysym.scancode = SDL_SCANCODE_LCTRL;
+    pasteQueue.push(ev);
+    ev.keysym.scancode = SDL_SCANCODE_RCTRL;
+    pasteQueue.push(ev);
+
+    while (*text)
+    {
+      char c = *(text++);
+      SDL_Scancode sc = SDL_SCANCODE_UNKNOWN;
+      bool shift = false;
+      if (SDL_islower(c)) {
+        sc = (SDL_Scancode)(c - 'a' + SDL_SCANCODE_A);
+      }
+      else if (SDL_isupper(c))
+      {
+        sc = (SDL_Scancode)(c - 'A' + SDL_SCANCODE_A);
+        shift = true;
+      }
+      else if (SDL_isdigit(c))
+      {
+        if (c == '0') sc = SDL_SCANCODE_0;
+        else sc = (SDL_Scancode)(c - '1' + SDL_SCANCODE_1);
+      }
+      else
+      {
+        switch (c)
+        {
+          case ' ': sc = SDL_SCANCODE_SPACE; break;
+          case '!': sc = SDL_SCANCODE_1; shift = true; break;
+          case '\"': sc = SDL_SCANCODE_APOSTROPHE; shift = true; break;
+          case '#': sc = SDL_SCANCODE_3; shift = true; break;
+          case '$': sc = SDL_SCANCODE_4; shift = true; break;
+          case '%': sc = SDL_SCANCODE_5; shift = true; break;
+          case '&': sc = SDL_SCANCODE_7; shift = true; break;
+          case '\'': sc = SDL_SCANCODE_APOSTROPHE; break;
+          case '(': sc = SDL_SCANCODE_9; shift = true; break;
+          case ')': sc = SDL_SCANCODE_0; shift = true; break;
+          case '*': sc = SDL_SCANCODE_8; shift = true; break;
+          case '+': sc = SDL_SCANCODE_EQUALS; shift = true; break;
+          case ',': sc = SDL_SCANCODE_COMMA;  break;
+          case '-': sc = SDL_SCANCODE_MINUS;  break;
+          case '.': sc = SDL_SCANCODE_PERIOD;  break;
+          case '/': sc = SDL_SCANCODE_SLASH;  break;
+          case ':': sc = SDL_SCANCODE_SEMICOLON; shift = true; break;
+          case ';': sc = SDL_SCANCODE_SEMICOLON; break;
+          case '<': sc = SDL_SCANCODE_COMMA; shift = true; break;
+          case '=': sc = SDL_SCANCODE_EQUALS;  break;
+          case '>': sc = SDL_SCANCODE_PERIOD; shift = true; break;
+          case '?': sc = SDL_SCANCODE_SLASH; shift = true; break;
+          case '[': sc = SDL_SCANCODE_LEFTBRACKET; break;
+          case '\\': sc = SDL_SCANCODE_BACKSLASH; break;
+          case ']': sc = SDL_SCANCODE_RIGHTBRACKET; break;
+          case '^': sc = SDL_SCANCODE_6; shift = true; break;
+          case '_': sc = SDL_SCANCODE_MINUS; shift = true; break;
+          case '`': sc = SDL_SCANCODE_GRAVE; break;
+          case '{': sc = SDL_SCANCODE_LEFTBRACKET; shift = true; break;
+          case '|': sc = SDL_SCANCODE_BACKSLASH; shift = true; break;
+          case '}': sc = SDL_SCANCODE_RIGHTBRACKET; shift = true; break;
+          case '~': sc = SDL_SCANCODE_GRAVE; shift = true; break;
+          case '\t': sc = SDL_SCANCODE_TAB; break;
+          case '\n': sc = SDL_SCANCODE_RETURN; break;
+        }
+      }
+
+      if (sc != SDL_SCANCODE_UNKNOWN)
+      {
+        ev.type = SDL_KEYDOWN;
+        if (shift)
+        {
+          ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
+          pasteQueue.push(ev);
+        }
+
+        ev.keysym.scancode = sc;
+        pasteQueue.push(ev);
+        ev.type = SDL_KEYUP;
+        pasteQueue.push(ev);
+
+        if (shift)
+        {
+          ev.keysym.scancode = SDL_SCANCODE_LSHIFT;
+          pasteQueue.push(ev);
+        }
+      }
+    }
+    SDL_UnlockMutex(kbQueueMutex);
+  }
+
+  /* Function:  hbc56ToggleDebugger
+   * --------------------
+   * toggle the debugger
+   */
+  void hbc56ToggleDebugger()
+  {
+    debug6502State(cpuDevice, (getDebug6502State(cpuDevice) == CPU_RUNNING) ? CPU_BREAK : CPU_RUNNING);
+  }
+
+  /* Function:  hbc56DebugBreak
+   * --------------------
+   * break
+   */
+  void hbc56DebugBreak()
+  {
+    debug6502State(cpuDevice, CPU_BREAK);
+  }
+
+  /* Function:  hbc56DebugRun
+   * --------------------
+   * run / continue
+   */
+  void hbc56DebugRun()
+  {
+    debug6502State(cpuDevice, CPU_RUNNING);
+  }
+
+  /* Function:  hbc56DebugStepInto
+   * --------------------
+   * step in
+   */
+  void hbc56DebugStepInto()
+  {
+    debug6502State(cpuDevice, CPU_STEP_INTO);
+  }
+
+  /* Function:  hbc56DebugStepOver
+   * --------------------
+   * step over
+   */
+  void hbc56DebugStepOver()
+  {
+    debug6502State(cpuDevice, CPU_STEP_OVER);
+  }
+
+  /* Function:  hbc56DebugStepOut
+   * --------------------
+   * step out
+   */
+  void hbc56DebugStepOut()
+  {
+    debug6502State(cpuDevice, CPU_STEP_OUT);
+  }
+
+  /* Function:  hbc56DebugBreakOnInt
+   * --------------------
+   * break on interrupt
+   */
+  void hbc56DebugBreakOnInt()
+  {
+    debug6502State(cpuDevice, CPU_BREAK_ON_INTERRUPT);
+  }
+
+  /* Function:  hbc56MemRead
+   * --------------------
+   * read a value from a device
+   */
+  uint8_t hbc56MemRead(uint16_t addr, bool dbg)
+  {
+    uint8_t val = 0x00;
+    if (addr == 0x7fdf)
+    {
+      for (int i = 0; i < MAX_IRQS; ++i)
+      {
+        val |= !!irqs[i] << i;
+      }
+      return val;
+    }
+
+    SDL_LockMutex(kbQueueMutex);
+    for (size_t i = 0; i < deviceCount; ++i)
+    {
+      if (readDevice(&devices[i], addr, &val, dbg))
+        break;
+    }
+    SDL_UnlockMutex(kbQueueMutex);
+
     return val;
   }
 
-  SDL_LockMutex(kbQueueMutex);
-  for (size_t i = 0; i < deviceCount; ++i)
+  /* Function:  hbc56MemWrite
+   * --------------------
+   * write a valude to a device
+   */
+  void hbc56MemWrite(uint16_t addr, uint8_t val)
   {
-    if (readDevice(&devices[i], addr, &val, dbg))
-      break;
+    for (size_t i = 0; i < deviceCount; ++i)
+    {
+      if (writeDevice(&devices[i], addr, val))
+        break;
+    }
   }
-  SDL_UnlockMutex(kbQueueMutex);
-
-  return val;
-}
-
-/* Function:  hbc56MemWrite
- * --------------------
- * write a valude to a device
- */
-void hbc56MemWrite(uint16_t addr, uint8_t val)
-{
-  for (size_t i = 0; i < deviceCount; ++i)
-  {
-    if (writeDevice(&devices[i], addr, val))
-      break;
-  }
-}
 
 #ifdef __cplusplus
 }
@@ -496,12 +494,12 @@ static void doTick()
 }
 
 
-static void aboutDialog(bool *aboutOpen)
+static void aboutDialog(bool* aboutOpen)
 {
   if (ImGui::Begin("About HBC-56 Emulator", aboutOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
   {
     ImGui::Text("HBC-56 Emulator v0.2\n\n");
-    ImGui::Text("(C) 2022 Troy Schrapel\n\n");
+    ImGui::Text("(C) 2023 Troy Schrapel\n\n");
     ImGui::Separator();
     ImGui::Text("HBC-56 Emulator is licensed under the MIT License,\nsee LICENSE for more information.\n\n");
     ImGui::Text("https://github.com/visrealm/hbc-56");
@@ -581,7 +579,7 @@ static void doRender()
 #if !__EMSCRIPTEN__
       if (ImGui::MenuItem("Open...", "<Ctrl> + O")) { fileOpen = true; }
 #endif
-        if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
+      if (ImGui::MenuItem("Reset", "<Ctrl> + R")) { hbc56Reset(); }
 #if !__EMSCRIPTEN__
       if (ImGui::MenuItem("Exit", "Esc")) { done = true; }
 #endif
@@ -661,7 +659,7 @@ static void doRender()
     {
       int texW, texH;
       SDL_QueryTexture(devices[i].output, NULL, NULL, &texW, &texH);
-      
+
       ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
       ImGui::Begin(devices[i].name, &devices[i].visible);
       ImGui::PopStyleVar();
@@ -721,7 +719,7 @@ static void doRender()
 static void doEvents()
 {
   SDL_LockMutex(kbQueueMutex);
-    
+
   SDL_Event event;
   while (SDL_PollEvent(&event))
   {
@@ -743,144 +741,144 @@ static void doEvents()
         break;
 
       case SDL_KEYDOWN:
-      {
-        bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-        bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
-
-        switch (event.key.keysym.sym)
         {
-          case SDLK_r:
-            if (withControl)
-            {
-              skipProcessing = 1;
-              hbc56Reset();
-            }
-            break;
+          bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
+          bool withShift = (event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0;
 
-          case SDLK_d:
-            if (withControl)
-            {
-              hbc56ToggleDebugger();
-            }
-            break;
-
-          case SDLK_v:
-            if (withControl)
-            {
-              skipProcessing = 1;
-              if (SDL_HasClipboardText()) {
-                char *text = SDL_GetClipboardText();
-                hbc56PasteText(text);
-                SDL_free(text);
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_r:
+              if (withControl)
+              {
+                skipProcessing = 1;
+                hbc56Reset();
               }
-            }
-            break;
+              break;
 
-          case SDLK_F2:
-            hbc56Audio(withControl == 0);
-            break;
+            case SDLK_d:
+              if (withControl)
+              {
+                hbc56ToggleDebugger();
+              }
+              break;
 
-          case SDLK_F12:
-            hbc56DebugBreak();
-            break;
+            case SDLK_v:
+              if (withControl)
+              {
+                skipProcessing = 1;
+                if (SDL_HasClipboardText()) {
+                  char* text = SDL_GetClipboardText();
+                  hbc56PasteText(text);
+                  SDL_free(text);
+                }
+              }
+              break;
 
-          case SDLK_F5:
-            hbc56DebugRun();
-            break;
+            case SDLK_F2:
+              hbc56Audio(withControl == 0);
+              break;
 
-          case SDLK_F7:
-            hbc56DebugBreakOnInt();
-            break;
+            case SDLK_F12:
+              hbc56DebugBreak();
+              break;
 
-          case SDLK_PAGEUP:
-          case SDLK_KP_9:
-            if (withControl)
-            {
-              debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
-            }
-            else
-            {
-              debugMemoryAddr -= withShift ? 0x1000 : 64;
-            }
-            break;
+            case SDLK_F5:
+              hbc56DebugRun();
+              break;
 
-          case SDLK_PAGEDOWN:
-          case SDLK_KP_3:
-            if (withControl)
-            {
-              debugTmsMemoryAddr += withShift ? 0x1000 : 64;
-            }
-            else
-            {
-              debugMemoryAddr += withShift ? 0x1000 : 64;
-            }
-            break;
+            case SDLK_F7:
+              hbc56DebugBreakOnInt();
+              break;
 
-          case SDLK_F11:
-            if (withShift)
-            {
-              hbc56DebugStepOut();
-            }
-            else
-            {
-              hbc56DebugStepInto();
-            }
-            break;
+            case SDLK_PAGEUP:
+            case SDLK_KP_9:
+              if (withControl)
+              {
+                debugTmsMemoryAddr -= withShift ? 0x1000 : 64;
+              }
+              else
+              {
+                debugMemoryAddr -= withShift ? 0x1000 : 64;
+              }
+              break;
 
-          case SDLK_F10:
-            hbc56DebugStepOver();
-            break;
+            case SDLK_PAGEDOWN:
+            case SDLK_KP_3:
+              if (withControl)
+              {
+                debugTmsMemoryAddr += withShift ? 0x1000 : 64;
+              }
+              else
+              {
+                debugMemoryAddr += withShift ? 0x1000 : 64;
+              }
+              break;
 
-          case SDLK_ESCAPE:
+            case SDLK_F11:
+              if (withShift)
+              {
+                hbc56DebugStepOut();
+              }
+              else
+              {
+                hbc56DebugStepInto();
+              }
+              break;
+
+            case SDLK_F10:
+              hbc56DebugStepOver();
+              break;
+
+            case SDLK_ESCAPE:
 #ifdef __EMSCRIPTEN__
-            hbc56Reset();
+              hbc56Reset();
 #else
-            done = 1;
+              done = 1;
 #endif
-            break;
+              break;
 
-          default:
-          break;
+            default:
+              break;
+          }
         }
-      }
 
       case SDL_KEYUP:
-      {
-        bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
-
-        switch (event.key.keysym.sym)
         {
-          case SDLK_r:
-            if (withControl) skipProcessing = 1;
-            break;
+          bool withControl = (event.key.keysym.mod & KMOD_CTRL) ? 1 : 0;
 
-          case SDLK_d:
-            if (withControl) skipProcessing = 1;
-            break;
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_r:
+              if (withControl) skipProcessing = 1;
+              break;
 
-          case SDLK_v:
-            if (withControl) skipProcessing = 1;
-            break;
+            case SDLK_d:
+              if (withControl) skipProcessing = 1;
+              break;
 
-          default:
-            break;
+            case SDLK_v:
+              if (withControl) skipProcessing = 1;
+              break;
+
+            default:
+              break;
+          }
+          break;
         }
-        break;
-      }
 
       case SDL_MOUSEWHEEL:
-      {
-        mouseZ = event.wheel.y;
-        break;
-      }
+        {
+          mouseZ = event.wheel.y;
+          break;
+        }
 
       case SDL_DROPFILE:
-      {
-        loadRom(event.drop.file);
-        SDL_free(event.drop.file);
-        hbc56Reset();
-        return;
-      }
+        {
+          loadRom(event.drop.file);
+          SDL_free(event.drop.file);
+          hbc56Reset();
+          return;
+        }
 
     }
 
@@ -940,7 +938,7 @@ static void loop()
 
     doEvents();
 
-    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %0.6f%%", getCpuUtilization(cpuDevice) * 100.0f);
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "HBC-56 Emulator - %0.6f%%", getCpuUtilization(cpuDevice) * 100.0f);
     SDL_SetWindowTitle(window, tempBuffer);
 
   }
@@ -982,12 +980,14 @@ static int loadRom(const char* filename)
   int romLoaded = 0;
 
 #ifndef HAVE_FOPEN_S
+#pragma message ( "Not using fopen_s")
   ptr = fopen(filename, "rb");
 #else
+#pragma message ("Using fopen_s")
   fopen_s(&ptr, filename, "rb");
 #endif
 
-  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Troy's HBC-56 Emulator - %s", filename);
+  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "HBC-56 Emulator - %s", filename);
   SDL_SetWindowTitle(window, tempBuffer);
 
   if (ptr)
@@ -1015,7 +1015,7 @@ static int loadRom(const char* filename)
         long fsize = ftell(ptr);
         fseek(ptr, 0, SEEK_SET);  /* same as rewind(f); */
 
-        char *lblFileContent = (char*)malloc(fsize + 1);
+        char* lblFileContent = (char*)malloc(fsize + 1);
         fread(lblFileContent, fsize, 1, ptr);
         lblFileContent[fsize] = 0;
         fclose(ptr);
@@ -1053,7 +1053,7 @@ static int loadRom(const char* filename)
   {
 #ifndef __EMSCRIPTEN__
     SDL_snprintf(tempBuffer, sizeof(tempBuffer), "Error. ROM file '%s' does not exist.", filename);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "HBC-56 Emulator", tempBuffer, NULL);
 #endif
     return 2;
   }
@@ -1098,7 +1098,7 @@ int main(int argc, char* argv[])
   ImGui::CreateContext();
 
 #if !__EMSCRIPTEN__
-  char *basePath = SDL_GetBasePath();
+  char* basePath = SDL_GetBasePath();
 
   char tmpBuf[512];
   SDL_snprintf(tmpBuf, sizeof(tmpBuf), "%simgui.ini", basePath);
@@ -1184,15 +1184,15 @@ int main(int argc, char* argv[])
           consumed = 1;
           switch (atoi(argv[i + 1]))
           {
-          case 1602:
-            lcdType = LCD_1602;
-            break;
-          case 2004:
-            lcdType = LCD_2004;
-            break;
-          case 12864:
-            lcdType = LCD_GRAPHICS;
-            break;
+            case 1602:
+              lcdType = LCD_1602;
+              break;
+            case 2004:
+              lcdType = LCD_2004;
+              break;
+            case 12864:
+              lcdType = LCD_GRAPHICS;
+              break;
           }
           ++i;
         }
@@ -1228,7 +1228,7 @@ int main(int argc, char* argv[])
   hbc56AddDevice(createRamDevice(HBC56_RAM_START, HBC56_RAM_END));
 
 #if HBC56_HAVE_TMS9918
-  HBC56Device *tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), HBC56_TMS9918_IRQ, renderer));
+  HBC56Device* tms9918Device = hbc56AddDevice(createTms9918Device(HBC56_IO_ADDRESS(HBC56_TMS9918_DAT_PORT), HBC56_IO_ADDRESS(HBC56_TMS9918_REG_PORT), HBC56_TMS9918_IRQ, renderer));
   debuggerInitTms(tms9918Device);
 #endif
 
@@ -1257,9 +1257,9 @@ int main(int argc, char* argv[])
 
 #if HBC56_HAVE_AY_3_8910
   hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_A_PORT), HBC56_AY38910_CLOCK, hbc56AudioFreq(), hbc56AudioChannels()));
-  #if HBC56_AY_3_8910_COUNT > 1
-    hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, hbc56AudioFreq(), hbc56AudioChannels()));
-  #endif
+#if HBC56_AY_3_8910_COUNT > 1
+  hbc56AddDevice(createAY38910Device(HBC56_IO_ADDRESS(HBC56_AY38910_B_PORT), HBC56_AY38910_CLOCK, hbc56AudioFreq(), hbc56AudioChannels()));
+#endif
 #endif
 
 #ifdef _WINDOWS

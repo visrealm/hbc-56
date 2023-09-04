@@ -17,6 +17,8 @@ videos
 
 */artifact/*
 */build/*
+build/*
+wasm/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
