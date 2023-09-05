@@ -12,10 +12,10 @@
 #
 
 # Command to run a project in the emulator
-HBC56EMU=$(ROOT_PATH)../../emulator/bin/Hbc56Emu.exe
+HBC56EMU=$(ROOT_PATH)../../build/bin/Hbc56Emu
 
 # Comile command
-ACME=$(ROOT_PATH)../../tools/acme/bin/acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
+ACME=$(ROOT_PATH)../../build/bin/acme -I $(ROOT_PATH)lib -I $(ROOT_PATH)kernel
 
 LCD_MODEL?=12864
 

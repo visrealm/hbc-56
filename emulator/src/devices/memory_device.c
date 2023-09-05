@@ -23,7 +23,7 @@ struct MemoryDevice
 {
   uint32_t startAddr;
   uint32_t endAddr;
-  uint8_t *data;
+  uint8_t* data;
 };
 typedef struct MemoryDevice MemoryDevice;
 
@@ -32,7 +32,7 @@ typedef struct MemoryDevice MemoryDevice;
  * create a ram or rom device for the given address range
  */
 static HBC56Device createMemoryDevice(
-  const char *name,
+  const char* name,
   uint32_t startAddr,
   uint32_t endAddr)
 {
@@ -107,9 +107,9 @@ HBC56Device createRomDevice(uint32_t startAddr, uint32_t endAddr, const uint8_t*
  * --------------------
  * destroy/clean up the memory data structure
  */
-static void destroyMemoryDevice(HBC56Device *device)
+static void destroyMemoryDevice(HBC56Device* device)
 {
-  MemoryDevice *memoryDevice = getMemoryDevice(device);
+  MemoryDevice* memoryDevice = getMemoryDevice(device);
   if (memoryDevice)
   {
     free(memoryDevice->data);
@@ -122,13 +122,13 @@ static void destroyMemoryDevice(HBC56Device *device)
  * --------------------
  * read from the memory device
  */
-static uint8_t readMemoryDevice(HBC56Device* device, uint16_t addr, uint8_t *val, uint8_t dbg)
+static uint8_t readMemoryDevice(HBC56Device* device, uint16_t addr, uint8_t* val, uint8_t dbg)
 {
   MemoryDevice* memoryDevice = getMemoryDevice(device);
   if (memoryDevice && val)
   {
     if (addr >= memoryDevice->startAddr &&
-        addr < memoryDevice->endAddr)
+      addr < memoryDevice->endAddr)
     {
       *val = memoryDevice->data[addr - memoryDevice->startAddr];
       return 1;
@@ -147,7 +147,7 @@ static uint8_t writeMemoryDevice(HBC56Device* device, uint16_t addr, uint8_t val
   if (memoryDevice)
   {
     if (addr >= memoryDevice->startAddr &&
-        addr < memoryDevice->endAddr)
+      addr < memoryDevice->endAddr)
     {
       memoryDevice->data[addr - memoryDevice->startAddr] = val;
       return 1;

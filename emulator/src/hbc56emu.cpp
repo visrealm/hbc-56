@@ -44,10 +44,7 @@
 #include <time.h>
 #include <string.h>
 #include <queue>
-
-#define DEFAULT_WINDOW_WIDTH  640
-#define DEFAULT_WINDOW_HEIGHT 480
-
+#include <string>
 
 
 static HBC56Device devices[HBC56_MAX_DEVICES];
@@ -70,6 +67,9 @@ SDL_mutex* kbQueueMutex = nullptr;
 static std::queue<SDL_KeyboardEvent> pasteQueue;
 
 static int loadRom(const char* filename);
+
+static std::string currentRomFile;
+static bool programLoaded = false;
 
 #if !__EMSCRIPTEN__
 static imgui_addons::ImGuiFileBrowser file_dialog; // As a class member or globally
@@ -176,6 +176,8 @@ extern "C" {
   {
     int status = 1;
 
+    currentRomFile.clear();
+
     if (romDataSize != HBC56_ROM_SIZE)
     {
 #ifndef __EMSCRIPTEN__
@@ -197,6 +199,7 @@ extern "C" {
       {
         status = setMemoryDeviceContents(romDevice, romData, romDataSize);
       }
+      programLoaded = true;
       hbc56Reset();
     }
     return status;
@@ -498,8 +501,8 @@ static void aboutDialog(bool* aboutOpen)
 {
   if (ImGui::Begin("About HBC-56 Emulator", aboutOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
   {
-    ImGui::Text("HBC-56 Emulator v0.2\n\n");
-    ImGui::Text("(C) 2023 Troy Schrapel\n\n");
+    ImGui::Text("HBC-56 Emulator v1.1\n\n");
+    ImGui::Text("(C) %s Troy Schrapel\n\n", __DATE__ + 7);
     ImGui::Separator();
     ImGui::Text("HBC-56 Emulator is licensed under the MIT License,\nsee LICENSE for more information.\n\n");
     ImGui::Text("https://github.com/visrealm/hbc-56");
@@ -642,12 +645,13 @@ static void doRender()
     ImGui::EndMenuBar();
   }
 
-#if !__EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
   if (fileOpen) ImGui::OpenPopup("Open File");
 
   if (file_dialog.showFileDialog("Open File", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(700, 310), ".o", &fileOpen))
   {
     loadRom(file_dialog.selected_path.c_str());
+    hbc56Reset();
   }
 #endif
 
@@ -924,7 +928,7 @@ static void loop()
 {
   static uint32_t lastRenderTicks = 0;
 
-  doTick();
+  if (programLoaded) doTick();
 
   ++tickCount;
 
@@ -938,7 +942,7 @@ static void loop()
 
     doEvents();
 
-    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "HBC-56 Emulator - %0.6f%%", getCpuUtilization(cpuDevice) * 100.0f);
+    SDL_snprintf(tempBuffer, sizeof(tempBuffer), "HBC-56 Emulator (CPU: %0.4f%%) (ROM: %s) - [https://github.com/visrealm/hbc-56]", getCpuUtilization(cpuDevice) * 100.0f, currentRomFile.c_str());
     SDL_SetWindowTitle(window, tempBuffer);
 
   }
@@ -980,15 +984,10 @@ static int loadRom(const char* filename)
   int romLoaded = 0;
 
 #ifndef HAVE_FOPEN_S
-#pragma message ( "Not using fopen_s")
   ptr = fopen(filename, "rb");
 #else
-#pragma message ("Using fopen_s")
   fopen_s(&ptr, filename, "rb");
 #endif
-
-  SDL_snprintf(tempBuffer, sizeof(tempBuffer), "HBC-56 Emulator - %s", filename);
-  SDL_SetWindowTitle(window, tempBuffer);
 
   if (ptr)
   {
@@ -1000,6 +999,8 @@ static int loadRom(const char* filename)
 
     if (romLoaded)
     {
+      currentRomFile = filename;
+
       SDL_strlcpy(labelMapFile, filename, FILENAME_MAX);
       size_t ln = SDL_strlen(labelMapFile);
       SDL_strlcpy(labelMapFile + ln, ".lmap", FILENAME_MAX - ln);
@@ -1076,7 +1077,7 @@ int main(int argc, char* argv[])
   kbQueueMutex = SDL_CreateMutex();
 
   int window_flags = 0;
-#if !__EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
   window_flags |= SDL_WINDOW_RESIZABLE;
 #endif
   window = SDL_CreateWindow("HBC-56 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 800, (SDL_WindowFlags)window_flags);
@@ -1097,7 +1098,7 @@ int main(int argc, char* argv[])
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
-#if !__EMSCRIPTEN__
+#ifndef  __EMSCRIPTEN__
   char* basePath = SDL_GetBasePath();
 
   char tmpBuf[512];
@@ -1146,9 +1147,10 @@ int main(int argc, char* argv[])
   int romLoaded = 0;
   LCDType lcdType = LCD_GRAPHICS;
 
-#if __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
   /* load the hard-coded rom */
-  romLoaded = loadRom("rom.bin");
+  romLoaded = loadRom("basic_tms.o");
+
   lcdType = LCD_GRAPHICS;
 #endif
   int doBreak = 0;
@@ -1158,7 +1160,7 @@ int main(int argc, char* argv[])
   {
     int consumed;
 
-    consumed = 0;//SDLCommonArg(state, i);
+    consumed = 0;
     if (consumed <= 0)
     {
       consumed = -1;
@@ -1201,7 +1203,6 @@ int main(int argc, char* argv[])
     if (consumed < 0)
     {
       static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]", NULL };
-      //SDLCommonLogUsage(state, argv[0], options);
       return 2;
     }
     i += consumed;
@@ -1210,15 +1211,10 @@ int main(int argc, char* argv[])
   if (romLoaded == 0)
   {
     static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL };
-    //SDLCommonLogUsage(state, argv[0], options);
 
 #ifndef __EMSCRIPTEN__
     fileOpen = true;
-    //SDL_snprintf(tempBuffer, sizeof(tempBuffer), "No HBC-56 ROM file.\n\nUse --rom <romfile>");
-    //SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Troy's HBC-56 Emulator", tempBuffer, NULL);
 #endif
-
-    //return 2;
   }
 
   /* randomise */
@@ -1273,7 +1269,7 @@ int main(int argc, char* argv[])
   /* reset the machine */
   hbc56Reset();
 
-  if (doBreak)hbc56DebugBreak();
+  if (doBreak) hbc56DebugBreak();
 
   SDL_Delay(100);
 

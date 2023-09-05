@@ -21,7 +21,7 @@
 
 static void reset6502CpuDevice(HBC56Device*);
 static void destroy6502CpuDevice(HBC56Device*);
-static void tick6502CpuDevice(HBC56Device*,uint32_t,double);
+static void tick6502CpuDevice(HBC56Device*, uint32_t, double);
 
 #define CPU_6502_MAX_CALL_STACK   128
 #define CPU_6502_JSR              0x20
@@ -34,7 +34,7 @@ static void tick6502CpuDevice(HBC56Device*,uint32_t,double);
 
 struct CPU6502Device
 {
-  VrEmu6502           *cpu6502;
+  VrEmu6502* cpu6502;
   HBC56CpuState        currentState;
   HBC56InterruptSignal intSignal;
   HBC56InterruptSignal nmiSignal;
@@ -52,10 +52,10 @@ typedef struct CPU6502Device CPU6502Device;
 uint8_t hbc56MemRead(uint16_t addr, bool dbg);
 void hbc56MemWrite(uint16_t addr, uint8_t val);
 
- /* Function:  create6502CpuDevice
-  * --------------------
- * create an AY-3-8910 PSG device
-  */
+/* Function:  create6502CpuDevice
+ * --------------------
+* create an AY-3-8910 PSG device
+ */
 HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
 {
   HBC56Device device = createDevice("6502 CPU");
@@ -106,9 +106,9 @@ static void reset6502CpuDevice(HBC56Device* device)
   }
 }
 
-static void destroy6502CpuDevice(HBC56Device *device)
+static void destroy6502CpuDevice(HBC56Device* device)
 {
-  CPU6502Device * cpuDevice = get6502CpuDevice(device);
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
   {
     vrEmu6502Destroy(cpuDevice->cpu6502);
@@ -117,7 +117,7 @@ static void destroy6502CpuDevice(HBC56Device *device)
   device->data = NULL;
 }
 
-static inline void checkInterrupt(HBC56InterruptSignal *status, vrEmu6502Interrupt *interrupt)
+static inline void checkInterrupt(HBC56InterruptSignal* status, vrEmu6502Interrupt* interrupt)
 {
   if (*status == INTERRUPT_RAISE)
   {
@@ -163,10 +163,10 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
     while (realDeltaTicks > 0)
     {
       /* currently, we disable interrupts while debugging since the tms9918
-         will constantly trigger interrupts which don't allow debugging user code. 
+         will constantly trigger interrupts which don't allow debugging user code.
          this will become an option */
       if (cpuDevice->currentState == CPU_RUNNING ||
-          cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
+        cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
       {
         checkInterrupt(&cpuDevice->nmiSignal, vrEmu6502Nmi(cpuDevice->cpu6502));
         checkInterrupt(&cpuDevice->intSignal, vrEmu6502Int(cpuDevice->cpu6502));
@@ -186,7 +186,7 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
           if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
           {
             if (vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == intVec ||
-                vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == nmiVec)
+              vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == nmiVec)
             {
               cpuDevice->currentState = CPU_BREAK;
             }
@@ -210,8 +210,10 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
           if (isJsr)
           {
             cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
+            cpuDevice->callStackPtr &= (CPU_6502_MAX_CALL_STACK - 1);
           }
-          
+
+
           if (isBrk)
           {
             cpuDevice->currentState = CPU_BREAK;
@@ -233,7 +235,7 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
     }
     cpuDevice->extraTicks = realDeltaTicks;
   }
-} 
+}
 
 void interrupt6502(HBC56Device* device, HBC56InterruptType type, HBC56InterruptSignal signal)
 {
@@ -264,42 +266,42 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
     switch (state)
     {
       case CPU_STEP_OUT:
-      {
-        if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
-        if (cpuDevice->callStackPtr > 1)
         {
-          cpuDevice->breakMode = 0;
-          cpuDevice->breakAddr = cpuDevice->callStack[cpuDevice->callStackPtr - 1];// + 3;
-          break;
+          if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
+          if (cpuDevice->callStackPtr > 1)
+          {
+            cpuDevice->breakMode = 0;
+            cpuDevice->breakAddr = cpuDevice->callStack[cpuDevice->callStackPtr - 1];// + 3;
+            break;
+          }
         }
-      }
 
       case CPU_STEP_OVER:
-      {
-        if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
-        if (isJsr)
         {
-          cpuDevice->breakMode = 0;
-          cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
-          break;
+          if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
+          if (isJsr)
+          {
+            cpuDevice->breakMode = 0;
+            cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
+            break;
+          }
         }
-      }
 
       case CPU_STEP_INTO:
-      {
-        if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
-        cpuDevice->breakMode = 1;
-        cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502);
-        break;
-      }
+        {
+          if (cpuDevice->currentState == CPU_RUNNING) { state = cpuDevice->currentState; break; }
+          cpuDevice->breakMode = 1;
+          cpuDevice->breakAddr = vrEmu6502GetPC(cpuDevice->cpu6502);
+          break;
+        }
 
       case CPU_BREAK_ON_INTERRUPT:
       case CPU_RUNNING:
-      {
-        cpuDevice->breakMode = 0;
-        cpuDevice->breakAddr = 0;
-        break;
-      }
+        {
+          cpuDevice->breakMode = 0;
+          cpuDevice->breakAddr = 0;
+          break;
+        }
 
       case CPU_BREAK:
         break;

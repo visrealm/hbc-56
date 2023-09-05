@@ -120,6 +120,8 @@ hbc56Meta:
 hbc56Main:
         sei
 
+        jsr hbc56Main
+
         ; go to graphics II mode
         jsr tmsModeGraphicsII
 

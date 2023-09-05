@@ -36,6 +36,43 @@ The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
+## Building
+
+This project uses the CMAKE build system to build the emulator and assembler. VSCode works very well with CMAKE, but you can also build manually:
+
+```
+$ git clone --recurse-submodules https://github.com/visrealm/hbc-56.git
+$ cd hbc-56
+$ mkdir build
+$ cd build
+$ cmake ..
+$ cmake --build . --config Release
+```
+
+The `hbc-56/build/bin` directory will then hold everything you need to run the emulator.
+
+#### WebAssembly
+
+To build the WebAssembly version of the emulator (from `/hbc-56`):
+
+```
+$ mkdir wasm
+$ cd wasm
+$ ../emconfig     (or ../emconfig.sh for Linux)
+$ emcmake cmake ..
+$ cmake --build . --config Release
+```
+
+To test the WebAssembly build, you will need to serve the files from a web server. A simple python http.server will work just fine:
+
+```
+$ cd bin
+$ python -m http.server
+```
+
+Then navigate to http://localhost:8000
+
+
 ## Running the demos
 There are several ways to build ad run the demos. They are set up with makefiles, so it is preferred to have [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) installed and in your PATH environment variable.
 #### VSCode

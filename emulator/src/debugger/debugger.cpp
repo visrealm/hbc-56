@@ -567,6 +567,10 @@ public:
   }
 
   const SourceFile& fileFromIndex(size_t index) const {
+    
+    static SourceFile nullFile("");
+    if (index >= m_addrMap.size())  return nullFile;
+
     auto iter = m_files.begin();
     std::advance(iter, index);
     return iter->second;
@@ -588,6 +592,11 @@ public:
   {
     m_addrMap.clear();
     m_files.clear();
+  }
+
+  bool empty()
+  {
+    return m_files.empty();
   }
 
   private:
@@ -1185,130 +1194,133 @@ void debuggerSourceView(bool* show)
   if (ImGui::Begin("Source", show, ImGuiWindowFlags_HorizontalScrollbar))
   {
     uint16_t pc = vrEmu6502GetPC(cpu6502);
-
-    //std::map<std::string, std::vector<std::pair<std::string, uint16_t>> > source;   filename, vector of lines/addresses
-    //std::map<int, std::pair<std::string, int> > addrMap;       address, filename, line 
-
-    const SourceFile& activeFile = source.file(pc);
-
-    if (pc != lastPc)
+    if (source.empty())
     {
-      lastPc = pc;
-      macroOffset = 0;
-      macroLines = 0;
-      currentFile = source.index(activeFile.filename());
-
-      lastLineNumber = activeFile.lineIndex(pc) + 1;
-
-      if (lastLineNumber)
-      {
-        auto sourceLine = activeFile.line(lastLineNumber - 1);
-
-        macroLines = (int)sourceLine.macroLines().size();
-        if (macroLines)
-        {
-          for (int i = 0; i < macroLines; ++i)
-          {
-            if (sourceLine.macroLines()[i].address() == pc)
-            {
-              macroOffset = i + 1;
-              break;
-            }
-          }
-        }
-      }
-      scrollPos = (lastLineNumber + macroOffset) * ImGui::GetTextLineHeightWithSpacing();
+      ImGui::TextUnformatted("No source loaded");
     }
-
-    if (ImGui::Combo(" ", &currentFile, Items_FileGetter, &source, source.numFiles(), 8))
+    else
     {
-      lastLineNumber = 1;
-    }
+      const SourceFile& activeFile = source.file(pc);
 
-    if (currentFile >= 0)
-    {
-      const SourceFile& visibleFile = source.fileFromIndex(currentFile);
-      if (!visibleFile.filename().empty())
+      if (pc != lastPc)
       {
-        int highlightLineNumber = activeFile.lineIndex(pc) + 1;
+        lastPc = pc;
+        macroOffset = 0;
+        macroLines = 0;
+        currentFile = source.index(activeFile.filename());
 
-        if (&visibleFile != &activeFile) highlightLineNumber = -1;
+        lastLineNumber = activeFile.lineIndex(pc) + 1;
 
-        ImGui::Separator();
-
-        ImGui::BeginChild("code", ImVec2(), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-        if (ImGui::IsWindowHovered()) {
-          lastLineNumber -= (int)(ImGui::GetIO().MouseWheel * 3.0f);
-          if (lastLineNumber <= 0) lastLineNumber = 1;
-        }
-
-        ImGuiListClipper clipper;
-        clipper.Begin(visibleFile.numLines());
-
-
-        ImGui::PushStyleColor(ImGuiCol_Text, ltgrey);
-
-        while (clipper.Step())
+        if (lastLineNumber)
         {
-          for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+          auto sourceLine = activeFile.line(lastLineNumber - 1);
+
+          macroLines = (int)sourceLine.macroLines().size();
+          if (macroLines)
           {
-            int lineNumber = i + 1;
-
-            bool activeRow = lineNumber == highlightLineNumber;
-
-            const SourceLine& line = visibleFile.line(i);
-
-            if (activeRow)
+            for (int i = 0; i < macroLines; ++i)
             {
-              highlightRow();
-            }
-          
-            if (debuggerIsBreakpoint(line.address()) && (line.contains(Token::OPCODE) || line.contains(Token::MACRO)))
-            {
-              highlightRowBreakpoint();
-            }
-
-            if (hoveredAddr == line.address() && line.contains(Token::LABEL) && !line.contains(Token::OPERATOR))
-            {
-              highlightRowHovered();
-            }
-
-            ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-            ImGui::Text(" %-5d", lineNumber);
-            ImGui::PopStyleColor();
-
-            if (ImGui::IsItemClicked() || (activeRow && ImGui::IsKeyPressed(ImGuiKey_F9)))
-            {
-              toggleBreakpoint(line.address());
-            }
-
-            renderLine(line);
-
-            if (activeRow)
-            {
-              for (int j = 0; j < line.macroLines().size(); ++j)
+              if (sourceLine.macroLines()[i].address() == pc)
               {
-                if (line.macroLines()[j].address() == pc)
-                  highlightRow();
-
-                ImGui::TextUnformatted("                  ");
-                renderLine(line.macroLines()[j]);
+                macroOffset = i + 1;
+                break;
               }
             }
-            else if (activeRow)
-            {
-              macroOffset = 0;
-            }
           }
         }
-        ImGui::PopStyleColor();
-        if (scrollPos >= 0.0f)
+        scrollPos = (lastLineNumber + macroOffset) * ImGui::GetTextLineHeightWithSpacing();
+      }
+
+      if (ImGui::Combo(" ", &currentFile, Items_FileGetter, &source, source.numFiles(), 8))
+      {
+        lastLineNumber = 1;
+      }
+
+      if (currentFile >= 0)
+      {
+        const SourceFile& visibleFile = source.fileFromIndex(currentFile);
+        if (!visibleFile.filename().empty())
         {
-          ImGui::SetScrollY(scrollPos - ImGui::GetWindowHeight() * 0.25f);
-          scrollPos = -1.0f;
+          int highlightLineNumber = activeFile.lineIndex(pc) + 1;
+
+          if (&visibleFile != &activeFile) highlightLineNumber = -1;
+
+          ImGui::Separator();
+
+          ImGui::BeginChild("code", ImVec2(), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+          if (ImGui::IsWindowHovered()) {
+            lastLineNumber -= (int)(ImGui::GetIO().MouseWheel * 3.0f);
+            if (lastLineNumber <= 0) lastLineNumber = 1;
+          }
+
+          ImGuiListClipper clipper;
+          clipper.Begin(visibleFile.numLines());
+
+
+          ImGui::PushStyleColor(ImGuiCol_Text, ltgrey);
+
+          while (clipper.Step())
+          {
+            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+            {
+              int lineNumber = i + 1;
+
+              bool activeRow = lineNumber == highlightLineNumber;
+
+              const SourceLine& line = visibleFile.line(i);
+
+              if (activeRow)
+              {
+                highlightRow();
+              }
+          
+              if (debuggerIsBreakpoint(line.address()) && (line.contains(Token::OPCODE) || line.contains(Token::MACRO)))
+              {
+                highlightRowBreakpoint();
+              }
+
+              if (hoveredAddr == line.address() && line.contains(Token::LABEL) && !line.contains(Token::OPERATOR))
+              {
+                highlightRowHovered();
+              }
+
+              ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+              ImGui::Text(" %-5d", lineNumber);
+              ImGui::PopStyleColor();
+
+              if (ImGui::IsItemClicked() || (activeRow && ImGui::IsKeyPressed(ImGuiKey_F9)))
+              {
+                toggleBreakpoint(line.address());
+              }
+
+              renderLine(line);
+
+              if (activeRow)
+              {
+                for (int j = 0; j < line.macroLines().size(); ++j)
+                {
+                  if (line.macroLines()[j].address() == pc)
+                    highlightRow();
+
+                  ImGui::TextUnformatted("                  ");
+                  renderLine(line.macroLines()[j]);
+                }
+              }
+              else if (activeRow)
+              {
+                macroOffset = 0;
+              }
+            }
+          }
+          ImGui::PopStyleColor();
+          if (scrollPos >= 0.0f)
+          {
+            ImGui::SetScrollY(scrollPos - ImGui::GetWindowHeight() * 0.25f);
+            scrollPos = -1.0f;
+          }
+          ImGui::EndChild();
         }
-        ImGui::EndChild();
       }
     }
   }

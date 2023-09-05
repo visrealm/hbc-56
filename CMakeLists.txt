@@ -14,9 +14,13 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/)
-
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin_debug/)
 
 include(CTest)
 
-add_subdirectory(tools/acme)
 add_subdirectory(emulator)
+
+if (NOT DEFINED EMSCRIPTEN)
+	add_subdirectory(tools/acme)
+endif()
+
