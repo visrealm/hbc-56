@@ -24,7 +24,7 @@ jobs:
 
     - name: Setup emscripten
       working-directory: ${{ github.workspace }}
-      run: emconfig.bat
+      run: ./emconfig.bat
 
     - name: Configure CMake
       working-directory: ${{ github.workspace }}
