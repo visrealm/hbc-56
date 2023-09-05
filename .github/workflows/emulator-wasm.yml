@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  OUTPUT_DIR: build_wasm
 
 permissions:
   contents: read
@@ -22,6 +22,15 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Build emscripten
+    - name: Setup emscripten
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: emulator/wasm/build_wasm.bat
+      run: emconfig.bat
+
+    - name: Configure CMake
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: >
+        emcmake cmake -B ${{ env.OUTPUT_DIR }} -S ${{env.GITHUB_WORKSPACE}}
+        
+    - name: Build
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: cmake --build ${{ env.OUTPUT_DIR }} --config ${{ env.BUILD_TYPE }}
