@@ -24,12 +24,7 @@ jobs:
 
     - name: Setup emscripten
       working-directory: ${{ github.workspace }}
-      run: ./emconfig.bat
-
-    - name: Configure CMake
-      working-directory: ${{ github.workspace }}
-      run: >
-        emcmake cmake -B ${{ env.OUTPUT_DIR }} -S ${{ github.workspace }}
+      run: ./emconfig.bat ${{ env.OUTPUT_DIR }}
         
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
