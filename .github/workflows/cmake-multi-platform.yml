@@ -73,5 +73,5 @@ jobs:
     - name: Archive build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: emulator-${{ matrix.os }}-build
+        name: emulator-${{ matrix.os }}-${{ matrix.cpp_compiler }}-build
         path: ${{ steps.strings.outputs.build-output-dir }}/bin
