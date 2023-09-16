@@ -30,7 +30,7 @@ I have also included an emulator for this system. The emulator supports the foll
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: [github.com/visrealm/vrEmuTms9918](https://github.com/visrealm/vrEmuTms9918)
 * Support for the dual AY-3-8910 audio, keyboard and NES controller.
 
-The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/emulator/wasm)
+The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/github-pages/emulator)
 
 <img src="img/breakout_web_sm.gif" alt="HBC-56" width="640px">
 
