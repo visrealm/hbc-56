@@ -1,8 +1,8 @@
 # HBC-56
 
-![pages-build-deployment-badge](https://github.com/visrealm/hbc-56/actions/workflows/pages/pages-build-deployment/badge.svg)
-![emulator-multi-platform-badge](https://github.com/visrealm/hbc-56/actions/workflows/cmake-multi-platform.yml/badge.svg)
-![emulator-wasm-badge](https://github.com/visrealm/hbc-56/actions/workflows/emulator-wasm.yml/badge.svg)
+<a href="https://github.com/visrealm/hbc-56/actions/workflows/pages/pages-build-deployment"><img src="https://github.com/visrealm/hbc-56/actions/workflows/pages/pages-build-deployment/badge.svg"/></a>
+<a href="https://github.com/visrealm/hbc-56/actions/workflows/cmake-multi-platform.yml"><img src="https://github.com/visrealm/hbc-56/actions/workflows/cmake-multi-platform.yml/badge.svg"/></a>
+<a href="https://github.com/visrealm/hbc-56/actions/workflows/emulator-wasm.yml"><img src="https://github.com/visrealm/hbc-56/actions/workflows/emulator-wasm.yml/badge.svg"/></a>
 
 A homebrew 8-bit computer on a (56 pin) backplane.
 
