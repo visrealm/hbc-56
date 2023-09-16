@@ -21,7 +21,7 @@ pushd "%~dp0"
 call tools\emsdk\emsdk.bat install 3.1.10
 call tools\emsdk\emsdk.bat activate 3.1.10
 
-emcmake cmake -B %BUILD_DIR% -S .
+emcmake cmake -B %BUILD_DIR% -S . -G Ninja
 
 popd
 endlocal
