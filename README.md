@@ -32,7 +32,7 @@ I have also included an emulator for this system. The emulator supports the foll
 
 The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/github-pages/emulator)
 
-<img src="img/emulator-qbert.gif" alt="HBC-56" width="640px">
+<img src="img/emulator-qbert.gif" alt="HBC-56" width="800px">
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
