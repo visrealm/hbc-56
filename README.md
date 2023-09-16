@@ -24,7 +24,7 @@ All [source code](code/6502) and [schematics](schematics) are available in this 
 ## Emulator
 I have also included an emulator for this system. The emulator supports the following:
 
-* Realtime execution of code (at 4MHz).
+* Realtime execution of code (at ~3.7MHz).
 * Step through disassembled code with labels.
 * Examine CPU and VDP registers, RAM and VRAM.
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: [github.com/visrealm/vrEmuTms9918](https://github.com/visrealm/vrEmuTms9918)
@@ -40,38 +40,42 @@ Full details on the Emulator and source code here: [emulator](emulator)
 
 This project uses the CMAKE build system to build the emulator and assembler. VSCode works very well with CMAKE, but you can also build manually:
 
+### Windows or Linux
+
 ```
 $ git clone --recurse-submodules https://github.com/visrealm/hbc-56.git
 $ cd hbc-56
-$ mkdir build
-$ cd build
-$ cmake ..
-$ cmake --build . --config Release
+$ cmake -B build -DCMAKE_BUILD_TYPE=Release -S .
+$ cmake --build build --config Release
 ```
 
 The `hbc-56/build/bin` directory will then hold everything you need to run the emulator.
 
-#### WebAssembly
+### WebAssembly
 
-To build the WebAssembly version of the emulator (from `/hbc-56`):
+To build the WebAssembly version of the emulator (from `/hbc-56`): 
 
+##### Windows (Developer Command Prompt)
 ```
-$ mkdir wasm
-$ cd wasm
-$ ../emconfig     (or ../emconfig.sh for Linux)
-$ emcmake cmake ..
-$ cmake --build . --config Release
+$ ./emconfigure build_wasm
+$ cmake --build build_wasm --config Release
+```
+
+##### Linux
+```
+$ ./emconfigure.sh build_wasm
+$ cmake --build build_wasm --config Release
 ```
 
 To test the WebAssembly build, you will need to serve the files from a web server. A simple python http.server will work just fine:
 
 ```
-$ cd bin
+$ cd build_wasm/bin
 $ python -m http.server
+Serving HTTP on :: port 8000 (http://[::]:8000/) ...
 ```
 
-Then navigate to http://localhost:8000
-
+Then navigate to [http://localhost:8000](http://localhost:8000)
 
 ## Running the demos
 There are several ways to build ad run the demos. They are set up with makefiles, so it is preferred to have [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) installed and in your PATH environment variable.
