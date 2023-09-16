@@ -29,3 +29,9 @@ jobs:
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ env.OUTPUT_DIR }} --config ${{ env.BUILD_TYPE }}
+ 
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: emulator-wasm-build
+        path: ${{ env.OUTPUT_DIR }}/bin
