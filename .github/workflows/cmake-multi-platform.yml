@@ -74,4 +74,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: emulator-${{ matrix.os }}-build
-        path: ${{ env.OUTPUT_DIR }}/bin
+        path: ${{ steps.strings.outputs.build-output-dir }}/bin
