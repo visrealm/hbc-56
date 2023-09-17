@@ -408,6 +408,11 @@ extern "C" {
     debug6502State(cpuDevice, CPU_BREAK_ON_INTERRUPT);
   }
 
+  double hbc56CpuRuntimeSeconds()
+  {
+    return getCpuRuntimeSeconds(cpuDevice);
+  }
+
   /* Function:  hbc56MemRead
    * --------------------
    * read a value from a device
@@ -478,7 +483,7 @@ static void doTick()
   static const double maxTime = 1.0 / 60.0;
 
   double thisTime = (double)SDL_GetPerformanceCounter() / perfFreq;
-  if (thisTime - lastTime > maxTime) lastTime = thisTime - maxTime;
+  if ((thisTime - lastTime) > maxTime) lastTime = thisTime - maxTime;
 
   double deltaClockTicksDbl = HBC56_CLOCK_FREQ * (thisTime - lastTime) + unusedClockTicksTime;
 
@@ -502,7 +507,7 @@ static void aboutDialog(bool* aboutOpen)
   if (ImGui::Begin("About HBC-56 Emulator", aboutOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
   {
     ImGui::Text("HBC-56 Emulator v1.1\n\n");
-    ImGui::Text("(C) %s Troy Schrapel\n\n", __DATE__ + 7);
+    ImGui::Text("(C) %s Troy Schrapel\n\n", &__DATE__[7]);
     ImGui::Separator();
     ImGui::Text("HBC-56 Emulator is licensed under the MIT License,\nsee LICENSE for more information.\n\n");
     ImGui::Text("https://github.com/visrealm/hbc-56");
@@ -1139,7 +1144,7 @@ int main(int argc, char* argv[])
   SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
 
   /* add the cpu device */
-  cpuDevice = hbc56AddDevice(create6502CpuDevice(debuggerIsBreakpoint));
+  cpuDevice = hbc56AddDevice(create6502CpuDevice(debuggerIsBreakpoint, HBC56_CLOCK_FREQ));
 
   /* initialise the debugger */
   debuggerInit(getCpuDevice(cpuDevice));

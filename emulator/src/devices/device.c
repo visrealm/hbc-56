@@ -67,7 +67,7 @@ void resetDevice(HBC56Device* device)
  * --------------------
  * tick a device (for devices which require regular attention)
  */
-void tickDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+void tickDevice(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   if (device && device->tickFn)
   {

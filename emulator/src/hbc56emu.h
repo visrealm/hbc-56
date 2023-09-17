@@ -126,6 +126,12 @@ void hbc56DebugStepOver();
  */
 void hbc56DebugStepOut();
 
+/* Function:  hbc56CpuRuntimeSeconds
+ * --------------------
+ * how long has the cpu been running
+ */
+double hbc56CpuRuntimeSeconds();
+
 /* Function:  hbc56DebugBreakOnInt
  * --------------------
  * break on interrupt

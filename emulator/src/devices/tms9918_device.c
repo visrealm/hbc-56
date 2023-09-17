@@ -25,20 +25,20 @@
 static void resetTms9918Device(HBC56Device*);
 static void destroyTms9918Device(HBC56Device*);
 static void renderTms9918Device(HBC56Device* device);
-static void tickTms9918Device(HBC56Device*, uint32_t, double);
+static void tickTms9918Device(HBC56Device*, uint32_t, float);
 static uint8_t readTms9918Device(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeTms9918Device(HBC56Device*, uint16_t, uint8_t);
 
 /* tms9918 constants */
 #define TMS9918_DISPLAY_WIDTH   320
 #define TMS9918_DISPLAY_HEIGHT  240
-#define TMS9918_FPS             60.0
+#define TMS9918_FPS             60.0f
 #define TMS9918_TICK_MIN_PIXELS 26
 
 /* tms9918 computed constants */
-#define TMS9918_FRAME_TIME      (1.0 / TMS9918_FPS)
-#define TMS9918_ROW_TIME        (TMS9918_FRAME_TIME / (double)TMS9918_DISPLAY_HEIGHT)
-#define TMS9918_PIXEL_TIME      (TMS9918_ROW_TIME / (double)TMS9918_DISPLAY_WIDTH)
+#define TMS9918_FRAME_TIME      (1.0f / TMS9918_FPS)
+#define TMS9918_ROW_TIME        (TMS9918_FRAME_TIME / (float)TMS9918_DISPLAY_HEIGHT)
+#define TMS9918_PIXEL_TIME      (TMS9918_ROW_TIME / (float)TMS9918_DISPLAY_WIDTH)
 #define TMS9918_BORDER_X        ((TMS9918_DISPLAY_WIDTH - TMS9918_PIXELS_X) / 2)
 #define TMS9918_BORDER_Y        ((TMS9918_DISPLAY_HEIGHT - TMS9918_PIXELS_Y) / 2)
 #define TMS9918_DISPLAY_PIXELS  (TMS9918_DISPLAY_WIDTH * TMS9918_DISPLAY_HEIGHT)
@@ -50,7 +50,7 @@ struct TMS9918Device
   uint16_t       regAddr;
   VrEmuTms9918  *tms9918;
   uint32_t       frameBuffer[TMS9918_DISPLAY_PIXELS];
-  double         unusedTime;
+  float         unusedTime;
   int            currentFramePixels;
   uint8_t        scanlineBuffer[TMS9918_DISPLAY_WIDTH];
   uint8_t        irq;
@@ -165,7 +165,7 @@ static void renderTms9918Device(HBC56Device* device)
  * shown in the display if called frequently enough. you can achieve beam racing effects.
  */
 int c = 0;
-static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   TMS9918Device* tmsDevice = getTms9918Device(device);
   if (tmsDevice)
@@ -174,9 +174,9 @@ static void tickTms9918Device(HBC56Device* device, uint32_t deltaTicks, double d
     deltaTime += tmsDevice->unusedTime;
 
     /* how many pixels are we rendering? */
-    double thisStepTotalPixelsDbl = 0.0;
-    tmsDevice->unusedTime = modf(deltaTime / (double)TMS9918_PIXEL_TIME, &thisStepTotalPixelsDbl) * TMS9918_PIXEL_TIME;
-    int thisStepTotalPixels = (uint32_t)thisStepTotalPixelsDbl;
+    float thisStepTotalPixelsFlt = 0.0f;
+    tmsDevice->unusedTime = modff(deltaTime / (float)TMS9918_PIXEL_TIME, &thisStepTotalPixelsFlt) * TMS9918_PIXEL_TIME;
+    int thisStepTotalPixels = (uint32_t)thisStepTotalPixelsFlt;
 
     /* if we haven't reached the minimum, accumulate time for the next call and return */
     if (thisStepTotalPixels < TMS9918_TICK_MIN_PIXELS)

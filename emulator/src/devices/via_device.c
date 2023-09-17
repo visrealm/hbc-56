@@ -24,7 +24,7 @@ static void reset65C22ViaDevice(HBC56Device*);
 static void destroy65C22ViaDevice(HBC56Device*);
 static uint8_t read65C22ViaDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t write65C22ViaDevice(HBC56Device*, uint16_t, uint8_t);
-static void tick65C22ViaDevice(HBC56Device*, uint32_t, double);
+static void tick65C22ViaDevice(HBC56Device*, uint32_t, float);
 
 struct ViaDevice
 {
@@ -127,7 +127,7 @@ static uint8_t write65C22ViaDevice(HBC56Device* device, uint16_t addr, uint8_t v
   return 0;
 }
 
-static void tick65C22ViaDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+static void tick65C22ViaDevice(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   ViaDevice* viaDevice = get65C22ViaDevice(device);
   if (viaDevice)

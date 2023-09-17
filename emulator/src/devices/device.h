@@ -44,7 +44,7 @@ typedef enum
 /* tick function pointer */
 /*   uint32_t deltaTicks: change in clock ticks since last call */
 /*   double   deltaTime:  change in elapsed time in seconds since last call */
-typedef void (*DeviceTickFn)(HBC56Device*,uint32_t, double);
+typedef void (*DeviceTickFn)(HBC56Device*,uint32_t, float);
 
 /* reset function pointer */
 typedef void (*DeviceResetFn)(HBC56Device*);
@@ -117,7 +117,7 @@ void resetDevice(HBC56Device* device);
  * --------------------
  * tick a device (for devices which require regular attention)
  */
-void tickDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime);
+void tickDevice(HBC56Device* device, uint32_t deltaTicks, float deltaTime);
 
 /* Function:  readDevice
  * --------------------

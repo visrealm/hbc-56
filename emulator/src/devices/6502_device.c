@@ -21,7 +21,7 @@
 
 static void reset6502CpuDevice(HBC56Device*);
 static void destroy6502CpuDevice(HBC56Device*);
-static void tick6502CpuDevice(HBC56Device*, uint32_t, double);
+static void tick6502CpuDevice(HBC56Device*, uint32_t, float);
 
 #define CPU_6502_MAX_CALL_STACK   128
 #define CPU_6502_JSR              0x20
@@ -45,6 +45,8 @@ struct CPU6502Device
   uint64_t             ticks;
   uint64_t             ticksWai;
   int                  extraTicks;
+  double               secsPerTick;
+  double               runTimeSeconds;
   IsBreakpointFn       isBreakFn;
 };
 typedef struct CPU6502Device CPU6502Device;
@@ -56,7 +58,7 @@ void hbc56MemWrite(uint16_t addr, uint8_t val);
  * --------------------
 * create an AY-3-8910 PSG device
  */
-HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
+HBC56Device create6502CpuDevice(IsBreakpointFn brkCb, int clockFreqHz)
 {
   HBC56Device device = createDevice("6502 CPU");
   CPU6502Device* cpuDevice = (CPU6502Device*)malloc(sizeof(CPU6502Device));
@@ -69,6 +71,8 @@ HBC56Device create6502CpuDevice(IsBreakpointFn brkCb)
     cpuDevice->callStackPtr = 0;
     cpuDevice->breakMode = 0;
     cpuDevice->breakAddr = 0;
+    cpuDevice->secsPerTick = 1.0 / (double)clockFreqHz;
+    cpuDevice->runTimeSeconds = 0.0;
     cpuDevice->ticks = cpuDevice->ticksWai = 0L;
     cpuDevice->extraTicks = 0;
     cpuDevice->isBreakFn = brkCb;
@@ -141,7 +145,7 @@ static inline void checkInterrupt(HBC56InterruptSignal* status, vrEmu6502Interru
   }
 }
 
-static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   CPU6502Device* cpuDevice = get6502CpuDevice(device);
   if (cpuDevice)
@@ -226,6 +230,10 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, double d
       }
 
       cpuDevice->ticks += cycleTicks;
+
+      // note: we do this now rather than at the end, because some devices require accurate timing
+      cpuDevice->runTimeSeconds += cycleTicks * cpuDevice->secsPerTick;
+     
       if (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_WAI)
       {
         cpuDevice->ticksWai += cycleTicks;
@@ -343,6 +351,17 @@ VrEmu6502* getCpuDevice(HBC56Device* device)
   }
   return NULL;
 }
+
+double getCpuRuntimeSeconds(HBC56Device* device)
+{
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
+  if (cpuDevice)
+  {
+    return cpuDevice->runTimeSeconds;;
+  }
+  return 0;
+}
+
 
 
 #endif

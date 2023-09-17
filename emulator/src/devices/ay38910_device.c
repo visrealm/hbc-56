@@ -9,6 +9,7 @@
  *
  */
 
+#include "hbc56emu.h"
 #include "ay38910_device.h"
 
 #include "emu2149.h"
@@ -24,14 +25,15 @@ static void destroyAy38910Device(HBC56Device*);
 static void audioAy38910Device(HBC56Device* device, float* buffer, int numSamples);
 static uint8_t readAy38910Device(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeAy38910Device(HBC56Device*, uint16_t, uint8_t);
-static void tickAy38910Device(HBC56Device*, uint32_t, double);
+static void tickAy38910Device(HBC56Device*, uint32_t, float);
 
 #define AY3891X_INACTIVE 0x03
 #define AY3891X_READ     0x02
 #define AY3891X_WRITE    0x01
 #define AY3891X_ADDR     0x00
 
-#define BUFFER_MAX_SIZE  4096
+#define BUFFER_MAX_SIZE  16384
+#define BUFFER_MASK      (BUFFER_MAX_SIZE - 1)
 
 struct AY38910Device
 {
@@ -43,6 +45,7 @@ struct AY38910Device
   int            bufferEnd;
   double         deltaTimeOverFlow;
   double         timePerSample;
+  double         lastCpuRuntimeSeconds;
   PSG* psg;
   SDL_mutex* mutex;
 };
@@ -129,30 +132,33 @@ static inline void addSampleToBuffer(AY38910Device* ayDevice)
   PSG_calc(ayDevice->psg);
 
   ayDevice->buffer[ayDevice->bufferEnd++] = ((ayDevice->psg->ch_out[0] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));
-  ayDevice->bufferEnd &= 0x0fff;
+  ayDevice->bufferEnd &= BUFFER_MASK;
 
   if (ayDevice->channels > 1)
   {
     ayDevice->buffer[ayDevice->bufferEnd++] = ((ayDevice->psg->ch_out[1] * 2 + ayDevice->psg->ch_out[2]) / (8192.0f * 3.0f));
-    ayDevice->bufferEnd &= 0x0fff;
+    ayDevice->bufferEnd &= BUFFER_MASK;
   }
   ayDevice->deltaTimeOverFlow -= ayDevice->timePerSample;
 }
 
-
-static void tickAy38910Device(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+static void tickAy38910Device(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   AY38910Device* ayDevice = getAy38910Device(device);
   if (ayDevice)
   {
     SDL_LockMutex(ayDevice->mutex);
 
-    ayDevice->deltaTimeOverFlow += deltaTime;
+    double currentTime = hbc56CpuRuntimeSeconds();
+    double extraTime = currentTime - ayDevice->lastCpuRuntimeSeconds;
+    ayDevice->deltaTimeOverFlow += extraTime;
 
-    while (ayDevice->deltaTimeOverFlow > 0.0)
+    while (ayDevice->deltaTimeOverFlow > 0)
     {
       addSampleToBuffer(ayDevice);
+      ayDevice->lastCpuRuntimeSeconds = currentTime;
     }
+
     SDL_UnlockMutex(ayDevice->mutex);
   }
 }
@@ -169,41 +175,25 @@ static void audioAy38910Device(HBC56Device* device, float* buffer, int numSample
 
     int size = end - ayDevice->bufferStart;
 
-    // here, if we have less than half the required samples
-    // we need to catch up (synchronise) so we'll skip this
-    // request.
-    if (size > numSamples)
+    int samples = size >> 1;
+
+    while (samples++ < numSamples)
     {
-      int samples = size >> 1;
+      addSampleToBuffer(ayDevice);
+    }
 
-      while (samples++ < numSamples)
+    for (int i = 0; i < numSamples; ++i)
+    {
+      buffer[i * ayDevice->channels] += ayDevice->buffer[ayDevice->bufferStart++];
+      ayDevice->bufferStart &= BUFFER_MASK;
+
+      if (ayDevice->channels > 1)
       {
-        addSampleToBuffer(ayDevice);
-      }
-
-      for (int i = 0; i < numSamples; ++i)
-      {
-        buffer[i * ayDevice->channels] += ayDevice->buffer[ayDevice->bufferStart++];
-        ayDevice->bufferStart &= 0x0fff;
-
-        if (ayDevice->channels > 1)
-        {
-          buffer[i * ayDevice->channels + 1] += ayDevice->buffer[ayDevice->bufferStart++];
-          ayDevice->bufferStart &= 0x0fff;
-        }
+        buffer[i * ayDevice->channels + 1] += ayDevice->buffer[ayDevice->bufferStart++];
+        ayDevice->bufferStart &= BUFFER_MASK;
       }
     }
-    else
-    {
-      for (int i = 0; i < numSamples; ++i)
-      {
-        buffer[i * ayDevice->channels] += ayDevice->buffer[ayDevice->bufferStart];
-        if (ayDevice->channels > 1)
-        {
-          buffer[i * ayDevice->channels + 1] += ayDevice->buffer[ayDevice->bufferStart + 1];
-        }
-      }
-    }
+
     SDL_UnlockMutex(ayDevice->mutex);
   }
 }
@@ -235,6 +225,8 @@ static uint8_t writeAy38910Device(HBC56Device* device, uint16_t addr, uint8_t va
     }
     else if (addr == (ayDevice->baseAddr | AY3891X_WRITE))
     {
+      tickAy38910Device(device, 0, 0);
+
       PSG_writeReg(ayDevice->psg, ayDevice->regAddr, val);
       return 1;
     }

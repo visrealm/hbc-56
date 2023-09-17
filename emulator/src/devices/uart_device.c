@@ -22,7 +22,7 @@
 
 static void resetUartDevice(HBC56Device*);
 static void destroyUartDevice(HBC56Device*);
-static void tickUartDevice(HBC56Device*, uint32_t, double);
+static void tickUartDevice(HBC56Device*, uint32_t, float);
 static uint8_t readUartDevice(HBC56Device*, uint16_t, uint8_t*, uint8_t);
 static uint8_t writeUartDevice(HBC56Device*, uint16_t, uint8_t);
 
@@ -46,7 +46,7 @@ struct UartDevice
   uint8_t statusReg;
   uint8_t irq;
 
-  double timeSinceIO;
+  float timeSinceIO;
   
 };
 typedef struct UartDevice UartDevice;
@@ -165,7 +165,7 @@ static void destroyUartDevice(HBC56Device *device)
  * --------------------
  * tick the uart device
  */
-static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, double deltaTime)
+static void tickUartDevice(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {
   UartDevice* uartDevice = getUartDevice(device);
   if (uartDevice && uartDevice->handle)

@@ -1,26 +1,28 @@
 
 
 
-add_executable (Hbc56Emu WIN32)
+file(GLOB_RECURSE SRC_DEVICES
+    "${CMAKE_CURRENT_SOURCE_DIR}/devices/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/devices/*.h"
+)
+file(GLOB_RECURSE SRC_DEBUGGER
+    "${CMAKE_CURRENT_SOURCE_DIR}/debugger/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/debugger/*.h"
+)
+
+source_group ("debugger" FILES ${SRC_DEBUGGER})
+source_group ("devices" FILES ${SRC_DEVICES})		  
+
+add_executable (Hbc56Emu WIN32 ${SRC_DEBUGGER} ${SRC_DEVICES})
 
 add_definitions(-DVR_6502_EMU_STATIC)
-
 
 target_sources(Hbc56Emu
   PUBLIC hbc56emu.h
   PRIVATE hbc56emu.cpp
           audio.c
-          debugger/debugger.cpp
-          devices/6502_device.c
-          devices/ay38910_device.c
-          devices/device.c
-          devices/keyboard_device.c
-          devices/lcd_device.c
-          devices/memory_device.c
-          devices/nes_device.c
-          devices/tms9918_device.c
-          devices/uart_device.c
-          devices/via_device.c)
+          audio.h  
+          config.h)
 
 if (WIN32)
   target_sources(Hbc56Emu PRIVATE Hbc56Emu.rc)
