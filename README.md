@@ -17,7 +17,7 @@ Current cards:
 * Dual AY-3-8910 sound card
 * PS/2 keyboard and dual NES controller card
 
-<img src="img/hbc56-1-sm.jpg" alt="HBC-56" width="640px">
+<p align="center"><img src="img/hbc56-1-sm.jpg" alt="HBC-56" width="640px"></p>
 
 All [source code](code/6502) and [schematics](schematics) are available in this repository.
 
@@ -32,7 +32,7 @@ I have also included an emulator for this system. The emulator supports the foll
 
 The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/github-pages/emulator)
 
-<img src="img/emulator-qbert.gif" alt="HBC-56" width="800px">
+<p align="center"><img src="img/emulator-qbert.gif" alt="HBC-56" width="800px"></p>
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
@@ -89,7 +89,7 @@ For each path ([basic](code/6502/basic), [invaders](code/6502/invaders), [tests/
 1. Open a console to the path
 2. Type `make` (this will build the default program and run it in the emulator:
 
-  <img src="img/make.png" alt="Make the demos" width="640px">
+<p align="center"><img src="img/make.png" alt="Make the demos" width="640px"></p>
 
  * Type `make all` to build and run all demos in the directory
  * Type `make <basefile>` (filename without extension) to build and run a specific demo eg:
@@ -99,7 +99,7 @@ cd code/6502/tests/inp
 make kbtest
 ```
 
-<img src="img/kb_nes_tests.gif" alt="HBC-56 Emulator" width="800px">
+<p align="center"><img src="img/kb_nes_tests.gif" alt="HBC-56 Emulator" width="800px"></p>
 
 #### Manually building a demo (without MAKE)
 Example: invaders
@@ -114,7 +114,7 @@ cd code\6502\invaders
 ..\..\..\emulator\bin\Hbc56Emu.exe --rom invaders.o
 ```
 
-<img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="800px">
+<p align="center"><img src="https://raw.githubusercontent.com/visrealm/vrEmuTms9918/main/res/mode1demo.gif" alt="HBC-56 Emulator" width="800px"></p>
 
 Example: basic
 ```
@@ -122,11 +122,11 @@ cd code\6502\basic
 ..\..\..\emulator\bin\Hbc56Emu.exe --rom basic_tms.o
 ```
 
-<img src="img/basic.gif" alt="HBC-56 Emulator" width="800px">
+<p align="center"><img src="img/basic.gif" alt="HBC-56 Emulator" width="800px"></p>
 
 ## Memory map
 
-THe HBC-56 has 64KB addressable memory divided into RAM, ROM and IO as follows:
+The HBC-56 has 64KB addressable memory divided into RAM, ROM and IO as follows:
 
 | From | To | Purpose |
 |--|--|--|
