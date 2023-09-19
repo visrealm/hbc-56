@@ -195,7 +195,7 @@ var Module = typeof Module != 'undefined' ? Module : {};
     }
 
     }
-    loadPackage({"files": [{"filename": "/basic_tms.o", "start": 0, "end": 32768}, {"filename": "/basic_tms.o.lmap", "start": 32768, "end": 83869}, {"filename": "/basic_tms.o.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084490}], "remote_package_size": 1084490, "package_uuid": "2c66945a-a235-4ec9-99fb-4c51f42d8af4"});
+    loadPackage({"files": [{"filename": "/basic_tms.o", "start": 0, "end": 32768}, {"filename": "/basic_tms.o.lmap", "start": 32768, "end": 83869}, {"filename": "/basic_tms.o.rpt", "start": 83869, "end": 1080726}, {"filename": "/imgui.ini", "start": 1080726, "end": 1084490}], "remote_package_size": 1084490, "package_uuid": "b2ed2004-9f91-4c7e-a0f1-b9b04869e760"});
 
   })();
 
@@ -9209,58 +9209,10 @@ var asm = createWasm();
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__wasm_call_ctors");
 
 /** @type {function(...*):?} */
-var _hbc56Reset = Module["_hbc56Reset"] = createExportWrapper("hbc56Reset");
-
-/** @type {function(...*):?} */
-var _hbc56LoadRom = Module["_hbc56LoadRom"] = createExportWrapper("hbc56LoadRom");
-
-/** @type {function(...*):?} */
-var _hbc56LoadLabels = Module["_hbc56LoadLabels"] = createExportWrapper("hbc56LoadLabels");
-
-/** @type {function(...*):?} */
-var _hbc56LoadSource = Module["_hbc56LoadSource"] = createExportWrapper("hbc56LoadSource");
-
-/** @type {function(...*):?} */
-var _hbc56LoadLayout = Module["_hbc56LoadLayout"] = createExportWrapper("hbc56LoadLayout");
-
-/** @type {function(...*):?} */
-var _hbc56GetLayout = Module["_hbc56GetLayout"] = createExportWrapper("hbc56GetLayout");
-
-/** @type {function(...*):?} */
-var _hbc56PasteText = Module["_hbc56PasteText"] = createExportWrapper("hbc56PasteText");
-
-/** @type {function(...*):?} */
-var _hbc56ToggleDebugger = Module["_hbc56ToggleDebugger"] = createExportWrapper("hbc56ToggleDebugger");
-
-/** @type {function(...*):?} */
-var _hbc56DebugBreak = Module["_hbc56DebugBreak"] = createExportWrapper("hbc56DebugBreak");
-
-/** @type {function(...*):?} */
-var _hbc56DebugRun = Module["_hbc56DebugRun"] = createExportWrapper("hbc56DebugRun");
-
-/** @type {function(...*):?} */
-var _hbc56DebugStepInto = Module["_hbc56DebugStepInto"] = createExportWrapper("hbc56DebugStepInto");
-
-/** @type {function(...*):?} */
-var _hbc56DebugStepOver = Module["_hbc56DebugStepOver"] = createExportWrapper("hbc56DebugStepOver");
-
-/** @type {function(...*):?} */
-var _hbc56DebugStepOut = Module["_hbc56DebugStepOut"] = createExportWrapper("hbc56DebugStepOut");
-
-/** @type {function(...*):?} */
-var _hbc56DebugBreakOnInt = Module["_hbc56DebugBreakOnInt"] = createExportWrapper("hbc56DebugBreakOnInt");
-
-/** @type {function(...*):?} */
-var _main = Module["_main"] = createExportWrapper("main");
-
-/** @type {function(...*):?} */
-var _hbc56Audio = Module["_hbc56Audio"] = createExportWrapper("hbc56Audio");
+var _free = Module["_free"] = createExportWrapper("free");
 
 /** @type {function(...*):?} */
 var _malloc = Module["_malloc"] = createExportWrapper("malloc");
-
-/** @type {function(...*):?} */
-var _free = Module["_free"] = createExportWrapper("free");
 
 /** @type {function(...*):?} */
 var _vrEmu6502OpcodeToMnemonicStr = Module["_vrEmu6502OpcodeToMnemonicStr"] = createExportWrapper("vrEmu6502OpcodeToMnemonicStr");
@@ -9435,6 +9387,54 @@ var _vrEmu6522Tick = Module["_vrEmu6522Tick"] = createExportWrapper("vrEmu6522Ti
 
 /** @type {function(...*):?} */
 var _vrEmu6522ReadDbg = Module["_vrEmu6522ReadDbg"] = createExportWrapper("vrEmu6522ReadDbg");
+
+/** @type {function(...*):?} */
+var _hbc56Reset = Module["_hbc56Reset"] = createExportWrapper("hbc56Reset");
+
+/** @type {function(...*):?} */
+var _hbc56LoadRom = Module["_hbc56LoadRom"] = createExportWrapper("hbc56LoadRom");
+
+/** @type {function(...*):?} */
+var _hbc56LoadLabels = Module["_hbc56LoadLabels"] = createExportWrapper("hbc56LoadLabels");
+
+/** @type {function(...*):?} */
+var _hbc56LoadSource = Module["_hbc56LoadSource"] = createExportWrapper("hbc56LoadSource");
+
+/** @type {function(...*):?} */
+var _hbc56LoadLayout = Module["_hbc56LoadLayout"] = createExportWrapper("hbc56LoadLayout");
+
+/** @type {function(...*):?} */
+var _hbc56GetLayout = Module["_hbc56GetLayout"] = createExportWrapper("hbc56GetLayout");
+
+/** @type {function(...*):?} */
+var _hbc56PasteText = Module["_hbc56PasteText"] = createExportWrapper("hbc56PasteText");
+
+/** @type {function(...*):?} */
+var _hbc56ToggleDebugger = Module["_hbc56ToggleDebugger"] = createExportWrapper("hbc56ToggleDebugger");
+
+/** @type {function(...*):?} */
+var _hbc56DebugBreak = Module["_hbc56DebugBreak"] = createExportWrapper("hbc56DebugBreak");
+
+/** @type {function(...*):?} */
+var _hbc56DebugRun = Module["_hbc56DebugRun"] = createExportWrapper("hbc56DebugRun");
+
+/** @type {function(...*):?} */
+var _hbc56DebugStepInto = Module["_hbc56DebugStepInto"] = createExportWrapper("hbc56DebugStepInto");
+
+/** @type {function(...*):?} */
+var _hbc56DebugStepOver = Module["_hbc56DebugStepOver"] = createExportWrapper("hbc56DebugStepOver");
+
+/** @type {function(...*):?} */
+var _hbc56DebugStepOut = Module["_hbc56DebugStepOut"] = createExportWrapper("hbc56DebugStepOut");
+
+/** @type {function(...*):?} */
+var _hbc56DebugBreakOnInt = Module["_hbc56DebugBreakOnInt"] = createExportWrapper("hbc56DebugBreakOnInt");
+
+/** @type {function(...*):?} */
+var _main = Module["_main"] = createExportWrapper("main");
+
+/** @type {function(...*):?} */
+var _hbc56Audio = Module["_hbc56Audio"] = createExportWrapper("hbc56Audio");
 
 /** @type {function(...*):?} */
 var _vrEmu6502Tick = Module["_vrEmu6502Tick"] = createExportWrapper("vrEmu6502Tick");
