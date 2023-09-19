@@ -72,6 +72,7 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
     ayDevice->bufferEnd = 0;
     ayDevice->deltaTimeOverFlow = 0.0;
     ayDevice->timePerSample = 1.0 / (double)sampleRate;
+    ayDevice->lastCpuRuntimeSeconds = 0.0;
 
 
     device.data = ayDevice;
@@ -81,7 +82,7 @@ HBC56Device createAY38910Device(uint16_t baseAddr, int clockFreq, int sampleRate
     device.readFn = &readAy38910Device;
     device.writeFn = &writeAy38910Device;
     device.audioFn = &audioAy38910Device;
-    device.tickFn = &tickAy38910Device;
+    //device.tickFn = &tickAy38910Device;
   }
   else
   {
@@ -141,6 +142,7 @@ static inline void addSampleToBuffer(AY38910Device* ayDevice)
   }
   ayDevice->deltaTimeOverFlow -= ayDevice->timePerSample;
 }
+
 
 static void tickAy38910Device(HBC56Device* device, uint32_t deltaTicks, float deltaTime)
 {

@@ -478,27 +478,29 @@ static int mouseZ = 0;
  */
 static void doTick()
 {
-  static double lastTime = 0.0;
-  static double unusedClockTicksTime = 0.0;
-  static const double maxTime = 1.0 / 60.0;
+  static double lastTime = (double)SDL_GetPerformanceCounter() / perfFreq;
 
-  double thisTime = (double)SDL_GetPerformanceCounter() / perfFreq;
-  if ((thisTime - lastTime) > maxTime) lastTime = thisTime - maxTime;
+  double deltaTime = 0.0001;
+  uint32_t deltaClockTicks = (uint32_t)(HBC56_CLOCK_FREQ * deltaTime);
 
-  double deltaClockTicksDbl = HBC56_CLOCK_FREQ * (thisTime - lastTime) + unusedClockTicksTime;
+  double currentTime = (double)SDL_GetPerformanceCounter() / perfFreq;
 
-  uint32_t deltaClockTicks = (uint32_t)deltaClockTicksDbl;
-  unusedClockTicksTime = deltaClockTicksDbl - (double)deltaClockTicks;
-
-  if (lastTime != 0)
+  if (currentTime - lastTime > 0.1)
   {
-    for (size_t i = 0; i < deviceCount; ++i)
-    {
-      tickDevice(&devices[i], deltaClockTicks, thisTime - lastTime);
-    }
+    lastTime = ((double)SDL_GetPerformanceCounter() / perfFreq) + deltaTime;
+  }
+  else
+  {
+    lastTime += deltaTime;
   }
 
-  lastTime = thisTime;
+  while ((currentTime = (double)SDL_GetPerformanceCounter() / perfFreq) < lastTime);
+
+
+  for (size_t i = 0; i < deviceCount; ++i)
+  {
+    tickDevice(&devices[i], deltaClockTicks, deltaTime);
+  }
 }
 
 
@@ -1250,7 +1252,9 @@ int main(int argc, char* argv[])
 #endif
 
 #if HBC56_HAVE_VIA
-  debuggerInitVia(hbc56AddDevice(create65C22ViaDevice(HBC56_IO_ADDRESS(HBC56_VIA_PORT), HBC56_VIA_IRQ)));
+  HBC56Device *viaDevice = hbc56AddDevice(create65C22ViaDevice(HBC56_IO_ADDRESS(HBC56_VIA_PORT), HBC56_VIA_IRQ));
+  debuggerInitVia(viaDevice);
+  sync6502CpuDevice(cpuDevice, viaDevice);
 #endif
 
   /* initialise audio */

@@ -42,6 +42,9 @@ HBC56Device create6502CpuDevice(IsBreakpointFn brkCb, int clockFreqHz);
 
 void interrupt6502(HBC56Device* device, HBC56InterruptType type, HBC56InterruptSignal signal);
 
+// synchronise another device to run at the same timing as the cpu
+void sync6502CpuDevice(HBC56Device* cpuDevice, HBC56Device* otherDevice);
+
 void debug6502State(HBC56Device* device, HBC56CpuState state);
 
 HBC56CpuState getDebug6502State(HBC56Device* device);

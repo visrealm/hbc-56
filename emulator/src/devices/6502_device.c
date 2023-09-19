@@ -48,6 +48,10 @@ struct CPU6502Device
   double               secsPerTick;
   double               runTimeSeconds;
   IsBreakpointFn       isBreakFn;
+ 
+  HBC56Device         *syncedDevice;
+  DeviceTickFn         syncedDeviceTickFn;
+
 };
 typedef struct CPU6502Device CPU6502Device;
 
@@ -76,6 +80,8 @@ HBC56Device create6502CpuDevice(IsBreakpointFn brkCb, int clockFreqHz)
     cpuDevice->ticks = cpuDevice->ticksWai = 0L;
     cpuDevice->extraTicks = 0;
     cpuDevice->isBreakFn = brkCb;
+    cpuDevice->syncedDevice = NULL;
+    cpuDevice->syncedDeviceTickFn = NULL;
     device.data = cpuDevice;
 
     device.resetFn = &reset6502CpuDevice;
@@ -153,12 +159,11 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, float de
     /* introduce a limit to the amount of time we can process in a single step
        to prevent a runaway condition for slow processors */
     int realDeltaTicks = deltaTicks;
+    realDeltaTicks += cpuDevice->extraTicks;
     if (deltaTime > CPU_6502_MAX_TIMESTEP_SEC)
     {
       realDeltaTicks = CPU_6502_MAX_TIMESTEP_STEPS;
     }
-
-    realDeltaTicks += cpuDevice->extraTicks;
 
     uint16_t intVec = (hbc56MemRead(0xfffe, true) | (hbc56MemRead(0xffff, true) << 8));
     uint16_t nmiVec = (hbc56MemRead(0xfffa, true) | (hbc56MemRead(0xfffb, true) << 8));
@@ -185,43 +190,45 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, float de
       {
         cycleTicks = vrEmu6502InstCycle(cpuDevice->cpu6502);
 
-        if (vrEmu6502GetOpcodeCycle(cpuDevice->cpu6502) == 0) /* end of the instruction */
+        if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
         {
-          if (cpuDevice->currentState == CPU_BREAK_ON_INTERRUPT)
-          {
-            if (vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == intVec ||
-              vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == nmiVec)
-            {
-              cpuDevice->currentState = CPU_BREAK;
-            }
-          }
-
-          if (cpuDevice->isBreakFn(vrEmu6502GetPC(cpuDevice->cpu6502)))
+          if (vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == intVec ||
+            vrEmu6502GetCurrentOpcodeAddr(cpuDevice->cpu6502) == nmiVec)
           {
             cpuDevice->currentState = CPU_BREAK;
           }
+        }
 
-          uint8_t nextOpcode = vrEmu6502GetNextOpcode(cpuDevice->cpu6502);
-          int isJsr = (nextOpcode == CPU_6502_JSR);
-          int isRts = (nextOpcode == CPU_6502_RTS);
-          int isBrk = (nextOpcode == CPU_6502_BRK);
+        if (cpuDevice->isBreakFn(vrEmu6502GetPC(cpuDevice->cpu6502)))
+        {
+          cpuDevice->currentState = CPU_BREAK;
+        }
 
-          if (isRts && cpuDevice->callStackPtr)
-          {
-            --cpuDevice->callStackPtr;
-          }
+        uint8_t nextOpcode = vrEmu6502GetNextOpcode(cpuDevice->cpu6502);
+        int isJsr = (nextOpcode == CPU_6502_JSR);
+        int isRts = (nextOpcode == CPU_6502_RTS);
+        int isBrk = (nextOpcode == CPU_6502_BRK);
 
-          if (isJsr)
-          {
-            cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
-            cpuDevice->callStackPtr &= (CPU_6502_MAX_CALL_STACK - 1);
-          }
+        if (isRts && cpuDevice->callStackPtr)
+        {
+          --cpuDevice->callStackPtr;
+        }
+
+        if (isJsr)
+        {
+          cpuDevice->callStack[cpuDevice->callStackPtr++] = vrEmu6502GetPC(cpuDevice->cpu6502) + 3;
+          cpuDevice->callStackPtr &= (CPU_6502_MAX_CALL_STACK - 1);
+        }
 
 
-          if (isBrk)
-          {
-            cpuDevice->currentState = CPU_BREAK;
-          }
+        if (isBrk)
+        {
+          cpuDevice->currentState = CPU_BREAK;
+        }
+
+        if (cpuDevice->syncedDevice)
+        {
+          cpuDevice->syncedDeviceTickFn(cpuDevice->syncedDevice, cycleTicks, 0.0f);
         }
       }
       else
@@ -233,15 +240,16 @@ static void tick6502CpuDevice(HBC56Device* device, uint32_t deltaTicks, float de
 
       // note: we do this now rather than at the end, because some devices require accurate timing
       cpuDevice->runTimeSeconds += cycleTicks * cpuDevice->secsPerTick;
-     
+
+      realDeltaTicks -= cycleTicks;
+
       if (vrEmu6502GetCurrentOpcode(cpuDevice->cpu6502) == CPU_6502_WAI)
       {
         cpuDevice->ticksWai += cycleTicks;
       }
-
-      realDeltaTicks -= cycleTicks;
     }
-    cpuDevice->extraTicks = realDeltaTicks;
+
+    cpuDevice->extraTicks = (cpuDevice->currentState == CPU_RUNNING) ? realDeltaTicks : 0;
   }
 }
 
@@ -317,6 +325,18 @@ void debug6502State(HBC56Device* device, HBC56CpuState state)
     cpuDevice->currentState = state;
   }
 }
+
+void sync6502CpuDevice(HBC56Device* device, HBC56Device* otherDevice)
+{
+  CPU6502Device* cpuDevice = get6502CpuDevice(device);
+  if (cpuDevice)
+  {
+    cpuDevice->syncedDevice = otherDevice;
+    cpuDevice->syncedDeviceTickFn = otherDevice->tickFn;
+    otherDevice->tickFn = NULL;
+  }
+}
+
 
 HBC56CpuState getDebug6502State(HBC56Device* device)
 {
