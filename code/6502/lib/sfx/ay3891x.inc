@@ -113,4 +113,5 @@
 
 !macro ayStop .dev, .chan {
         +ayPlayNote .dev, .chan, 0
+        +ayToneDisable .dev, .chan
 }

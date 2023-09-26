@@ -454,6 +454,8 @@ kbWaitForScancode:
         sei
         jsr .kbPopTail
         plp
+        and #$ff
+        bmi kbWaitForScancode
         rts
 
 ; -----------------------------------------------------------------------------
@@ -513,11 +515,17 @@ kbScancodeToAscii:
 @doneShiftCheck:
         bcs @shiftedKeys:
         ldx KB_TMP_X
+        bpl +   ; if greater than 127, is a return value from sent message
+        ldx #0
++
         lda KEY_MAP, x
         bra @end
 
 @shiftedKeys:
         ldx KB_TMP_X
+        bpl +   ; if greater than 127, is a return value from sent message
+        ldx #0
++
         lda KEY_MAP_SHIFTED, x
 
 @end
