@@ -150,7 +150,7 @@ The RAM and ROM is further divided by the HBC-56 Kernel:
 
 Thanks to PCBWay for supporting this project.
 
-[![PCBWay](/img/pcbway_sm.png)](https://www.pcbway.com/)
+[![PCBWay](/img/pcbway_sm.png)](https://pcbway.com/g/186WQ9)
 
 ## Videos
 [![Backplane 6502 + TMS9918: Breakout](https://img.visualrealmsoftware.com/youtube/thumb/4C_1yekWGg4)](https://www.youtube.com/watch?v=4C_1yekWGg4 "Backplane 6502 + TMS9918: Breakout")
