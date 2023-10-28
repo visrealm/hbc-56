@@ -36,6 +36,12 @@ The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://
 
 Full details on the Emulator and source code here: [emulator](emulator)
 
+### PICO-56
+
+The PICO-56 project emulates the entire HBC-56 sytem on a single Raspberry Pi Pico. It is avilable at [https://github.com/visrealm/pico-56](https://github.com/visrealm/pico-56)
+
+<p align="center"><img src="https://github.com/visrealm/pico-56/raw/main/img/thumb.png" alt="PICO" width="640px"></p>
+
 ## Building
 
 This project uses the CMAKE build system to build the emulator and assembler. VSCode works very well with CMAKE, but you can also build manually:
