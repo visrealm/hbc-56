@@ -38,9 +38,11 @@ Full details on the Emulator and source code here: [emulator](emulator)
 
 ### PICO-56
 
-The PICO-56 project emulates the entire HBC-56 sytem on a single Raspberry Pi Pico. It is avilable at [https://github.com/visrealm/pico-56](https://github.com/visrealm/pico-56)
+The PICO-56 project emulates the entire HBC-56 sytem on a single Raspberry Pi Pico.
 
 <p align="center"><img src="https://github.com/visrealm/pico-56/raw/main/img/thumb.png" alt="PICO" width="640px"></p>
+
+PICO-56 repository: [https://github.com/visrealm/pico-56](https://github.com/visrealm/pico-56)
 
 ## Building
 
