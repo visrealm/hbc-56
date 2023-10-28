@@ -22,6 +22,12 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        # ninja version to download. Default: 1.10.0
+        version: 1.10.0
+          
     - name: Setup emscripten
       working-directory: ${{ github.workspace }}
       run: ./emconfig.bat ${{ env.OUTPUT_DIR }}
