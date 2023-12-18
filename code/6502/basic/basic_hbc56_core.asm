@@ -26,13 +26,20 @@ LOAD_BYTE  = HBC56_USER_ZP_START + 7
 IRQ_vec         = VEC_SV+2      ; IRQ code vector
 NMI_vec         = IRQ_vec+$0A   ; NMI code vector
 
+FG     = TMS_DK_BLUE
+BG     = TMS_WHITE
+BORDER = TMS_DK_BLUE
+
 ; -----------------------------------------------------------------------------
 ; main entry point
 ; -----------------------------------------------------------------------------
 hbc56Main:
 RES_vec:
+!ifdef HAVE_TMS9918 {
         +tmsColorFgBg FG, BG
         sta BASIC_COLOR
+}
+
         jsr hbc56SetupDisplay
 
         ; copy I/O vectors

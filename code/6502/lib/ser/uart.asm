@@ -221,7 +221,10 @@ uartInNoWait:
 uartOut:
         cmp #$08        ; bs
         bne uartOutNoBsCheck
-        lda #$7f        ; del
+        jsr uartOutNoBsCheck
+        lda #$20
+        jsr uartOutNoBsCheck
+        lda #$08
 uartOutNoBsCheck:
         pha
         lda #UART_STATUS_TX_REG_EMPTY

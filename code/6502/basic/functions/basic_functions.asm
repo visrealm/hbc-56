@@ -36,6 +36,7 @@ basicDisplay:
         asl
         tax
         jsr doMode
+        +tmsEnableOutput
 
         lda BASIC_COLOR
         jsr tmsInitColorTable

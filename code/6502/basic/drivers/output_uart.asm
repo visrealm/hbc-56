@@ -12,9 +12,8 @@
 ; -----------------------------------------------------------------------------
 hbc56SetupDisplay:
         sei
-        jsr uartInit
-        +tmsDisableInterrupts
-        +setIntHandler uartIrq
+        jsr uartInit        
+        cli
         rts
 
 ; -----------------------------------------------------------------------------

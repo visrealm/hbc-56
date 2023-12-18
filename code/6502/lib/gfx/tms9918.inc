@@ -223,11 +223,11 @@
         lda #>.sourceAddr
         sta TMS_TMP_ADDRESS + 1
 
-        !if .numBytes < 256 {
+        !if .numBytes <= 256 {
                 ldx #.numBytes
                 jsr tmsSendBytesReverse
         } else {
-                !error "tmsSendDataReverse supports <256 bytes only"
+                !error "tmsSendDataReverse supports <=256 bytes only"
         }
 
 }
@@ -241,23 +241,23 @@
         lda #>.sourceAddr
         sta TMS_TMP_ADDRESS + 1
 
-        !if .numBytes < 256 {
+        !if .rpt <= 256 and .numBytes <= 256 {
                 !if .rpt < 5 {
                         !for i,1,.rpt {
-                                ldx #.numBytes
+                                ldx #<.numBytes
                                 jsr tmsSendBytes
                         }
                 } else {
-                        lda #.rpt
+                        lda #<.rpt
                         sta TMS9918_TMP_BUFFER
 -
-                        ldx #.numBytes
+                        ldx #<.numBytes
                         jsr tmsSendBytes
                         dec TMS9918_TMP_BUFFER
                         bne -
                 }
         } else {
-                !error "tmsSendDataRpt supports <256 repetitions only"
+                !error "tmsSendDataRpt supports <=256 repetitions only"
         }
 }
 

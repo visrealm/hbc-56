@@ -137,6 +137,8 @@ hbc56Tms9918Int:
 
 @endConsoleCallback
 
+}
+
 .nullCallbackFunction:
         rts
-}
+

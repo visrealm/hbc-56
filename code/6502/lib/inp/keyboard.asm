@@ -293,8 +293,6 @@ kbIntHandler:
         sta KB_CURRENT_STATE
         rts
 +
-        ora #$80
-        
         jsr .kbSetKey
 
         lda #.KB_STATE_DEFAULT
@@ -435,13 +433,12 @@ kbIsPressed:
         cmp #0
         rts
 
-
 ; -----------------------------------------------------------------------------
 ; kbWaitForScancode: Wait for a key press
 ; Returns:
-;    A - scancode
+;    Z set if no scancode, Z clear if there is a scancode
 ; -----------------------------------------------------------------------------
-kbWaitForScancode:
+kbCheckForScancode:
         php
         sei        
         sec
@@ -449,6 +446,15 @@ kbWaitForScancode:
         sbc KB_BUFFER_TAIL
         plp
         cmp #0
+        rts
+
+; -----------------------------------------------------------------------------
+; kbWaitForScancode: Wait for a key press
+; Returns:
+;    A - scancode
+; -----------------------------------------------------------------------------
+kbWaitForScancode:
+        jsr kbCheckForScancode
         beq kbWaitForScancode
         php
         sei
@@ -581,7 +587,7 @@ KEY_MAP:
 !byte $ff,$2c,$6b,$69,$6f,$30,$39,$ff,$ff,$2e,$2f,$6c,$3b,$70,$2d,$ff; 4
 !byte $ff,$ff,$27,$ff,$5b,$3d,$ff,$ff,$ff,$ff,$0d,$5d,$ff,$5c,$ff,$ff; 5
 !byte $ff,$ff,$ff,$ff,$ff,$ff,$08,$ff,$ff,$31,$ff,$34,$37,$ff,$ff,$ff; 6
-!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$ff,$33,$2d,$ff,$39,$ff,$ff; 7
+!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$2b,$33,$2d,$2a,$39,$ff,$ff; 7
 
 KEY_MAP_SHIFTED:
 ;      0   1   2   3   4   5   6   7   8   9   a   b   c   d   e   f
@@ -592,4 +598,4 @@ KEY_MAP_SHIFTED:
 !byte $ff,$3c,$4b,$49,$4f,$29,$28,$ff,$ff,$3e,$3f,$4c,$3a,$50,$5f,$ff; 4
 !byte $ff,$ff,$22,$ff,$7b,$2b,$ff,$ff,$ff,$ff,$0d,$7d,$ff,$7c,$ff,$ff; 5
 !byte $ff,$ff,$ff,$ff,$ff,$ff,$08,$ff,$ff,$31,$ff,$34,$37,$ff,$ff,$ff; 6
-!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$ff,$33,$2d,$ff,$39,$ff,$ff; 7
+!byte $30,$ff,$32,$35,$36,$38,$1b,$ff,$ff,$2b,$33,$2d,$2a,$39,$ff,$ff; 7

@@ -647,6 +647,7 @@ tmsInitTextTable:
         lda TMS9918_CONSOLE_SIZE_X
         adc TMS9918_CONSOLE_SIZE_X
         adc TMS9918_CONSOLE_SIZE_X
+        adc #5  ; extra row
         tax
         lda #0
         jsr _tmsSendX8

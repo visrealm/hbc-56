@@ -21,3 +21,6 @@ hbc56Meta:
         +setHbcMetaTitle "HBC-56 BASIC"
         +setHbcMetaNoWait
         rts
+
+
+!src "functions/basic_functions.asm"    ; custom functions

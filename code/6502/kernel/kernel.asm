@@ -342,7 +342,15 @@ kernelMain:
 @noLcd3:
         }
         cli
-        jsr kbWaitForScancode
+-
+        lda NES1_IO_ADDR
+        cmp #$ff
+        bne .afterInput
+        lda NES2_IO_ADDR
+        cmp #$ff
+        bne .afterInput
+        jsr kbCheckForScancode
+        beq -
 }
 
 .afterInput
