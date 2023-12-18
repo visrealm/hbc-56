@@ -20,17 +20,17 @@ dumpCommand:
         stz TMP_C
 
         lda CURR_ADDR
-        and #$f0
+        and #$f8
         sta DUMP_ROW_START_L
         lda CURR_ADDR_H
         sta DUMP_ROW_START_H
 
-        ;ldx #1
-;        cpx COMMAND_LEN
-;        beq @newLine
-;;        jsr readHexByte
- ;       jsr hexToAcc
-  ;      sta TMP_C        
+        ldx #1
+        cpx COMMAND_LEN
+        beq @newLine
+        jsr readHexByte
+        jsr hexToAcc
+        sta TMP_C        
 
 @newLine
         lda #$0d
@@ -64,7 +64,7 @@ dumpCommand:
         cpy TMP_C
         beq @doRaw
         tya
-        and #$0f
+        and #$07
         bne @nextByte
 
 @doRaw
@@ -83,7 +83,7 @@ dumpCommand:
 +
         +outputA
         inx
-        cpx #16
+        cpx #8
         bne -
         cpy TMP_C
         bne @newLine

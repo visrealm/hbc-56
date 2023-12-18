@@ -42,9 +42,13 @@ writeCommand:
 ; send bytes to a single address (port)
 ; -----------------------------------------------------------------------------
 sendCommand:
+        php
+        sei
+sendCommandLoop:
         jsr readHexByte
         jsr hexToAcc
         sta (CURR_ADDR)
         cpx COMMAND_LEN
-        bcc sendCommand
+        bcc sendCommandLoop
+        plp
         jmp commandLoop

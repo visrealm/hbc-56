@@ -25,8 +25,8 @@ DUMP_ROW_START_H        = TEMP_ADDR + 2
 COMMAND_BUFFER          = HBC56_KERNEL_RAM_END
 COMMAND_BUFFER_LEN      = 160
 
-UART = 1
-TMS  = 0
+UART = 0
+TMS  = 1
 
 !macro outputA {
         !if UART {
@@ -60,7 +60,10 @@ TMS  = 0
         !if UART {
                 jsr uartInWait
         } else {
-                jsr kbWaitForScancode
+                -
+                jsr kbReadAscii
+                bcc -
+
         }
 }
 
@@ -93,7 +96,10 @@ hbc56Main:
 
 !if TMS {
         jsr tmsModeText
+        jsr tmsConsoleCls
 	+tmsUpdateFont TMS_TEXT_MODE_FONT
+        +tmsEnableOutput
+        +tmsEnableInterrupts
         +consoleEnableCursor
 }       
 }
@@ -109,7 +115,7 @@ hbc56Main:
         lda #$10
         sta CURR_ADDR_H
 
-        +outputStringAddr clearCommandBytes
+        ;+outputStringAddr clearCommandBytes
 
         +outputStringAddr welcomeMessage
         +outputStringAddr welcomeMessage2
@@ -202,7 +208,7 @@ nextCommand:
         bne +
         jsr doExecute
 
-        +setIntHandler uartIrq
+        ;+setIntHandler uartIrq
         
         jmp commandLoop
 +
@@ -258,6 +264,13 @@ readHexByte
         rts
 +
         lda COMMAND_BUFFER,x
+        jsr isDigitX
+        bcs +
+        lda HEX_H
+        sta HEX_L
+        stz HEX_H
+        rts
+ +
         sta HEX_L
         inx
         rts
@@ -273,7 +286,7 @@ invalidCommand:
 ; output the command prompt
 ; -----------------------------------------------------------------------------
 outPrompt:
-        +outputStringAddr blueText
+        ;+outputStringAddr blueText
 
         lda #'$'
         +outputA
@@ -286,7 +299,7 @@ outPrompt:
         lda #' '
         +outputA
 
-        +outputStringAddr resetText
+        ;+outputStringAddr resetText
         rts
 
 
@@ -357,27 +370,27 @@ outHex8:
 hexDigits:
 !text "0123456789abcdef"
 
-blueText:
-!text $1b,"[94m",0
-resetText:
-!text $1b,"[0m",0
+;blueText:
+;!text "",0
+;resetText:
+;!text "",0
 
 welcomeMessage:
-!text $1b,"[94m"," _    _  _____    _____   _______ _____\n"
+!text " _    _  _____    _____   _______ _____\n"
 !text "| |  | |/____ \\  / ___/  |  ____// ___/\n"
 !text "| |__| | ____) || /   ___| |___ / /___\n"
 !text "|  __  ||  __ < | |  /__/|____ \\|  __ \\\n"
 !text "| |  | || |__) || \\____   ____) | (__) |\n"
-!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n\n",$1b,"[0m",0
+!text "|_|  |_||_____/  \\____/  /_____/ \\____/\n\n",0
 welcomeMessage2:
-!text "HBC-56 Memory Monitor (Enter ",$1b,"[1m\"h\"",$1b,"[0m for help)\n"
-!text "------------------------------------------\n", 0
+!text "HBC-56 Memory Monitor (\"h\" for help)    "
+!text "----------------------------------------", 0
 dumpHeader:
-!text "       00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 0123456789abcdef\n"
-!text "       ----------------------------------------------- ----------------",0
+!text "       00 01 02 03 04 05 06 07 01234567 "
+!text "       ----------------------- -------- ",0
 
 syntaxErrorMsg:
-!text $07,$1b,"[91m","* Syntax error *",$1b,"[0m","  Enter \"h\" for help.\n",0
+!text $07,"","* Syntax error *","  \"h\" for help.\n",0
 
 
 !if TMS {

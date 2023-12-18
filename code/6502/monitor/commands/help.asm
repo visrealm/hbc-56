@@ -20,11 +20,15 @@ helpCommand:
 helpMessage:
 !text "HBC-56 - Monitor Help\n\n"
 !text " c         - clear screen\n"
-!text " d [#]     - output # bytes from current address\n"
-!text " e         - execute code from current address\n",0
+!text " d [#]     - output # bytes from current"
+!text "             address\n"
+!text " e         - execute code from current  "
+!text "             address\n",0
 helpMessage2:
 !text " h         - help\n"
 !text " q         - quit\n"
-!text " w <xx>[+] - write value(s) and increment address if +\n"
-!text " s <xx>    - send value(s) to current address\n"
+!text " w <xx>[+] - write value(s) and\n"
+!text "             increment address if +\n"
+!text " s <xx>    - send value(s) to current\n"
+!text "             address\n"
 !text " $ <xxxx>  - set current address\n", 0
