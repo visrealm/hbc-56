@@ -6,12 +6,11 @@
 
 A homebrew 8-bit computer on a (56 pin) backplane.
 
-Initially supporting the 6502 CPU, TMS9918A VDP and Dual AY-3-8910 PSG's. With plans to add support for Z80 and perhaps other CPUs in the future.
+Initially supporting the 65C02 CPU, TMS9918A VDP and Dual AY-3-8910 PSG's. With plans to add support for Z80 and perhaps other CPUs in the future.
 
 Current cards:
-* 6502 CPU card
-* Triple-mode clock card (based on James Sharman's design)
-* RAM/ROM card (32KB of each)
+* 65C02 CPU card with 65C22 VIA and Interrupt controller
+* RAM/ROM card (32KB of each) + optional 32KB shadow RAM
 * LCD display card (supports regular character LCD and 12864B graphics LCD)
 * TMS9918A display card (composite output)
 * Dual AY-3-8910 sound card
@@ -26,6 +25,8 @@ I have also included an emulator for this system. The emulator supports the foll
 
 * Realtime execution of code (at ~3.7MHz).
 * Step through disassembled code with labels.
+* Source code debugging (using ACME assembler .rpt file).
+* TMS9918 VRAM visualisation of pattern and sprite pattern tables.
 * Examine CPU and VDP registers, RAM and VRAM.
 * Full support for all TMS9918A display modes. See my TMS9918 emulator here: [github.com/visrealm/vrEmuTms9918](https://github.com/visrealm/vrEmuTms9918)
 * Support for the dual AY-3-8910 audio, keyboard and NES controller.
@@ -86,7 +87,7 @@ Serving HTTP on :: port 8000 (http://[::]:8000/) ...
 Then navigate to [http://localhost:8000](http://localhost:8000)
 
 ## Running the demos
-There are several ways to build ad run the demos. They are set up with makefiles, so it is preferred to have [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) installed and in your PATH environment variable.
+There are several ways to build and run the demos. They are set up with makefiles, so it is preferred to have [MAKE](http://gnuwin32.sourceforge.net/packages/make.htm) installed and in your PATH environment variable.
 #### VSCode
 1. Open the [code/6502](code/6502) directory in VSCode
 2. For each test/demo program (eg. basic, invaders, tests\tms, tests\sfx, etc.) navigate to the .asm file and hit **\<Ctrl\>+\<F5\>**. This will build and run the program in the emulator. **\<Ctrl\>+\<Shift\>+\<B\>** to just build the ROM image without running.
@@ -153,6 +154,30 @@ The RAM and ROM is further divided by the HBC-56 Kernel:
 | $7f00 | $7fff | 256 bytes | I/O |
 | $8000 | $dfff | 24 kilobytes | User ROM |
 | $e000 | $ffff | 8 kilobytes | Kernel ROM |
+
+IO ports for current devices (all at $7fxx)
+
+| Port | Purpose |
+|--|--|
+| $02 | LCD Command |
+| $03 | LCD Data |
+| $08 | ROM Banking Register |
+| $10 | TMS9918A Command |
+| $11 | TMS9918A Data |
+| $20 | UART MC68B50 Register |
+| $21 | UART MC68B50 Data |
+| $40 | AY-3-8910 A Register |
+| $41 | AY-3-8910 A Write |
+| $42 | AY-3-8910 A Read |
+| $44 | AY-3-8910 B Register |
+| $45 | AY-3-8910 B Write |
+| $46 | AY-3-8910 B Read |
+| $80 | PS/2 Keyboard Data |
+| $81 | PS/2 Keyboard Status |
+| $82 | NES 1 Data |
+| $83 | NES 2 Data |
+| $df | Interrupt Register |
+| $f0 - $ff | 65c22 VIA |
 
 ### Thanks
 
