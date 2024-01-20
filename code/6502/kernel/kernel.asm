@@ -283,7 +283,7 @@ kernelMain:
 
         lda #HBC56_CONSOLE_FLAG_NOWAIT
         bit HBC56_CONSOLE_FLAGS
-        bne .afterInput
+        bne .afterNesInput
 
         lda #HBC56_CONSOLE_FLAG_NES
         and HBC56_CONSOLE_FLAGS
@@ -314,6 +314,7 @@ kernelMain:
         }
         cli
         jsr nesWaitForPress
+.afterNesInput:        
         jmp .afterInput
 
 .keyboardInput
