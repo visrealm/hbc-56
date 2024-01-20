@@ -351,13 +351,12 @@ kernelMain:
         bne .afterInput
         jsr kbCheckForScancode
         beq -
+        jsr kbWaitForScancode ; eat it
 }
 
 .afterInput
 
         !ifdef HAVE_LCD {
-                ;jsr lcdDetect
-                ;bcc @noLcd4
                 jsr lcdInit
                 !ifdef HAVE_GRAPHICS_LCD {
                         jsr lcdTextMode

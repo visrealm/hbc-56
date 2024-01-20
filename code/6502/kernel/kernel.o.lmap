@@ -182,7 +182,7 @@
 	NES_DOWN	= $4	; unused
 	tmsReg1ClearFields	= $e5da
 	NES_SELECT	= $20	; unused
-	hbc56Stop	= $f2bf
+	hbc56Stop	= $f2c2
 	UART_RX_BUFFER_SIZE	= $100
 	KB_BUFFER	= $7c66
 	DEFAULT_HBC56_NMI_VECTOR	= $ffe0	; unused
@@ -211,9 +211,9 @@
 	KB_SCANCODE_F4	= $c	; unused
 	tmsSetPosTmpAddress	= $e836
 	uartInNoWait	= $eaa0	; unused
-	hbc56Reset	= $f2bc	; unused
+	hbc56Reset	= $f2bf	; unused
 	KB_SCANCODE_F5	= $3	; unused
-	hbc56CustomDelayMs	= $f2c2	; unused
+	hbc56CustomDelayMs	= $f2c5	; unused
 	uartOut	= $eac3	; ?
 	KB_TMP_X	= $7c5d
 	KB_SCANCODE_F8	= $a	; unused
@@ -291,7 +291,7 @@
 	HAVE_KEYBOARD	= $1
 	NOTE_FREQ_A4	= $1b8	; unused
 	NOTE_FREQ_E6	= 1318.509999999999990905052982270718	; unused
-	hbc56HighBell	= $f22b	; ?
+	hbc56HighBell	= $f22e	; ?
 	NOTE_FREQ_G7	= 3135.960000000000036379788070917130	; unused
 	NOTE_FREQ_C5	= 523.250000000000000000000000000000	; unused
 	tmsConsoleHome	= $e92d	; unused
@@ -381,7 +381,7 @@
 	VIA_REG_SR	= $a	; unused
 	HAVE_MATH_INC	= $1
 	KB_SCANCODE_B	= $32	; unused
-	hbc56Bell	= $f25d	; unused
+	hbc56Bell	= $f260	; unused
 	KB_SCANCODE_C	= $21	; unused
 	TMS_TXT_PIXELS_X	= $f0	; unused
 	HBC56_KERNEL_RAM_SIZE	= $2bd	; unused
