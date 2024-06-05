@@ -309,7 +309,7 @@ function romDropHandler(event)
                         }
                     };
                 }
-                else if (file.name.endsWith(".txt"))
+                else if (file.name.endsWith(".txt") || file.name.endsWith(".bas"))
                 {
                     var reader = new FileReader();
                     reader.readAsText(event.dataTransfer.items[i].getAsFile());
