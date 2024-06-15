@@ -16,7 +16,9 @@ basicColor:
         
         php
         sei
-        jsr tmsInitColorTable
+        jsr tmsSetBackground
+        lda BASIC_COLOR
+        jsr tmsInitEntireColorTable
         plp
         rts
 
@@ -33,19 +35,50 @@ basicDisplay:
         txa
         cmp #3
         bcs basicErrorHandler
+        sta BASIC_MODE
         asl
         tax
         jsr doMode
         +tmsEnableOutput
 
+        +consoleDisableCursor
+
         lda BASIC_COLOR
-        jsr tmsInitColorTable
+        jsr tmsInitEntireColorTable
         plp
         rts
         
 basicErrorHandler:
         plp
         jmp LAB_FCER
+
+basicCls:
+        lda BASIC_MODE
+        cmp #2
+        bne +
+        php
+        sei
+        +tmsSetAddrPattTable
+        lda #0
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+
+        +tmsSetAddrColorTable
+        lda BASIC_COLOR
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        jsr _tmsSendKb
+        plp
+        rts
++
+        jmp tmsConsoleCls
 
 basicPlot:
         jsr LAB_GADB
@@ -83,8 +116,33 @@ basicPlot:
 
         rts
 
+basicUnPlot:
+        jsr LAB_GADB
+        stx BASIC_YPOS
+        ldx Itempl
+        stx BASIC_XPOS
+        ldy BASIC_YPOS
 
+        php
+        sei
 
+        jsr tmsSetPatternTmpAddressII
+        jsr tmsSetAddressRead
+        
+        lda BASIC_XPOS
+        and #07
+        tax
+        +tmsGet
+
+        and tableInvBitFromLeft, x
+        pha
+        jsr tmsSetAddressWrite
+        pla
+        +tmsPut
+
+        plp
+
+        rts
 
 
 !src "functions/jump_table.asm"

@@ -19,8 +19,9 @@ SAVE_A          = HBC56_USER_ZP_START + 2
 BASIC_XPOS = HBC56_USER_ZP_START + 4
 BASIC_YPOS = HBC56_USER_ZP_START + 5
 BASIC_COLOR = HBC56_USER_ZP_START + 6
+BASIC_MODE = HBC56_USER_ZP_START + 7
 
-LOAD_BYTE  = HBC56_USER_ZP_START + 7
+LOAD_BYTE  = HBC56_USER_ZP_START + 8
 
 ; put the IRQ and NMI code in RAM so that it can be changed
 IRQ_vec         = VEC_SV+2      ; IRQ code vector
@@ -39,6 +40,8 @@ RES_vec:
         +tmsColorFgBg FG, BG
         sta BASIC_COLOR
 }
+        lda #1
+        sta BASIC_MODE
 
         jsr hbc56SetupDisplay
 

@@ -14,6 +14,8 @@ hbc56SetupDisplay:
         php
         sei
 
+        lda #1
+        sta BASIC_MODE
         jsr tmsModeGraphicsI
 
         +tmsColorFgBg BG, BORDER

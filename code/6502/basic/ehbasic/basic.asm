@@ -7759,16 +7759,6 @@ LAB_TWOPI
 	LDY	#>LAB_2C7C		; set (2*pi) pointer high byte
 	JMP	LAB_UFAC		; unpack memory (AY) into FAC1 and return
 
-
-; unplot a pixel
-LAB_UNPLOT:
-	jsr LAB_GADB ; get two parameters
-	txa
-	tay
-	ldx Itempl
-        
-	rts;jmp doUnPlot
-
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
 
@@ -7863,7 +7853,7 @@ LAB_MSZM
 	!text	$0D,$0A,"Memory size ",$00
 
 LAB_SMSG
-	!text	" ",$0A,$0A," ** EhBASIC for HBC-56 v2.22 **",$00
+	!text	" ",$0A,$0A," ** EhBASIC for HBC-56 v2.23 **",$00
 
 ; numeric constants and series
 
@@ -8012,7 +8002,7 @@ LAB_CTBL
 	!word	LAB_DOKE-1		; DOKE		new command
 	!word	basicDisplay-1		; DISPLAY	HBC-56 command
 	!word	basicPlot-1		; PLOT		HBC-56 command
-	!word	LAB_UNPLOT-1		; UNPLOT	HBC-56 command
+	!word	basicUnPlot-1		; UNPLOT	HBC-56 command
 	!word	LAB_CALL-1		; CALL		new command
 	!word	LAB_DO-1		; DO			new command
 	!word	LAB_LOOP-1		; LOOP		new command
@@ -8026,7 +8016,7 @@ LAB_CTBL
 	!word	LAB_SWAP-1		; SWAP		new command
 	!word	LAB_BITSET-1	; BITSET		new command
 	!word	LAB_BITCLR-1	; BITCLR		new command
-	!word	tmsConsoleCls-1	; CLS
+	!word	basicCls-1	; CLS
 	!word	basicColor-1	; COLOR
 	!word	LAB_IRQ-1		; IRQ			new command
 	!word	LAB_NMI-1		; NMI			new command
