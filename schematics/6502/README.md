@@ -1,4 +1,4 @@
-# 65C02 Card
+![image](https://github.com/user-attachments/assets/896f23bf-48d0-4c6e-b95f-55c444ad09dc)# 65C02 Card
 
 The 65C02 card includes support for a CMOS 65C02. The HBC-56 is currently using a WDC65C02.
 
@@ -9,6 +9,10 @@ It includes optional circuitry for a clock which eliminates the need for the clo
 ![New 65C02 CPU card](/img/hbc56_cpu_card.png)
 
 ## Revisions
+
+### v1.1 (Untested)
+
+* Fixed the reversed /W and /R outputs noted in the CPU card build video: https://youtu.be/EApdkxBf2yo?si=V3qGSmfu8k72LIok&t=504
 
 ### v1.0
 
