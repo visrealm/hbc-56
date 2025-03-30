@@ -37,7 +37,7 @@ jobs:
       run: cmake --build ${{ env.OUTPUT_DIR }} --config ${{ env.BUILD_TYPE }}
  
     - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: emulator-wasm-build
         path: ${{ env.OUTPUT_DIR }}/bin
