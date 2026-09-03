@@ -28,7 +28,7 @@ I have also included an emulator for this system. The emulator supports the foll
 * Source code debugging (using ACME assembler .rpt file).
 * TMS9918 VRAM visualisation of pattern and sprite pattern tables.
 * Examine CPU and VDP registers, RAM and VRAM.
-* Full support for all TMS9918A display modes. See my TMS9918 emulator here: [github.com/visrealm/vrEmuTms9918](https://github.com/visrealm/vrEmuTms9918)
+* Full support for all TMS9918A display modes, and the VDP can answer as a TMS9918A, an F18A or a [PICO9918](https://github.com/visrealm/pico9918). See my VDP emulator here: [github.com/visrealm/pico9918-core](https://github.com/visrealm/pico9918-core)
 * Support for the dual AY-3-8910 audio, keyboard and NES controller.
 
 The emulator is also available for Web (Beta). [HBC-56 Emulator Online](https://visrealm.github.io/hbc-56/github-pages/emulator)

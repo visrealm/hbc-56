@@ -30,7 +30,12 @@ endif()
 
 target_include_directories(Hbc56Emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(Hbc56Emu vrEmu6502 vrEmu6522 vrEmuTms9918 vrEmuTms9918Util vrEmuLcd emu2149 SDL2 imgui)
+target_link_libraries(Hbc56Emu vrEmu6502 vrEmu6522 pico9918::core vrEmuLcd emu2149 SDL2 imgui)
+
+target_compile_definitions(Hbc56Emu PRIVATE
+  PICO9918_CORE_VER_MAJOR=${HBC56_PICO9918_VER_MAJOR}
+  PICO9918_CORE_VER_MINOR=${HBC56_PICO9918_VER_MINOR}
+  PICO9918_CORE_VER_PATCH=${HBC56_PICO9918_VER_PATCH})
 
 if (NOT DEFINED EMSCRIPTEN)
 	target_link_libraries(Hbc56Emu SDL2main)

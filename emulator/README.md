@@ -35,6 +35,13 @@ The emulator supports the following command-line options:
 * **`--rom <romfile>`** The ROM to load. The ROM is expected to be 32KB in size to match the physical machine.
 * **`--keyboard`** Allows keyboard input. (The default is NES controller)
 * **`--brk`** Start with the debugger in 'break' mode. Allows debugging from the first instruction.
+* **`--vdp <chip>`** Which chip the VDP answers as. These form a capability ladder - each is the one below it plus what the real hardware adds.
+ `<chip>` can be one of:
+  * **`tms9918a`** - The TMS9918A the HBC-56 ships with. Unlock refused, eight registers, no GPU, no overlays. (default)
+  * **`f18a`**     - Unlockable: full register file, enhanced modes and the GPU. Identifies as a real F18A.
+  * **`pico9918`** - An F18A plus the [PICO9918](https://github.com/visrealm/pico9918)'s own extensions: the config port, the firmware register, and the splash and diagnostics overlays.
+
+  The same choice is on the **Machine > VDP** menu. Changing it there resets the machine, as swapping the board would, and either way the choice is remembered for next time.
 * **`--lcd <lcdmodel>`** Enables the character LCD model. 
  `<lcdmodel>` can be one of: 
   * **`1602`**  - 16 x 2 Character LCD

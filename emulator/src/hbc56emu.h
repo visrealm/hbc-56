@@ -29,6 +29,13 @@ extern "C" {
  */
 void hbc56Reset();
 
+/* Function:  hbc56SetVdpChip
+ * --------------------
+ * swap the video board: which chip the vdp answers as (TMS9918_CHIP_*). the
+ * personality is picked up on reset, so changing it resets the machine.
+ */
+void hbc56SetVdpChip(int chip);
+
 /* Function:  hbc56NumDevices
  * --------------------
  * return the number of devices present

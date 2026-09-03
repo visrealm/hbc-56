@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #include "vrEmu6502.h"
-#include "vrEmuTms9918Util.h"
+#include "pico9918_util.h"
 
 #ifdef WIN32
 }
@@ -1533,7 +1533,7 @@ void debuggerVramMemoryView(bool* show)
 void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
 {
   static SDL_Texture* tex = NULL;
-  vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+  pico9918_mode_t mode = (pico9918_mode_t)getTms9918Mode(tms9918);
   int tableColumns = ((mode == TMS_MODE_GRAPHICS_II) ? 33 : 17);
   int tableRows = ((mode == TMS_MODE_GRAPHICS_II) ? 25 : 17);
 
@@ -1589,8 +1589,8 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
           {
             colByte = readTms9918Vram(tms9918, (colorAddr + i / 64) & 0x3fff);
           }
-          uint32_t fg = vrEmuTms9918Palette[colByte >> 4];
-          uint32_t bg = vrEmuTms9918Palette[colByte & 0x0f];
+          uint32_t fg = pico9918_palette[colByte >> 4];
+          uint32_t bg = pico9918_palette[colByte & 0x0f];
 
 
           int pixelOffset = ((i & 0x78) >> 3) * 8 + (i & 0x07) * texSize + (i >> 7) * texSize * 8;
@@ -1608,8 +1608,8 @@ void debuggerTmsPatternsView(SDL_Renderer* renderer, bool* show)
         {
           uint8_t pattByte = readTms9918Vram(tms9918, (patternAddr + i) & 0x3fff);
           uint8_t colByte = readTms9918Vram(tms9918, (colorAddr + i) & 0x3fff);
-          uint32_t fg = vrEmuTms9918Palette[colByte >> 4];
-          uint32_t bg = vrEmuTms9918Palette[colByte & 0x0f];
+          uint32_t fg = pico9918_palette[colByte >> 4];
+          uint32_t bg = pico9918_palette[colByte & 0x0f];
 
           int pixelOffset = ((i & 0xf8) >> 3) * 8 + (i & 0x07) * texSize + (i >> 8) * texSize * 8;
 
@@ -1706,7 +1706,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
       for (int i = 0; i < 32; ++i)
       {
         uint8_t spriteIndex = readTms9918Vram(tms9918, attrAddr + 2);
-        uint32_t spriteColor = vrEmuTms9918Palette[readTms9918Vram(tms9918, attrAddr + 3) & 0x0f];
+        uint32_t spriteColor = pico9918_palette[readTms9918Vram(tms9918, attrAddr + 3) & 0x0f];
 
         uint16_t sprAddr = pattAddr + spriteIndex * 8;
 
@@ -1787,7 +1787,7 @@ void debuggerTmsSpritesView(SDL_Renderer* renderer, bool* show)
 void debuggerTmsSpritePatternsView(SDL_Renderer* renderer, bool* show)
 {
   static SDL_Texture* tex = NULL;
-  vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+  pico9918_mode_t mode = (pico9918_mode_t)getTms9918Mode(tms9918);
 
   bool sprite16 = readTms9918Reg(tms9918, TMS_REG_1) & 0x02;
   int spriteSizePx = sprite16 ? 16 : 8;
@@ -1957,7 +1957,7 @@ void debuggerTmsRegistersView(bool* show)
     {
       ImGui::PushStyleColor(ImGuiCol_Text, green);
       std::string desc;
-      vrEmuTms9918Mode mode = (vrEmuTms9918Mode)getTms9918Mode(tms9918);
+      pico9918_mode_t mode = (pico9918_mode_t)getTms9918Mode(tms9918);
 
       for (uint8_t y = 0; y < 8; ++y)
       {

@@ -396,3 +396,5 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+# Web build (emconfig.bat / emconfig.sh default)
+build_wasm/

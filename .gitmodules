@@ -1,6 +1,3 @@
-[submodule "emulator/modules/tms9918"]
-	path = emulator/modules/tms9918
-	url = https://github.com/visrealm/vrEmuTms9918
 [submodule "emulator/thirdparty/sdl"]
 	path = emulator/thirdparty/sdl
 	url = https://github.com/visrealm/SDL.git
@@ -30,3 +27,6 @@
 [submodule "emulator/modules/65c22"]
 	path = emulator/modules/65c22
 	url = https://github.com/visrealm/vrEmu6522.git
+[submodule "emulator/modules/pico9918"]
+	path = emulator/modules/pico9918
+	url = https://github.com/visrealm/pico9918-core.git

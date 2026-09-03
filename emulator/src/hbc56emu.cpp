@@ -17,6 +17,7 @@
 #include "hbc56emu.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 
@@ -100,6 +101,23 @@ extern "C" {
     }
 
     debug6502State(cpuDevice, CPU_RUNNING);
+  }
+
+  /* Function:  hbc56SetVdpChip
+   * --------------------
+   * swap the video board: which chip the vdp answers as. the personality is picked up
+   * on reset, so changing it resets the machine - as pulling one board out and putting
+   * another in would.
+   */
+  void hbc56SetVdpChip(int chip)
+  {
+    if (chip < 0 || chip == getTms9918Chip()) return;
+
+    setTms9918Chip(chip);
+    ImGui::MarkIniSettingsDirty();
+
+    /* Nothing to reset before the devices exist: the one created next picks it up. */
+    if (deviceCount) hbc56Reset();
   }
 
   /* Function:  hbc56NumDevices
@@ -458,6 +476,44 @@ extern "C" {
 #endif
 
 
+/* The VDP choice rides in imgui.ini beside the window layout, so it is remembered the
+   same way the layout is - including on the web, where the layout is handed to and
+   from the page rather than to a file. */
+
+static void* hbc56SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name)
+{
+  return (strcmp(name, "Machine") == 0) ? (void*)1 : NULL;
+}
+
+static void hbc56SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void*, const char* line)
+{
+  char name[32];
+
+  if (SDL_sscanf(line, "Vdp=%31s", name) == 1)
+    hbc56SetVdpChip(tms9918ChipFromName(name));
+}
+
+static void hbc56SettingsWriteAll(ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+{
+  buf->appendf("[%s][Machine]\n", handler->TypeName);
+  buf->appendf("Vdp=%s\n\n", tms9918ChipName(getTms9918Chip()));
+}
+
+/* Function:  hbc56AddSettingsHandler
+ * --------------------
+ * register the machine's own ini section. must run before the ini is read.
+ */
+static void hbc56AddSettingsHandler()
+{
+  ImGuiSettingsHandler handler;
+  handler.TypeName   = "HBC56";
+  handler.TypeHash   = ImHashStr("HBC56");
+  handler.ReadOpenFn = hbc56SettingsReadOpen;
+  handler.ReadLineFn = hbc56SettingsReadLine;
+  handler.WriteAllFn = hbc56SettingsWriteAll;
+  ImGui::AddSettingsHandler(&handler);
+}
+
 
 /* emulator constants */
 #define LOGICAL_DISPLAY_SIZE_X 320
@@ -595,6 +651,25 @@ static void doRender()
 #endif
       ImGui::EndMenu();
     }
+
+#if HBC56_HAVE_TMS9918
+    if (ImGui::BeginMenu("Machine"))
+    {
+      /* The video board. Each is the one above it plus what the real hardware adds,
+         and swapping one in resets the machine as pulling the other out would. */
+      if (ImGui::BeginMenu("VDP"))
+      {
+        const int chip = getTms9918Chip();
+
+        if (ImGui::MenuItem("TMS9918A", NULL, chip == TMS9918_CHIP_TMS9918A)) { hbc56SetVdpChip(TMS9918_CHIP_TMS9918A); }
+        if (ImGui::MenuItem("F18A",     NULL, chip == TMS9918_CHIP_F18A))     { hbc56SetVdpChip(TMS9918_CHIP_F18A); }
+        if (ImGui::MenuItem("PICO9918", NULL, chip == TMS9918_CHIP_PICO9918)) { hbc56SetVdpChip(TMS9918_CHIP_PICO9918); }
+
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenu();
+    }
+#endif
 
     if (ImGui::BeginMenu("Debug"))
     {
@@ -1105,6 +1180,9 @@ int main(int argc, char* argv[])
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
+  /* Before any ini is read: the machine's own section is parsed by this handler. */
+  hbc56AddSettingsHandler();
+
 #ifndef  __EMSCRIPTEN__
   char* basePath = SDL_GetBasePath();
 
@@ -1206,6 +1284,20 @@ int main(int argc, char* argv[])
           ++i;
         }
       }
+      /* which chip does the vdp answer as? */
+      else if (SDL_strcasecmp(argv[i], "--vdp") == 0)
+      {
+        if (argv[i + 1])
+        {
+          int chip = tms9918ChipFromName(argv[i + 1]);
+          if (chip >= 0)
+          {
+            consumed = 1;
+            hbc56SetVdpChip(chip);
+            ++i;
+          }
+        }
+      }
     }
     if (consumed < 0)
     {
@@ -1217,7 +1309,7 @@ int main(int argc, char* argv[])
 
   if (romLoaded == 0)
   {
-    static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]", NULL };
+    static const char* options[] = { "--rom <romfile>","[--brk]","[--keyboard]","[--lcd 1602|2004|12864]","[--vdp tms9918a|f18a|pico9918]", NULL };
 
 #ifndef __EMSCRIPTEN__
     fileOpen = true;
