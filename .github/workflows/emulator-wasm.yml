@@ -27,10 +27,20 @@ jobs:
       with:
         # ninja version to download. Default: 1.10.0
         version: 1.10.0
+
+    # pico9918-core generates its overlay image arrays at configure time.
+    - name: Python for the overlay assets
+      id: python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install pillow
+      run: python -m pip install --upgrade pillow
           
     - name: Setup emscripten
       working-directory: ${{ github.workspace }}
-      run: ./emconfig.bat ${{ env.OUTPUT_DIR }}
+      run: ./emconfig.bat ${{ env.OUTPUT_DIR }} -DPython3_EXECUTABLE="${{ steps.python.outputs.python-path }}"
         
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).

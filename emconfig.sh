@@ -6,4 +6,5 @@ emsdk/emsdk activate 3.1.10
 
 source emsdk/emsdk_env.sh
 
-emcmake cmake -B $1 -S .
+# Anything past the build directory is passed straight through to cmake.
+emcmake cmake -B $1 -S . "${@:2}"

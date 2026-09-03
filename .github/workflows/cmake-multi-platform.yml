@@ -56,6 +56,16 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    # pico9918-core generates its overlay image arrays at configure time.
+    - name: Python for the overlay assets
+      id: python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install pillow
+      run: python -m pip install --upgrade pillow
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -64,6 +74,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DPython3_EXECUTABLE="${{ steps.python.outputs.python-path }}"
         -S ${{ github.workspace }}
 
     - name: Build
