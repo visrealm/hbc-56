@@ -72,15 +72,6 @@ static uint8_t writeTms9918Device(HBC56Device*, uint16_t, uint8_t);
 #define TMS9918_CONFIG_MODEL      0
 #define TMS9918_CONFIG_HW_VERSION 0x10
 
-/* An HBC-56 reset is a hardware one: the video board is power-cycled with the rest of
-   the machine, so the splash comes back with it. pico9918_reset rewinds the animation
-   itself, but what the library publishes is otherwise the CONSOLE reset, which
-   deliberately keeps these two - the splash hand-off and the startup diagnostics
-   screen are once-per-run latches it will not re-arm - and it has no public entry for
-   the power-on case. They are owned by the library's frame module. */
-extern int  pico9918_frame_count;
-extern bool pico9918_valid_writes;
-
 /* tms9918 device data */
 struct TMS9918Device
 {
@@ -513,13 +504,6 @@ static void resetTms9918Device(HBC56Device* device)
        a detection probe reading its result back cannot miss it, and paces the rest per
        scanline. Resolved here rather than per scanline - it reads the environment. */
     pico9918_gpu_set_clock(PICO9918_INST tms9918GpuIps());
-
-    /* Power-cycle the board. pico9918_reset winds the splash animation back to its
-       start; these two are the gate in front of it, and a console reset keeps them by
-       design. Only a PICO9918 has the overlay, so on the two chips below this changes
-       nothing anyone can see. */
-    pico9918_frame_count  = 0;
-    pico9918_valid_writes = false;
   }
 }
 
